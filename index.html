@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792533188"></script>
+    <script src="config.js?v=1792533480"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1967,6 +1967,36 @@
      Month (desktop and phone) and Week. */
   .evs.grp.leave, .cs-bar.grp.leave, .wpuck.grp.leave { background: repeating-linear-gradient(135deg, var(--leave) 0 6px, var(--leave-2) 6px 12px); }
   .evs.grp.pass, .cs-bar.grp.pass, .wpuck.grp.pass { background: repeating-linear-gradient(135deg, var(--gold) 0 6px, var(--gold-3) 6px 12px); }
+  /* Request form "Request for" / "Add members": an inline multi-select dropdown under the button. */
+  .who-wrap { position: relative; }
+  .who-wrap .wiz-who { width: 100%; }
+  .who-pop { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px); display: flex; flex-direction: column; max-height: min(340px, 52vh);
+    background: var(--card); border: 1.5px solid var(--outline); border-radius: 14px; box-shadow: 0 12px 32px rgba(0, 0, 0, .3); overflow: hidden; }
+  :root[data-theme="dark"] .who-pop { background: #2a2c34; border-color: rgba(255, 255, 255, .28); }
+  .who-pop[hidden] { display: none; }
+  .who-search { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); color: var(--muted); }
+  .who-search input { flex: 1; min-width: 0; height: 36px; border: 0; background: none; padding: 0; font-size: 16px; color: var(--ink); outline: none; }
+  .who-list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 0; }
+  .who-h { padding: 8px 14px 2px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .who-h[hidden], .who-row[hidden] { display: none; }
+  .who-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 4px 14px; border: 0; background: none; color: var(--ink);
+    font: inherit; text-align: left; cursor: pointer; }
+  .who-row:hover { background: color-mix(in srgb, var(--on-surface) 7%, transparent); }
+  .who-row.on { background: color-mix(in srgb, var(--sel-bg) 30%, transparent); }
+  .who-ck { flex: none; width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid var(--outline); display: grid; place-items: center; }
+  .who-row.on .who-ck { background: var(--navy); border-color: var(--navy); color: #ffffff; }
+  :root[data-theme="dark"] .who-row.on .who-ck { background: var(--gold); border-color: var(--gold); color: var(--navy); }
+  .who-new .ic { flex: none; margin-left: 2px; }
+  .who-none { padding: 12px 14px; color: var(--muted); }
+  .wiz-who .who-n { flex: 0 0 auto !important; width: auto; }
+  .wiz-who > span:not(.who-n):not(.idb) { flex: 1 1 auto; text-align: left; }
+  /* Person filter: the same inline dropdown as "Request for" (search, tick several, tap outside to apply). */
+  .fp { position: relative; }
+  .fp-pop { right: auto; width: min(340px, calc(100vw - 24px)); }
+  .fp-conf-row { flex: none; padding: 8px 12px 4px; }
+  .fp-conf-row .conf-only.on { background: #b42318; border-color: #b42318; color: #ffffff; }
+  .fperson .who-n, .fall .who-n { flex: none; display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
+    background: var(--navy); color: #fff; font-size: 12.5px; font-weight: 800; }
 </style>
 
   </head>
@@ -2257,10 +2287,25 @@
     return keep;
   }
   /** Shared filter test for person + conflict mode (calendar, All, day view). */
+  /** People picked in the person filter (it can hold several: "id1,id2"). */
+  const personIds = st => st && st.person ? String(st.person).split(',').filter(Boolean) : [];
+  /** Short label for the picked people: one name, or "Smith, Jones" / "4 people". */
+  function personLabel(st) {
+    const ids = personIds(st);
+    return ids.length === 1 ? calName(userOf(ids[0])) : ids.length <= 3 ? ids.map(id => calName(userOf(id))).join(', ') : ids.length + ' people';
+  }
+  /** Pill / button content for the picked people: [P|MKE] Last, First for one; a count bubble and names for several. */
+  function personPillInner(st) {
+    const ids = personIds(st);
+    return ids.length === 1 ? idBadge(userOf(ids[0])) + '<span>' + nameHtml(userOf(ids[0]), true) + '</span>'
+      : '<span class="who-n">' + ids.length + '</span><span>' + esc(personLabel(st)) + '</span>';
+  }
   function personConfOk(r, F) {
-    if (!F.conf) return !F.person || r.userId === F.person;
-    if (!F.person) return inConflict(r);
-    if (!(F._cw && F._cwFor === F.person && F._cwIdx === IDX)) { F._cwFor = F.person; F._cwIdx = IDX; F._cw = conflictsWith(F.person); } // cached until data changes
+    const ids = personIds(F);
+    if (!F.conf) return !ids.length || ids.includes(r.userId);
+    if (!ids.length) return inConflict(r);
+    if (ids.length > 1) return ids.includes(r.userId) && inConflict(r);
+    if (!(F._cw && F._cwFor === ids[0] && F._cwIdx === IDX)) { F._cwFor = ids[0]; F._cwIdx = IDX; F._cw = conflictsWith(ids[0]); } // cached until data changes
     return F._cw.has(r.id);
   }
   function calRequests() {
@@ -2857,15 +2902,48 @@
 
   /** Person filter control: a dropdown-style button that opens the person picker sheet. */
   function personSelect(cls, sc) {
-    const st = fState(sc), p = st.person, conf = !!st.conf, label = p ? calName(userOf(p)) : conf ? 'All conflicts' : 'Everyone';
+    const st = fState(sc), p = st.person, conf = !!st.conf, label = p ? personLabel(st) : conf ? 'All conflicts' : 'Everyone';
     // With a person picked, a ✕ next to it goes straight back to Everyone. In conflict mode the pill turns red with a ⚠.
     return '<div class="fp ' + cls + (conf ? ' fp-conf' : '') + '"><button type="button" class="fsel fdrop-btn fperson' + (p || conf ? ' on' : '') + '" data-act="pickPerson"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Person filter: ' + esc(label) + (conf ? ', conflict mode' : '') + '">' +
       // A picked person shows exactly as in the picker: their [P|MKE] badge, then "Last, First".
       (conf ? icon('alert', 16) : '') +
-      (p && !conf ? idBadge(userOf(p)) + '<span>' + nameHtml(userOf(p), true) + '</span>' : '<span>' + esc(label) + '</span>') +
+      (p && !conf ? personPillInner(st) : '<span>' + esc(label) + '</span>') +
       icon('down', 14) + '</button>' +
-      (p ? '<button type="button" class="btn icon-btn fp-clear" data-act="clearPerson"' + scAttr(sc) + ' aria-label="Show everyone" title="Show everyone">' + icon('x', 18) + '</button>' : '') + '</div>';
+      (p ? '<button type="button" class="btn icon-btn fp-clear" data-act="clearPerson"' + scAttr(sc) + ' aria-label="Show everyone" title="Show everyone">' + icon('x', 18) + '</button>' : '') +
+      // Inline dropdown (search + tick as many people as you like); tapping outside applies it.
+      '<div class="who-pop fp-pop" hidden></div></div>';
   }
+  /** Person filter dropdown: conflict mode, search, Everyone, then everyone grouped by position with a tick box each. */
+  function fpPopHtml(sc) {
+    const st = fState(sc), picked = new Set(personIds(st)), conf = sc !== 'mine' && !!st.conf;
+    const withConf = conf ? new Set(IDX.live.filter(inConflict).map(r => r.userId)) : null;
+    const people = S.users.filter(u => (u.active || picked.has(u.id)) && (!withConf || withConf.has(u.id) || picked.has(u.id)));
+    const row = u => '<button type="button" class="who-row' + (picked.has(u.id) ? ' on' : '') + '" role="option" aria-selected="' + picked.has(u.id) + '" data-act="fpPick" data-id="' + esc(u.id) + '"' + scAttr(sc) +
+      ' data-q="' + esc((lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit + (u.id === S.me ? ' me' : '')).toLowerCase()) + '">' +
+      '<span class="who-ck">' + (picked.has(u.id) ? icon('check', 16) : '') + '</span>' + idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span></button>';
+    const meU = people.find(u => u.id === S.me);
+    const groups = (meU ? '<div class="who-h">Me</div>' + row(meU) : '') + ROLES.map(role => {
+      const list = people.filter(u => u.role === role && u.id !== S.me).sort((a, b) => lastName(a).localeCompare(lastName(b)));
+      return list.length ? '<div class="who-h">' + esc(({ Pilot: 'Pilots', Boom: 'Boom operators', Other: 'Other' })[role]) + '</div>' + list.map(row).join('') : '';
+    }).join('');
+    return (sc === 'mine' ? '' : '<div class="fp-conf-row"><button type="button" class="btn sm conf-only' + (conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + conf + '">' +
+        icon('alert', 16) + (conf ? 'Conflict mode on' : 'Conflict mode') + '</button></div>') +
+      '<div class="who-search">' + icon('search', 15) + '<input type="search" class="fp-q" placeholder="Type a name…" autocomplete="off" aria-label="Search people" data-model="whoq" data-live="whoFilter"></div>' +
+      '<div class="who-list" role="listbox" aria-multiselectable="true"><button type="button" class="who-row who-all" data-act="fpEveryone"' + scAttr(sc) + '>' +
+        '<span class="idb idb-all" aria-hidden="true"><span class="idb-r idb-p">P</span><span class="idb-r idb-b">B</span><span class="idb-r idb-o">O</span></span><span class="pp-n"><b>' + (conf ? 'All conflicts' : 'Everyone') + '</b></span></button>' +
+      groups + '<div class="who-none" hidden>No one matches.</div></div>';
+  }
+  /** Close the open person-filter dropdown and, if anything changed, redraw with the new filter. */
+  function closeFpPop() {
+    const p = document.querySelector('.fp-pop:not([hidden])'); if (!p) return;
+    p.hidden = true; p.innerHTML = '';
+    const sc = S.fpOpenScope; S.fpOpenScope = null;
+    if (S.fpDirty) { S.fpDirty = false; S.openDrop = null; render(); if (S.modal === 'filters') openFilterSheet(sc, true); }
+  }
+  document.addEventListener('click', ev => {
+    const p = document.querySelector('.fp-pop:not([hidden])');
+    if (p && !p.closest('.fp').contains(ev.target)) closeFpPop();
+  }, true);
   /** Person picker: a sheet (bottom sheet on phones) with search, "Everyone", then members grouped by position. */
   function openPersonPicker(sc, mode) {
     S.openDrop = null; S.ppq = ''; S.ppScope = sc || 'cal'; S.ppMode = mode || 'filter';
@@ -2919,7 +2997,7 @@
     if (F.g === 'type') return typeToggle(sc);
     const st = fState(sc), sel = st[F.g], all = sel.length === F.opts.length, key = (sc || 'cal') + ':' + F.g;
     const person = F.g === 'role' && st.person;
-    const summary = person ? calName(userOf(st.person)) : all ? F.all : !sel.length ? 'None' : F.opts.filter(o => sel.includes(o[0])).map(o => o[1]).join(', ');
+    const summary = person ? personLabel(st) : all ? F.all : !sel.length ? 'None' : F.opts.filter(o => sel.includes(o[0])).map(o => o[1]).join(', ');
     const chips = '<div class="seg fchips" role="group" aria-label="' + F.name + ' filter">' + F.opts.map(o =>
       '<button type="button" class="' + (sel.includes(o[0]) ? 'on' : '') + '" aria-pressed="' + sel.includes(o[0]) + '" data-act="fToggle" data-g="' + F.g + '" data-v="' + o[0] + '"' + scAttr(sc) + '>' + o[1] + '</button>').join('') + '</div>';
     const open = S.openDrop === key;
@@ -2939,7 +3017,7 @@
     const st = fState(sc), parts = [];
     const pick = (g, opts) => { const sel = st[g]; if (sel && sel.length !== opts.length) parts.push(sel.length ? opts.filter(o => sel.includes(o[0])).map(o => o[1]).join(', ') : 'No ' + g); };
     if (st.conf || (st === S.mf && S.mineConf && S.mineMode === 'cal')) parts.push('Conflicts');
-    if (st.person) parts.push(calName(userOf(st.person)));
+    if (st.person) parts.push(personLabel(st));
     else if (st.role && !S.priv) pick('role', FILTERS[1].opts);
     pick('status', FILTERS[0].opts);
     if (!wideFilters()) pick('type', FILTERS[2].opts);
@@ -2949,7 +3027,7 @@
   /** Conflict mode banner: red bar with the count and an ✕ to leave the mode. */
   function confBanner(n) {
     if (!S.f.conf) return '';
-    return '<div class="conf-banner" role="status">' + icon('alert', 18) + '<span><b>Conflict mode</b> · ' + (S.f.person ? esc(fullName(userOf(S.f.person))) + ' and who they conflict with · ' + plural(n, 'request')
+    return '<div class="conf-banner" role="status">' + icon('alert', 18) + '<span><b>Conflict mode</b> · ' + (personIds(S.f).length === 1 ? esc(fullName(userOf(S.f.person))) + ' and who they conflict with · ' : S.f.person ? esc(personLabel(S.f)) + ' · ' + plural(n, 'request')
       : plural(n, 'request') + ' over the daily max') + '</span>' +
       '<button type="button" class="btn icon-btn conf-x" data-act="confOff" aria-label="Leave conflict mode" title="Leave conflict mode">' + icon('x', 18) + '</button></div>';
   }
@@ -2974,7 +3052,7 @@
     const st = fState(sc), person = !!st.person && !st.conf;
     return '<button type="button" class="fsel fdrop-btn fall' + (parts.length ? ' on' : '') + (person ? ' fp-active' : '') + '" data-act="openFilters"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Filters: ' + esc(parts.join(' · ') || 'showing everything') + '">' +
       // With a person picked, lead with their badge and "Last, First" (as in the picker) instead of the sliders icon.
-      (person ? idBadge(userOf(st.person)) + '<span>' + nameHtml(userOf(st.person), true) + (parts.length > 1 ? ' · ' + esc(parts.slice(1).join(' · ')) : '') + '</span>'
+      (person ? personPillInner(st).replace(/<\/span>$/, (parts.length > 1 ? ' · ' + esc(parts.slice(1).join(' · ')) : '') + '</span>')
         : icon('sliders', 16) + '<span>' + esc(parts.length ? parts.join(' · ') : 'Filters') + '</span>') + icon('down', 14) + '</button>' +
       // Clear filters: back to the defaults (Pilots + Booms, everyone, all statuses, Leave and Pass). Only when filters differ from that.
       (!isDefaultFilters(st) ? '<button type="button" class="btn fall-clear" data-act="clearFilters"' + scAttr(sc) + ' aria-label="Clear filters and show everything" title="Clear filters">' + icon('x', 18) + '<span class="bl">Clear</span></button>' : '');
@@ -3131,7 +3209,7 @@
   function filteredRoleCounts(d) {
     const out = { Pilot: 0, Boom: 0, Other: 0 };
     IDX.live.forEach(r => {
-      if (r.type !== 'Leave' || r.start > d || r.end < d || !countable(r) || !S.f.status.includes(r.status) || (S.f.person && r.userId !== S.f.person)) return;
+      if (r.type !== 'Leave' || r.start > d || r.end < d || !countable(r) || !S.f.status.includes(r.status) || (S.f.person && !personIds(S.f).includes(r.userId))) return;
       out[userOf(r.userId).role]++;
     });
     return out;
@@ -4818,6 +4896,46 @@
     const id = wizIds()[0];
     return w.creating ? w.nu.role : id ? userOf(id).role : '';
   }
+  /* "Request for" / "Add members": an inline dropdown under the button (not a dialog). Type to search, tap as many
+     people as you like (each tap adds or removes them), tap anywhere outside to close and carry on with the form. */
+  function whoBtnInner() {
+    const w = S.wiz;
+    if (w.editId) {
+      const x = w.extra || [];
+      return (x.length ? '<span class="who-n">+' + x.length + '</span><span>' + esc(x.map(id => lastName(userOf(id))).join(', ')) + '</span>'
+        : icon('userPlus', 16) + '<span>Add members (each gets their own request)</span>') + icon('down', 14);
+    }
+    const ids = wizIds();
+    return (ids.length > 1 ? '<span class="who-n">' + ids.length + '</span><span>' + esc(ids.map(id => lastName(userOf(id))).join(', ')) + '</span>'
+      : ids.length ? idBadge(userOf(ids[0])) + '<span>' + esc(nameText(userOf(ids[0]))) + '</span>'
+      : icon('userPlus', 16) + '<span>Choose members…</span>') + icon('down', 14);
+  }
+  function whoPopHtml() {
+    const w = S.wiz, picked = new Set(wizPickList());
+    const people = S.users.filter(u => u.active && !(w.editId && u.id === w.assigneeId));
+    const row = u => '<button type="button" class="who-row' + (picked.has(u.id) ? ' on' : '') + '" role="option" aria-selected="' + picked.has(u.id) + '" data-act="whoPick" data-id="' + esc(u.id) + '"' +
+      ' data-q="' + esc((lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit + (u.id === S.me ? ' me' : '')).toLowerCase()) + '">' +
+      '<span class="who-ck">' + (picked.has(u.id) ? icon('check', 16) : '') + '</span>' + idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span></button>';
+    const meU = people.find(u => u.id === S.me);
+    const groups = (meU ? '<div class="who-h">Me</div>' + row(meU) : '') + ROLES.map(role => {
+      const list = people.filter(u => u.role === role && u.id !== S.me).sort((a, b) => lastName(a).localeCompare(lastName(b)));
+      return list.length ? '<div class="who-h">' + esc(({ Pilot: 'Pilots', Boom: 'Boom operators', Other: 'Other' })[role]) + '</div>' + list.map(row).join('') : '';
+    }).join('');
+    return '<div class="who-search">' + icon('search', 15) + '<input type="search" id="whoQ" placeholder="Type a name…" autocomplete="off" aria-label="Search members" data-model="whoq" data-live="whoFilter"></div>' +
+      '<div class="who-list" role="listbox" aria-multiselectable="true">' + (w.editId ? '' : '<button type="button" class="who-row who-new" data-act="wizCreate">' + icon('userPlus', 18) + '<span class="pp-n"><b>Add new member</b></span></button>') +
+      groups + '<div class="who-none" hidden>No one matches.</div></div>';
+  }
+  function closeWhoDrop() {
+    const p = $('#whoPop'); if (!p || p.hidden) return;
+    p.hidden = true; p.innerHTML = '';
+    const b = $('#modal [data-act="whoDrop"]'); if (b) { b.setAttribute('aria-expanded', 'false'); b.innerHTML = whoBtnInner(); }
+    if (!S.wiz.editId) S.wiz.assigneeId = (S.wiz.assignees || [])[0] || '';
+    refreshWizDates(); // slot colours depend on who it's for
+  }
+  document.addEventListener('click', ev => {
+    const p = document.getElementById('whoPop');
+    if (p && !p.hidden && !ev.target.closest('.who-wrap')) closeWhoDrop();
+  }, true);
   /** Members this request is for: several when an admin picks more than one (each gets their own request). */
   const wizIds = () => { const w = S.wiz; return w.creating ? [] : w.editId ? [w.assigneeId].concat(w.extra || []) : (w.assignees || []); };
   const wizWho = () => { const w = S.wiz; return w.creating ? w.nu.rank + ' ' + w.nu.name + ' (' + w.nu.unit + ')' : wizIds().map(id => fullName(userOf(id))).join(', '); };
@@ -4879,19 +4997,16 @@
         // Blackout: no member; choose what it blocks. (Editing a blackout can't turn it into a request.)
       } else if (w.editId) {
         body += '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request for</div><div style="font-weight:700">' + esc(fullName(userOf(w.assigneeId))) + '</div>' +
-          (S.isAdmin ? '<button type="button" class="fsel fdrop-btn wiz-who wiz-add" data-act="pickAssignee" aria-haspopup="dialog" aria-label="Add members to this request">' +
-            ((w.extra || []).length ? '<span class="who-n">+' + w.extra.length + '</span><span>' + esc(w.extra.map(id => lastName(userOf(id))).join(', ')) + '</span>'
-              : icon('userPlus', 16) + '<span>Add members (each gets their own request)</span>') + icon('down', 14) + '</button>' : '') +
+          (S.isAdmin ? '<div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who wiz-add" data-act="whoDrop" aria-haspopup="listbox" aria-expanded="false" aria-label="Add members to this request">' + whoBtnInner() + '</button>' +
+            '<div class="who-pop" id="whoPop" hidden></div></div>' : '') +
           (w.editStatus === 'Approved' ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>This request is already approved. Admin edits keep it approved.</span></div>' : '') +
           (w.editStatus === 'Denied' && !S.isAdmin ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>Saving changes resubmits this denied request as Pending.</span></div>' : '') + '</div>';
       } else if (S.isAdmin) {
         body += '<div class="sect"><div class="lbl">' + icon('users', 14) + ' Request for</div>' +
           (w.creating
             ? '<div class="newuser">' + userFields('nu', w.nu, true) + '</div><button class="btn ghost sm" data-act="wizExisting" style="margin-top:6px">' + icon('left', 14) + ' Choose an existing member instead</button>'
-            : '<div class="row"><button type="button" class="fsel fdrop-btn wiz-who" data-act="pickAssignee" aria-haspopup="dialog" aria-label="Request for: ' + esc(wizWho()) + '">' +
-                (wizIds().length > 1 ? '<span class="who-n">' + wizIds().length + '</span><span>' + esc(wizIds().map(id => lastName(userOf(id))).join(', ')) + '</span>'
-                  : wizIds().length ? idBadge(userOf(wizIds()[0])) + '<span>' + esc(nameText(userOf(wizIds()[0]))) + '</span>'
-                  : icon('userPlus', 16) + '<span>Choose members…</span>') + icon('down', 14) + '</button></div>') +
+            : '<div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who" data-act="whoDrop" aria-haspopup="listbox" aria-expanded="false" aria-label="Request for">' + whoBtnInner() + '</button>' +
+                '<div class="who-pop" id="whoPop" hidden></div></div>') +
           '</div>';
       }
       // Admins can also add a blackout from here (not when editing a request or a blackout).
@@ -5234,7 +5349,29 @@
     },
     installHide() { store.set('installHidden', '1'); renderInstallFab(); if (S.me) toast('You can still add it from Profile → Notifications', 'hint', 3200); },
     clearPerson(el) { fState(el.dataset.scope).person = ''; S.openDrop = null; render(); if (S.modal === 'filters') openFilterSheet(el.dataset.scope, true); },
-    pickPerson(el) { S.ppFromSheet = S.modal === 'filters'; openPersonPicker(el.dataset.scope); },
+    pickPerson(el) {
+      const pop = el.closest('.fp').querySelector('.fp-pop');
+      if (!pop.hidden) { closeFpPop(); return; }
+      closeFpPop();
+      S.whoq = ''; S.fpOpenScope = el.dataset.scope || 'cal';
+      pop.innerHTML = fpPopHtml(el.dataset.scope); pop.hidden = false;
+      // Keep it on screen: open toward the left when there's no room on the right.
+      pop.style.left = ''; pop.style.right = '';
+      const r = pop.getBoundingClientRect(); if (r.right > window.innerWidth - 8) { pop.style.left = 'auto'; pop.style.right = '0'; }
+      const q = pop.querySelector('.fp-q'); if (q) q.focus();
+    },
+    fpPick(el) {
+      const sc = el.dataset.scope, st = fState(sc), id = el.dataset.id, ids = personIds(st), on = !ids.includes(id);
+      const next = on ? ids.concat([id]) : ids.filter(x => x !== id);
+      st.person = next.join(',');
+      // Make sure each picked person's position is shown, or their schedule would be filtered out.
+      const role = on && userOf(id).role;
+      if (role && st.role && !st.role.includes(role)) st.role = st.role.concat([role]);
+      el.classList.toggle('on', on); el.setAttribute('aria-selected', on);
+      el.querySelector('.who-ck').innerHTML = on ? icon('check', 16) : '';
+      S.fpDirty = true;
+    },
+    fpEveryone(el) { fState(el.dataset.scope).person = ''; S.fpDirty = true; closeFpPop(); },
     setPerson(el) {
       // Request form: picking the assignee returns to the form.
       // Request form: tapping a member adds or removes them; Done returns to the form.
@@ -5340,6 +5477,28 @@
     peoplePeriod(el) { S.people.period = el.dataset.v; render(); },
     personYear(el) { openPersonYear(el.dataset.id); },
     memberCard(el) { openMemberCard(el.dataset.id); },
+    whoDrop(el) {
+      const p = $('#whoPop'); if (!p) return;
+      if (!p.hidden) { closeWhoDrop(); return; }
+      S.whoq = ''; p.innerHTML = whoPopHtml(); p.hidden = false; el.setAttribute('aria-expanded', 'true');
+      const q = $('#whoQ'); if (q) q.focus();
+    },
+    whoPick(el) {
+      const w = S.wiz, id = el.dataset.id, list = wizPickList(), on = !list.includes(id);
+      const next = on ? list.concat([id]) : list.filter(x => x !== id);
+      if (w.editId) w.extra = next; else w.assignees = next;
+      el.classList.toggle('on', on); el.setAttribute('aria-selected', on);
+      el.querySelector('.who-ck').innerHTML = on ? icon('check', 16) : '';
+      const b = $('#modal [data-act="whoDrop"]'); if (b) b.innerHTML = whoBtnInner();
+    },
+    whoFilter(el) {
+      const pop = el.closest('.who-pop'); if (!pop) return;
+      const q = (S.whoq || '').trim().toLowerCase();
+      let any = false;
+      pop.querySelectorAll('.who-row[data-q]').forEach(r => { const hit = !q || r.dataset.q.indexOf(q) >= 0; r.hidden = !hit; any = any || hit; });
+      pop.querySelectorAll('.who-h').forEach(h => { let n = h.nextElementSibling, vis = false; while (n && !n.classList.contains('who-h')) { if (n.classList.contains('who-row') && !n.hidden) vis = true; n = n.nextElementSibling; } h.hidden = !vis; });
+      const none = pop.querySelector('.who-none'); if (none) none.hidden = any;
+    },
     srvHelp() { const h = $('#srvHelp'); if (h) h.hidden = !h.hidden; },
     mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; $('#mcPin1').focus(); } },
     async revokeAdmin(el) {
