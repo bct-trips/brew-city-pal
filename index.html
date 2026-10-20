@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792486330"></script>
+    <script src="config.js?v=1792486474"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1343,6 +1343,13 @@
   .mini-key { gap: 6px 16px; }
   .mk-i { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
   .mk-i .mk { margin-left: 0; }
+
+  /* My Requests: List | Calendar switch and the Show conflicts toggle. */
+  .mine-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--card); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .mine-head .seg { display: flex; } .mine-head .seg button { padding: 0 18px; }
+  .conf-tog { margin-left: auto; }
+  .conf-tog.on, .conf-tog.on:hover { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink) !important; }
+  @media (max-width: 700px) { .mine-head .seg { flex: 1 1 auto; } .mine-head .seg button { flex: 1 1 0; } .conf-tog { flex: 1 1 auto; margin-left: 0; } }
 </style>
 
   </head>
@@ -1453,7 +1460,7 @@
     f: { status: ['Approved', 'Pending', 'Denied'], role: ['Pilot', 'Boom', 'Other'], type: ['Leave', 'Pass'], person: '' }, openDrop: null, monthMode: (() => { try { return localStorage.getItem('pal.monthMode') || 'events'; } catch (e) { return 'events'; } })(),
     list: store.get('list', { q: '', status: 'All', role: 'All', type: 'All', sort: 'submitted', dir: 'desc' }),
     mine: { status: 'All', sort: 'start', dir: 'desc' },
-    mf: { status: ['Approved', 'Pending', 'Denied'], type: ['Leave', 'Pass'] },
+    mf: { status: ['Approved', 'Pending', 'Denied'], type: ['Leave', 'Pass'] }, mineMode: store.get('mineMode', 'list'), mineConf: false,
     people: { period: 'fy', q: '', sort: 'last', dir: 'asc', inactive: false },
     sel: null,
     theme: store.get('theme', 'system'),
@@ -1538,7 +1545,21 @@
   /** Over its type's max days (flagged for leadership when the rule is Warn). */
   const isCaution = r => D.days(r.start, r.end) > lenRule(r.type).max;
   const cautionText = r => (r.type === 'Pass' ? 'Pass' : 'Leave') + ' over ' + lenRule(r.type).max + ' days';
+  /** The calendar is showing: the Calendar tab, or My Requests in Calendar mode. */
+  const isCalView = () => S.view === 'calendar' || (S.view === 'mine' && S.mineMode === 'cal');
+  /** My Requests calendar: my requests (status / type filters), plus — with Show conflicts on — other members'
+   *  leave or passes in my position that overlap my own leave or passes (same type). */
+  function mineCalRequests() {
+    const F = S.mf, myRole = (IDX.users.get(S.me) || {}).role;
+    const mine = IDX.live.filter(r => r.userId === S.me && F.status.includes(r.status) && F.type.includes(r.type));
+    if (!S.mineConf) return mine;
+    const active = mine.filter(r => r.status !== 'Denied');
+    const others = IDX.live.filter(r => r.userId !== S.me && r.status !== 'Denied' && F.type.includes(r.type) && userOf(r.userId).role === myRole &&
+      active.some(m => m.type === r.type && m.start <= r.end && m.end >= r.start));
+    return mine.concat(others);
+  }
   function calRequests() {
+    if (S.view === 'mine') return mineCalRequests();
     return IDX.live.filter(r => S.f.status.includes(r.status) && S.f.role.includes(userOf(r.userId).role) && S.f.type.includes(r.type) && (!S.f.person || r.userId === S.f.person));
   }
 
@@ -1824,7 +1845,7 @@
     $$('.scroll, .dayv, .tbl-wrap').forEach(el => { if (el.id) keep[el.id] = [el.scrollTop, el.scrollLeft]; });
     $('#app').innerHTML = '<main class="main" id="main">' + renderView() + '</main>' + renderNav();
     Object.keys(keep).forEach(id => { const el = document.getElementById(id); if (el) { el.scrollTop = keep[id][0]; el.scrollLeft = keep[id][1]; } });
-    if (S.view === 'calendar' && S.cal === 'month') fitMonth();
+    if (isCalView() && S.cal === 'month') fitMonth();
     paintSel();
     markOpenDay();
     store.set('view', S.view); store.set('cal', S.cal);
@@ -1907,7 +1928,7 @@
   }
   function renderCalendar() {
     const body = S.cal === 'month' ? renderMonth() : S.cal === 'quad' ? renderQuad() : S.cal === 'week' ? renderWeek() : renderDay();
-    return '<section class="cal">' +
+    return '<section class="cal">' + (S.view === 'mine' ? mineHead() : '') +
       '<div class="calbar">' +
         // Left: view switch, Today, Add Request
         '<div class="cb-left">' +
@@ -1922,7 +1943,9 @@
           '<button class="lbl-date" data-act="pickMonth" aria-haspopup="dialog" title="Jump to a month">' + esc(calLabel()) + icon('down', 15) + '</button>' +
           '<button class="dn-arrow" data-act="calNext" aria-label="Next">' + icon('right', 18) + '</button></div></div>' +
         // Right: status, position, then Leave / Pass at the far right
-        '<div class="cb-right filters">' + FILTERS.map(F => filterGroup(F, 'cal')).join('') + filterButton('cal') +
+        '<div class="cb-right filters">' + (S.view === 'mine'
+          ? FILTERS.filter(F => F.g !== 'role').map(F => filterGroup(F, 'mine')).join('') + filterButton('mine')
+          : FILTERS.map(F => filterGroup(F, 'cal')).join('') + filterButton('cal')) +
           // Phone Month: switch between name strips and P / B / O stats, next to the Filters button.
           (S.cal === 'month' ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
       '</div>' +
@@ -2366,7 +2389,7 @@
   function describe(r) {
     const u = userOf(r.userId);
     return fullName(u) + ', ' + ({ Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' })[u.role] + ', ' + (r.type === 'Leave' ? 'Ordinary Leave' : 'Special Pass') + ', ' + r.status + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
-      (dupsOf(r).length ? ', overlap conflict' : '');
+      (dupsOf(r).length ? ', overlap' : '');
   }
   const dupsOf = r => (IDX.dups && IDX.dups.get(r.id)) || [];
   const dupText = r => dupsOf(r).map(o => o.type.toLowerCase() + ' ' + D.short(o.start) + ' → ' + D.short(o.end) + ' (' + o.status.toLowerCase() + ')').join('; ');
@@ -2379,7 +2402,7 @@
       ', now ' + r.type + ' ' + D.short(r.start) + ' → ' + D.short(r.end) + '.';
   }
   const changedBadge = r => isChanged(r) ? '<span class="badge chg" title="' + esc(changeText(r)) + '">' + icon('alert', 12) + 'Dates changed by admin</span>' : '';
-  const dupBadge = r => dupsOf(r).length ? '<span class="badge dup" title="Overlaps ' + esc(dupText(r)) + '">' + icon('alert', 12) + 'Overlap conflict</span>' : '';
+  const dupBadge = r => dupsOf(r).length ? '<span class="badge dup" title="Overlaps ' + esc(dupText(r)) + '">' + icon('alert', 12) + 'Overlap</span>' : '';
   // P / B / O tag for Pilot, Boom, Other. Decorative: the parent's aria-label names the position.
   const roleTagHtml = L => '<span class="idb" aria-hidden="true"><span class="idb-r idb-' + L.toLowerCase() + '">' + L + '</span></span>';
   /* Combined ID badge: [P|MKE] — position square on the left, unit section on the right, one button-like chip.
@@ -2605,7 +2628,7 @@
       [...new Set(IDX.live.filter(r => r.status !== 'Denied' && r.start <= d && r.end >= d && dupsOf(r).length).map(r => r.userId))].map(uid => {
         const mine = IDX.live.filter(r => r.userId === uid && r.status !== 'Denied' && r.start <= d && r.end >= d);
         return '<button class="cf-note cf-bad" data-act="openReq" data-id="' + esc(mine[0].id) + '">' + icon('alert', 16) + esc(fullName(userOf(uid))) + ' has ' +
-          mine.map(r => r.type === 'Leave' ? 'leave' : 'a pass').join(' and ') + ' on this day — overlap conflict</button>';
+          mine.map(r => r.type === 'Leave' ? 'leave' : 'a pass').join(' and ') + ' on this day — overlap</button>';
       }).join('') +
       dayConflicts(d).map(c => '<button class="cf-note cf-' + conflictState(d, c.role) + '" data-act="openConflict" data-date="' + d + '" data-role="' + c.role + '">' +
         icon(conflictState(d, c.role) === 'ok' ? 'check' : 'alert', 16) + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[c.role] + ' on leave over the daily max (' + c.list.length + ' of ' + c.q + ')' +
@@ -2799,14 +2822,22 @@
       '<div class="tbl-page" id="listBody">' + renderListBody() + '</div>' + reqBar() + '</section>';
   }
 
+  /** My Requests header: List | Calendar, and (calendar) Show conflicts. */
+  function mineHead() {
+    const cal = S.mineMode === 'cal';
+    return '<div class="mine-head">' + seg([['list', 'List'], ['cal', 'Calendar']], cal ? 'cal' : 'list', 'mineMode') +
+      (cal ? '<button type="button" class="btn conf-tog' + (S.mineConf ? ' on' : '') + '" data-act="mineConf" aria-pressed="' + !!S.mineConf + '" title="Show other members’ ' +
+        'leave or passes in your position that overlap yours">' + icon(S.mineConf ? 'check' : 'users', 18) + 'Show conflicts</button>' : '') + '</div>';
+  }
   function renderMine() {
+    if (S.mineMode === 'cal') return renderCalendar();
     const t = IDX.ytd.get(S.me) || { Leave: 0, Pass: 0 };
     const mine = IDX.live.filter(r => r.userId === S.me);
     const F = S.mf, q = (S.mine.q || '').trim().toLowerCase();
     const shown = sortRows(mine.filter(r => F.status.includes(r.status) && F.type.includes(r.type) &&
       (!q || (r.type + ' ' + r.status + ' ' + r.note).toLowerCase().indexOf(q) >= 0)), S.mine);
     const changedMine = mine.filter(isChanged);
-    return '<section class="page list-page">' +
+    return '<section class="page list-page">' + mineHead() +
       listBar('<input type="search" placeholder="Search notes…" value="' + esc(S.mine.q || '') + '" data-model="mine.q" data-live="mineRefresh" aria-label="Search my requests">', FILTERS.filter(f => f.g !== 'role'), 'mine') +
       (changedMine.length ? '<div class="chg-note" role="alert">' + icon('alert', 18) + '<div><b>' + plural(changedMine.length, 'request') + ' changed by an admin.</b> ' +
         changedMine.map(r => '<button class="linkbtn" data-act="openReq" data-id="' + esc(r.id) + '">' + r.type + ' ' + D.short(r.start) + ' → ' + D.short(r.end) + '</button>').join(' · ') +
@@ -3161,7 +3192,7 @@
         '<div class="meta" style="margin-top:2px">' + plural(n, 'day') + '</div></div>' +
       (isChanged(r) ? '<div class="msg w chg-msg">' + icon('alert', 15) + '<span>' + esc(changeText(r)) +
         (r.userId === S.me ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('check', 13) + ' Got it</button>' : ' The member has not acknowledged this yet.') + '</span></div>' : '') +
-      (dupsOf(r).length ? '<div class="msg e">' + icon('alert', 15) + '<span>Overlap conflict: this member also has ' + esc(dupText(r)) + '. A member can’t be on leave and a pass (or two requests) at the same time.</span></div>' : '') +
+      (dupsOf(r).length ? '<div class="msg e">' + icon('alert', 15) + '<span>Overlap: this member also has ' + esc(dupText(r)) + '. A member can’t be on leave and a pass (or two requests) at the same time.</span></div>' : '') +
       (r.status !== 'Cancelled' && D.days(r.start, r.end) <= 92 ? conflictCalendar(r) : '') +
       '<div class="rv"><span class="lbl">Trip reason &amp; notes</span><div class="note">' + (r.note ? esc(r.note) : '<span class="muted">No note provided.</span>') + '</div></div>' +
       '</div></div>' + (foot ? '<div class="modal-f">' + foot + '</div>' : '');
@@ -3250,7 +3281,7 @@
       }
       if (!w.creating) {
         const clash = IDX.live.filter(r => r.id !== w.editId && r.userId === w.assigneeId && (r.status === 'Pending' || r.status === 'Approved') && r.start <= w.end && r.end >= w.start);
-        if (clash.length) warns.push('Overlap conflict: these dates overlap ' + clash.map(c => 'an existing ' + c.type.toLowerCase() + ' (' + D.short(c.start) + ' → ' + D.short(c.end) + ', ' + c.status.toLowerCase() + ')').join(' and ') + '. A member can’t be on leave and a pass at the same time — leadership will see a conflict warning.');
+        if (clash.length) warns.push('Overlap: these dates overlap ' + clash.map(c => 'an existing ' + c.type.toLowerCase() + ' (' + D.short(c.start) + ' → ' + D.short(c.end) + ', ' + c.status.toLowerCase() + ')').join(' and ') + '. A member can’t be on leave and a pass at the same time — leadership will see a conflict warning.');
       }
       if (w.start < S.today) warns.push('Departure date is in the past.');
     }
@@ -3384,7 +3415,7 @@
     let sx = 0, sy = 0, st = 0, on = false;
     document.addEventListener('touchstart', ev => {
       const t = ev.touches[0];
-      on = ev.touches.length === 1 && S.view === 'calendar' && !S.modal && !S.openDrop && !!ev.target.closest('#calBody');
+      on = ev.touches.length === 1 && isCalView() && !S.modal && !S.openDrop && !!ev.target.closest('#calBody');
       if (on) { sx = t.clientX; sy = t.clientY; st = Date.now(); }
     }, { passive: true });
     document.addEventListener('touchend', ev => {
@@ -3437,6 +3468,8 @@
     /* Multi-select filters: chips on wide screens, checkbox dropdowns on narrow ones. */
     fToggle(el) { toggleFilter(el.dataset.g, el.dataset.v, el.dataset.scope); },
     fCheck(el) { toggleFilter(el.dataset.g, el.dataset.v, el.dataset.scope); },
+    mineMode(el) { S.mineMode = el.dataset.v; store.set('mineMode', S.mineMode); S.dayPanel = null; if (S.cal === 'day') S.cal = 'month'; render(); },
+    mineConf() { S.mineConf = !S.mineConf; render(); },
     monthMode(el) { S.monthMode = el.dataset.v; try { localStorage.setItem('pal.monthMode', S.monthMode); } catch (e) {} render(); },
     pickAssignee() { openPersonPicker('cal', 'assign'); refreshData(); },
     clearPerson(el) { fState(el.dataset.scope).person = ''; S.openDrop = null; render(); if (S.modal === 'filters') openFilterSheet(el.dataset.scope, true); },
@@ -3468,15 +3501,15 @@
     },
     fDrop(el) { const k = (el.dataset.scope || 'cal') + ':' + el.dataset.g; S.openDrop = S.openDrop === k ? null : k; render(); },
     gotoDay(el) {
-      if (S.view === 'calendar' && S.cal !== 'day' && useDayPanel() && !el.closest('#modal')) { S.dayPanel = el.dataset.date; S.sel = null; hideToast(); return render(); }
-      if (S.cal !== 'day') S.prevCal = S.cal; S.cursor = el.dataset.date; S.cal = 'day'; S.sel = null; hideToast(); if (S.view !== 'calendar') S.view = 'calendar'; closeModal(); render(); },
+      if (isCalView() && S.cal !== 'day' && useDayPanel() && !el.closest('#modal')) { S.dayPanel = el.dataset.date; S.sel = null; hideToast(); return render(); }
+      if (S.cal !== 'day') S.prevCal = S.cal; S.cursor = el.dataset.date; S.cal = 'day'; S.sel = null; hideToast(); if (!isCalView()) S.view = 'calendar'; closeModal(); render(); },
     /* Clicking a day lists who is out. While a range is being picked, the click sets the return day. */
     /* Tapping a day opens Day view. New requests start from the request buttons, not from tapping days. */
     pickDay(el) {
       if (S.focus) clearFocus();
-      if (S.view === 'calendar' && S.cal !== 'day' && useDayPanel()) { S.dayPanel = el.dataset.date; S.sel = null; hideToast(); return render(); }
+      if (isCalView() && S.cal !== 'day' && useDayPanel()) { S.dayPanel = el.dataset.date; S.sel = null; hideToast(); return render(); }
       if (S.cal !== 'day') S.prevCal = S.cal; S.cursor = el.dataset.date; S.cal = 'day'; S.sel = null; hideToast();
-      if (S.view !== 'calendar') S.view = 'calendar';
+      if (!isCalView()) S.view = 'calendar';
       render();
     },
 
@@ -3516,7 +3549,7 @@
         '<span class="dl-meta">' + x.type + ' · ' + D.short(x.start) + ' → ' + D.short(x.end) + '</span><span class="badge s-' + x.status.toLowerCase() + '">' + x.status + '</span></button></li>';
       box.innerHTML = head +
         (c.over ? '<p class="cc-why">' + (c.peers.length + 1) + ' ' + ROLE_PLURAL[c.role] + ' out — max is ' + c.q + '. Conflicts with:</p><ul class="dl-list">' + c.peers.map(li).join('') + '</ul>' : '') +
-        (c.dups.length ? '<p class="cc-why">Overlap conflict — this member already has:</p><ul class="dl-list">' + c.dups.map(li).join('') + '</ul>' : '');
+        (c.dups.length ? '<p class="cc-why">Overlap — this member already has:</p><ul class="dl-list">' + c.dups.map(li).join('') + '</ul>' : '');
     },
     peopleSort(el) {
       const k = el.dataset.v;
@@ -3615,7 +3648,7 @@
     theme(el) {
       S.theme = el.dataset.v; store.set('theme', S.theme); applyTheme();
       $$('[data-act="theme"]').forEach(b => b.classList.toggle('on', b.dataset.v === S.theme));
-      if (S.view === 'calendar' && S.cal === 'month') fitMonth();
+      if (isCalView() && S.cal === 'month') fitMonth();
     },
     async signOut() {
       try { await call('apiLogout', S.token); } catch (e) { /* session may already be gone */ }
@@ -3799,7 +3832,7 @@
       hideBlocker();
       if (!data) { if (S.wiz) $('#wizErr') && ($('#wizErr').textContent = 'Not saved — check your connection and try again.'); return; }
       closeModal();
-      if (!w.editId && S.view === 'calendar') S.cursor = w.start;
+      if (!w.editId && isCalView()) S.cursor = w.start;
       render();
       toast(w.editId ? 'Request updated' : 'Request submitted — pending approval', 'ok', 2200);
     }
@@ -3877,7 +3910,7 @@
   window.addEventListener('resize', () => {
     clearTimeout(resizeT);
     resizeT = setTimeout(() => {
-      if (!S.me || S.view !== 'calendar' || S.cal !== 'month') return;
+      if (!S.me || !isCalView() || S.cal !== 'month') return;
       // Switch between the phone (counts) and full (names) month layouts when crossing the breakpoint.
       if (!!$('.month.compact') !== isCompact()) render(); else fitMonth();
     }, 120);
