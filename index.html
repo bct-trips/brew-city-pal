@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792492558"></script>
+    <script src="config.js?v=1792492700"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1491,6 +1491,16 @@
   }
   /* Collapsible band headers: the whole row toggles. */
   .rtable tr.grp-h, .rtable tr.grp-h th { cursor: pointer; user-select: none; }
+  /* Person badge name: a centred row — [marks] name [status icon]. The icon is centred on the name with a 4px gap,
+     and only the name text truncates (…), never the icons. */
+  .idb-n:has(> .idb-t) { display: flex !important; align-items: center; }
+  .idb-n > .idb-t { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .idb-n:has(> .idb-t) > .sti, .cs-bar .idb-n > .sti { flex: none; margin-left: 4px; vertical-align: 0; }
+  .idb-n:has(> .idb-t) > .sti .ic { display: block; }
+  .idb-n:has(> .idb-t) > .now-dot { flex: none; vertical-align: 0; }
+  .idb-n:has(> .idb-t) > .cf-tri { flex: none; vertical-align: 0; }
+  .idb-n:has(> .idb-t) > .cf-tri .ic { display: block; }
+  .idb.pb.no-status .idb-n > .sti { display: none; }
 </style>
 
   </head>
@@ -2039,8 +2049,11 @@
     $$('.idb.pb').forEach(b => {
       const n = b.querySelector('.idb-n'), u = b.querySelector('.idb-u');
       if (!n || !u) return;
-      b.classList.remove('no-unit');
-      if (n.scrollWidth > n.clientWidth + 1) b.classList.add('no-unit');
+      b.classList.remove('no-unit', 'no-status');
+      const t = n.querySelector('.idb-t') || n; // the name text (person badges keep it in .idb-t)
+      if (t.scrollWidth > t.clientWidth + 1 || n.scrollWidth > n.clientWidth + 1) b.classList.add('no-unit');
+      // Still too tight to show at least a couple of letters: drop the status icon before the name (the name matters more).
+      if (t !== n && t.scrollWidth > t.clientWidth + 1 && t.clientWidth < 28) b.classList.add('no-status');
     });
   }
   // Re-fit after any re-render (full or partial) and on resize; batched to one pass per frame.
@@ -2662,7 +2675,7 @@
     const un = unitsList().find(x => x.code === u.unit);
     return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r idb-' + L.toLowerCase() + '">' + L + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
-      '<span class="idb-n">' + barMarks(r) + esc(calName(u)) + (withStatus ? statusIcon(r.status) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
+      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + (withStatus ? statusIcon(r.status) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
