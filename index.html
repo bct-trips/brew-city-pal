@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792531204"></script>
+    <script src="config.js?v=1792531531"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1934,6 +1934,22 @@
   .notes-drawer .note-x { top: 50%; bottom: auto; transform: translateY(-50%); right: 4px; }
   .notes-drawer .notes-lh { padding: 8px 14px; }
   .notes-drawer .note-t span { overflow-wrap: anywhere; }
+  /* Member card (Roster → tap a member): compact sections with small headings and short controls. */
+  .mc-body { padding-top: 12px; }
+  .mc-top { padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .mc-top .idb { --tag: 26px; }
+  .mc-who b { font-size: 18px; }
+  .mc-sec { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .mc-sec:last-child { border-bottom: 0; }
+  .mc-sec h4 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .mc-sec h4 .meta { text-transform: none; letter-spacing: 0; font-weight: 600; font-size: 13px; }
+  .mc-sum { margin-bottom: 8px; }
+  .mc-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mc-pin { margin-top: 8px; }
+  .mc-pin[hidden] { display: none; }
+  .mc-pin input { height: 40px; }
+  .mc-sec .field { margin-bottom: 8px; }
+  .mc-actions { margin-top: 4px; align-items: center; }
 </style>
 
   </head>
@@ -2240,6 +2256,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
+  const EXPECTED_SERVER = '2026-10-20.3'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -2390,7 +2407,8 @@
     // conflicts as counts. Everyone else's names and requests aren't on this device at all.
     S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
     S.notePrefs = data.notePrefs || S.notePrefs || { approved: true, denied: true, edited: true };
-    S.nameNeed = data.nameNeed || ''; // shares a last name: must add a first / middle initial before using the app
+    S.nameNeed = data.nameNeed || '';
+    S.adminIds = data.adminIds || []; S.alertIds = data.alertIds || []; // shares a last name: must add a first / middle initial before using the app
     if (S.priv) { S.f.role = ROLES.slice(); S.f.person = ''; S.f.conf = false; S.mineMode = 'list'; if (S.view === 'all') S.view = 'mine'; }
     S.today = localToday();
     if (!S.isAdmin && (S.view === 'admin' || S.view === 'people' || S.view === 'roster')) S.view = 'calendar';
@@ -4310,7 +4328,7 @@
     catch (e) {
       // The server couldn't delete them: keep them cleared on this device so they don't come back.
       store.set('notesHidden', [...hiddenNotes()].concat(gone).slice(-500));
-      toast(e.message === OUTDATED ? 'Cleared on this device. Paste the latest Code.gs into Apps Script so it clears everywhere.' : e.message, 'error', 6000);
+      toast(e.message === OUTDATED ? 'Cleared on this device. The server is an older version — see Settings → About.' : e.message, 'error', 6000);
     }
   }
   async function loadNotes() {
@@ -4483,7 +4501,19 @@
         '<div class="field"><label for="np2">Confirm new PIN</label><input id="np2" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div></div>' +
         '<div class="err" id="pinErr"></div><div class="row" style="margin-top:4px"><button class="btn primary" data-act="savePin">Save PIN</button><button class="btn" data-act="clearPin">Cancel</button></div></div>' +
 
+      '<div class="panel about"><h3>' + icon('sheet', 16) + ' About</h3><div id="srvInfo" class="meta">Checking the server…</div></div>' +
       '</div></section>';
+  }
+  /** Settings → About: is the deployed Apps Script running the Code.gs this page expects? */
+  async function checkServer() {
+    if (!$('#srvInfo')) return;
+    let b = '';
+    try { b = (await call('apiServerInfo')).build; } catch (e) { b = ''; }
+    const el = $('#srvInfo'); if (!el) return;
+    el.innerHTML = b === EXPECTED_SERVER
+      ? icon('check', 14) + ' Server code is up to date (' + esc(b) + ').'
+      : '<span class="bad-t">' + icon('alert', 14) + ' The server is running an older version' + (b ? ' (' + esc(b) + ')' : '') + '. This page needs ' + EXPECTED_SERVER + '.</span> ' +
+        'In Apps Script: paste the latest Code.gs, then <b>Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy</b>. Use “Manage deployments”, not “New deployment” (that makes a new link).';
   }
 
   /* ---------- Request detail ---------- */
@@ -4643,45 +4673,53 @@
           '<td class="num">' + D.days(r.start, r.end) + '</td>' +
           '<td><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></td></tr>').join('') + '</tbody></table></div>'
       : '<div class="note muted">No requests yet.</div>';
+    // Clean layout: who (badge, name, rank · position) + View year; Leave & passes; PIN; Admin access (if any); Details.
+    const meta = [u.rank, ROLE_NAME[u.role] || u.role].filter(Boolean).join(' · ');
+    const isAdm = (S.adminIds || []).includes(uid);
     const html = modalHead(esc(nameText(u, true)), 'user') + '<div class="modal-b mc-body">' +
-      '<div class="mc-top">' + idBadge(u) + '<div class="mc-who"><b>' + esc(fullName(u)) + '</b><span class="meta">' + esc(u.rank + ' · ' + (ROLE_NAME[u.role] || u.role) + ' · ' + u.unit) +
-        (u.active ? '' : ' · <span class="badge">Inactive</span>') + '</span></div>' +
-        '<button class="btn" data-act="memberYear" data-id="' + esc(uid) + '">' + icon('calendar', 18) + 'View year</button></div>' +
-      '<div class="sect"><div class="lbl">Leave &amp; passes</div>' +
-        '<div class="mc-sum"><span><b>' + sum('Approved') + '</b> leave days approved</span><span><b>' + sum('Pending') + '</b> pending</span><span class="meta">' + fyl + '</span></div>' + table + '</div>' +
-      '<div class="sect"><div class="lbl">' + icon('key', 14) + ' PIN</div>' +
-        '<p class="meta mc-note">' + (u.mustChange ? 'On the default PIN — they choose their own at next sign-in.' : 'Using their own PIN.') + '</p>' +
-        '<div class="mc-pin"><input id="mcPin1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="New PIN" autocomplete="off" aria-label="New PIN" data-1p-ignore data-lpignore="true">' +
+      '<div class="mc-top">' + idBadge(u) + '<div class="mc-who"><b>' + esc(nameText(u)) + '</b>' +
+        '<span class="meta">' + esc(meta) + (u.active ? '' : ' <span class="badge">Inactive</span>') + '</span></div>' +
+        '<button class="btn sm" data-act="memberYear" data-id="' + esc(uid) + '">' + icon('calendar', 16) + 'Year</button></div>' +
+      '<section class="mc-sec"><h4>Leave &amp; passes <span class="meta">' + fyl + '</span></h4>' +
+        '<div class="mc-sum"><span><b>' + sum('Approved') + '</b> days approved</span><span><b>' + sum('Pending') + '</b> pending</span></div>' + table + '</section>' +
+      '<section class="mc-sec"><h4>PIN <span class="meta">' + (u.mustChange ? 'default — sets their own at next sign-in' : 'their own') + '</span></h4>' +
+        '<div class="mc-btns"><button class="btn sm" data-act="resetPin" data-id="' + esc(uid) + '">' + icon('key', 15) + 'Reset to default</button>' +
+        '<button class="btn sm" data-act="mcPinShow">' + icon('pencil', 15) + 'Set a PIN</button></div>' +
+        '<div class="mc-pin" id="mcPinRow" hidden><input id="mcPin1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="New PIN" autocomplete="off" aria-label="New PIN" data-1p-ignore data-lpignore="true">' +
         '<input id="mcPin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Confirm" autocomplete="off" aria-label="Confirm new PIN" data-1p-ignore data-lpignore="true">' +
-        '<button class="btn" data-act="setUserPin" data-id="' + esc(uid) + '">Set PIN</button></div><div class="err" id="mcPinErr"></div>' +
-        '<button class="btn" data-act="resetPin" data-id="' + esc(uid) + '">' + icon('key', 16) + 'Reset to default PIN</button></div>' +
-      '<div class="sect"><div class="lbl">' + icon('pencil', 14) + ' Details</div>' + userFields('ue', u, false).replace(' autofocus', '') +
-        '<div class="err" id="ueErr"></div><div class="mc-actions">' +
-        '<button class="btn ' + (u.active ? 'del' : '') + '" data-act="toggleUser" data-id="' + esc(uid) + '">' + (u.active ? icon('ban', 16) + 'Deactivate' : icon('check', 16) + 'Reactivate') + '</button>' +
-        '<button class="btn primary" data-act="saveUser" data-id="' + esc(uid) + '">' + icon('check', 16) + 'Save details</button></div></div>' +
-      '</div><div class="modal-f"><button class="btn" data-act="closeModal">Close</button></div>';
+        '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div><div class="err" id="mcPinErr"></div></section>' +
+      (isAdm && uid !== S.me ? '<section class="mc-sec"><h4>Admin access <span class="meta">has unlocked admin mode' + ((S.alertIds || []).includes(uid) ? ' · gets admin alerts' : '') + '</span></h4>' +
+        '<div class="mc-btns"><button class="btn sm del" data-act="revokeAdmin" data-id="' + esc(uid) + '">' + icon('shield', 15) + 'Remove admin</button></div></section>' : '') +
+      '<section class="mc-sec"><h4>Details</h4>' + userFields('ue', u, false).replace(' autofocus', '') + '<div class="err" id="ueErr"></div>' +
+        '<div class="mc-actions">' +
+        '<button class="btn sm ' + (u.active ? 'del' : '') + '" data-act="toggleUser" data-id="' + esc(uid) + '">' + (u.active ? icon('ban', 15) + 'Deactivate' : icon('check', 15) + 'Reactivate') + '</button>' +
+        '<button class="btn primary" data-act="saveUser" data-id="' + esc(uid) + '">' + icon('check', 16) + 'Save details</button></div></section>' +
+      '</div><div class="modal-f"><button class="btn block" data-act="closeModal">Close</button></div>';
     openModal('member', html, true);
   }
 
   /* ---------- Admin: user editor ---------- */
   function openUserEditor(id) {
-    const u = id ? S.users.find(x => x.id === id) : { rank: 'Capt', name: '', role: 'Pilot', unit: 'MKE' };
+    const u = id ? S.users.find(x => x.id === id) : { rank: '', name: '', role: 'Pilot', unit: 'MKE' };
     const html = modalHead(id ? 'Edit crew member' : 'Add crew member', id ? 'pencil' : 'userPlus') + '<div class="modal-b">' + userFields('ue', u, !id) +
       '<div class="err" id="ueErr"></div></div><div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button>' +
       '<button class="btn primary" data-act="saveUser" data-id="' + esc(id || '') + '">Save</button></div>';
     openModal('user', html);
   }
   function userFields(p, u, pinRequired) {
-    const sel = (name, opts, cur) => '<select id="' + p + name + '">' + opts.map(o => '<option' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
+    // [value, label] pairs; a plain string is both.
+    const sel = (name, opts, cur) => '<select id="' + p + name + '">' + opts.map(o => { const v = Array.isArray(o) ? o[0] : o, l = Array.isArray(o) ? o[1] : o;
+      return '<option value="' + esc(v) + '"' + (v === (cur || '') ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join('') + '</select>';
     // First / middle / last. Admins can adjust these so members who share a last name read clearly on the calendar.
     const t = String(u.name || '').trim().split(/\s+/).filter(Boolean);
     // A one-word name (the seeded roster is last names only) is the last name; the admin fills in the first name.
     const nf = t.length > 1 ? t[0] : '', nl = t.length ? t[t.length - 1] : '', nm = t.slice(1, -1).join(' ');
     return '<div class="row"><div class="field"><label for="' + p + 'First">First name</label><input id="' + p + 'First" value="' + esc(nf) + '" autofocus></div>' +
-      '<div class="field"><label for="' + p + 'Mid">Middle (optional)</label><input id="' + p + 'Mid" value="' + esc(nm) + '"></div></div>' +
+      '<div class="field"><label for="' + p + 'Mid">Middle</label><input id="' + p + 'Mid" value="' + esc(nm) + '"></div></div>' +
       '<div class="field"><label for="' + p + 'Last">Last name</label><input id="' + p + 'Last" value="' + esc(nl) + '"></div>' +
-      '<div class="row"><div class="field"><label for="' + p + 'Rank">Rank</label>' + sel('Rank', RANKS.indexOf(u.rank) < 0 && u.rank ? RANKS.concat([u.rank]) : RANKS, u.rank) + '</div>' +
-      '<div class="field"><label for="' + p + 'Role">Role</label>' + sel('Role', ROLES, u.role) + '</div></div>' +
+      // Rank can be left blank ("—").
+      '<div class="row"><div class="field"><label for="' + p + 'Rank">Rank</label>' + sel('Rank', [['', '—']].concat(RANKS.indexOf(u.rank) < 0 && u.rank ? RANKS.concat([u.rank]) : RANKS), u.rank) + '</div>' +
+      '<div class="field"><label for="' + p + 'Role">Position</label>' + sel('Role', ROLES.map(r => [r, ROLE_NAME[r] || r]), u.role) + '</div></div>' +
       '<div class="field"><label for="' + p + 'Unit">Unit</label>' + sel('Unit', unitsList().map(x => x.code), u.unit) + '</div>' +
       // No PIN here: new members start on the default PIN (Admin → Default PIN); use Reset PIN to send someone back to it.
       (u.id ? '' : '<p class="meta pin-note">' + icon('key', 14) + ' Signs in with the default PIN, then sets their own.</p>');
@@ -4698,7 +4736,7 @@
     S.wiz = {
       // Admins start with nobody picked and choose one or more members; members always request for themselves.
       step: 1, assigneeId: S.isAdmin ? '' : S.me, assignees: S.isAdmin ? [] : [S.me], creating: false,
-      nu: { name: '', rank: 'Capt', role: 'Pilot', unit: 'MKE', pin: '' },
+      nu: { name: '', rank: '', role: 'Pilot', unit: 'MKE', pin: '' },
       // Never guess the return date: opening the form from a day fills Departure only; the next tap picks Return.
       type: 'Leave', start: start || '', end: end || '', note: '',
       mini: D.monthStart(start || S.today), picking: !!start && !end, error: ''
@@ -4710,7 +4748,7 @@
     const b = id ? blackouts().find(x => x.id === id) : null;
     S.wiz = {
       step: 1, type: 'Blackout', editBoId: b ? b.id : '', boTypes: b ? b.types : 'Both', assigneeId: S.me, creating: false,
-      nu: { name: '', rank: 'Capt', role: 'Pilot', unit: 'MKE', pin: '' },
+      nu: { name: '', rank: '', role: 'Pilot', unit: 'MKE', pin: '' },
       start: b ? b.start : start || '', end: b ? b.end : '', note: b ? b.note || '' : '',
       mini: D.monthStart((b && b.start) || start || S.today), picking: !b && !!start, error: ''
     };
@@ -4743,7 +4781,7 @@
     if (!r || !canEdit(r)) return;
     S.wiz = {
       step: 1, editId: r.id, editStatus: r.status, assigneeId: r.userId, extra: [], creating: false,
-      nu: { name: '', rank: 'Capt', role: 'Pilot', unit: 'MKE', pin: '' },
+      nu: { name: '', rank: '', role: 'Pilot', unit: 'MKE', pin: '' },
       type: r.type, start: r.start, end: r.end, note: r.note || '',
       mini: D.monthStart(r.start), picking: false, error: ''
     };
@@ -5097,7 +5135,7 @@
     // Delete one notification, or all of them: gone at once, then removed on the server.
     noteDel(el) { dropNotes([el.dataset.id]); },
     openNotes() { openNotesDrawer(); },
-    openSettings() { closeModal(); S.view = 'profile'; S.sel = null; render(); const sc = $('#profileScroll'); if (sc) sc.scrollTop = 0; },
+    openSettings() { closeModal(); S.view = 'profile'; S.sel = null; render(); const sc = $('#profileScroll'); if (sc) sc.scrollTop = 0; checkServer(); },
     notesClear() { if (confirm('Delete all your notifications?')) dropNotes('all'); },
     nav(el) {
       const v = el.dataset.v;
@@ -5275,6 +5313,15 @@
     peoplePeriod(el) { S.people.period = el.dataset.v; render(); },
     personYear(el) { openPersonYear(el.dataset.id); },
     memberCard(el) { openMemberCard(el.dataset.id); },
+    mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; $('#mcPin1').focus(); } },
+    async revokeAdmin(el) {
+      const u = userOf(el.dataset.id);
+      if (!confirm('Remove admin access for ' + nameText(u) + '? Their admin alerts stop and any admin mode they have open ends. Unlocking again with the admin PIN restores it.')) return;
+      const data = await run(el, 'apiRevokeAdmin', S.token, el.dataset.id);
+      if (!data) return;
+      apply(data); render(); if (S.modal === 'member') openMemberCard(el.dataset.id);
+      toast('Admin access removed', 'ok', 1800);
+    },
     memberYear(el) { S.yearFrom = el.dataset.id; openPersonYear(el.dataset.id); },
     async setUserPin(el) {
       const a = $('#mcPin1').value.trim(), b = $('#mcPin2').value.trim(), err = $('#mcPinErr');
@@ -5477,7 +5524,7 @@
     async saveUser(el) {
       const u = readUserFields('ue'); u.id = el.dataset.id || '';
       const err = $('#ueErr');
-      if (!u.first || !u.last) { err.textContent = 'Enter first and last name.'; return; }
+      if (!u.last) { err.textContent = 'Enter at least a last name.'; return; }
       // Edits show at once; a new member appears when the save finishes (it needs an id from the server).
       save(u.id ? () => { const x = S.users.find(y => y.id === u.id); if (x) Object.assign(x, { name: u.name, rank: u.rank, role: u.role, unit: u.unit }); } : null, 'apiSaveUser', S.token, u);
       // From a member's profile card the card stays open with the new details.
@@ -5510,7 +5557,7 @@
       const w = S.wiz, err = m => { const e = $('#wizErr'); if (e) e.textContent = m; toast(m, 'error'); };
       if (w.creating) {
         w.nu = readUserFields('nu');
-        if (!w.nu.first || !w.nu.last) return err('Enter the new member’s first and last name.');
+        if (!w.nu.last) return err('Enter at least the new member’s last name.');
         if (S.users.find(u => u.name.toLowerCase() === w.nu.name.toLowerCase() && u.unit === w.nu.unit)) return err(w.nu.name + ' (' + w.nu.unit + ') is already on the roster — choose them from the list.');
       }
       if (S.isAdmin && !w.creating && w.type !== 'Blackout' && !wizIds().length) return err('Choose who this request is for.');
