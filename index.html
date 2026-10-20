@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792486668"></script>
+    <script src="config.js?v=1792487167"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1365,6 +1365,17 @@
   .day-roles { padding: 4px 12px 10px; border-bottom: 1px solid var(--line); }
   .day-roles .seg { display: flex; width: 100%; height: 40px; }
   .day-roles .seg button { flex: 1 1 0; min-width: 0; padding: 0 6px; }
+  /* Conflict screen rows: actions in one row, on their own line under the person on narrow screens. */
+  .cf-row .cf-acts { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+  @media (max-width: 700px) { .cf-row .cf-acts { width: 100%; justify-content: flex-start; } }
+
+  /* Icon buttons (Material 3 "standard icon button"): 40×40 circle, no outline, centred 20px icon, 8% hover layer.
+     Fixes every icon-only button being pushed off-centre by the leading-icon padding rule. */
+  .btn.icon-btn, .btn.icon-btn:has(> .ic:first-child) { width: 40px; min-width: 40px; height: 40px; padding: 0; gap: 0; justify-content: center;
+    border-color: transparent; background: transparent; border-radius: 50%; color: var(--on-surface-variant); }
+  .btn.icon-btn .ic { width: 20px; height: 20px; margin: 0; }
+  .btn.icon-btn:hover { border-color: transparent; }
+  .fp .fp-clear.icon-btn { border-radius: 0 20px 20px 0; color: var(--sel-ink) !important; }
 </style>
 
   </head>
@@ -1942,6 +1953,8 @@
     return c.slice(0, 7) === t.slice(0, 7);
   }
   function renderCalendar() {
+    // Desktop: the day panel starts open on today, unless you've closed it (remembered on this device).
+    if (!S.dayPanel && useDayPanel() && !store.get('dpClosed', false)) S.dayPanel = S.today;
     // Day panel: slides in only when it first opens; switching days just updates it.
     const showPanel = !!(S.dayPanel && S.cal !== 'day' && useDayPanel()), panelAnim = showPanel && !S.dpShown;
     S.dpShown = showPanel;
@@ -2380,16 +2393,17 @@
     const row = r => {
       const u = userOf(r.userId);
       let acts = '';
+      // Every row: Approve / Deny / Edit / Delete for admins; Edit / Delete on your own rows for members.
+      // Each action returns to this screen (Edit after saving), so a conflict can be worked through in one place.
+      const b = (cls, act, ic, label, extra) => '<button class="btn sm act' + (cls ? ' ' + cls : '') + '" data-act="' + act + '" data-id="' + esc(r.id) + '" data-date="' + d + '"' + (extra || '') +
+        ' aria-label="' + esc(label + ' — ' + fullName(u)) + '" title="' + esc(label) + '">' + icon(ic, 14) + '<span class="bl">' + label + '</span></button>';
       if (S.isAdmin) {
         acts = '<span class="cf-acts">' +
-          '<button class="btn ok sm" data-act="cfSet" data-v="Approved" data-id="' + esc(r.id) + '" data-date="' + d + '"' + (r.status === 'Approved' ? ' disabled' : '') + '>' + icon('check', 13) + 'Approve</button>' +
-          '<button class="btn bad sm" data-act="cfSet" data-v="Denied" data-id="' + esc(r.id) + '" data-date="' + d + '">' + icon('x', 13) + 'Deny</button>' +
-          '<button class="btn sm" data-act="editReq" data-id="' + esc(r.id) + '">' + icon('pencil', 13) + 'Edit dates</button></span>';
+          b('ok', 'cfSet', 'check', 'Approve', ' data-v="Approved"' + (r.status === 'Approved' ? ' disabled' : '')) +
+          b('bad', 'cfSet', 'ban', 'Deny', ' data-v="Denied"' + (r.status === 'Denied' ? ' disabled' : '')) +
+          b('', 'cfEdit', 'pencil', 'Edit') + b('del', 'cfDelete', 'trash', 'Delete') + '</span>';
       } else if (r.userId === S.me) {
-        // Members can clear a conflict themselves by moving or deleting their own request.
-        acts = '<span class="cf-acts">' +
-          (canEdit(r) ? '<button class="btn sm" data-act="editReq" data-id="' + esc(r.id) + '">' + icon('pencil', 13) + 'Edit dates</button>' : '') +
-          (canDelete(r) ? '<button class="btn sm del" data-act="cancelReq" data-id="' + esc(r.id) + '">' + icon('trash', 13) + 'Delete</button>' : '') + '</span>';
+        acts = '<span class="cf-acts">' + (canEdit(r) ? b('', 'cfEdit', 'pencil', 'Edit') : '') + (canDelete(r) ? b('del', 'cfDelete', 'trash', 'Delete') : '') + '</span>';
       }
       return '<li class="cf-row"><span class="dl-who">' + personBadge(r, true) + '</span>' +
         '<span class="dl-meta">' + r.type + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + ' · ' + plural(D.days(r.start, r.end), 'day') + '</span>' +
@@ -2397,7 +2411,7 @@
     };
     const html = modalHead('Conflict · ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })), 'alert') + '<div class="modal-b">' +
       '<div class="cf-state cf-' + st + '">' + icon(st === 'ok' ? 'check' : 'alert', 18) +
-        (st === 'ok' ? 'All requests in this conflict are approved — the day marker is green.' : 'Over the daily max — resolve by denying a request, editing dates, or approving them all.') + '</div>' +
+        (st === 'ok' ? 'All requests in this conflict are approved — the day marker is green.' : 'Over the daily max — approve, deny, edit or delete requests below, or approve them all.') + '</div>' +
       cs.map(c => '<div class="dl-sec"><div class="dl-h"><span>' + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[c.role] + ' out: ' + c.list.length + ' · max ' + c.q + '</span></div>' +
         '<ul class="dl-list cf-list">' + c.list.map(row).join('') + '</ul></div>').join('') +
       (S.isAdmin ? '' : '<p class="meta" style="white-space:normal">Move or delete your request to clear the conflict, or leave it for an admin to decide.</p>') +
@@ -3064,6 +3078,7 @@
     // Closing the person picker returns to whatever opened it (the request form or the Filters sheet).
     if (S.modal === 'person' && S.ppMode === 'assign' && S.wiz) { S.ppMode = 'filter'; renderWizard(); return; }
     if (S.modal === 'person' && S.ppFromSheet) { S.ppFromSheet = false; openFilterSheet(S.ppScope); return; }
+    if (S.modal === 'wizard' && S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; S.wiz = null; openConflict(cd, S.cfRole); return; }
     hideTip(); S.modal = null; S.wiz = null; $('#modal').innerHTML = '';
   }
   function modalHead(title, ic) {
@@ -3462,7 +3477,7 @@
     },
     calPrev() { moveCursor(-1); },
     panelDay(el) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); render(); },
-    closeDayPanel() { S.dayPanel = null; render(); },
+    closeDayPanel() { S.dayPanel = null; store.set('dpClosed', true); render(); },
     dayShift(el) {
       if (S.dayPanel && $('.dpanel')) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); return render(); } S.cursor = D.add(S.cursor, Number(el.dataset.v)); S.sel = null; render(); },
     calNext() { moveCursor(1); },
@@ -3527,13 +3542,13 @@
     },
     fDrop(el) { const k = (el.dataset.scope || 'cal') + ':' + el.dataset.g; S.openDrop = S.openDrop === k ? null : k; render(); },
     gotoDay(el) {
-      if (isCalView() && S.cal !== 'day' && useDayPanel() && !el.closest('#modal')) { S.dayPanel = el.dataset.date; S.sel = null; hideToast(); return render(); }
+      if (isCalView() && S.cal !== 'day' && useDayPanel() && !el.closest('#modal')) { S.dayPanel = el.dataset.date; store.set('dpClosed', false); S.sel = null; hideToast(); return render(); }
       if (S.cal !== 'day') S.prevCal = S.cal; S.cursor = el.dataset.date; S.cal = 'day'; S.sel = null; hideToast(); if (!isCalView()) S.view = 'calendar'; closeModal(); render(); },
     /* Clicking a day lists who is out. While a range is being picked, the click sets the return day. */
     /* Tapping a day opens Day view. New requests start from the request buttons, not from tapping days. */
     pickDay(el) {
       if (S.focus) clearFocus();
-      if (isCalView() && S.cal !== 'day' && useDayPanel()) { S.dayPanel = el.dataset.date; S.sel = null; hideToast(); return render(); }
+      if (isCalView() && S.cal !== 'day' && useDayPanel()) { S.dayPanel = el.dataset.date; store.set('dpClosed', false); S.sel = null; hideToast(); return render(); }
       if (S.cal !== 'day') S.prevCal = S.cal; S.cursor = el.dataset.date; S.cal = 'day'; S.sel = null; hideToast();
       if (!isCalView()) S.view = 'calendar';
       render();
@@ -3550,6 +3565,13 @@
       save(() => { const r = findReq(id); if (r) Object.assign(r, { status: v, decidedBy: S.me, decidedAt: nowIso() }); }, 'apiSetStatus', S.token, id, v);
       render(); openConflict(d, S.cfRole);
       toast('Request ' + v.toLowerCase(), 'ok', 1500);
+    },
+    cfEdit(el) { S.cfReturn = el.dataset.date; openEditWizard(el.dataset.id); },
+    cfDelete(el) {
+      const r = findReq(el.dataset.id); if (!r) return;
+      if (!confirm('Delete ' + fullName(userOf(r.userId)) + '’s ' + r.type.toLowerCase() + ' (' + D.short(r.start) + ' → ' + D.short(r.end) + ')?')) return;
+      save(() => { r.status = 'Cancelled'; }, 'apiCancelRequest', S.token, r.id);
+      render(); openConflict(el.dataset.date, S.cfRole); toast('Request deleted', 'ok', 1500);
     },
     async cfApproveAll(el) {
       const d = el.dataset.date;
@@ -3861,6 +3883,7 @@
       if (!w.editId && isCalView()) S.cursor = w.start;
       render();
       toast(w.editId ? 'Request updated' : 'Request submitted — pending approval', 'ok', 2200);
+      if (S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; openConflict(cd, S.cfRole); } // edited from the conflict screen
     }
   };
 
@@ -3911,7 +3934,7 @@
     }
     if (ev.key !== 'Escape') return;
     if (S.modal) { closeModal(); return; }
-    if (S.dayPanel && $('.dpanel')) { S.dayPanel = null; render(); return; }
+    if (S.dayPanel && $('.dpanel')) { S.dayPanel = null; store.set('dpClosed', true); render(); return; }
     if (S.sel) { S.sel = null; paintSel(); hideToast(); }
     else if (S.focus) clearFocus();
   });
