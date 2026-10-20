@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792511489"></script>
+    <script src="config.js?v=1792512199"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1753,6 +1753,18 @@
   @keyframes miniInL { from { transform: translateX(-24px); opacity: .3; } }
   @media (prefers-reduced-motion: reduce) { .mini-g.mini-in-r, .mini-g.mini-in-l { animation: none; } }
   .wiz-sheet #wizMini .mini { touch-action: pan-y; overflow: hidden; }
+  /* Add to Home Screen: a floating pill above the Add Request bar and nav (phones, browser tab only), with a ✕ that
+     hides it on this device. Profile → Notifications keeps an Add to Home Screen button. */
+  .install-fab { position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 74px);
+    display: flex; align-items: center; height: 44px; border-radius: 22px; background: var(--gold); color: var(--navy);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .28); white-space: nowrap; animation: pop .2s ease-out; }
+  .install-fab button { height: 100%; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; display: inline-flex; align-items: center; }
+  .install-fab .install-go { gap: 8px; padding: 0 12px 0 16px; font-weight: 800; font-size: 15px; }
+  .install-fab .install-x { width: 44px; justify-content: center; border-left: 1px solid color-mix(in srgb, var(--navy) 25%, transparent); border-radius: 0 22px 22px 0; }
+  .install-fab button:active { background: color-mix(in srgb, var(--navy) 10%, transparent); }
+  .install-steps { margin: 4px 0 12px; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; font-size: 15.5px; }
+  .install-steps .ic { display: inline-block; vertical-align: -3px; }
+  .wiz-who.wiz-add { margin-top: 8px; width: 100%; }
 </style>
 
   </head>
@@ -1776,6 +1788,9 @@
     user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
     shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
     left: '<path d="m15 18-6-6 6-6"/>',
+    share: '<path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>',
+    plusSquare: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/>',
+    more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
     right: '<path d="m9 18 6-6-6-6"/>',
     plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
     check: '<path d="M20 6 9 17l-5-5"/>',
@@ -1941,6 +1956,7 @@
   const fullName = u => (u.rank ? u.rank + ' ' : '') + u.name + ' (' + u.unit + ')';
   const initials = u => u.name.split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
   function quota(role) {
+    if (!role) return 0; // no member chosen yet (admin request form)
     const q = role === 'Pilot' ? S.settings.pilotQuota : role === 'Boom' ? S.settings.boomQuota : S.settings.otherQuota;
     return Number(q) || 0; // 0 = unlimited
   }
@@ -2206,7 +2222,7 @@
   function signOutLocal() {
     S.notes = null; S.unread = 0; setBadge();
     S.token = null; store.del('token'); S.me = null; S.isAdmin = false;
-    closeModal(); showLogin();
+    closeModal(); showLogin(); renderInstallFab();
   }
 
   /* ================================================================ */
@@ -2399,6 +2415,7 @@
     paintSel();
     markOpenDay(); fitTables();
     store.set('view', S.view); store.set('cal', S.cal);
+    renderInstallFab();
   }
   /* Person pucks: when the name would be cut off, drop the unit so it reads [P|Name] (DESIGN.md §Pills). */
   function fitPucks() {
@@ -2597,12 +2614,13 @@
     const assign = S.ppMode === 'assign';
     const cur = assign ? S.wiz.assigneeId : fState(sc).person;
     // Assigning a new request (admins): pick one or more members; each gets their own request.
-    const picked = assign ? new Set(S.wiz.assignees || [S.wiz.assigneeId]) : null;
+    const picked = assign ? new Set(wizPickList()) : null;
     const isOn = id => picked ? picked.has(id) : cur === id;
     const conf = !assign && sc !== 'mine' && !!fState(sc).conf;
     // In conflict mode, list only people who have a request over the daily max.
     const withConf = conf ? new Set(IDX.live.filter(inConflict).map(r => r.userId)) : null;
-    const people = S.users.filter(u => (u.active || u.id === cur) && (!withConf || withConf.has(u.id) || u.id === cur));
+    // Editing a request (admins): the picker adds members to it, so the request's own member isn't listed.
+    const people = S.users.filter(u => (u.active || u.id === cur) && (!withConf || withConf.has(u.id) || u.id === cur) && !(assign && S.wiz.editId && u.id === S.wiz.assigneeId));
     const row = (id, inner, label) => '<button type="button" class="pp-row' + (isOn(id) ? ' on' : '') + '" data-act="setPerson" data-id="' + esc(id) + '" data-q="' + esc(label.toLowerCase()) + '"' +
       (picked ? ' aria-pressed="' + isOn(id) + '"' : isOn(id) ? ' aria-current="true"' : '') + '>' + inner + '<span class="pp-ck">' + (isOn(id) ? icon('check', 18) : '') + '</span></button>';
     const meU = people.find(u => u.id === S.me);
@@ -2618,9 +2636,9 @@
     }).join('');
     const confRow = assign || sc === 'mine' ? '' : '<div class="pp-conf"><button type="button" class="btn conf-only' + (conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + conf + '">' +
       icon('alert', 18) + (conf ? 'Conflict mode on' : 'Conflict mode') + '</button><span class="pp-conf-t">' + (conf ? 'Pick a person to see who they conflict with, or All conflicts.' : 'Show only leave that’s over the daily max.') + '</span></div>';
-    const html = modalHead(assign ? 'Request for' : conf ? 'Conflicts' : 'Show one person', assign ? 'users' : conf ? 'alert' : 'user') + confRow +
+    const html = modalHead(assign ? (S.wiz.editId ? 'Add members' : 'Request for') : conf ? 'Conflicts' : 'Show one person', assign ? 'users' : conf ? 'alert' : 'user') + confRow +
       '<div class="pp-search"><div class="search">' + icon('search', 15) + '<input type="search" placeholder="Search name, rank, unit…" data-model="ppq" data-live="ppFilter" aria-label="Search people"></div></div>' +
-      '<div class="modal-b pp-list">' + (assign
+      '<div class="modal-b pp-list">' + (assign && S.wiz.editId ? '' : assign
         ? '<button type="button" class="pp-row pp-add" data-act="wizCreate">' + icon('userPlus', 20) + '<span class="pp-n"><b>Add new member</b></span></button>'
         : row('', '<span class="idb idb-all" aria-hidden="true"><span class="idb-r idb-p">P</span><span class="idb-r idb-b">B</span><span class="idb-r idb-o">O</span></span>' +
             '<span class="pp-n"><b>' + (conf ? 'All conflicts' : 'Everyone') + '</b></span>', 'everyone all conflicts')) + groups +
@@ -2629,13 +2647,14 @@
     openModal('person', html);
     $('#modal .modal').classList.add('pp-sheet');
   }
-  const ppCountText = () => { const n = (S.wiz && S.wiz.assignees || []).length; return n ? plural(n, 'member') + ' selected' : 'No one selected'; };
-  /** Leave the assign picker: back to the request form (nobody picked = the admin themself). */
+  /** The list the assign picker edits: who a new request is for, or the members being added to a request being edited. */
+  const wizPickList = () => { const w = S.wiz; return w.editId ? (w.extra = w.extra || []) : (w.assignees = w.assignees || []); };
+  const ppCountText = () => { const n = S.wiz ? wizPickList().length : 0; return n ? plural(n, 'member') + (S.wiz.editId ? ' to add' : ' selected') : 'No one selected'; };
+  /** Leave the assign picker: back to the request form. */
   function ppAssignDone() {
     const w = S.wiz;
     S.ppMode = 'filter';
-    if (!w.assignees || !w.assignees.length) w.assignees = [S.me];
-    w.assigneeId = w.assignees[0];
+    if (!w.editId) w.assigneeId = w.assignees[0] || '';
     renderWizard();
   }
   function filterGroup(F, sc) {
@@ -3898,10 +3917,46 @@
     }
     await refreshPushState();
   }
+  /* ---------- Add to Home Screen (GitHub Pages copy, phones, not already opened from the Home Screen) ----------
+     Android Chrome / Edge hand us an install prompt (beforeinstallprompt): the button shows the real install dialog.
+     iPhone Safari has no install API, so the button opens short steps (Share → Add to Home Screen). */
+  let installEvt = null;
+  window.addEventListener('beforeinstallprompt', ev => { ev.preventDefault(); installEvt = ev; renderInstallFab(); });
+  window.addEventListener('appinstalled', () => { installEvt = null; renderInstallFab(); refreshPushState(); });
+  const isAndroid = () => /Android/i.test(navigator.userAgent);
+  const canOfferInstall = () => !!window.PAL_API_URL && !isStandalone() && (isIOS() || isAndroid() || !!installEvt);
+  /** Floating "Add to Home Screen" button (with ✕ to hide it on this device; Profile still offers it). */
+  function renderInstallFab() {
+    const old = document.getElementById('installFab');
+    const show = !!S.me && canOfferInstall() && store.get('installHidden', '') !== '1';
+    if (!show) { if (old) old.remove(); return; }
+    if (old) return;
+    const el = document.createElement('div');
+    el.id = 'installFab'; el.className = 'install-fab';
+    el.innerHTML = '<button type="button" class="install-go" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Home Screen</button>' +
+      '<button type="button" class="install-x" data-act="installHide" aria-label="Hide Add to Home Screen" title="Hide">' + icon('x', 16) + '</button>';
+    document.body.appendChild(el);
+  }
+  /** iPhone (or a browser with no install prompt): the steps, with the icons they'll see. */
+  function openInstallHelp() {
+    const ios = isIOS();
+    const steps = ios
+      ? ['Tap the <b>Share</b> button ' + icon('share', 16) + ' in Safari (on newer iPhones it’s in the <b>' + icon('more', 16) + '</b> menu).',
+         'Scroll down and tap <b>Add to Home Screen</b> ' + icon('plusSquare', 16) + '.',
+         'Tap <b>Add</b>, then open <b>126 PAL</b> from your Home Screen.']
+      : ['Open the browser menu ' + icon('more', 16) + ' (top or bottom corner).',
+         'Tap <b>Add to Home screen</b> or <b>Install app</b>.',
+         'Open <b>126 PAL</b> from your Home Screen.'];
+    const html = modalHead('Add to Home Screen', 'plusSquare') + '<div class="modal-b"><p class="auth-note">PAL works best as a Home Screen app: full screen, and it can send you notifications when your requests are approved or changed.</p>' +
+      '<ol class="install-steps">' + steps.map(t => '<li>' + t + '</li>').join('') + '</ol>' +
+      (ios ? '<p class="meta">Use Safari for this. Afterwards, sign in once in the Home Screen app and turn on notifications under Profile.</p>' : '') +
+      '</div><div class="modal-f"><button class="btn primary" data-act="closeModal">Got it</button></div>';
+    openModal('install', html);
+  }
   async function refreshPushState() {
     let st;
     if (!window.PAL_API_URL) st = 'google';
-    else if (isIOS() && !isStandalone()) st = 'install';
+    else if ((isIOS() || isAndroid()) && !isStandalone()) st = 'install'; // phones: notifications come with the Home Screen app
     else if (!pushCapable() || !swReg) st = 'unsupported';
     else if (Notification.permission === 'denied') st = 'denied';
     else {
@@ -3943,9 +3998,11 @@
       denied: 'Notifications are blocked for PAL on this device. Allow them in your phone’s Settings → Notifications → PAL (or the browser’s site settings), then come back.',
       off: 'Get a notification on this device when your requests are approved, denied, edited or deleted.',
       busy: 'Setting up notifications…',
+      install: 'Add PAL to your Home Screen to turn on notifications. Then open it from the Home Screen and come back here.',
       on: 'Notifications are on for this device.'
     }[pst];
-    const pushBtns = pst === 'off' ? '<button class="btn primary" data-act="pushOn">' + icon('bell', 18) + 'Turn on notifications</button>'
+    const pushBtns = pst === 'install' ? '<button class="btn primary" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Home Screen</button>'
+      : pst === 'off' ? '<button class="btn primary" data-act="pushOn">' + icon('bell', 18) + 'Turn on notifications</button>'
       : pst === 'on' ? '<button class="btn" data-act="pushOff">Turn off</button><button class="btn" data-act="pushTest">Send test</button>'
       : pst === 'busy' ? '<button class="btn primary is-busy" aria-busy="true" tabindex="-1"><span class="btn-spin" aria-hidden="true"></span>Turning on…</button>' : '';
     const list = S.notes == null ? '<div class="notes-empty">Loading…</div>'
@@ -4212,7 +4269,8 @@
   /* ================================================================ */
   function openWizard(start, end) {
     S.wiz = {
-      step: 1, assigneeId: S.me, assignees: [S.me], creating: false,
+      // Admins start with nobody picked and choose one or more members; members always request for themselves.
+      step: 1, assigneeId: S.isAdmin ? '' : S.me, assignees: S.isAdmin ? [] : [S.me], creating: false,
       nu: { name: '', rank: 'Capt', role: 'Pilot', unit: 'MKE', pin: '' },
       // Never guess the return date: opening the form from a day fills Departure only; the next tap picks Return.
       type: 'Leave', start: start || '', end: end || '', note: '',
@@ -4257,7 +4315,7 @@
     const r = S.requests.find(x => x.id === id);
     if (!r || !canEdit(r)) return;
     S.wiz = {
-      step: 1, editId: r.id, editStatus: r.status, assigneeId: r.userId, creating: false,
+      step: 1, editId: r.id, editStatus: r.status, assigneeId: r.userId, extra: [], creating: false,
       nu: { name: '', rank: 'Capt', role: 'Pilot', unit: 'MKE', pin: '' },
       type: r.type, start: r.start, end: r.end, note: r.note || '',
       mini: D.monthStart(r.start), picking: false, error: ''
@@ -4266,10 +4324,11 @@
   }
   function wizRole() {
     const w = S.wiz;
-    return w.creating ? w.nu.role : userOf(w.assigneeId).role;
+    const id = wizIds()[0];
+    return w.creating ? w.nu.role : id ? userOf(id).role : '';
   }
   /** Members this request is for: several when an admin picks more than one (each gets their own request). */
-  const wizIds = () => { const w = S.wiz; return w.creating ? [] : w.editId || !w.assignees || !w.assignees.length ? [w.assigneeId] : w.assignees; };
+  const wizIds = () => { const w = S.wiz; return w.creating ? [] : w.editId ? [w.assigneeId].concat(w.extra || []) : (w.assignees || []); };
   const wizWho = () => { const w = S.wiz; return w.creating ? w.nu.rank + ' ' + w.nu.name + ' (' + w.nu.unit + ')' : wizIds().map(id => fullName(userOf(id))).join(', '); };
   function wizCheck() {
     const w = S.wiz, errs = [], warns = [];
@@ -4329,6 +4388,9 @@
         // Blackout: no member; choose what it blocks. (Editing a blackout can't turn it into a request.)
       } else if (w.editId) {
         body += '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request for</div><div style="font-weight:700">' + esc(fullName(userOf(w.assigneeId))) + '</div>' +
+          (S.isAdmin ? '<button type="button" class="fsel fdrop-btn wiz-who wiz-add" data-act="pickAssignee" aria-haspopup="dialog" aria-label="Add members to this request">' +
+            ((w.extra || []).length ? '<span class="who-n">+' + w.extra.length + '</span><span>' + esc(w.extra.map(id => lastName(userOf(id))).join(', ')) + '</span>'
+              : icon('userPlus', 16) + '<span>Add members (each gets their own request)</span>') + icon('down', 14) + '</button>' : '') +
           (w.editStatus === 'Approved' ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>This request is already approved. Admin edits keep it approved.</span></div>' : '') +
           (w.editStatus === 'Denied' && !S.isAdmin ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>Saving changes resubmits this denied request as Pending.</span></div>' : '') + '</div>';
       } else if (S.isAdmin) {
@@ -4337,7 +4399,8 @@
             ? '<div class="newuser">' + userFields('nu', w.nu, true) + '</div><button class="btn ghost sm" data-act="wizExisting" style="margin-top:6px">' + icon('left', 14) + ' Choose an existing member instead</button>'
             : '<div class="row"><button type="button" class="fsel fdrop-btn wiz-who" data-act="pickAssignee" aria-haspopup="dialog" aria-label="Request for: ' + esc(wizWho()) + '">' +
                 (wizIds().length > 1 ? '<span class="who-n">' + wizIds().length + '</span><span>' + esc(wizIds().map(id => lastName(userOf(id))).join(', ')) + '</span>'
-                  : idBadge(userOf(w.assigneeId)) + '<span>' + esc(nameText(userOf(w.assigneeId))) + '</span>') + icon('down', 14) + '</button></div>') +
+                  : wizIds().length ? idBadge(userOf(wizIds()[0])) + '<span>' + esc(nameText(userOf(wizIds()[0]))) + '</span>'
+                  : icon('userPlus', 16) + '<span>Choose members…</span>') + icon('down', 14) + '</button></div>') +
           '</div>';
       }
       // Admins can also add a blackout from here (not when editing a request or a blackout).
@@ -4653,14 +4716,24 @@
     monthMode(el) { S.monthMode = el.dataset.v; try { localStorage.setItem('pal.monthMode', S.monthMode); } catch (e) {} render(); },
     pickAssignee() { openPersonPicker('cal', 'assign'); refreshData(); },
     ppDone() { ppAssignDone(); },
+    async installApp() {
+      if (installEvt) {
+        const ev = installEvt; installEvt = null;
+        try { ev.prompt(); await ev.userChoice; } catch (e) { /* dismissed */ }
+        renderInstallFab(); return;
+      }
+      openInstallHelp();
+    },
+    installHide() { store.set('installHidden', '1'); renderInstallFab(); toast('You can still add it from Profile → Notifications', 'hint', 3200); },
     clearPerson(el) { fState(el.dataset.scope).person = ''; S.openDrop = null; render(); if (S.modal === 'filters') openFilterSheet(el.dataset.scope, true); },
     pickPerson(el) { S.ppFromSheet = S.modal === 'filters'; openPersonPicker(el.dataset.scope); },
     setPerson(el) {
       // Request form: picking the assignee returns to the form.
       // Request form: tapping a member adds or removes them; Done returns to the form.
       if (S.ppMode === 'assign') {
-        const w = S.wiz, id = el.dataset.id, list = w.assignees || [], on = !list.includes(id);
-        w.assignees = on ? list.concat([id]) : list.filter(x => x !== id);
+        const w = S.wiz, id = el.dataset.id, list = wizPickList(), on = !list.includes(id);
+        const next = on ? list.concat([id]) : list.filter(x => x !== id);
+        if (w.editId) w.extra = next; else w.assignees = next;
         el.classList.toggle('on', on); el.setAttribute('aria-pressed', on);
         el.querySelector('.pp-ck').innerHTML = on ? icon('check', 18) : '';
         const c = $('#ppCount'); if (c) c.textContent = ppCountText();
@@ -4820,7 +4893,11 @@
     async cancelReq(el) {
       if (!confirm('Delete this request? It will be removed from the schedule.')) return;
       const id = el.dataset.id;
-      save(() => { const r = findReq(id); if (r) r.status = 'Cancelled'; }, 'apiCancelRequest', S.token, id);
+      save(() => {
+        const r = findReq(id); if (r) r.status = 'Cancelled';
+        // Its notifications go too (the server also stops sending them).
+        if (S.notes) { S.notes = S.notes.filter(n => n.requestId !== id || n.kind === 'deleted'); S.unread = S.notes.filter(n => !n.read).length; setBadge(); }
+      }, 'apiCancelRequest', S.token, id);
       closeModal(); render(); toast('Request deleted', 'ok', 1500);
     },
 
@@ -4976,6 +5053,7 @@
         if (!w.nu.first || !w.nu.last) return err('Enter the new member’s first and last name.');
         if (S.users.find(u => u.name.toLowerCase() === w.nu.name.toLowerCase() && u.unit === w.nu.unit)) return err(w.nu.name + ' (' + w.nu.unit + ') is already on the roster — choose them from the list.');
       }
+      if (S.isAdmin && !w.creating && w.type !== 'Blackout' && !wizIds().length) return err('Choose who this request is for.');
       if (!D.valid(w.start)) return err('Pick your departure date on the calendar.');
       if (!D.valid(w.end)) return err('Now pick your return date — tap the same day again for a one-day request.');
       const c = wizCheck();
@@ -5007,36 +5085,40 @@
       else { const a = D.min(w.start, d), b = D.max(w.start, d); w.start = a; w.end = b; w.picking = false; }
       refreshWizDates();
     },
-    /* Submitting / saving a request waits for the server behind a full-screen "Submitting…" screen, so nobody closes
-       the app before it's saved. If it fails, the form stays open with the error so they can try again. */
+    /* A NEW request waits for the server behind the full-screen "Submitting…" cover, so nobody closes the app before it's
+       saved; if it fails, the form stays open with the error. Edits (requests and blackouts) are optimistic. */
     async wizSubmit() {
       const w = S.wiz, c = wizCheck();
       if (c.errs.length) { $('#wizErr').textContent = c.errs[0]; return; }
       if (w.type === 'Blackout') {
         const b = { id: w.editBoId || '', start: w.start, end: w.end, types: w.boTypes, note: w.note.trim().slice(0, 80) };
-        showBlocker('Saving…');
+        // Optimistic: shows at once; the ring spins on the Admin icon until the server has it (a failure undoes it and says so).
         S.nextSyncTab = 'admin';
-        const data = await save(() => {
+        save(() => {
           const list = blackouts().filter(x => x.id !== b.id);
           S.settings.blackouts = list.concat([Object.assign({}, b, { id: b.id || 'tmp_' + Date.now() })]).sort((x, y) => x.start < y.start ? -1 : 1);
         }, 'apiSaveBlackout', S.token, b);
-        await saveChain;
-        hideBlocker();
-        if (!data) { if ($('#wizErr')) $('#wizErr').textContent = 'Not saved — check your connection and try again.'; return; }
         closeModal(); render();
         toast(w.editBoId ? 'Blackout updated' : 'Blackout added', 'ok', 2200);
         return;
       }
       const payload = { type: w.type, start: w.start, end: w.end, note: w.note.trim() };
-      let done, many = 0;
+      let done, many = 0, added = 0;
       if (w.editId) {
+        // Edits are optimistic: the change shows at once and the ring spins on the nav while it saves
+        // (a failure reloads from the server, undoing it, and says so).
         const id = w.editId;
-        showBlocker('Saving…');
-        done = save(() => {
+        save(() => {
           const r = findReq(id); if (!r) return;
           Object.assign(r, payload);
           if (!S.isAdmin && r.status === 'Denied') r.status = 'Pending'; // a member's edit resubmits a denied request
         }, 'apiUpdateRequest', S.token, id, payload);
+        // Members an admin added while editing get their own copy of the (edited) request (they appear once saved).
+        if (S.isAdmin && (w.extra || []).length) { added = w.extra.length; save(null, 'apiCreateRequests', S.token, payload, w.extra.slice()); }
+        closeModal(); render();
+        toast('Request updated' + (added ? ' · adding ' + plural(added, 'member') : ''), 'ok', 2200);
+        if (S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; openConflict(cd, S.cfRole); } // edited from the conflict screen
+        return;
       } else {
         const ids = wizIds();
         many = S.isAdmin && !w.creating && ids.length > 1 ? ids.length : 0;
@@ -5044,7 +5126,7 @@
         if (many) done = save(null, 'apiCreateRequests', S.token, payload, ids);
         else {
           if (S.isAdmin && w.creating) payload.newUser = w.nu;
-          else if (S.isAdmin) payload.assigneeId = w.assigneeId;
+          else if (S.isAdmin) payload.assigneeId = ids[0];
           done = save(null, 'apiCreateRequest', S.token, payload);
         }
       }
@@ -5055,7 +5137,7 @@
       closeModal();
       if (!w.editId && isCalView()) S.cursor = w.start;
       render();
-      toast(w.editId ? 'Request updated' : many ? many + ' requests submitted — pending approval' : 'Request submitted — pending approval', 'ok', 2200);
+      toast(many ? many + ' requests submitted — pending approval' : 'Request submitted — pending approval', 'ok', 2200);
       if (S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; openConflict(cd, S.cfRole); } // edited from the conflict screen
     }
   };
