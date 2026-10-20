@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792526926"></script>
+    <script src="config.js?v=1792527065"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1822,6 +1822,13 @@
   .badge-builder .cfg-code { flex: 0 0 110px; }
   .cfg-new-btn { justify-content: flex-start; border-top: 0; }
   #modal #passkey { display: block; width: 100%; box-sizing: border-box; height: 48px; font-size: 20px; letter-spacing: .2em; }
+  /* Profile menu header: squadron logo on the left (like a profile picture), then the [P|MKE|Name] badge. */
+  .pm-pop .pm-head { gap: 10px; padding: 12px 14px; }
+  .pm-logo { width: 44px; height: 44px; }
+  .pm-pop .idb.pm-badge { --tag: 36px; min-width: 0; max-width: calc(100% - 54px); border-radius: 6px; }
+  .pm-pop .pm-badge .idb-r, .pm-pop .pm-badge .idb-u { font-size: 15px; }
+  .pm-pop .pm-badge .idb-u { padding: 0 8px; }
+  .pm-pop .pm-badge .idb-n { font-size: 17px !important; padding: 0 10px; } /* the name at the size the old name text was */
 </style>
 
   </head>
@@ -4116,8 +4123,11 @@
     const row = (act, ic, label, extra) => '<button type="button" class="pm-row" role="menuitem" data-act="' + act + '">' + icon(ic, 20) + '<span class="pm-l">' + label + '</span>' + (extra || '') + '</button>';
     const el = document.createElement('div');
     el.id = 'pmenu'; el.className = 'pm-pop'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'Profile');
-    el.innerHTML = '<div class="pm-head"><div class="avatar">' + esc(initials(me)) + '</div><div><div class="nm">' + esc((me.rank ? me.rank + ' ' : '') + me.name) + '</div>' +
-        '<div class="meta">' + esc((ROLE_NAME[me.role] || me.role) + ' · ' + me.unit) + (S.isAdmin ? ' · Admin mode' : '') + '</div></div></div>' +
+    // Header: the squadron logo (like a profile picture) and your [P|MKE|Name] badge — nothing else.
+    const L = (me.role || 'Other')[0], un = unitsList().find(x => x.code === me.unit);
+    el.innerHTML = '<div class="pm-head" aria-label="' + esc(fullName(me)) + '"><span class="brand-logo pm-logo" aria-hidden="true"></span>' +
+        '<span class="idb pb pm-badge" aria-hidden="true"><span class="idb-r idb-' + L.toLowerCase() + '">' + L + '</span>' +
+        '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(me.unit) + '</span><span class="idb-n"><span class="idb-t">' + esc(calName(me)) + '</span></span></span></div>' +
       row('openNotes', 'bell', 'Notifications', '<b class="pm-ct" id="pmNotesCt">' + (S.unread ? S.unread + ' new' : '') + '</b>') +
       '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full" role="group" aria-label="Appearance">' +
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
