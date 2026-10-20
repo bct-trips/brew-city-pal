@@ -1,13 +1,13 @@
 {
-  "name": "Brew City PAL",
-  "short_name": "PAL",
-  "description": "128th ARW pass and leave scheduler",
+  "name": "126 PAL",
+  "short_name": "126 PAL",
+  "description": "Pass and leave scheduler",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "id": "./",
   "background_color": "#12284B",
-  "theme_color": "#18181b",
+  "theme_color": "#12284B",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
