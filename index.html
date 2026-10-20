@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792509207"></script>
+    <script src="config.js?v=1792510534"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1256,10 +1256,8 @@
   /* Full-screen "Submitting…" cover (request submit / save). */
   .blocker { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: rgba(4, 12, 28, .72); backdrop-filter: blur(3px); }
   .blocker-box { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 32px; border-radius: 20px; background: var(--surface); box-shadow: 0 24px 60px rgba(0,0,0,.4); text-align: center; }
-  .blocker-spin { width: 56px; height: 56px; border-radius: 50%; border: 5px solid color-mix(in srgb, var(--primary) 22%, transparent); border-top-color: var(--primary); animation: spin .9s linear infinite; }
   .blocker-t { font-size: 20px; font-weight: 800; color: var(--on-surface); }
   .blocker-s { font-size: 14px; color: var(--muted); }
-  @media (prefers-reduced-motion: reduce) { .blocker-spin { animation-duration: 2.4s; } }
 
   /* Week view: today's column gets a light tint behind the bars. */
   .slot.today { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
@@ -1395,8 +1393,11 @@
   .now-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--now-dot); animation: nowPulse 1.8s ease-out infinite; flex: none; }
   @keyframes nowPulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--now-dot) 70%, transparent); } 70%, 100% { box-shadow: 0 0 0 6px transparent; } }
   @media (prefers-reduced-motion: reduce) { .now-dot { animation: none; } }
-  .now-tag { display: inline-flex; align-items: center; gap: 5px; margin-left: 6px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap;
-    color: var(--on-surface); border: 1.5px solid var(--now); line-height: 18px; }
+  /* Active Leave / Pass rows: a small L / P letter badge before the name and a green dot after it (no big badges;
+     the section header already says they're active). */
+  .badge.t-ltr { position: relative; flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; min-width: 0; padding: 0;
+    border-radius: 6px; font-size: 12px; line-height: 1; font-weight: 800; }
+  .now-dot.row-now { flex: none; position: relative; margin-left: 6px; }
   .badge.t-now { display: inline-flex; align-items: center; gap: 6px; background: var(--now); color: #fff; }
   :root[data-theme="dark"] .badge.t-now { color: #111318; }
   /* On calendar bars the dot is static: an animated dot made Chromium paint today's cell over the bars. */
@@ -1642,8 +1643,27 @@
   .login-card .linkbtn, .auth-alt .linkbtn { color: var(--brick); font-weight: 700; }
   :root[data-theme="dark"] .login-card .linkbtn, :root[data-theme="dark"] .auth-alt .linkbtn { color: var(--gold); }
   /* Submitting cover: the squadron logo spins while the request saves. */
-  .blocker-logo { width: 96px; height: 96px; animation: spin 1.6s linear infinite; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .3)); }
-  @media (prefers-reduced-motion: reduce) { .blocker-logo { animation-duration: 4s; } }
+  /* The squadron logo NEVER spins. Anything that loads (the opening splash, the Submitting/Saving cover) spins a ring
+     around the still logo instead. */
+  .splash .splash-ring { position: relative; display: grid; place-items: center; padding: 14px; }
+  .splash .splash-ring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 4px solid rgba(255, 255, 255, .18);
+    border-top-color: var(--gold); animation: spin .9s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .splash .splash-ring::after { animation-duration: 2.4s; } }
+  .blocker-spin { position: relative; display: grid; place-items: center; width: 124px; height: 124px; }
+  .blocker-spin::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 4px solid color-mix(in srgb, var(--ink) 12%, transparent); border-top-color: var(--gold-2);
+    animation: spin .9s linear infinite; }
+  .blocker-logo { width: 96px; height: 96px; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .3)); }
+  @media (prefers-reduced-motion: reduce) { .blocker-spin::after { animation-duration: 2.4s; } }
+
+  /* Button spinner (busy() in App.html): a ring in the button's own text colour replaces its icon while it waits on the
+     server. The button keeps its colours (it isn't greyed out) and ignores taps. */
+  .is-busy { pointer-events: none; cursor: progress; }
+  .is-busy > .ic { display: none; }
+  .btn-spin { flex: none; display: inline-block; width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box;
+    border: 2px solid color-mix(in srgb, currentColor 28%, transparent); border-top-color: currentColor; animation: spin .7s linear infinite; }
+  .btn.is-busy { gap: 8px; }
+  .auth-loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 0; }
+  @media (prefers-reduced-motion: reduce) { .btn-spin { animation-duration: 2s; } }
   /* Blackout event bars (Month lanes, phone strips, Week band): brick, white text, rounded where the blackout starts / ends. */
   .bo-ev { position: relative; align-self: start; min-width: 0; height: var(--bar-h); margin: 0 0 2px; padding: 0 8px; display: flex; align-items: center;
     background: var(--brick); color: #ffffff; font-size: 12.5px; font-weight: 700; cursor: pointer; pointer-events: auto; overflow: hidden; z-index: 1; }
@@ -1673,12 +1693,60 @@
   .splash .brand-logo { width: min(200px, 52vw); height: min(200px, 52vw); }
   @media (max-height: 700px) { .login .brand-logo { width: 170px; height: 170px; } }
   @media (max-height: 580px) { .login .brand-logo { width: 120px; height: 120px; } }
+  /* Request for several members (admins): the picker is multi-select with a Done bar; the form's button shows
+     a count bubble and the last names. */
+  .wiz-who .who-n { flex: none; display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
+    background: var(--navy); color: #fff; font-size: 12.5px; font-weight: 800; }
+  .wiz-who > span:not(.who-n):not(.idb) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pp-sheet .modal-f { display: flex; align-items: center; gap: 12px; }
+  .pp-count { flex: 1; min-width: 0; color: var(--muted); font-weight: 700; font-size: 14.5px; }
+  /* Request form (.wiz-sheet): compact so Type, calendar, dates, notes and the buttons fit a phone without scrolling.
+     The request's length shows at the end of the colour key under the calendar. */
+  .wiz-sheet .modal-h { padding: 10px 16px; }
+  .wiz-sheet .modal-b { padding: 8px 16px 10px; }
+  .wiz-sheet .sect { padding: 6px 0 8px; }
+  .wiz-sheet .sect:first-child { border-top: 0; padding-top: 0; }
+  .wiz-sheet .sect > .lbl { margin-bottom: 4px; }
+  .wiz-sheet .wiz-type .seg { height: 40px; }
+  .wiz-sheet .mini { padding: 4px 6px 6px; margin: 2px 0 8px; }
+  .wiz-sheet .mini-h { margin-bottom: 0; }
+  .wiz-sheet .mini-h .icon-btn { width: 36px; height: 36px; min-height: 36px; }
+  .wiz-sheet .mini-g .dw { padding: 0; font-size: 12px; }
+  .wiz-sheet .mini-g button { height: 34px; }
+  .wiz-sheet .mini-key { margin-top: 4px; gap: 4px 12px; font-size: 13px; }
+  .mk-days { margin-left: auto; font-weight: 800; color: var(--ink); font-size: 14.5px; white-space: nowrap; }
+  .wiz-sheet .wiz-dates { margin: 0 0 6px; }
+  .wiz-sheet .wiz-dates .field { margin-bottom: 0; gap: 2px; }
+  .wiz-sheet .field { margin-bottom: 4px; gap: 2px; }
+  .wiz-sheet textarea { min-height: 0; height: 48px; padding-top: 10px; padding-bottom: 10px; }
+  .wiz-sheet #wizStatus .msgs { margin: 4px 0; }
+  /* Roster table: the totals row sits above the sticky name column, so names never paint over it. */
+  .rtable tfoot td { z-index: 2; }
+
+  /* Member profile card (Roster → tap a member). */
+  .mc-top { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; }
+  .mc-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .mc-who b { font-size: 17px; }
+  .mc-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 8px; font-size: 14.5px; }
+  .mc-sum .meta { margin-left: auto; }
+  .mc-tbl { max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; }
+  .mc-req { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  .mc-req th { position: sticky; top: 0; z-index: 1; background: var(--card-2); text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px 10px; }
+  .mc-req td { padding: 8px 10px; border-top: 1px solid var(--line); white-space: nowrap; }
+  .mc-req .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .mc-req tbody tr { cursor: pointer; }
+  .mc-req tbody tr:hover td { background: color-mix(in srgb, var(--on-surface) 6%, transparent); }
+  .mc-note { margin: 0 0 8px; }
+  .mc-pin { display: flex; gap: 8px; margin-bottom: 4px; }
+  .mc-pin input { flex: 1 1 0; min-width: 0; height: 44px; }
+  .mc-pin .btn { flex: none; }
+  .mc-actions { display: flex; gap: 8px; justify-content: space-between; margin-top: 6px; }
 </style>
 
   </head>
   <body>
     <div id="app">
-      <div class="splash"><div class="brand-logo" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div><div>Loading Brew City PAL…</div></div>
+      <div class="splash"><div class="splash-ring"><div class="brand-logo" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div></div><div>Loading Brew City PAL…</div></div>
     </div>
     <div id="modal"></div>
     <div id="toast" role="status" aria-live="polite"></div>
@@ -1987,19 +2055,29 @@
         .catch(err => fail(/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? new Error('No connection to the server. Check your signal and try again.') : err, reject));
     });
   }
-  /** Call the server with a busy toast; returns null on failure (error is toasted). */
-  async function run(label, fn) {
+  /* ---------- Button spinners ----------
+     busy(btn, work): while a server call runs, the button that started it shows a spinner in place of its icon and
+     ignores further taps (and Enter). Used for everything that waits on the server: sign-in, PINs, admin unlock,
+     notifications… Background saves use the ring on the nav icon instead; submitting a request uses the full-screen cover. */
+  async function busy(btn, work) {
+    if (btn && btn.classList.contains('is-busy')) return undefined;
+    let sp = null;
+    if (btn) {
+      btn.classList.add('is-busy'); btn.setAttribute('aria-busy', 'true');
+      sp = document.createElement('span'); sp.className = 'btn-spin'; sp.setAttribute('aria-hidden', 'true');
+      btn.insertBefore(sp, btn.firstChild);
+    }
+    try { return await work(); }
+    finally { if (btn) { btn.classList.remove('is-busy'); btn.removeAttribute('aria-busy'); if (sp) sp.remove(); } }
+  }
+  /** Call the server with a spinner on btn; returns null on failure (error is toasted). */
+  async function run(btn, fn) {
     if (S.busy) return null;
+    const args = Array.prototype.slice.call(arguments, 1);
     S.busy = true;
-    toast(label, 'busy', 0);
-    try {
-      const res = await call.apply(null, Array.prototype.slice.call(arguments, 1));
-      hideToast();
-      return res;
-    } catch (e) {
-      toast(e.message, 'error', 4500);
-      return null;
-    } finally { S.busy = false; }
+    try { return await busy(btn, () => call.apply(null, args)); }
+    catch (e) { toast(e.message, 'error', 4500); return null; }
+    finally { S.busy = false; }
   }
   /* ---------- Background saves ----------
      save(mutate, fn, ...args): change the local copy now (mutate), redraw, and send the change to the server in the
@@ -2056,7 +2134,7 @@
     hideBlocker();
     const el = document.createElement('div');
     el.id = 'blocker'; el.className = 'blocker'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-live', 'assertive'); el.setAttribute('aria-busy', 'true');
-    el.innerHTML = '<div class="blocker-box"><span class="brand-logo blocker-logo" aria-hidden="true"></span><div class="blocker-t">' + esc(label) + '</div><div class="blocker-s">Keep the app open until this finishes.</div></div>';
+    el.innerHTML = '<div class="blocker-box"><span class="blocker-spin" aria-hidden="true"><span class="brand-logo blocker-logo"></span></span><div class="blocker-t">' + esc(label) + '</div><div class="blocker-s">Keep the app open until this finishes.</div></div>';
     document.body.appendChild(el);
   }
   function hideBlocker() { const el = document.getElementById('blocker'); if (el) el.remove(); }
@@ -2175,12 +2253,14 @@
       ev.preventDefault();
       const ln = $('#lgLast').value.trim(), pin = $('#lgPin').value.trim();
       if (!ln || !pin) { $('#lgErr').textContent = 'Enter your last name and PIN.'; return; }
-      const btn = ev.target.querySelector('button'); btn.disabled = true;
-      try {
-        const res = await call('apiLogin', ln, pin);
-        store.set('lastName', ln);
-        afterAuth(res, ln, pin);
-      } catch (e) { $('#lgErr').textContent = e.message; btn.disabled = false; $('#lgPin').select(); }
+      $('#lgErr').textContent = '';
+      await busy(ev.target.querySelector('button[type=submit]'), async () => {
+        try {
+          const res = await call('apiLogin', ln, pin);
+          store.set('lastName', ln);
+          afterAuth(res, ln, pin);
+        } catch (e) { $('#lgErr').textContent = e.message; $('#lgPin').select(); }
+      });
     });
   }
   /** Several members share this last name and PIN (e.g. new Smiths on the default PIN): ask for a first initial,
@@ -2201,9 +2281,10 @@
       ev.preventDefault();
       const f = $('#inFirst').value.trim(), m = mid ? $('#inMid').value.trim() : '';
       if (!/^[a-z]$/i.test(f) || (mid && !/^[a-z]$/i.test(m))) { $('#inErr').textContent = 'Enter a single letter.'; return; }
-      const btn = ev.target.querySelector('button'); btn.disabled = true;
-      try { afterAuth(await call('apiLogin', ln, pin, f, m), ln, pin, f); }
-      catch (e) { $('#inErr').textContent = e.message; btn.disabled = false; }
+      await busy(ev.target.querySelector('button[type=submit]'), async () => {
+        try { afterAuth(await call('apiLogin', ln, pin, f, m), ln, pin, f); }
+        catch (e) { $('#inErr').textContent = e.message; }
+      });
     });
   }
   function showChooser(list, ln, pin) {
@@ -2213,11 +2294,14 @@
     $('#toLogin').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); showLogin(); });
     $$('.chooser [data-uid]').forEach(b => b.addEventListener('click', async ev => {
       ev.preventDefault(); ev.stopPropagation();
-      try { afterAuth(await call('apiLoginAs', ln, pin, b.dataset.uid)); } catch (e) { $('#chErr').textContent = e.message; }
+      if ($('.chooser .is-busy')) return;
+      await busy(b, async () => {
+        try { afterAuth(await call('apiLoginAs', ln, pin, b.dataset.uid)); } catch (e) { $('#chErr').textContent = e.message; }
+      });
     }));
   }
   async function showRegister() {
-    authShell('<div class="muted" id="rgBody">Loading…</div>');
+    authShell('<div class="muted auth-loading" id="rgBody"><span class="btn-spin" aria-hidden="true"></span>Loading…</div>');
     let cfg;
     try { cfg = await call('apiPublicConfig'); } catch (e) { $('#rgBody').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; return; }
     const sel = (id, opts) => '<select id="' + id + '">' + opts.map(o => '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>').join('') + '</select>';
@@ -2243,9 +2327,11 @@
       const err = $('#rgErr');
       if (!reg.first || !reg.last) return (err.textContent = 'Enter your first and last name.');
       if (!/^\d{4,8}$/.test(reg.pin)) return (err.textContent = 'Enter the squadron’s default PIN (4–8 digits).');
-      const btn = ev.target.querySelector('button[type=submit]'); btn.disabled = true;
-      try { store.set('lastName', reg.last); afterAuth(await call('apiRegister', reg)); }
-      catch (e) { err.textContent = e.message; btn.disabled = false; }
+      err.textContent = '';
+      await busy(ev.target.querySelector('button[type=submit]'), async () => {
+        try { store.set('lastName', reg.last); afterAuth(await call('apiRegister', reg)); }
+        catch (e) { err.textContent = e.message; }
+      });
     });
   }
   /** Shown after first sign-in, an admin reset, or a shared PIN: the member must choose their own PIN. */
@@ -2257,15 +2343,17 @@
       '<div class="err" id="spErr"></div>' +
       '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('check', 16) + ' Save PIN and continue</button></form>' +
       '<div class="auth-alt"><button class="linkbtn" id="spOut">Sign out</button></div>');
-    $('#spOut').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); A.signOut(); });
+    $('#spOut').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); A.signOut(ev.currentTarget); });
     $('#setPinForm').addEventListener('submit', async ev => {
       ev.preventDefault();
       const a = $('#spPin').value.trim(), b = $('#spPin2').value.trim(), err = $('#spErr');
       if (!/^\d{4,8}$/.test(a)) return (err.textContent = 'PIN must be 4–8 digits.');
       if (a !== b) return (err.textContent = 'The two PIN entries do not match.');
-      const btn = ev.target.querySelector('button[type=submit]'); btn.disabled = true;
-      try { apply(await call('apiChangePin', S.token, a, b)); render(); toast('PIN saved'); }
-      catch (e) { err.textContent = e.message; btn.disabled = false; $('#spPin').value = ''; $('#spPin2').value = ''; $('#spPin').focus(); }
+      err.textContent = '';
+      await busy(ev.target.querySelector('button[type=submit]'), async () => {
+        try { apply(await call('apiChangePin', S.token, a, b)); render(); toast('PIN saved'); }
+        catch (e) { err.textContent = e.message; $('#spPin').value = ''; $('#spPin2').value = ''; $('#spPin').focus(); }
+      });
     });
   }
 
@@ -2480,12 +2568,15 @@
     S.openDrop = null; S.ppq = ''; S.ppScope = sc || 'cal'; S.ppMode = mode || 'filter';
     const assign = S.ppMode === 'assign';
     const cur = assign ? S.wiz.assigneeId : fState(sc).person;
+    // Assigning a new request (admins): pick one or more members; each gets their own request.
+    const picked = assign ? new Set(S.wiz.assignees || [S.wiz.assigneeId]) : null;
+    const isOn = id => picked ? picked.has(id) : cur === id;
     const conf = !assign && sc !== 'mine' && !!fState(sc).conf;
     // In conflict mode, list only people who have a request over the daily max.
     const withConf = conf ? new Set(IDX.live.filter(inConflict).map(r => r.userId)) : null;
     const people = S.users.filter(u => (u.active || u.id === cur) && (!withConf || withConf.has(u.id) || u.id === cur));
-    const row = (id, inner, label) => '<button type="button" class="pp-row' + (cur === id ? ' on' : '') + '" data-act="setPerson" data-id="' + esc(id) + '" data-q="' + esc(label.toLowerCase()) + '"' +
-      (cur === id ? ' aria-current="true"' : '') + '>' + inner + '<span class="pp-ck">' + (cur === id ? icon('check', 18) : '') + '</span></button>';
+    const row = (id, inner, label) => '<button type="button" class="pp-row' + (isOn(id) ? ' on' : '') + '" data-act="setPerson" data-id="' + esc(id) + '" data-q="' + esc(label.toLowerCase()) + '"' +
+      (picked ? ' aria-pressed="' + isOn(id) + '"' : isOn(id) ? ' aria-current="true"' : '') + '>' + inner + '<span class="pp-ck">' + (isOn(id) ? icon('check', 18) : '') + '</span></button>';
     const meU = people.find(u => u.id === S.me);
     const personRow = u => row(u.id, idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span>',
       lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit + ' me');
@@ -2499,15 +2590,25 @@
     }).join('');
     const confRow = assign || sc === 'mine' ? '' : '<div class="pp-conf"><button type="button" class="btn conf-only' + (conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + conf + '">' +
       icon('alert', 18) + (conf ? 'Conflict mode on' : 'Conflict mode') + '</button><span class="pp-conf-t">' + (conf ? 'Pick a person to see who they conflict with, or All conflicts.' : 'Show only leave that’s over the daily max.') + '</span></div>';
-    const html = modalHead(assign ? 'Assign request to' : conf ? 'Conflicts' : 'Show one person', assign ? 'users' : conf ? 'alert' : 'user') + confRow +
+    const html = modalHead(assign ? 'Request for' : conf ? 'Conflicts' : 'Show one person', assign ? 'users' : conf ? 'alert' : 'user') + confRow +
       '<div class="pp-search"><div class="search">' + icon('search', 15) + '<input type="search" placeholder="Search name, rank, unit…" data-model="ppq" data-live="ppFilter" aria-label="Search people"></div></div>' +
       '<div class="modal-b pp-list">' + (assign
         ? '<button type="button" class="pp-row pp-add" data-act="wizCreate">' + icon('userPlus', 20) + '<span class="pp-n"><b>Add new member</b></span></button>'
         : row('', '<span class="idb idb-all" aria-hidden="true"><span class="idb-r idb-p">P</span><span class="idb-r idb-b">B</span><span class="idb-r idb-o">O</span></span>' +
             '<span class="pp-n"><b>' + (conf ? 'All conflicts' : 'Everyone') + '</b></span>', 'everyone all conflicts')) + groups +
-      '<div class="pp-none" hidden>No one matches.</div></div>';
+      '<div class="pp-none" hidden>No one matches.</div></div>' +
+      (assign ? '<div class="modal-f"><span class="pp-count" id="ppCount">' + ppCountText() + '</span><button class="btn primary" data-act="ppDone">' + icon('check', 18) + 'Done</button></div>' : '');
     openModal('person', html);
     $('#modal .modal').classList.add('pp-sheet');
+  }
+  const ppCountText = () => { const n = (S.wiz && S.wiz.assignees || []).length; return n ? plural(n, 'member') + ' selected' : 'No one selected'; };
+  /** Leave the assign picker: back to the request form (nobody picked = the admin themself). */
+  function ppAssignDone() {
+    const w = S.wiz;
+    S.ppMode = 'filter';
+    if (!w.assignees || !w.assignees.length) w.assignees = [S.me];
+    w.assigneeId = w.assignees[0];
+    renderWizard();
   }
   function filterGroup(F, sc) {
     if (F.g === 'type') return typeToggle(sc);
@@ -3344,8 +3445,8 @@
       return '<tr class="t-' + r.type.toLowerCase() + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + (isNow(r) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
         '<td class="st-ic-c">' + stIcon(r) + '</td>' +
         '<td>' + unitBadge(u.unit) + '</td>' +
-        '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + r.type.toLowerCase() + ' t-sm">' + r.type + '</span>' : '') +
-          '<span class="stk-n">' + esc(lastName(u)) + '</span>' + (isNow(r) ? '<span class="now-tag" title="Active now"><i class="now-dot" aria-hidden="true"></i>Active</span>' : '') + conflictBadge(r, true) + marks(r) + '</div></td>' +
+        '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '<span class="sr"> ' + r.type.slice(1) + '</span></span>' : '') +
+          '<span class="stk-n">' + esc(lastName(u)) + '</span>' + (isNow(r) ? '<i class="now-dot row-now" title="Active now"><span class="sr">Active now</span></i>' : '') + conflictBadge(r, true) + marks(r) + '</div></td>' +
         '<td>' + esc(firstName(u)) + '</td>' +
         '<td>' + esc(u.rank) + '</td>' +
         '<td>' + esc(ROLE_NAME[u.role] || u.role) + '</td>' +
@@ -3512,7 +3613,7 @@
     const tot = rows.reduce((t, m) => { ['count', 'req', 'appr', 'den', 'pend', 'leave', 'pass'].forEach(k => { t[k] += m[k]; }); return t; }, { count: 0, req: 0, appr: 0, den: 0, pend: 0, leave: 0, pass: 0 });
     const head = PEOPLE_COLS.map(c => sortTh(P, c[0], c[1], 'peopleSort', '', !!c[2])).join('');
     const cell = (v, cls) => '<td class="num' + (cls ? ' ' + cls : '') + '">' + (v ? v : '<span class="muted">0</span>') + '</td>';
-    const body = rows.length ? rows.map(m => '<tr data-act="personYear" data-id="' + esc(m.u.id) + '" tabindex="0" class="' + (m.u.active ? '' : 'st-denied') + '" aria-label="' + esc(fullName(m.u) + ': ' + m.count + ' requests, ' + m.req + ' days requested, ' + m.appr + ' approved, ' + m.den + ' denied') + '">' +
+    const body = rows.length ? rows.map(m => '<tr data-act="memberCard" data-id="' + esc(m.u.id) + '" tabindex="0" class="' + (m.u.active ? '' : 'st-denied') + '" aria-label="' + esc(fullName(m.u) + ': ' + m.count + ' requests, ' + m.req + ' days requested, ' + m.appr + ' approved, ' + m.den + ' denied') + '">' +
         '<td>' + unitBadge(m.u.unit) + '</td><td class="strong stk">' + esc(lastName(m.u)) + '</td><td>' + esc(firstName(m.u)) + '</td><td>' + esc(m.u.rank) + '</td>' +
         '<td>' + esc(ROLE_NAME[m.u.role] || m.u.role) + (m.u.active ? '' : ' <span class="badge">Inactive</span>') + '</td>' +
         cell(m.count) + cell(m.req, 'strong') + cell(m.appr, 'ok-t') + cell(m.den, 'bad-t') + cell(m.pend, 'pend-t') + cell(m.leave) + cell(m.pass) + '</tr>').join('')
@@ -3693,7 +3794,8 @@
   }
   function closeModal() {
     // Closing the person picker returns to whatever opened it (the request form or the Filters sheet).
-    if (S.modal === 'person' && S.ppMode === 'assign' && S.wiz) { S.ppMode = 'filter'; renderWizard(); return; }
+    if (S.modal === 'person' && S.ppMode === 'assign' && S.wiz) { ppAssignDone(); return; }
+    if (S.modal === 'year' && S.yearFrom) { const id = S.yearFrom; S.yearFrom = null; openMemberCard(id); return; }
     if (S.modal === 'person' && S.ppFromSheet) { S.ppFromSheet = false; openFilterSheet(S.ppScope); return; }
     if (S.modal === 'wizard' && S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; S.wiz = null; openConflict(cd, S.cfRole); return; }
     hideTip(); S.modal = null; S.wiz = null; $('#modal').innerHTML = '';
@@ -3816,7 +3918,8 @@
       on: 'Notifications are on for this device.'
     }[pst];
     const pushBtns = pst === 'off' ? '<button class="btn primary" data-act="pushOn">' + icon('bell', 18) + 'Turn on notifications</button>'
-      : pst === 'on' ? '<button class="btn" data-act="pushOff">Turn off</button><button class="btn" data-act="pushTest">Send test</button>' : '';
+      : pst === 'on' ? '<button class="btn" data-act="pushOff">Turn off</button><button class="btn" data-act="pushTest">Send test</button>'
+      : pst === 'busy' ? '<button class="btn primary is-busy" aria-busy="true" tabindex="-1"><span class="btn-spin" aria-hidden="true"></span>Turning on…</button>' : '';
     const list = S.notes == null ? '<div class="notes-empty">Loading…</div>'
       : !S.notes.length ? '<div class="notes-empty">No notifications yet. Approvals, denials and changes to your requests will show up here.</div>'
       : '<div class="notes-list">' + S.notes.map(n => {
@@ -4009,6 +4112,45 @@
     if (now && body && isCompact()) body.scrollTop = now.offsetTop - body.offsetTop - 8;
   }
 
+  /* ---------- Roster: a member's profile card (admins) ----------
+     Their requests in a table, View year, PIN (reset to the default or set one), details (name, rank, position, unit)
+     and deactivate / reactivate. */
+  function openMemberCard(uid) {
+    const u = S.users.find(x => x.id === uid);
+    if (!u) return;
+    S.cardUid = uid;
+    const [fs, fe, fyl] = fyOf(S.today);
+    const reqs = S.requests.filter(r => r.userId === uid && r.status !== 'Cancelled').sort((a, b) => a.start < b.start ? 1 : -1);
+    const inFy = r => { const x = D.max(r.start, fs), y = D.min(r.end, fe); return x <= y ? D.days(x, y) : 0; };
+    const sum = st => reqs.filter(r => r.type === 'Leave' && r.status === st).reduce((t, r) => t + inFy(r), 0);
+    const table = reqs.length
+      ? '<div class="mc-tbl"><table class="mc-req"><thead><tr><th></th><th>Dates</th><th class="num">Days</th><th>Status</th></tr></thead><tbody>' +
+        reqs.map(r => '<tr data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
+          '<td><span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '</span></td>' +
+          '<td>' + D.short(r.start) + (r.end !== r.start ? ' – ' + D.short(r.end) : '') + ' ' + r.start.slice(0, 4) + '</td>' +
+          '<td class="num">' + D.days(r.start, r.end) + '</td>' +
+          '<td><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="note muted">No requests yet.</div>';
+    const html = modalHead(esc(nameText(u, true)), 'user') + '<div class="modal-b mc-body">' +
+      '<div class="mc-top">' + idBadge(u) + '<div class="mc-who"><b>' + esc(fullName(u)) + '</b><span class="meta">' + esc(u.rank + ' · ' + (ROLE_NAME[u.role] || u.role) + ' · ' + u.unit) +
+        (u.active ? '' : ' · <span class="badge">Inactive</span>') + '</span></div>' +
+        '<button class="btn" data-act="memberYear" data-id="' + esc(uid) + '">' + icon('calendar', 18) + 'View year</button></div>' +
+      '<div class="sect"><div class="lbl">Leave &amp; passes</div>' +
+        '<div class="mc-sum"><span><b>' + sum('Approved') + '</b> leave days approved</span><span><b>' + sum('Pending') + '</b> pending</span><span class="meta">' + fyl + '</span></div>' + table + '</div>' +
+      '<div class="sect"><div class="lbl">' + icon('key', 14) + ' PIN</div>' +
+        '<p class="meta mc-note">' + (u.mustChange ? 'On the default PIN — they choose their own at next sign-in.' : 'Using their own PIN.') + '</p>' +
+        '<div class="mc-pin"><input id="mcPin1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="New PIN" autocomplete="off" aria-label="New PIN" data-1p-ignore data-lpignore="true">' +
+        '<input id="mcPin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Confirm" autocomplete="off" aria-label="Confirm new PIN" data-1p-ignore data-lpignore="true">' +
+        '<button class="btn" data-act="setUserPin" data-id="' + esc(uid) + '">Set PIN</button></div><div class="err" id="mcPinErr"></div>' +
+        '<button class="btn" data-act="resetPin" data-id="' + esc(uid) + '">' + icon('key', 16) + 'Reset to default PIN</button></div>' +
+      '<div class="sect"><div class="lbl">' + icon('pencil', 14) + ' Details</div>' + userFields('ue', u, false).replace(' autofocus', '') +
+        '<div class="err" id="ueErr"></div><div class="mc-actions">' +
+        '<button class="btn ' + (u.active ? 'del' : '') + '" data-act="toggleUser" data-id="' + esc(uid) + '">' + (u.active ? icon('ban', 16) + 'Deactivate' : icon('check', 16) + 'Reactivate') + '</button>' +
+        '<button class="btn primary" data-act="saveUser" data-id="' + esc(uid) + '">' + icon('check', 16) + 'Save details</button></div></div>' +
+      '</div><div class="modal-f"><button class="btn" data-act="closeModal">Close</button></div>';
+    openModal('member', html, true);
+  }
+
   /* ---------- Admin: user editor ---------- */
   function openUserEditor(id) {
     const u = id ? S.users.find(x => x.id === id) : { rank: 'Capt', name: '', role: 'Pilot', unit: 'MKE' };
@@ -4021,7 +4163,8 @@
     const sel = (name, opts, cur) => '<select id="' + p + name + '">' + opts.map(o => '<option' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
     // First / middle / last. Admins can adjust these so members who share a last name read clearly on the calendar.
     const t = String(u.name || '').trim().split(/\s+/).filter(Boolean);
-    const nf = t.length ? t[0] : '', nl = t.length > 1 ? t[t.length - 1] : '', nm = t.slice(1, -1).join(' ');
+    // A one-word name (the seeded roster is last names only) is the last name; the admin fills in the first name.
+    const nf = t.length > 1 ? t[0] : '', nl = t.length ? t[t.length - 1] : '', nm = t.slice(1, -1).join(' ');
     return '<div class="row"><div class="field"><label for="' + p + 'First">First name</label><input id="' + p + 'First" value="' + esc(nf) + '" autofocus></div>' +
       '<div class="field"><label for="' + p + 'Mid">Middle (optional)</label><input id="' + p + 'Mid" value="' + esc(nm) + '"></div></div>' +
       '<div class="field"><label for="' + p + 'Last">Last name</label><input id="' + p + 'Last" value="' + esc(nl) + '"></div>' +
@@ -4041,7 +4184,7 @@
   /* ================================================================ */
   function openWizard(start, end) {
     S.wiz = {
-      step: 1, assigneeId: S.me, creating: false,
+      step: 1, assigneeId: S.me, assignees: [S.me], creating: false,
       nu: { name: '', rank: 'Capt', role: 'Pilot', unit: 'MKE', pin: '' },
       // Never guess the return date: opening the form from a day fills Departure only; the next tap picks Return.
       type: 'Leave', start: start || '', end: end || '', note: '',
@@ -4097,6 +4240,9 @@
     const w = S.wiz;
     return w.creating ? w.nu.role : userOf(w.assigneeId).role;
   }
+  /** Members this request is for: several when an admin picks more than one (each gets their own request). */
+  const wizIds = () => { const w = S.wiz; return w.creating ? [] : w.editId || !w.assignees || !w.assignees.length ? [w.assigneeId] : w.assignees; };
+  const wizWho = () => { const w = S.wiz; return w.creating ? w.nu.rank + ' ' + w.nu.name + ' (' + w.nu.unit + ')' : wizIds().map(id => fullName(userOf(id))).join(', '); };
   function wizCheck() {
     const w = S.wiz, errs = [], warns = [];
     let n = 0;
@@ -4116,21 +4262,26 @@
         ? tn + ' is limited to ' + rule.max + ' days — you selected ' + n + '.'
         : 'Caution: ' + tn.toLowerCase() + ' over ' + rule.max + ' days is flagged for leadership review.');
       if (n > 60) errs.push('Requests are limited to 60 days.');
-      const role = wizRole(), q = w.type === 'Leave' ? quota(role) : 0;
-      if (q) {
+      // Daily max per position: every member on this request adds one to their position's count.
+      const roleN = {};
+      (w.creating ? [w.nu.role] : wizIds().map(id => userOf(id).role)).forEach(r => { roleN[r] = (roleN[r] || 0) + 1; });
+      Object.keys(roleN).forEach(role => {
+        const q = w.type === 'Leave' ? quota(role) : 0;
+        if (!q) return;
         const hits = [];
         // When editing, the request's current days are already in the counts.
         const self0 = w.editId && w.editStatus !== 'Denied' ? S.requests.find(r => r.id === w.editId) : null;
         const self = self0 && self0.type === 'Leave' ? self0 : null;
         for (let d = w.start; d <= w.end && hits.length < 40; d = D.add(d, 1)) {
           const own = self && d >= self.start && d <= self.end ? 1 : 0;
-          if (countOn(d, role) - own + 1 > q) hits.push(d);
+          if (countOn(d, role) - own + roleN[role] > q) hits.push(d);
         }
         if (hits.length) warns.push(role + ' leave max (' + q + '/day) would be exceeded on ' + hits.map(D.short).join(', ') + '. Leadership will see a conflict flag.');
-      }
+      });
       if (!w.creating) {
-        const clash = IDX.live.filter(r => r.id !== w.editId && r.userId === w.assigneeId && (r.status === 'Pending' || r.status === 'Approved') && r.start <= w.end && r.end >= w.start);
-        if (clash.length) warns.push('Overlap: these dates overlap ' + clash.map(c => 'an existing ' + c.type.toLowerCase() + ' (' + D.short(c.start) + ' → ' + D.short(c.end) + ', ' + c.status.toLowerCase() + ')').join(' and ') + '. A member can’t be on leave and a pass at the same time — leadership will see a conflict warning.');
+        const ids = wizIds(), many = ids.length > 1;
+        const clash = IDX.live.filter(r => r.id !== w.editId && ids.includes(r.userId) && (r.status === 'Pending' || r.status === 'Approved') && r.start <= w.end && r.end >= w.start);
+        if (clash.length) warns.push('Overlap: these dates overlap ' + clash.map(c => (many ? lastName(userOf(c.userId)) + '’s ' : 'an existing ') + c.type.toLowerCase() + ' (' + D.short(c.start) + ' → ' + D.short(c.end) + ', ' + c.status.toLowerCase() + ')').join(' and ') + '. A member can’t be on leave and a pass at the same time — leadership will see a conflict warning.');
       }
       if (w.start < S.today) warns.push('Departure date is in the past.');
       const bo = blackoutDaysOf({ type: w.type, start: w.start, end: w.end });
@@ -4153,11 +4304,12 @@
           (w.editStatus === 'Approved' ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>This request is already approved. Admin edits keep it approved.</span></div>' : '') +
           (w.editStatus === 'Denied' && !S.isAdmin ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>Saving changes resubmits this denied request as Pending.</span></div>' : '') + '</div>';
       } else if (S.isAdmin) {
-        body += '<div class="sect"><div class="lbl">' + icon('users', 14) + ' Assign request to</div>' +
+        body += '<div class="sect"><div class="lbl">' + icon('users', 14) + ' Request for</div>' +
           (w.creating
             ? '<div class="newuser">' + userFields('nu', w.nu, true) + '</div><button class="btn ghost sm" data-act="wizExisting" style="margin-top:6px">' + icon('left', 14) + ' Choose an existing member instead</button>'
-            : '<div class="row"><button type="button" class="fsel fdrop-btn wiz-who" data-act="pickAssignee" aria-haspopup="dialog" aria-label="Assign to: ' + esc(fullName(userOf(w.assigneeId))) + '">' +
-                idBadge(userOf(w.assigneeId)) + '<span>' + esc(nameText(userOf(w.assigneeId))) + '</span>' + icon('down', 14) + '</button></div>') +
+            : '<div class="row"><button type="button" class="fsel fdrop-btn wiz-who" data-act="pickAssignee" aria-haspopup="dialog" aria-label="Request for: ' + esc(wizWho()) + '">' +
+                (wizIds().length > 1 ? '<span class="who-n">' + wizIds().length + '</span><span>' + esc(wizIds().map(id => lastName(userOf(id))).join(', ')) + '</span>'
+                  : idBadge(userOf(w.assigneeId)) + '<span>' + esc(nameText(userOf(w.assigneeId))) + '</span>') + icon('down', 14) + '</button></div>') +
           '</div>';
       }
       // Admins can also add a blackout from here (not when editing a request or a blackout).
@@ -4170,7 +4322,7 @@
       foot = '<button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="wizReview">Review ' + icon('right', 18) + '</button>';
     } else {
       const c = wizCheck();
-      const who = w.creating ? (w.nu.rank + ' ' + w.nu.name + ' (' + w.nu.unit + ')') : fullName(userOf(w.assigneeId));
+      const who = wizWho();
       if (isBo) body = '<div class="review">' +
         '<div class="rv"><span class="lbl">Blackout</span><div class="big"><span class="badge bo-badge" style="font-size:12px">' + esc(boLabel({ types: w.boTypes })) + '</span></div></div>' +
         '<div class="rv"><span class="lbl">Dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
@@ -4180,7 +4332,7 @@
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
       else body = '<div class="review">' +
         '<div class="rv"><span class="lbl">Requested absence type</span><div class="big"><span class="badge t-' + w.type.toLowerCase() + '" style="font-size:12px">' + w.type + '</span></div>' +
-          '<div class="meta" style="margin-top:4px">For ' + esc(who) + (w.creating ? ' · new member' : '') + '</div></div>' +
+          '<div class="meta" style="margin-top:4px;white-space:normal">For ' + esc(who) + (w.creating ? ' · new member' : wizIds().length > 1 ? ' · one request each' : '') + '</div></div>' +
         '<div class="rv"><span class="lbl">Travel &amp; absence dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
           '<div style="margin-top:4px;font-weight:700">' + plural(c.n, 'day') + '</div></div>' +
         '<div class="rv"><span class="lbl">Trip reason &amp; notes</span><div class="note">' + (w.note.trim() ? esc(w.note.trim()) : '<span class="muted">No note provided.</span>') + '</div></div>' +
@@ -4191,6 +4343,7 @@
         '<button class="btn ok" data-act="wizSubmit">' + icon('check', 18) + (w.editId || w.editBoId ? 'Save' : isBo ? 'Add blackout' : 'Submit') + '</button>';
     }
     openModal('wizard', head + '<div class="modal-b">' + body + '</div><div class="modal-f">' + foot + '</div>', true);
+    $('#modal .modal').classList.add('wiz-sheet'); // compact layout: the whole form fits a phone screen without scrolling
   }
   /* Step 2: pick dates on the calendar (or type them in the fields below it). Only blocking problems show here;
      the summary, warnings and trip notes are on the Review step. */
@@ -4209,7 +4362,7 @@
     const self = w.editId ? S.requests.find(r => r.id === w.editId) : null;
     const own = self && self.type === 'Leave' && self.status !== 'Denied' && d >= self.start && d <= self.end;
     const appr = apprOn(d, role) - (own && self.status === 'Approved' ? 1 : 0);
-    const total = countOn(d, role) - (own ? 1 : 0) + 1;
+    const total = countOn(d, role) - (own ? 1 : 0) + Math.max(1, wizIds().filter(id => userOf(id).role === role).length);
     return appr >= q ? 'full' : total > q ? 'over' : 'ok';
   }
   function renderMini() {
@@ -4230,14 +4383,17 @@
     }
     // Colour key only (leave with a daily max); each swatch stays with its label when wrapping.
     const anyBo = blackouts().some(b => b.id !== w.editBoId && (w.type === 'Blackout' || b.types === 'Both' || b.types === w.type) && b.end >= gs && b.start <= D.add(gs, 41));
-    return html + '</div>' + (q || anyBo ? '<div class="mini-key">' + (q ? '<span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-over"></span>Overbooks</span><span class="mk-i"><span class="mk mk-full"></span>Full</span>' : '') +
-      (anyBo ? '<span class="mk-i"><span class="mk mk-bo"></span>Blackout</span>' : '') + '</div>' : '') + '</div>' +
-      (w.creating || w.type === 'Blackout' ? '' : leaveTally(w.assigneeId, w.type, w.start, w.end, w.editId));
+    // The request's length sits at the end of the colour key (no separate leave-days box: the form must fit without scrolling).
+    const n = D.valid(w.start) && D.valid(w.end) && w.end >= w.start ? D.days(w.start, w.end) : 0;
+    const len = '<span class="mk-days" aria-live="polite">' + (n ? plural(n, 'day') : D.valid(w.start) ? 'Pick return' : 'Pick dates') + '</span>';
+    return html + '</div><div class="mini-key">' + (q ? '<span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-over"></span>Overbooks</span><span class="mk-i"><span class="mk mk-full"></span>Full</span>' : '') +
+      (anyBo ? '<span class="mk-i"><span class="mk mk-bo"></span>Blackout</span>' : '') + len + '</div></div>';
   }
   function renderWizStatus() {
     const c = wizCheck();
     // Date step: only blocking problems. The Review step shows the summary and warnings.
-    if (S.wiz.step !== 3) return c.errs.length ? '<div class="msgs">' + c.errs.map(m => '<div class="msg e">' + icon('x', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '';
+    // (No "select dates" nag while they're still picking: Review says it if they skip it.)
+    if (S.wiz.step !== 3) return c.errs.length && D.valid(S.wiz.start) && D.valid(S.wiz.end) ? '<div class="msgs">' + c.errs.map(m => '<div class="msg e">' + icon('x', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '';
     const dur = c.n ? '<div class="dur"><span class="badge t-' + S.wiz.type.toLowerCase() + '">' + S.wiz.type + '</span>' + D.short(S.wiz.start) + ' → ' + D.short(S.wiz.end) + ' · ' + plural(c.n, 'day') + '</div>' : '';
     const msgs = c.errs.map(m => '<div class="msg e">' + icon('x', 15) + '<span>' + esc(m) + '</span></div>')
       .concat(c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>'));
@@ -4312,17 +4468,21 @@
       } catch (e) { toast('Couldn’t turn on notifications: ' + e.message, 'error', 6000); }
       await refreshPushState();
     },
-    async pushOff() {
-      try {
-        const sub = swReg && await swReg.pushManager.getSubscription();
-        if (sub) { await call('apiPushUnsubscribe', S.token, sub.endpoint); await sub.unsubscribe(); }
-        toast('Notifications are off for this device');
-      } catch (e) { toast(e.message, 'error'); }
+    async pushOff(el) {
+      await busy(el, async () => {
+        try {
+          const sub = swReg && await swReg.pushManager.getSubscription();
+          if (sub) { await call('apiPushUnsubscribe', S.token, sub.endpoint); await sub.unsubscribe(); }
+          toast('Notifications are off for this device');
+        } catch (e) { toast(e.message, 'error'); }
+      });
       await refreshPushState();
     },
-    async pushTest() {
-      try { const r = await call('apiPushTest', S.token); toast('Test sent to ' + plural(r.sent, 'device')); }
-      catch (e) { toast(e.message, 'error'); }
+    async pushTest(el) {
+      await busy(el, async () => {
+        try { const r = await call('apiPushTest', S.token); toast('Test sent to ' + plural(r.sent, 'device')); }
+        catch (e) { toast(e.message, 'error'); }
+      });
     },
     boType(el) { S.boDraft.types = el.dataset.v; render(); },
     addBlackout() {
@@ -4367,9 +4527,11 @@
       save(() => { S.settings.hideSchedules = on; }, 'apiSetHideSchedules', S.token, on);
       render();
     },
-    async adminAlerts() {
-      try { apply(await call('apiSetAdminAlerts', S.token, !S.adminAlerts)); redrawNotes(); toast('Admin alerts ' + (S.adminAlerts ? 'on' : 'off')); }
-      catch (e) { toast(e.message, 'error'); }
+    // Optimistic: flips at once; the ring spins on the Profile icon until the server has saved it.
+    adminAlerts() {
+      const on = !S.adminAlerts;
+      save(() => { S.adminAlerts = on; }, 'apiSetAdminAlerts', S.token, on);
+      redrawNotes(); toast('Admin alerts ' + (on ? 'on' : 'off'), 'ok', 1500);
     },
     noteOpen(el) {
       const id = el.dataset.id, req = el.dataset.req, n = (S.notes || []).find(x => x.id === id);
@@ -4441,11 +4603,20 @@
     mineConf() { S.mineConf = !S.mineConf; render(); if (S.modal === 'filters') openFilterSheet('mine', true); },
     monthMode(el) { S.monthMode = el.dataset.v; try { localStorage.setItem('pal.monthMode', S.monthMode); } catch (e) {} render(); },
     pickAssignee() { openPersonPicker('cal', 'assign'); refreshData(); },
+    ppDone() { ppAssignDone(); },
     clearPerson(el) { fState(el.dataset.scope).person = ''; S.openDrop = null; render(); if (S.modal === 'filters') openFilterSheet(el.dataset.scope, true); },
     pickPerson(el) { S.ppFromSheet = S.modal === 'filters'; openPersonPicker(el.dataset.scope); },
     setPerson(el) {
       // Request form: picking the assignee returns to the form.
-      if (S.ppMode === 'assign') { S.ppMode = 'filter'; S.wiz.assigneeId = el.dataset.id; renderWizard(); return; }
+      // Request form: tapping a member adds or removes them; Done returns to the form.
+      if (S.ppMode === 'assign') {
+        const w = S.wiz, id = el.dataset.id, list = w.assignees || [], on = !list.includes(id);
+        w.assignees = on ? list.concat([id]) : list.filter(x => x !== id);
+        el.classList.toggle('on', on); el.setAttribute('aria-pressed', on);
+        el.querySelector('.pp-ck').innerHTML = on ? icon('check', 18) : '';
+        const c = $('#ppCount'); if (c) c.textContent = ppCountText();
+        return;
+      }
       const st = fState(S.ppScope), who = el.dataset.id;
       st.person = who;
       // Make sure the chosen person's position is shown, or their schedule would be filtered out.
@@ -4538,6 +4709,19 @@
     peopleInactive() { S.people.inactive = !S.people.inactive; render(); },
     peoplePeriod(el) { S.people.period = el.dataset.v; render(); },
     personYear(el) { openPersonYear(el.dataset.id); },
+    memberCard(el) { openMemberCard(el.dataset.id); },
+    memberYear(el) { S.yearFrom = el.dataset.id; openPersonYear(el.dataset.id); },
+    async setUserPin(el) {
+      const a = $('#mcPin1').value.trim(), b = $('#mcPin2').value.trim(), err = $('#mcPinErr');
+      if (!/^\d{4,8}$/.test(a)) { err.textContent = 'PIN must be 4–8 digits.'; return; }
+      if (a !== b) { err.textContent = 'The two PIN entries do not match.'; return; }
+      err.textContent = '';
+      const data = await run(el, 'apiSetUserPin', S.token, el.dataset.id, a, b);
+      if (!data) return;
+      apply(data); render();
+      if (S.modal === 'member') openMemberCard(el.dataset.id);
+      toast('PIN set', 'ok', 1800);
+    },
     yearDay(el) { closeModal(); openRequest(el.dataset.id); },
     personRequests(el) {
       closeModal();
@@ -4594,28 +4778,32 @@
     closeModal() { closeModal(); },
 
     /* Profile */
-    async savePin() {
+    async savePin(el) {
       const a = $('#np1').value.trim(), b = $('#np2').value.trim(), err = $('#pinErr');
       if (!/^\d{4,8}$/.test(a)) { err.textContent = 'PIN must be 4–8 digits.'; return; }
       if (a !== b) { err.textContent = 'The two PIN entries do not match.'; return; }
       err.textContent = '';
-      const ok = await run('Saving PIN…', 'apiChangePin', S.token, a, b);
+      const ok = await run(el, 'apiChangePin', S.token, a, b);
       if (ok) { $('#np1').value = ''; $('#np2').value = ''; toast('PIN updated'); }
     },
     clearPin() { $('#np1').value = ''; $('#np2').value = ''; $('#pinErr').textContent = ''; },
     // Admin mode is separate from sign-in: you always sign in as yourself, then unlock with the admin PIN here.
     // Your own PIN and the admin PIN never interfere, even if they're the same digits.
-    async unlockAdmin() {
+    async unlockAdmin(el) {
       const box = $('#passkey'), err = $('#admErr'), k = box.value.replace(/\D/g, '');
       if (!k) { err.textContent = 'Enter the admin PIN.'; return; }
       if (k.length > 8) { err.textContent = 'That’s more than 8 digits — clear the box and type the admin PIN once.'; box.value = ''; return; }
-      try {
-        const data = await call('apiUnlockAdmin', S.token, k);
-        apply(data); render(); toast('Admin mode unlocked');
-      } catch (e) { err.textContent = e.message; box.value = ''; box.focus(); } // show the real reason (wrong PIN, too many tries…)
+      err.textContent = '';
+      box.disabled = true; // no typing while it checks
+      await busy(el, async () => {
+        try {
+          const data = await call('apiUnlockAdmin', S.token, k);
+          apply(data); render(); toast('Admin mode unlocked');
+        } catch (e) { box.disabled = false; err.textContent = e.message; box.value = ''; box.focus(); } // show the real reason (wrong PIN, too many tries…)
+      });
     },
-    async lockAdmin() {
-      const data = await run('Locking…', 'apiLockAdmin', S.token);
+    async lockAdmin(el) {
+      const data = await run(el, 'apiLockAdmin', S.token);
       if (!data) return;
       apply(data); render();
       toast('Admin mode locked');
@@ -4625,10 +4813,12 @@
       $$('[data-act="theme"]').forEach(b => b.classList.toggle('on', b.dataset.v === S.theme));
       if (isCalView() && S.cal === 'month') fitMonth();
     },
-    async signOut() {
+    async signOut(el) {
       // Remove this device's push subscription while the session is still valid, then end the session.
-      try { const sub = swReg && await swReg.pushManager.getSubscription(); if (sub) { await call('apiPushUnsubscribe', S.token, sub.endpoint); await sub.unsubscribe(); } } catch (e) { /* best effort */ }
-      try { await call('apiLogout', S.token); } catch (e) { /* session may already be gone */ }
+      await busy(el, async () => {
+        try { const sub = swReg && await swReg.pushManager.getSubscription(); if (sub) { await call('apiPushUnsubscribe', S.token, sub.endpoint); await sub.unsubscribe(); } } catch (e) { /* best effort */ }
+        try { await call('apiLogout', S.token); } catch (e) { /* session may already be gone */ }
+      });
       signOutLocal();
     },
 
@@ -4669,13 +4859,14 @@
       const u = S.users.find(x => x.id === el.dataset.id);
       if (!u || !confirm('Reset ' + u.name + '’s PIN to the current default PIN? They will have to choose a new PIN at their next sign-in.')) return;
       save(() => { u.mustChange = true; }, 'apiResetPin', S.token, u.id);
-      render(); toast(u.name + '’s PIN reset to the default', 'ok', 2000);
+      render(); if (S.modal === 'member') openMemberCard(u.id);
+      toast(u.name + '’s PIN reset to the default', 'ok', 2000);
     },
-    async saveDefaultPin() {
+    async saveDefaultPin(el) {
       const a = $('#dp1').value.trim(), b = $('#dp2').value.trim();
       if (!/^\d{4,8}$/.test(a)) return toast('PIN must be 4–8 digits.', 'error');
       if (a !== b) return toast('PINs do not match.', 'error');
-      const ok = await run('Updating default PIN…', 'apiSetDefaultPin', S.token, a, b);
+      const ok = await run(el, 'apiSetDefaultPin', S.token, a, b);
       if (ok) { $('#dp1').value = ''; $('#dp2').value = ''; toast('Default PIN updated'); }
     },
     lenMode(el) {
@@ -4703,7 +4894,9 @@
       if (!u.first || !u.last) { err.textContent = 'Enter first and last name.'; return; }
       // Edits show at once; a new member appears when the save finishes (it needs an id from the server).
       save(u.id ? () => { const x = S.users.find(y => y.id === u.id); if (x) Object.assign(x, { name: u.name, rank: u.rank, role: u.role, unit: u.unit }); } : null, 'apiSaveUser', S.token, u);
-      closeModal(); render(); toast(u.id ? 'Member updated' : 'Adding ' + u.name + '…', 'ok', 1500);
+      // From a member's profile card the card stays open with the new details.
+      if (S.modal === 'member' && u.id) { render(); openMemberCard(u.id); } else { closeModal(); render(); }
+      toast(u.id ? 'Member updated' : 'Adding ' + u.name + '…', 'ok', 1500);
     },
     async toggleUser(el) {
       const u = S.users.find(x => x.id === el.dataset.id);
@@ -4711,13 +4904,14 @@
       if (u.active && !confirm('Deactivate ' + u.name + '? They will no longer be able to sign in. Their history is kept.')) return;
       const on = !u.active;
       save(() => { u.active = on; }, 'apiSetUserActive', S.token, u.id, on);
-      render(); toast(u.name + (on ? ' reactivated' : ' deactivated'), 'ok', 1500);
+      render(); if (S.modal === 'member') openMemberCard(u.id);
+      toast(u.name + (on ? ' reactivated' : ' deactivated'), 'ok', 1500);
     },
-    async savePasskey() {
+    async savePasskey(el) {
       const a = $('#pk1').value.trim(), b = $('#pk2').value.trim();
       if (!/^\d{4,8}$/.test(a)) return toast('Passkey must be 4–8 digits.', 'error');
       if (a !== b) return toast('Passkeys do not match.', 'error');
-      const ok = await run('Updating passkey…', 'apiChangePasskey', S.token, a, b);
+      const ok = await run(el, 'apiChangePasskey', S.token, a, b);
       if (ok) { $('#pk1').value = ''; $('#pk2').value = ''; toast('Admin PIN updated'); }
     },
 
@@ -4784,7 +4978,7 @@
         return;
       }
       const payload = { type: w.type, start: w.start, end: w.end, note: w.note.trim() };
-      let done;
+      let done, many = 0;
       if (w.editId) {
         const id = w.editId;
         showBlocker('Saving…');
@@ -4794,10 +4988,15 @@
           if (!S.isAdmin && r.status === 'Denied') r.status = 'Pending'; // a member's edit resubmits a denied request
         }, 'apiUpdateRequest', S.token, id, payload);
       } else {
-        if (S.isAdmin && w.creating) payload.newUser = w.nu;
-        else if (S.isAdmin) payload.assigneeId = w.assigneeId;
+        const ids = wizIds();
+        many = S.isAdmin && !w.creating && ids.length > 1 ? ids.length : 0;
         showBlocker('Submitting…');
-        done = save(null, 'apiCreateRequest', S.token, payload);
+        if (many) done = save(null, 'apiCreateRequests', S.token, payload, ids);
+        else {
+          if (S.isAdmin && w.creating) payload.newUser = w.nu;
+          else if (S.isAdmin) payload.assigneeId = w.assigneeId;
+          done = save(null, 'apiCreateRequest', S.token, payload);
+        }
       }
       const data = await done;
       await saveChain; // let the confirmed data apply
@@ -4806,7 +5005,7 @@
       closeModal();
       if (!w.editId && isCalView()) S.cursor = w.start;
       render();
-      toast(w.editId ? 'Request updated' : 'Request submitted — pending approval', 'ok', 2200);
+      toast(w.editId ? 'Request updated' : many ? many + ' requests submitted — pending approval' : 'Request submitted — pending approval', 'ok', 2200);
       if (S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; openConflict(cd, S.cfRole); } // edited from the conflict screen
     }
   };
