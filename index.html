@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792487812"></script>
+    <script src="config.js?v=1792488101"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1419,6 +1419,14 @@
   .conf-banner .conf-x, .conf-banner .conf-x:has(> .ic:first-child) { color: var(--no-ink); }
   .conf-banner .conf-x:hover::before { opacity: .14; }
   .cal.conf-mode .cal-split, .list-page.conf-mode .tbl-page { box-shadow: inset 0 0 0 3px var(--no-bg); }
+  /* Conflict mode lives in the person picker: toggle row at the top; the person pill turns red with a ⚠. */
+  .pp-conf { flex: none; display: flex; align-items: center; gap: 12px; padding: 12px 16px 0; flex-wrap: wrap; }
+  .pp-conf-t { flex: 1 1 160px; font-size: 13.5px; color: var(--muted); }
+  .fp-conf .fperson.on, .fp-conf .fp-clear { background: var(--no-bg) !important; border-color: var(--no-bg) !important; color: var(--no-ink) !important; }
+  .fp-conf .fperson .ic:first-child { flex: none; }
+  /* "Everyone" row badge: [P|B|O] in the same puck style as people. */
+  .idb.idb-all { margin-right: 0; box-shadow: 0 0 0 1.5px #0b1730; }
+  .idb.idb-all .idb-r + .idb-r { border-left: 1.5px solid #0b1730; }
 </style>
 
   </head>
@@ -1629,10 +1637,27 @@
   }
   /** Conflict mode: a leave request on a day where its position is over the daily max. */
   const inConflict = r => conflictDays(r).length > 0;
+  /** Conflict mode with a person picked: their requests that are over the max, plus the other requests (same position,
+   *  not denied) on those same over-max days — i.e. who they conflict with. */
+  function conflictsWith(pid) {
+    const mine = IDX.live.filter(r => r.userId === pid && inConflict(r));
+    const keep = new Set(mine.map(r => r.id));
+    mine.forEach(m => {
+      const role = userOf(m.userId).role, days = conflictDays(m);
+      IDX.live.forEach(r => { if (r.type === 'Leave' && r.status !== 'Denied' && userOf(r.userId).role === role && days.some(d => r.start <= d && r.end >= d)) keep.add(r.id); });
+    });
+    return keep;
+  }
+  /** Shared filter test for person + conflict mode (calendar, All, day view). */
+  function personConfOk(r, F) {
+    if (!F.conf) return !F.person || r.userId === F.person;
+    if (!F.person) return inConflict(r);
+    if (!(F._cw && F._cwFor === F.person && F._cwIdx === IDX)) { F._cwFor = F.person; F._cwIdx = IDX; F._cw = conflictsWith(F.person); } // cached until data changes
+    return F._cw.has(r.id);
+  }
   function calRequests() {
     if (S.view === 'mine') return mineCalRequests();
-    return IDX.live.filter(r => S.f.status.includes(r.status) && S.f.role.includes(userOf(r.userId).role) && S.f.type.includes(r.type) && (!S.f.person || r.userId === S.f.person) &&
-      (!S.f.conf || inConflict(r)));
+    return IDX.live.filter(r => S.f.status.includes(r.status) && S.f.role.includes(userOf(r.userId).role) && S.f.type.includes(r.type) && personConfOk(r, S.f));
   }
 
   /* ================================================================ */
@@ -2040,11 +2065,11 @@
         // Right: status, position, then Leave / Pass at the far right
         '<div class="cb-right filters">' + (S.view === 'mine'
           ? FILTERS.filter(F => F.g !== 'role').map(F => filterGroup(F, 'mine')).join('') + filterButton('mine')
-          : FILTERS.map(F => filterGroup(F, 'cal')).join('') + confToggle() + filterButton('cal')) +
+          : FILTERS.map(F => filterGroup(F, 'cal')).join('') + filterButton('cal')) +
           // Phone Month: switch between name strips and P / B / O stats, next to the Filters button.
           (S.cal === 'month' ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
       '</div>' +
-      (confOn ? confBanner(IDX.live.filter(r => inConflict(r) && S.f.status.includes(r.status) && S.f.role.includes(userOf(r.userId).role) && S.f.type.includes(r.type)).length) : '') +
+      (confOn ? confBanner(calRequests().length) : '') +
       '<div class="cal-split"><div class="cal-body" id="calBody">' + body + '</div>' + (showPanel
         ? '<aside class="dpanel' + (panelAnim ? ' dp-anim' : '') + '" aria-label="Day details">' + renderDay(S.dayPanel, true) + '</aside>' : '') + '</div>' +
       // Phones: a full-width Add Request bar under the calendar (the calendar shrinks to make room).
@@ -2094,10 +2119,10 @@
 
   /** Person filter control: a dropdown-style button that opens the person picker sheet. */
   function personSelect(cls, sc) {
-    const p = fState(sc).person, label = p ? calName(userOf(p)) : 'Everyone';
-    // With a person picked, a ✕ next to it goes straight back to Everyone.
-    return '<div class="fp ' + cls + '"><button type="button" class="fsel fdrop-btn fperson' + (p ? ' on' : '') + '" data-act="pickPerson"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Person filter: ' + esc(label) + '">' +
-      '<span>' + esc(label) + '</span>' + icon('down', 14) + '</button>' +
+    const st = fState(sc), p = st.person, conf = !!st.conf, label = p ? calName(userOf(p)) : conf ? 'All conflicts' : 'Everyone';
+    // With a person picked, a ✕ next to it goes straight back to Everyone. In conflict mode the pill turns red with a ⚠.
+    return '<div class="fp ' + cls + (conf ? ' fp-conf' : '') + '"><button type="button" class="fsel fdrop-btn fperson' + (p || conf ? ' on' : '') + '" data-act="pickPerson"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Person filter: ' + esc(label) + (conf ? ', conflict mode' : '') + '">' +
+      (conf ? icon('alert', 16) : '') + '<span>' + esc(label) + '</span>' + icon('down', 14) + '</button>' +
       (p ? '<button type="button" class="btn icon-btn fp-clear" data-act="clearPerson"' + scAttr(sc) + ' aria-label="Show everyone" title="Show everyone">' + icon('x', 18) + '</button>' : '') + '</div>';
   }
   /** Person picker: a sheet (bottom sheet on phones) with search, "Everyone", then members grouped by position. */
@@ -2105,7 +2130,10 @@
     S.openDrop = null; S.ppq = ''; S.ppScope = sc || 'cal'; S.ppMode = mode || 'filter';
     const assign = S.ppMode === 'assign';
     const cur = assign ? S.wiz.assigneeId : fState(sc).person;
-    const people = S.users.filter(u => u.active || u.id === cur);
+    const conf = !assign && sc !== 'mine' && !!fState(sc).conf;
+    // In conflict mode, list only people who have a request over the daily max.
+    const withConf = conf ? new Set(IDX.live.filter(inConflict).map(r => r.userId)) : null;
+    const people = S.users.filter(u => (u.active || u.id === cur) && (!withConf || withConf.has(u.id) || u.id === cur));
     const row = (id, inner, label) => '<button type="button" class="pp-row' + (cur === id ? ' on' : '') + '" data-act="setPerson" data-id="' + esc(id) + '" data-q="' + esc(label.toLowerCase()) + '"' +
       (cur === id ? ' aria-current="true"' : '') + '>' + inner + '<span class="pp-ck">' + (cur === id ? icon('check', 18) : '') + '</span></button>';
     const meU = people.find(u => u.id === S.me);
@@ -2119,11 +2147,14 @@
         list.map(u => row(u.id, idBadge(u) + '<span class="pp-n"><b>' + esc(lastName(u)) + ',</b> ' + esc(firstName(u)) + ' <span class="muted">· ' + esc(u.rank) + '</span></span>',
           lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit)).join('') + '</div>';
     }).join('');
-    const html = modalHead(assign ? 'Assign request to' : 'Show one person', assign ? 'users' : 'user') +
+    const confRow = assign || sc === 'mine' ? '' : '<div class="pp-conf"><button type="button" class="btn conf-only' + (conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + conf + '">' +
+      icon('alert', 18) + (conf ? 'Conflict mode on' : 'Conflict mode') + '</button><span class="pp-conf-t">' + (conf ? 'Pick a person to see who they conflict with, or All conflicts.' : 'Show only leave that’s over the daily max.') + '</span></div>';
+    const html = modalHead(assign ? 'Assign request to' : conf ? 'Conflicts' : 'Show one person', assign ? 'users' : conf ? 'alert' : 'user') + confRow +
       '<div class="pp-search"><div class="search">' + icon('search', 15) + '<input type="search" placeholder="Search name, rank, unit…" data-model="ppq" data-live="ppFilter" aria-label="Search people"></div></div>' +
       '<div class="modal-b pp-list">' + (assign
         ? '<button type="button" class="pp-row pp-add" data-act="wizCreate">' + icon('userPlus', 20) + '<span class="pp-n"><b>Add new member</b></span></button>'
-        : row('', '<span class="pp-n"><b>Everyone</b></span>', 'everyone')) + groups +
+        : row('', '<span class="idb idb-all" aria-hidden="true"><span class="idb-r idb-p">P</span><span class="idb-r idb-b">B</span><span class="idb-r idb-o">O</span></span>' +
+            '<span class="pp-n"><b>' + (conf ? 'All conflicts' : 'Everyone') + '</b></span>', 'everyone all conflicts')) + groups +
       '<div class="pp-none" hidden>No one matches.</div></div>';
     openModal('person', html);
     $('#modal .modal').classList.add('pp-sheet');
@@ -2162,7 +2193,8 @@
   /** Conflict mode banner: red bar with the count and an ✕ to leave the mode. */
   function confBanner(n) {
     if (!S.f.conf) return '';
-    return '<div class="conf-banner" role="status">' + icon('alert', 18) + '<span><b>Conflict mode</b> · ' + plural(n, 'request') + ' over the daily max</span>' +
+    return '<div class="conf-banner" role="status">' + icon('alert', 18) + '<span><b>Conflict mode</b> · ' + (S.f.person ? esc(fullName(userOf(S.f.person))) + ' and who they conflict with · ' + plural(n, 'request')
+      : plural(n, 'request') + ' over the daily max') + '</span>' +
       '<button type="button" class="btn icon-btn conf-x" data-act="confOff" aria-label="Leave conflict mode" title="Leave conflict mode">' + icon('x', 18) + '</button></div>';
   }
   function filterButton(sc) {
@@ -2178,7 +2210,6 @@
       '<button type="button" class="' + (st[F.g].includes(o[0]) ? 'on' : '') + '" aria-pressed="' + st[F.g].includes(o[0]) + '" data-act="fToggle" data-g="' + F.g + '" data-v="' + o[0] + '"' + scAttr(sc) + '>' + o[1] + '</button>').join('') + '</div>';
     const html = modalHead('Filters', 'sliders') + '<div class="modal-b fs-body">' +
       sect('Show', typeToggle(sc)) +
-      (sc === 'mine' ? '' : sect('Conflicts', '<button type="button" class="btn conf-only conf-sheet' + (st.conf ? ' on' : '') + '" data-act="confToggle" aria-pressed="' + !!st.conf + '">' + icon('alert', 18) + (st.conf ? 'Showing conflicts only' : 'Show conflicts only') + '</button>')) +
       sect('Status', chips(groups[0])) +
       (groups.some(f => f.g === 'role') ? sect('Position', chips(FILTERS[1])) + sect('Person', personSelect('in-sheet', sc)) : '') +
       '</div><div class="modal-f"><button class="btn" data-act="resetFilters"' + scAttr(sc) + '>Reset</button><button class="btn primary" data-act="closeModal">Done</button></div>';
@@ -2706,7 +2737,7 @@
     const d = day || S.cursor;
     // Day list: the calendar's status / type / person / conflict filters, but the day's own position filter.
     const dayPool = S.view === 'mine' ? calRequests() : IDX.live.filter(r => S.f.status.includes(r.status) && S.f.type.includes(r.type) &&
-      (!S.f.person || r.userId === S.f.person) && (!S.f.conf || inConflict(r)) && (S.dayRoles || ROLES).includes(userOf(r.userId).role));
+      personConfOk(r, S.f) && (S.dayRoles || ROLES).includes(userOf(r.userId).role));
     const reqs = dayPool.filter(r => r.start <= d && r.end >= d)
       .sort((a, b) => stackRank(a) - stackRank(b) || ROLES.indexOf(userOf(a.userId).role) - ROLES.indexOf(userOf(b.userId).role) || lastName(userOf(a.userId)).localeCompare(lastName(userOf(b.userId))));
     const live = calRequests().filter(countable);
@@ -2828,8 +2859,7 @@
     return IDX.live.filter(r => {
       const u = userOf(r.userId);
       if (!F.status.includes(r.status) || !F.role.includes(u.role) || !F.type.includes(r.type)) return false;
-      if (F.person && r.userId !== F.person) return false;
-      if (F.conf && !inConflict(r)) return false;
+      if (!personConfOk(r, F)) return false;
       if (q && (u.rank + ' ' + u.name + ' ' + u.unit + ' ' + u.role + ' ' + r.type + ' ' + r.note).toLowerCase().indexOf(q) < 0) return false;
       return true;
     });
@@ -2950,7 +2980,7 @@
   function listBar(search, filters, sc) {
     return '<div class="lbar">' +
       '<div class="lsearch">' + icon('search', 16) + search + '</div>' +
-      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + (sc === 'list' ? confToggle() : '') + filterButton(sc) + '</div>' +
+      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + '</div>' +
       '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
   }
   const reqBar = () => '<div class="req-bar"><button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
@@ -3622,7 +3652,11 @@
       S.dayRoles = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat([v]);
       render();
     },
-    confToggle() { S.f.conf = !S.f.conf; render(); if (S.modal === 'filters') openFilterSheet(S.fsScope, true); },
+    confToggle() {
+      S.f.conf = !S.f.conf; render();
+      if (S.modal === 'person') openPersonPicker(S.ppScope, S.ppMode);
+      else if (S.modal === 'filters') openFilterSheet(S.fsScope, true);
+    },
     confOff() { S.f.conf = false; render(); },
     mineConf() { S.mineConf = !S.mineConf; render(); },
     monthMode(el) { S.monthMode = el.dataset.v; try { localStorage.setItem('pal.monthMode', S.monthMode); } catch (e) {} render(); },
