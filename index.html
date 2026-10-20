@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792533579"></script>
+    <script src="config.js?v=1792534059"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1997,6 +1997,7 @@
   .fp-conf-row .conf-only.on { background: #b42318; border-color: #b42318; color: #ffffff; }
   .fperson .who-n, .fall .who-n { flex: none; display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
     background: var(--navy); color: #fff; font-size: 12.5px; font-weight: 800; }
+  .evs.mid .evs-t .gsl { flex: none; font-weight: 900; color: #ffffff; opacity: .85; } .evs.mid.pass .evs-t .gsl { color: var(--navy); }
 </style>
 
   </head>
@@ -3549,9 +3550,10 @@
     return m ? '<span class="sti sti-' + m[1] + '" title="' + st + '">' + icon(m[0], 14) + '</span>' : '';
   }
   /* Middle days: one badge per position — [P|Doe · Roe · Poe], or [P|4+ Pilots] when more than 3. */
-  function rolePuck(role, list, from, to) {
+  /** Shared middle-day badge for one position + unit: [P|MKE|Doe · Roe · Poe] (or "4+ Pilots" when more than 3). */
+  function rolePuck(role, list, from, to, unit) {
     list = list.slice().sort(byLast);
-    const L = role[0];
+    const L = role[0], un = unit && unitsList().find(x => x.code === unit);
     const title = ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[role] + ': ' + list.map(r => fullName(userOf(r.userId)) + ' (' + r.status + ')').join('; ');
     const names = list.length > 3
       ? '<span class="rp-more">4+ ' + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[role] + '</span>'
@@ -3559,6 +3561,7 @@
           '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + '</span>')
           .join('<span class="rp-dot" aria-hidden="true">·</span>');
     return '<span class="idb pb rp" title="' + esc(title) + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
+      (unit ? '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(unit) + '</span>' : '') +
       '<span class="idb-n">' + names + '</span></span>';
   }
   function segHtml(sg) {
@@ -3572,10 +3575,12 @@
         ' title="' + esc(sg.people.map(describe).join('\n')) + '"><span class="evs-t">' + groupBadges(sg.people, sg.kind !== 'end', D.max(r0.start, sg.ws), D.min(r0.end, D.add(sg.ws, 6))) + '</span></div>';
     }
     if (sg.kind === 'mid') {
+      // One badge per position + unit ([P|MKE|…] / [P|PIT|…] / [B|MKE|…]), separated by "/".
       const pucks = sg.quiet ? '' : ROLES.map(role => {
         const list = sg.people.filter(r => userOf(r.userId).role === role);
-        return list.length ? rolePuck(role, list, D.add(sg.ws, sg.a), D.add(sg.ws, sg.b)) : '';
-      }).join('');
+        const units = [...new Set(list.map(r => userOf(r.userId).unit))];
+        return units.map(un => rolePuck(role, list.filter(r => userOf(r.userId).unit === un), D.add(sg.ws, sg.a), D.add(sg.ws, sg.b), un));
+      }).flat().join('<span class="gsl" aria-hidden="true">/</span>');
       // More than one person on this stretch (any positions): hatched "shared" bar.
       return '<div class="' + base + (sg.people.length > 1 ? ' shared' : '') + (sg.people.length === 1 && r0.id === S.focus ? ' focus' : '') + (sg.cat === 'Denied' ? ' st-denied' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"' +
         (sg.people.length === 1 ? ' role="button" tabindex="0" data-act="openReq" data-id="' + esc(r0.id) + '" aria-label="' + esc(describe(r0)) + '"' : '') + '><span class="evs-t">' + pucks + '</span></div>';
