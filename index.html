@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792489735"></script>
+    <script src="config.js?v=1792489968"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -2583,11 +2583,12 @@
         ' aria-label="' + esc(label + ' — ' + fullName(u)) + '" title="' + esc(label) + '">' + icon(ic, 14) + '<span class="bl">' + label + '</span></button>';
       if (S.isAdmin) {
         acts = '<span class="cf-acts">' +
-          b('ok', 'cfSet', 'check', 'Approve', ' data-v="Approved"' + (r.status === 'Approved' ? ' disabled' : '')) +
+          b('del', 'cfDelete', 'trash', 'Delete') +
           b('bad', 'cfSet', 'ban', 'Deny', ' data-v="Denied"' + (r.status === 'Denied' ? ' disabled' : '')) +
-          b('', 'cfEdit', 'pencil', 'Edit') + b('del', 'cfDelete', 'trash', 'Delete') + '</span>';
+          b('ok', 'cfSet', 'check', 'Approve', ' data-v="Approved"' + (r.status === 'Approved' ? ' disabled' : '')) +
+          b('', 'cfEdit', 'pencil', 'Edit') + '</span>';
       } else if (r.userId === S.me) {
-        acts = '<span class="cf-acts">' + (canEdit(r) ? b('', 'cfEdit', 'pencil', 'Edit') : '') + (canDelete(r) ? b('del', 'cfDelete', 'trash', 'Delete') : '') + '</span>';
+        acts = '<span class="cf-acts">' + (canDelete(r) ? b('del', 'cfDelete', 'trash', 'Delete') : '') + (canEdit(r) ? b('', 'cfEdit', 'pencil', 'Edit') : '') + '</span>';
       }
       return '<li class="cf-row"><span class="dl-who">' + personBadge(r, true) + '</span>' +
         '<span class="dl-meta">' + r.type + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + ' · ' + plural(D.days(r.start, r.end), 'day') + '</span>' +
@@ -2600,9 +2601,9 @@
         '<ul class="dl-list cf-list">' + c.list.map(row).join('') + '</ul></div>').join('') +
       (S.isAdmin ? '' : '<p class="meta" style="white-space:normal">Move or delete your request to clear the conflict, or leave it for an admin to decide.</p>') +
       '</div><div class="modal-f">' +
-      (S.isAdmin && pending ? '<button class="btn ok" data-act="cfApproveAll" data-date="' + d + '"' + (only ? ' data-role="' + only + '"' : '') + '>' + icon('check', 15) + ' Approve all</button>' : '') +
       '<button class="btn" data-act="gotoDay" data-date="' + d + '">' + icon('calendar', 15) + ' Day view</button>' +
-      '<button class="btn" data-act="closeModal">Close</button></div>';
+      '<button class="btn" data-act="closeModal">Close</button>' +
+      (S.isAdmin && pending ? '<button class="btn ok" data-act="cfApproveAll" data-date="' + d + '"' + (only ? ' data-role="' + only + '"' : '') + '>' + icon('check', 15) + ' Approve all</button>' : '') + '</div>';
     openModal('conflict', html, true);
   }
 
@@ -3343,7 +3344,7 @@
         return '<button class="mp-m' + (k === cur ? ' on' : '') + (k === now ? ' now' : '') + '" data-act="mpPick" data-date="' + m + '"' +
           (k === cur ? ' aria-current="true"' : '') + (k === cur ? ' autofocus' : '') + '>' + D.f(m, { month: 'short' }) + '</button>';
       }).join('') + '</div></div>' +
-      '<div class="modal-f"><button class="btn" data-act="mpPick" data-date="' + D.monthStart(S.today) + '">This month</button><button class="btn" data-act="closeModal">Cancel</button></div>';
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="mpPick" data-date="' + D.monthStart(S.today) + '">This month</button></div>';
     openModal('mpick', html);
     $('#modal .modal').classList.add('narrow-m');
   }
@@ -3434,13 +3435,15 @@
     if (!r) return;
     S.reqOpen = id;
     const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r);
-    let foot = '';
+    // Footer order (DESIGN.md): destructive on the left, Cancel in the middle, the main action (Edit) on the far right.
+    let acts = '';
     if (S.isAdmin && r.status !== 'Cancelled') {
-      foot += '<button class="btn ok act" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' disabled' : '') + ' aria-label="Approve" title="Approve">' + icon('check', 15) + '<span class="bl">Approve</span></button>' +
-        '<button class="btn bad act" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' disabled' : '') + ' aria-label="Deny" title="Deny">' + icon('ban', 15) + '<span class="bl">Deny</span></button>';
+      acts += '<button class="btn bad act" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' disabled' : '') + ' aria-label="Deny" title="Deny">' + icon('ban', 15) + '<span class="bl">Deny</span></button>' +
+        '<button class="btn ok act" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' disabled' : '') + ' aria-label="Approve" title="Approve">' + icon('check', 15) + '<span class="bl">Approve</span></button>';
     }
-    if (canEdit(r)) foot += '<button class="btn act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>';
-    if (canDelete(r)) foot += '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>';
+    if (canEdit(r)) acts += '<button class="btn act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>';
+    const del = canDelete(r) ? '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' : '';
+    const foot = del || acts ? del + '<button class="btn act" data-act="closeModal" aria-label="Cancel" title="Cancel">' + icon('x', 15) + '<span class="bl">Cancel</span></button>' + acts : '';
     const html = modalHead(esc(r.type === 'Leave' ? 'Ordinary Leave' : 'Special Pass'), r.type === 'Leave' ? 'calendar' : 'clipboard') +
       '<div class="modal-b"><div class="review">' +
       '<div class="rv"><span class="lbl">Member</span><div class="big">' + esc(fullName(u)) + '</div>' +
