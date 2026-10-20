@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792495555"></script>
+    <script src="config.js?v=1792499843"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1521,6 +1521,32 @@
     .filters > .fall, .filters > .fall-clear { order: 1; }
     .filters > .fall-clear, .filters > .fall-clear:has(> .ic:first-child) { margin-left: -8px; } /* the bar's gap is 8px here */
   }
+  /* ---------- Profile → Notifications: push switch for this device + inbox ---------- */
+  .notes-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .notes-h h3 { margin: 0; }
+  .notes-h .ct { margin-left: 8px; font-size: 12.5px; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: var(--sel-bg); color: var(--sel-ink); }
+  .push-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .push-row p { margin: 0; flex: 1 1 260px; font-size: 14.5px; color: var(--muted); }
+  .push-row p .ic { display: inline-block; vertical-align: -3px; margin-right: 6px; }
+  .push-row p b { color: var(--ink); }
+  .push-row.push-on p { color: var(--ok); font-weight: 700; }
+  .push-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .notes-empty { padding: 14px 2px 4px; color: var(--muted); font-size: 14.5px; border-top: 1px solid var(--line); }
+  .notes-list { border-top: 1px solid var(--line); margin: 0 -14px -14px; }
+  .note-row { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; cursor: pointer; color: var(--ink); }
+  .note-row:last-child { border-bottom: 0; border-radius: 0 0 14px 14px; }
+  .note-row:hover { background: color-mix(in srgb, var(--on-surface) 5%, transparent); }
+  .note-row.unread { background: color-mix(in srgb, var(--sel-bg) 35%, transparent); }
+  .note-ic { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; }
+  .note-ok { background: var(--go-bg); color: var(--go-ink); } .note-no { background: var(--no-bg); color: var(--no-ink); }
+  .note-warn { background: var(--rg-over); color: var(--rg-over-ink); } .note-info { background: var(--navy); color: #fff; }
+  :root[data-theme="dark"] .note-info { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
+  .note-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 14.5px; }
+  .note-t b { font-weight: 700; } .note-row.unread .note-t b { font-weight: 800; }
+  .note-t span { color: var(--muted); overflow-wrap: anywhere; }
+  .note-time { flex: none; display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .note-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sel-ink); }
+  :root[data-theme="dark"] .note-dot { background: var(--sel-bg); }
 </style>
 
   </head>
@@ -1547,6 +1573,7 @@
     right: '<path d="m9 18 6-6-6-6"/>',
     plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
     check: '<path d="M20 6 9 17l-5-5"/>',
+    bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
     x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
     alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
@@ -1873,6 +1900,9 @@
     if (!data) return;
     S.me = data.me; S.isAdmin = !!data.isAdmin; S.users = (data.users || []).map(cleanUser); S.requests = (data.requests || []).map(cleanReq);
     S.settings = Object.assign(S.settings, data.settings || {}); S.sheetUrl = data.sheetUrl || '';
+    // Notifications: unread count (Profile badge + home-screen badge), push key, admin alert preference.
+    if (typeof data.unread === 'number') { if (data.unread !== S.unread) S.notes = null; S.unread = data.unread; setBadge(); }
+    S.vapid = data.vapidPublicKey || S.vapid || ''; S.adminAlerts = !!data.adminAlerts;
     S.today = localToday();
     if (!S.isAdmin && (S.view === 'admin' || S.view === 'people' || S.view === 'roster')) S.view = 'calendar';
     reindex();
@@ -1884,6 +1914,7 @@
     }
   }
   function signOutLocal() {
+    S.notes = null; S.unread = 0; setBadge();
     S.token = null; store.del('token'); S.me = null; S.isAdmin = false;
     closeModal(); showLogin();
   }
@@ -2126,7 +2157,8 @@
       '<button data-act="nav" data-v="' + i[0] + '" class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
       '<span class="nav-ic' + (i[0] === 'profile' && S.pending ? ' syncing' : i[0] === 'profile' && S.syncErr ? ' sync-err' : '') + '">' + icon(i[2], 20) + '</span><span class="wide">' + i[1] + '</span><span class="narrow" aria-hidden="true">' + i[3] + '</span>' +
       (i[0] === 'all' && S.isAdmin && pending ? '<b class="dot">' + pending + '</b>' : '') +
-      (i[0] === 'mine' && myChanged ? '<b class="dot warn" title="Dates changed by an admin">' + myChanged + '</b>' : '') + '</button>').join('') + '</nav>';
+      (i[0] === 'mine' && myChanged ? '<b class="dot warn" title="Dates changed by an admin">' + myChanged + '</b>' : '') +
+      (i[0] === 'profile' && S.unread ? '<b class="dot" title="Unread notifications">' + S.unread + '</b>' : '') + '</button>').join('') + '</nav>';
   }
   function seg(options, current, act, extra) {
     return '<div class="seg" role="group">' + options.map(o => {
@@ -3443,6 +3475,92 @@
   }
 
   /* ---------- Profile (a page, laid out like the Admin page) ---------- */
+  /* ================================================================ */
+  /* Notifications: inbox (stored on the server) + Web Push on this device */
+  /* ================================================================ */
+  // Push needs the GitHub Pages build (service worker on our own origin) and, on iPhone, the home-screen app.
+  const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const pushCapable = () => !!(window.PAL_API_URL && window.isSecureContext && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
+  let swReg = null;
+  function setBadge() {
+    try { if (navigator.setAppBadge) { if (S.unread) navigator.setAppBadge(S.unread); else navigator.clearAppBadge(); } } catch (e) { /* not supported */ }
+  }
+  async function initPush() {
+    if (window.PAL_API_URL && window.isSecureContext && 'serviceWorker' in navigator) {
+      try { swReg = await navigator.serviceWorker.register('sw.js'); } catch (e) { swReg = null; }
+      navigator.serviceWorker.addEventListener('message', ev => { if (ev.data && ev.data.type === 'open') openLink(ev.data.url); });
+    }
+    await refreshPushState();
+  }
+  async function refreshPushState() {
+    let st;
+    if (!window.PAL_API_URL) st = 'google';
+    else if (isIOS() && !isStandalone()) st = 'install';
+    else if (!pushCapable() || !swReg) st = 'unsupported';
+    else if (Notification.permission === 'denied') st = 'denied';
+    else {
+      let sub = null; try { sub = await swReg.pushManager.getSubscription(); } catch (e) { sub = null; }
+      st = sub && Notification.permission === 'granted' ? 'on' : 'off';
+    }
+    S.pushState = st; redrawNotes();
+  }
+  /** Links from notifications: #req=<id> opens that request, #notes opens Profile. */
+  function openLink(url) {
+    const h = String(url || '').split('#')[1] || '';
+    if (/^req=/.test(h)) { const id = decodeURIComponent(h.slice(4)); if (S.requests.some(r => r.id === id)) openRequest(id); else toast('That request no longer exists'); }
+    else if (h === 'notes') { S.view = 'profile'; render(); }
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  }
+  async function loadNotes() {
+    if (S.notesLoading || !S.token) return;
+    S.notesLoading = true;
+    try { const r = await call('apiNotifications', S.token); S.notes = r.items; S.unread = r.unread; setBadge(); }
+    catch (e) { S.notes = S.notes || []; }
+    S.notesLoading = false; redrawNotes(); renderNavOnly();
+  }
+  function renderNavOnly() { const n = $('.nav'); if (n) n.outerHTML = renderNav().replace(/^<span id="syncStatus"[^>]*>[^<]*<\/span>/, ''); }
+  function redrawNotes() { const p = $('#notesPanel'); if (p) p.innerHTML = notesPanelHtml(); }
+  const NOTE_IC = { approved: ['check', 'ok'], denied: ['ban', 'no'], edited: ['pencil', 'warn'], deleted: ['trash', 'no'], new: ['plus', 'info'], created: ['plus', 'info'], signup: ['userPlus', 'info'], account: ['check', 'ok'] };
+  function ago(ts) {
+    const s = (Date.now() - new Date(ts).getTime()) / 1000;
+    if (!(s >= 0)) return '';
+    if (s < 60) return 'now'; if (s < 3600) return Math.floor(s / 60) + 'm'; if (s < 86400) return Math.floor(s / 3600) + 'h';
+    if (s < 7 * 86400) return Math.floor(s / 86400) + 'd';
+    return D.f(String(ts).slice(0, 10), { month: 'short', day: 'numeric' });
+  }
+  function notesPanelHtml() {
+    if (S.notes == null) setTimeout(loadNotes, 0);
+    const pst = S.pushState || 'unsupported';
+    const pushMsg = {
+      google: 'Push notifications work in the GitHub Pages version of the app (add it to your Home Screen). Everything still shows up here.',
+      install: 'On iPhone, notifications work in the Home Screen app: open this page in Safari, tap Share → Add to Home Screen, open PAL from your Home Screen, then turn them on here.',
+      unsupported: 'This browser can’t receive push notifications. Everything still shows up here.',
+      denied: 'Notifications are blocked for PAL on this device. Allow them in your phone’s Settings → Notifications → PAL (or the browser’s site settings), then come back.',
+      off: 'Get a notification on this device when your requests are approved, denied, edited or deleted.',
+      busy: 'Setting up notifications…',
+      on: 'Notifications are on for this device.'
+    }[pst];
+    const pushBtns = pst === 'off' ? '<button class="btn primary" data-act="pushOn">' + icon('bell', 18) + 'Turn on notifications</button>'
+      : pst === 'on' ? '<button class="btn" data-act="pushOff">Turn off</button><button class="btn" data-act="pushTest">Send test</button>' : '';
+    const list = S.notes == null ? '<div class="notes-empty">Loading…</div>'
+      : !S.notes.length ? '<div class="notes-empty">No notifications yet. Approvals, denials and changes to your requests will show up here.</div>'
+      : '<div class="notes-list">' + S.notes.map(n => {
+        const k = NOTE_IC[n.kind] || ['bell', 'info'];
+        return '<button type="button" class="note-row' + (n.read ? '' : ' unread') + '" data-act="noteOpen" data-id="' + esc(n.id) + '" data-req="' + esc(n.requestId || '') + '">' +
+          '<span class="note-ic note-' + k[1] + '">' + icon(k[0], 16) + '</span>' +
+          '<span class="note-t"><b>' + esc(n.title) + '</b><span>' + esc(n.body) + '</span></span>' +
+          '<span class="note-time">' + esc(ago(n.ts)) + (n.read ? '' : '<i class="note-dot" aria-label="Unread"></i>') + '</span></button>';
+      }).join('') + '</div>';
+    return '<div class="notes-h"><h3>' + icon('bell', 16) + ' Notifications' + (S.unread ? '<span class="ct">' + S.unread + ' new</span>' : '') + '</h3>' +
+        (S.unread ? '<button class="btn ghost sm" data-act="notesAllRead">Mark all read</button>' : '') + '</div>' +
+      '<div class="push-row push-' + pst + '"><p>' + (pst === 'on' ? icon('check', 16) : '') + esc(pushMsg) + '</p>' + (pushBtns ? '<div class="push-btns">' + pushBtns + '</div>' : '') + '</div>' +
+      (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin alerts</b> — new requests, member edits and deletions, new accounts.</p><div class="push-btns">' +
+        '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' : '') +
+      list;
+  }
+  const b64ToU8 = b => { const s = atob(b.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((b.length + 3) % 4)); return Uint8Array.from(s, c => c.charCodeAt(0)); };
+
   function renderProfile() {
     const me = userOf(S.me);
     return '<section class="page profile-page"><div class="toolbar"><span class="title">Profile</span>' +
@@ -3451,6 +3569,8 @@
 
       '<div class="panel"><div class="uhead"><div class="avatar">' + esc(initials(me)) + '</div><div><div class="nm">' + esc(me.rank + ' ' + me.name) + '</div>' +
         '<div style="display:flex;gap:6px;margin-top:4px"><span class="badge">' + esc(me.role === 'Boom' ? 'Boom Operator' : me.role) + '</span>' + unitBadge(me.unit) + '</div></div></div></div>' +
+
+      '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' +
 
       '<div class="panel"><h3>' + icon('key', 16) + ' Change PIN</h3><div class="row">' +
         '<div class="field"><label for="np1">New PIN</label><input id="np1" type="password" inputmode="numeric" maxlength="8" placeholder="4+ digits" autocomplete="new-password"></div>' +
@@ -3798,6 +3918,48 @@
   })();
 
   const A = {
+    async pushOn() {
+      if (!swReg || !S.vapid) { toast('Notifications aren’t available here', 'error'); return; }
+      // Must be the first await of the tap (iOS only allows the permission prompt from a user gesture).
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') { await refreshPushState(); return; }
+      S.pushState = 'busy'; redrawNotes();
+      try {
+        let sub = await swReg.pushManager.getSubscription();
+        if (!sub) sub = await swReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(S.vapid) });
+        await call('apiPushSubscribe', S.token, sub.toJSON(), location.origin + location.pathname, navigator.userAgent);
+        toast('Notifications are on for this device');
+      } catch (e) { toast('Couldn’t turn on notifications: ' + e.message, 'error', 6000); }
+      await refreshPushState();
+    },
+    async pushOff() {
+      try {
+        const sub = swReg && await swReg.pushManager.getSubscription();
+        if (sub) { await call('apiPushUnsubscribe', S.token, sub.endpoint); await sub.unsubscribe(); }
+        toast('Notifications are off for this device');
+      } catch (e) { toast(e.message, 'error'); }
+      await refreshPushState();
+    },
+    async pushTest() {
+      try { const r = await call('apiPushTest', S.token); toast('Test sent to ' + plural(r.sent, 'device')); }
+      catch (e) { toast(e.message, 'error'); }
+    },
+    async adminAlerts() {
+      try { apply(await call('apiSetAdminAlerts', S.token, !S.adminAlerts)); redrawNotes(); toast('Admin alerts ' + (S.adminAlerts ? 'on' : 'off')); }
+      catch (e) { toast(e.message, 'error'); }
+    },
+    noteOpen(el) {
+      const id = el.dataset.id, req = el.dataset.req, n = (S.notes || []).find(x => x.id === id);
+      if (n && !n.read) {
+        n.read = true; S.unread = Math.max(0, (S.unread || 0) - 1); setBadge(); redrawNotes(); renderNavOnly();
+        call('apiMarkNotesRead', S.token, [id]).catch(() => {});
+      }
+      if (req) { if (S.requests.some(r => r.id === req)) openRequest(req); else toast('That request no longer exists'); }
+    },
+    async notesAllRead() {
+      (S.notes || []).forEach(n => { n.read = true; }); S.unread = 0; setBadge(); redrawNotes(); renderNavOnly();
+      try { const r = await call('apiMarkNotesRead', S.token, 'all'); S.notes = r.items; S.unread = r.unread; setBadge(); redrawNotes(); } catch (e) { /* next refresh fixes it */ }
+    },
     nav(el) {
       const v = el.dataset.v;
       if (v === 'calendar') S.cal = 'month'; // the Calendar tab always returns to Month view
@@ -4027,6 +4189,8 @@
       if (isCalView() && S.cal === 'month') fitMonth();
     },
     async signOut() {
+      // Remove this device's push subscription while the session is still valid, then end the session.
+      try { const sub = swReg && await swReg.pushManager.getSubscription(); if (sub) { await call('apiPushUnsubscribe', S.token, sub.endpoint); await sub.unsubscribe(); } } catch (e) { /* best effort */ }
       try { await call('apiLogout', S.token); } catch (e) { /* session may already be gone */ }
       signOutLocal();
     },
@@ -4304,8 +4468,9 @@
   /* ================================================================ */
   async function boot() {
     applyTheme();
+    initPush();
     if (S.token) {
-      try { apply(await call('apiBootstrap', S.token)); render(); return; }
+      try { apply(await call('apiBootstrap', S.token)); render(); if (location.hash) openLink(location.hash); return; }
       catch (e) { if (/new PIN/.test(e.message)) return; S.token = null; store.del('token'); }
     }
     showLogin();
