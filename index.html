@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792533480"></script>
+    <script src="config.js?v=1792533579"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3332,10 +3332,12 @@
     let base = 0;
     const place = sg => {
       const free = l => lanes[l] === undefined || lanes[l] < sg.a;
+      // Continue on the HIGHEST line any of its people were on the day before (a shared bar keeps the top person's line,
+      // so that person's bar stays unbroken and a newcomer can't jump above it).
       let l = -1;
       for (const r of sg.people) {
         const pl = laneOf.get(r.id);
-        if (pl !== undefined && ends.get(r.id) === sg.a - 1 && free(pl)) { l = pl; break; }
+        if (pl !== undefined && ends.get(r.id) === sg.a - 1 && free(pl) && (l < 0 || pl < l)) l = pl;
       }
       // A bar that continues from the previous day keeps its lane, so each person reads as one straight line.
       // Only new bars take the highest free lane.
