@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792485871"></script>
+    <script src="config.js?v=1792486117"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1334,11 +1334,12 @@
   /* Person filter with someone picked: one joined pill [ Name ⌄ | ✕ ] in the selected colour (DESIGN.md §Selection). */
   .fp { gap: 0; }
   .fp:has(.fp-clear) .fperson { border-top-right-radius: 0; border-bottom-right-radius: 0; padding-right: 10px; }
-  .fp .fp-clear, .fp .fp-clear:has(> .ic:first-child) { width: 40px; min-width: 40px; height: 40px; padding: 0; margin: 0; justify-content: center;
+  .fp:has(.fp-clear) { align-items: stretch; }
+  .fp .fp-clear, .fp .fp-clear:has(> .ic:first-child) { width: 44px; min-width: 44px; height: auto; min-height: 0; align-self: stretch; padding: 0; margin: 0; justify-content: center;
     border-radius: 0 20px 20px 0; border: 0; border-left: 1px solid color-mix(in srgb, var(--sel-ink) 30%, transparent);
     background: var(--sel-bg); color: var(--sel-ink) !important; }
   .fp .fp-clear .ic { margin: 0; }
-  .fs-sect .fp .fp-clear { width: 48px; height: 44px; border-radius: 0 22px 22px 0; }
+  .fs-sect .fp .fp-clear, .fs-sect .fp .fp-clear:has(> .ic:first-child) { width: 52px; min-width: 52px; border-radius: 0 22px 22px 0; }
 </style>
 
   </head>
