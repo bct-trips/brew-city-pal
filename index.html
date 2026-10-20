@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792526708"></script>
+    <script src="config.js?v=1792526926"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1821,6 +1821,7 @@
   .badge-builder .bb-prev .ub { font-size: 16px; padding: 4px 12px; }
   .badge-builder .cfg-code { flex: 0 0 110px; }
   .cfg-new-btn { justify-content: flex-start; border-top: 0; }
+  #modal #passkey { display: block; width: 100%; box-sizing: border-box; height: 48px; font-size: 20px; letter-spacing: .2em; }
 </style>
 
   </head>
@@ -4121,6 +4122,7 @@
       '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full" role="group" aria-label="Appearance">' +
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
           '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '">' + icon(t[2], 15) + t[1] + '</button>').join('') + '</div></div>' +
+      (S.isAdmin ? row('menuLockAdmin', 'lock', 'Lock Admin Mode') : row('openAdminPin', 'shield', 'Admin Mode')) +
       row('openSettings', 'sliders', 'Settings') +
       row('signOut', 'logout', 'Sign out');
     document.body.appendChild(el);
@@ -4139,6 +4141,18 @@
     if (!m.contains(ev.target) || (item && item.dataset.act !== 'theme')) closeProfileMenu();
   }, true);
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && document.getElementById('pmenu')) closeProfileMenu(); });
+  /** Admin Mode (from the Profile menu): ask for the admin PIN. The box ignores password-manager autofill (it's
+   *  read-only until tapped) so your sign-in PIN never lands in it. */
+  function openAdminPin() {
+    const html = modalHead('Admin Mode', 'shield') + '<div class="modal-b"><p class="auth-note">Enter the admin PIN to switch to admin mode. You stay signed in as yourself.</p>' +
+      '<input id="passkey" name="pal-admin-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Admin PIN" aria-label="Admin PIN" autocomplete="off" readonly data-lpignore="true" data-1p-ignore data-bwignore>' +
+      '<div class="err" id="admErr"></div></div>' +
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="unlockAdmin" id="admGo">' + icon('unlock', 18) + 'Unlock</button></div>';
+    openModal('adminPin', html);
+    const box = $('#passkey');
+    box.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); A.unlockAdmin($('#admGo')); } });
+    setTimeout(() => box.focus(), 50); // focusing arms it (see armPasskey)
+  }
   /** Notifications drawer: the list, with Mark all read / Clear all and a ✕ on each. */
   function openNotesDrawer() {
     S.notesAll = false;
@@ -4221,18 +4235,6 @@
         '<div class="field"><label for="np2">Confirm new PIN</label><input id="np2" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div></div>' +
         '<div class="err" id="pinErr"></div><div class="row" style="margin-top:4px"><button class="btn primary" data-act="savePin">Save PIN</button><button class="btn" data-act="clearPin">Cancel</button></div></div>' +
 
-      '<div class="panel"><h3>' + icon('shield', 16) + ' Admin mode</h3>' +
-        (S.isAdmin
-          ? '<div class="row"><button class="btn" data-act="lockAdmin">' + icon('lock', 18) + ' Lock admin mode</button></div>'
-          : '<div class="row"><input id="passkey" name="pal-admin-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Admin PIN" aria-label="Admin PIN" autocomplete="off" readonly data-lpignore="true" data-1p-ignore data-bwignore><button class="btn primary" data-act="unlockAdmin" style="flex:0 0 auto">' + icon('unlock', 18) + ' Unlock</button></div><div class="err" id="admErr"></div>') +
-      '</div>' +
-
-      '<div class="panel"><h3>' + icon('sun', 16) + ' Appearance</h3><div class="seg full" role="group">' +
-        [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
-          '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '">' + icon(t[2], 15) + t[1] + '</button>').join('') +
-      '</div></div>' +
-
-      '<div class="panel"><button class="btn" data-act="signOut">' + icon('logout', 18) + ' Sign out</button></div>' +
       '</div></section>';
   }
 
@@ -5117,9 +5119,18 @@
       await busy(el, async () => {
         try {
           const data = await call('apiUnlockAdmin', S.token, k);
-          apply(data); render(); toast('Admin mode unlocked');
+          apply(data); if (S.modal === 'adminPin') closeModal(); render(); toast('Admin mode unlocked');
         } catch (e) { box.disabled = false; err.textContent = e.message; box.value = ''; box.focus(); } // show the real reason (wrong PIN, too many tries…)
       });
+    },
+    openAdminPin() { openAdminPin(); },
+    // Lock from the Profile menu (which has closed): the ring spins on the Profile tab while it locks.
+    async menuLockAdmin() {
+      const ic = $('.nav button[data-v="profile"] .nav-ic'); if (ic) ic.classList.add('syncing');
+      const data = await run(null, 'apiLockAdmin', S.token);
+      if (ic) ic.classList.remove('syncing');
+      if (!data) return;
+      apply(data); render(); toast('Admin mode locked');
     },
     async lockAdmin(el) {
       const data = await run(el, 'apiLockAdmin', S.token);
