@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792534070"></script>
+    <script src="config.js?v=1792534272"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3560,7 +3560,7 @@
     const names = list.length > 3
       ? '<span class="rp-more">4+ ' + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[role] + '</span>'
       : list.map(r => '<span class="mn' + (dupsOf(r).length ? ' dup' : '') + (r.id === S.focus ? ' focus' : '') + (r.status === 'Denied' ? ' st-denied' : '') +
-          '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + '</span>')
+          '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (onNow(r) ? '' : statusIcon(r.status)) + '</span>')
           .join('<span class="rp-dot" aria-hidden="true">·</span>');
     return '<span class="idb pb rp" title="' + esc(title) + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
       (unit ? '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(unit) + '</span>' : '') +
@@ -3574,7 +3574,7 @@
       // Same-dates bar: one solid bar for everyone on it; each badge opens that person's request.
       const same = sg.people.every(r => r.status === r0.status);
       return '<div class="' + base + ' grp' + (same ? ' st-' + r0.status.toLowerCase() : '') + (sg.people.some(r => r.userId === S.me) ? ' mine' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"' +
-        ' title="' + esc(sg.people.map(describe).join('\n')) + '"><span class="evs-t">' + groupBadges(sg.people, sg.kind !== 'end', D.max(r0.start, sg.ws), D.min(r0.end, D.add(sg.ws, 6))) + '</span></div>';
+        ' title="' + esc(sg.people.map(describe).join('\n')) + '"><span class="evs-t">' + groupBadges(sg.people, true, D.max(r0.start, sg.ws), D.min(r0.end, D.add(sg.ws, 6))) + '</span></div>';
     }
     if (sg.kind === 'mid') {
       // One badge per position + unit ([P|MKE|…] / [P|PIT|…] / [B|MKE|…]), separated by "/".
@@ -3590,7 +3590,7 @@
     // First / last / single day: the shaped event bar holding the person's [P|MKE|Name] badge.
     const cls = base + ' st-' + r0.status.toLowerCase() + (r0.id === S.focus ? ' focus' : '') + (r0.userId === S.me ? ' mine' : '') + (dupsOf(r0).length ? ' dup' : '') + (isNow(r0) ? ' now' : '');
     return '<div class="' + cls + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r0.id) + '" style="' + pos + '"' +
-      ' title="' + esc(describe(r0)) + '" aria-label="' + esc(describe(r0)) + '"><span class="evs-t">' + personBadge(r0, sg.kind !== 'end', D.max(r0.start, sg.ws), D.min(r0.end, D.add(sg.ws, 6))) + '</span></div>';
+      ' title="' + esc(describe(r0)) + '" aria-label="' + esc(describe(r0)) + '"><span class="evs-t">' + personBadge(r0, true, D.max(r0.start, sg.ws), D.min(r0.end, D.add(sg.ws, 6))) + '</span></div>';
   }
 
 
@@ -3708,9 +3708,9 @@
           const same = !g || g.every(x => x.status === r.status);
           const cls = ['wpuck', g ? 'grp' : '', r.type === 'Leave' ? 'leave' : 'pass', same ? 'st-' + r.status.toLowerCase() : '', r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : '', (g || [r]).some(isNow) ? 'now' : ''].join(' ');
           const sub = '<span class="s">' + r.type + (same ? ' · ' + r.status : '') + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span>';
-          if (g) return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '"><span class="n">' + groupBadges(g, false, D.max(r.start, ws), D.min(r.end, we)) + '</span>' + sub + '</div>';
+          if (g) return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '"><span class="n">' + groupBadges(g, true, D.max(r.start, ws), D.min(r.end, we)) + '</span>' + sub + '</div>';
           return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-            '<span class="n">' + personBadge(r, false, D.max(r.start, ws), D.min(r.end, we)) + '</span>' + sub + '</div>';
+            '<span class="n">' + personBadge(r, true, D.max(r.start, ws), D.min(r.end, we)) + '</span>' + sub + '</div>';
         }).join('');
         const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
         return '<div class="band band-' + b[0][0].toLowerCase() + '"><div class="band-title"><span class="band-tag">' + b[0][0] + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></div>' +
