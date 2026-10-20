@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792530193"></script>
+    <script src="config.js?v=1792530249"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3385,8 +3385,8 @@
   /* Full person badge on calendar bars: [P|MKE|Lastname] as one chip. Approved = green border. */
   /** Green "going on now" dot after a name — only on the bar that covers today (from–to = the dates that bar shows). */
   // On leave / pass right now = APPROVED and today is inside the dates (pending or denied isn't "on leave", even on those days).
-  // The green dot sits to the RIGHT of the name, in the ✓'s place (only on the bar that covers today: from–to).
-  const onNow = (r, from, to) => r.status === 'Approved' && isNow(r) && (!from || (S.today >= from && S.today <= to));
+  // The green dot sits to the RIGHT of the name, in the ✓'s place, on every bar of that request (all weeks).
+  const onNow = r => r.status === 'Approved' && isNow(r);
   const nowDot = (r, from, to) => onNow(r, from, to) ? '<i class="now-dot" title="On ' + r.type.toLowerCase() + ' now"></i>' : '';
   function personBadge(r, withStatus, from, to) {
     const u = userOf(r.userId), L = (u.role || 'Other')[0];
