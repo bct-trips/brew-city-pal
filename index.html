@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792534272"></script>
+    <script src="config.js?v=1792534426"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1029,7 +1029,7 @@
   /* Phone month strips carry the standard person puck [P|MKE|Lastname] (DESIGN.md §Pills). */
   .cs-bar .idb.pb { flex: 0 1 auto; min-width: 0; max-width: 100%; }
   .cs-bar .idb-u { display: inline-flex; }
-  .idb.pb.no-unit .idb-u { display: none !important; }
+  /* (Badges never drop the unit; names shorten with … instead.) */
 
   /* ---------- Qtr availability tint (one position: mine, else the first selected) ---------- */
   :root { --av-open: #b9e6c4; --av-over: #fcc98f; --av-full: #f7aaa4; --av-open-dot: #1e7a3a; --av-over-dot: #c2560a; --av-full-dot: #b3261e; }
@@ -2715,14 +2715,14 @@
     store.set('view', S.view); store.set('cal', S.cal);
     renderInstallFab();
   }
-  /* Person pucks: when the name would be cut off, drop the unit so it reads [P|Name] (DESIGN.md §Pills). */
+  /* Person pucks: the unit always stays; when even a couple of letters of the name won't fit, drop the status icon. */
   function fitPucks() {
     $$('.idb.pb').forEach(b => {
       const n = b.querySelector('.idb-n'), u = b.querySelector('.idb-u');
       if (!n || !u) return;
       b.classList.remove('no-unit', 'no-status');
       const t = n.querySelector('.idb-t') || n; // the name text (person badges keep it in .idb-t)
-      if (t.scrollWidth > t.clientWidth + 1 || n.scrollWidth > n.clientWidth + 1) b.classList.add('no-unit');
+      // The unit always stays (it's part of who they are); a long name is shortened with "…" instead.
       // Still too tight to show at least a couple of letters: drop the status icon before the name (the name matters more).
       if (t !== n && t.scrollWidth > t.clientWidth + 1 && t.clientWidth < 28) b.classList.add('no-status');
     });
