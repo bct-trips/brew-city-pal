@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792493216"></script>
+    <script src="config.js?v=1792493357"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1129,14 +1129,17 @@
   /* Keep visually-hidden text inside its table (it was stretching the page sideways on phones). */
   .tbl-wrap, .flag { position: relative; }
 
-  /* ---------- Consolidated Filters button (phones) + filter sheet ---------- */
-  .fall, .mmode { display: none; }
+  /* ---------- Consolidated Filters button (every width) + filter sheet ----------
+     One "Filters" button (summary of what's filtered) opens the sheet with status, position, person / conflicts and Leave | Pass.
+     The inline segment groups are not shown in the bars any more. */
+  .mmode { display: none; }
   .fall .ic:first-child { flex: none; }
   .fall span { flex: 1; min-width: 0; text-align: left; }
+  .calbar .filters > .fdrop, .calbar .filters > .tgroup, .calbar .filters > .fchips, .calbar .filters > .fp, .calbar .filters > .conf-only,
+  .lbar .filters > .fdrop, .lbar .filters > .tgroup, .lbar .filters > .fchips, .lbar .filters > .fp, .lbar .filters > .conf-only { display: none !important; }
+  .calbar .filters > .fall, .lbar .filters > .fall { display: flex; flex: 0 1 auto; min-width: 0; max-width: 380px; gap: 8px; padding: 0 12px 0 14px; }
   @media (max-width: 700px) {
-    .calbar .filters > .fdrop, .calbar .filters > .tgroup, .calbar .filters > .fchips, .calbar .filters > .fp,
-    .lbar .filters > .fdrop, .lbar .filters > .tgroup, .lbar .filters > .fchips, .lbar .filters > .fp { display: none !important; }
-    .calbar .filters > .fall, .lbar .filters > .fall { display: flex; flex: 1 1 0; min-width: 0; gap: 8px; padding: 0 12px 0 14px; }
+    .calbar .filters > .fall, .lbar .filters > .fall { flex: 1 1 0; max-width: none; }
     .calbar .filters > .mmode { display: flex; flex: none; }
     .calbar .filters > .mmode .seg { display: flex; }
     .calbar .filters > .mmode .seg button { padding: 0 14px; }
@@ -1481,7 +1484,7 @@
      in the same colour as it (tonal when filtered, yellow when a person is picked). */
   .fall-clear { flex: none; }
   .fall-clear:has(> .ic:first-child) { padding: 0 16px 0 12px; }
-  @media (max-width: 700px) {
+  @media all {
     .filters > .fall:has(+ .fall-clear) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
     .filters > .fall-clear, .filters > .fall-clear:has(> .ic:first-child) { width: 44px; min-width: 44px; padding: 0; margin-left: -6px; border-radius: 0 20px 20px 0;
       border-left: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
@@ -1506,6 +1509,12 @@
   .fperson > span:not(.idb), .fall > span:not(.idb) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fperson b, .fall b { font-weight: 800; }
   .fp .fperson { max-width: 260px; }
+  /* Wide screens: Leave | Pass stays in the bar, after the Filters button (not in the sheet). */
+  @media (min-width: 701px) {
+    .calbar .filters > .tgroup.tgroup, .lbar .filters > .tgroup.tgroup { display: inline-flex !important; order: 2; }
+    .filters > .fall, .filters > .fall-clear { order: 1; }
+    .filters > .fall-clear, .filters > .fall-clear:has(> .ic:first-child) { margin-left: -8px; } /* the bar's gap is 8px here */
+  }
 </style>
 
   </head>
@@ -2281,6 +2290,8 @@
   }
 
   /* Phones: one "Filters" button replaces the status / position / Leave|Pass controls and opens a sheet with all of them. */
+  /** Wide screens (> 700px) show Leave | Pass in the bar next to the Filters button; phones put it in the sheet. */
+  const wideFilters = () => window.matchMedia('(min-width: 701px)').matches;
   function filterSummary(sc) {
     const st = fState(sc), parts = [];
     const pick = (g, opts) => { const sel = st[g]; if (sel && sel.length !== opts.length) parts.push(sel.length ? opts.filter(o => sel.includes(o[0])).map(o => o[1]).join(', ') : 'No ' + g); };
@@ -2288,7 +2299,7 @@
     if (st.person) parts.push(calName(userOf(st.person)));
     else if (st.role) pick('role', FILTERS[1].opts);
     pick('status', FILTERS[0].opts);
-    pick('type', FILTERS[2].opts);
+    if (!wideFilters()) pick('type', FILTERS[2].opts);
     return parts;
   }
     icon('alert', 18) + '<span class="bl">Conflicts</span></button>';
@@ -2326,12 +2337,13 @@
   }
   function openFilterSheet(sc, inPlace) {
     S.openDrop = null; S.fsScope = sc || 'cal';
-    const st = fState(sc), groups = sc === 'mine' ? FILTERS.filter(f => f.g !== 'role') : FILTERS;
+    // Wide screens keep the Leave | Pass toggle in the bar, so the sheet leaves it out there.
+    const st = fState(sc), groups = FILTERS.filter(f => !(sc === 'mine' && f.g === 'role') && !(f.g === 'type' && wideFilters()));
     const sect = (title, inner) => '<div class="fs-sect"><div class="fs-h">' + title + '</div>' + inner + '</div>';
     const chips = F => '<div class="seg full" role="group" aria-label="' + F.name + '">' + F.opts.map(o =>
       '<button type="button" class="' + (st[F.g].includes(o[0]) ? 'on' : '') + '" aria-pressed="' + st[F.g].includes(o[0]) + '" data-act="fToggle" data-g="' + F.g + '" data-v="' + o[0] + '"' + scAttr(sc) + '>' + o[1] + '</button>').join('') + '</div>';
     const html = modalHead('Filters', 'sliders') + '<div class="modal-b fs-body">' +
-      sect('Show', typeToggle(sc)) +
+      (wideFilters() ? '' : sect('Show', typeToggle(sc))) +
       sect('Status', chips(groups[0])) +
       (groups.some(f => f.g === 'role') ? sect('Position', chips(FILTERS[1])) + sect('Person', personSelect('in-sheet', sc)) : '') +
       '</div><div class="modal-f"><button class="btn" data-act="resetFilters"' + scAttr(sc) + '>Reset</button><button class="btn primary" data-act="closeModal">Done</button></div>';
