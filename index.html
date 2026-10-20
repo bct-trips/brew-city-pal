@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792529659"></script>
+    <script src="config.js?v=1792529743"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1884,6 +1884,10 @@
   .pm-pop::after { background: var(--pm-bg); border-right: 1.5px solid var(--pm-edge); border-bottom: 1.5px solid var(--pm-edge); bottom: -8px; }
   /* Names inside a shared badge: a clear gap around the "·" separator. */
   .gbb .rp-dot { margin: 0 8px; }
+  /* P / B / O day chips: solid red over the max, solid orange at the max, solid green with slots open. */
+  .qc-day.over, .qc-day.over.ok { background: #b42318; border-color: #b42318; color: #ffffff; }
+  .qc-day.full { background: #c2410c; border-color: #c2410c; color: #ffffff; }
+  .qc-day.open { background: #15803d; border-color: #15803d; color: #ffffff; }
 </style>
 
   </head>
@@ -3241,7 +3245,9 @@
     const c = countOn(d, role), q = quota(role), over = q && c > q;
     const ok = over && conflictState(d, role) === 'ok';
     const msg = quotaMsg(d, role) + (over ? (ok ? ' All approved.' : '') + ' Click to review the conflict.' : '');
-    const st = over ? ' over' + (ok ? ' ok' : '') : q && c === q ? ' full' : c ? '' : ' zero';
+    // Solid colours: red = over the daily max (approved or not — approving doesn't free a slot), orange = at the max,
+    // green = slots open. Positions with no max stay neutral.
+    const st = over ? ' over' : q && c === q ? ' full' : q ? ' open' : c ? '' : ' zero';
     return '<button class="qc-day' + st + '" data-act="quotaInfo" data-date="' + d + '" data-role="' + role + '" title="' + esc(msg) + '" aria-label="' + esc(msg) + '">' +
       role[0] + ': ' + c + (q ? '/' + q : '') + '</button>';
   }
