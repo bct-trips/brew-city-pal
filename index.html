@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792528373"></script>
+    <script src="config.js?v=1792528506"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1572,7 +1572,7 @@
   :root[data-theme="dark"] .nav { border-top-color: rgba(255, 255, 255, .14); }
   /* Dark mode: the regular nav bar is dark (not navy); admin mode stays metallic gold so it's still obvious. */
   :root[data-theme="dark"] .nav:not(.nav-admin) { --nav-bg: #1d1e24; }
-  :root[data-theme="dark"] .nav:not(.nav-admin) button:not(.on) { color: #c5c6d0; }
+  :root[data-theme="dark"] .nav:not(.nav-admin) button:not(.on):not([aria-expanded="true"]) { color: #c5c6d0; }
   .nav button { color: #c9d3e8; }
   .nav.nav-admin button { color: #f6efe2; }
   .nav button.on { color: var(--navy); }
@@ -1869,6 +1869,9 @@
   .nav-caret .ic { transform: rotate(180deg); transition: transform .18s ease; }
   .nav button[aria-expanded="true"] .nav-caret { transform: none; }
   .nav button[aria-expanded="true"] .nav-caret .ic { transform: rotate(0deg); }
+  /* While the Profile drop-up is open, the page you're on keeps a muted pill (so Profile is the strong one). */
+  .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"])::before { background: rgba(255, 255, 255, .16); }
+  .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]) { color: #ffffff; }
 </style>
 
   </head>
