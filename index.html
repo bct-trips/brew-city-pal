@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792486474"></script>
+    <script src="config.js?v=1792486543"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1350,6 +1350,11 @@
   .conf-tog { margin-left: auto; }
   .conf-tog.on, .conf-tog.on:hover { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink) !important; }
   @media (max-width: 700px) { .mine-head .seg { flex: 1 1 auto; } .mine-head .seg button { flex: 1 1 0; } .conf-tog { flex: 1 1 auto; margin-left: 0; } }
+
+  /* Status cell: badges stacked and left-aligned, same height. */
+  .st-cell { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .st-cell .cfl { margin-left: 0; height: 22px; }
+  .st-cell .badge { height: 22px; display: inline-flex; align-items: center; }
 </style>
 
   </head>
@@ -2348,7 +2353,7 @@
     const tip = (bad ? 'Conflict' : 'Over the daily max (all approved)') + ': ' + countOn(worst, role) + ' of ' + q + ' ' + ROLE_PLURAL[role] + ' on leave on ' +
       cd.map(D.short).join(', ') + '. Click to resolve.';
     return '<button type="button" class="cfl ' + (bad ? 'cfl-bad' : 'cfl-ok') + (compact ? ' cfl-sm' : '') + '" data-act="openConflict" data-date="' + worst + '" data-role="' + role + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
-      icon('alert', compact ? 13 : 14) + (compact ? '' : '<span>' + (bad ? 'Conflict' : 'Over max') + ' · ' + countOn(worst, role) + '/' + q + '</span>') + '</button>';
+      icon('alert', compact ? 13 : 14) + (compact ? '' : '<span>' + (bad ? 'Conflict' : 'Over max') + '</span>') + '</button>';
   }
   function conflictState(d, only) {
     const cs = dayConflicts(d, only);
@@ -2368,6 +2373,11 @@
           '<button class="btn ok sm" data-act="cfSet" data-v="Approved" data-id="' + esc(r.id) + '" data-date="' + d + '"' + (r.status === 'Approved' ? ' disabled' : '') + '>' + icon('check', 13) + 'Approve</button>' +
           '<button class="btn bad sm" data-act="cfSet" data-v="Denied" data-id="' + esc(r.id) + '" data-date="' + d + '">' + icon('x', 13) + 'Deny</button>' +
           '<button class="btn sm" data-act="editReq" data-id="' + esc(r.id) + '">' + icon('pencil', 13) + 'Edit dates</button></span>';
+      } else if (r.userId === S.me) {
+        // Members can clear a conflict themselves by moving or deleting their own request.
+        acts = '<span class="cf-acts">' +
+          (canEdit(r) ? '<button class="btn sm" data-act="editReq" data-id="' + esc(r.id) + '">' + icon('pencil', 13) + 'Edit dates</button>' : '') +
+          (canDelete(r) ? '<button class="btn sm del" data-act="cancelReq" data-id="' + esc(r.id) + '">' + icon('trash', 13) + 'Delete</button>' : '') + '</span>';
       }
       return '<li class="cf-row"><span class="dl-who">' + personBadge(r, true) + '</span>' +
         '<span class="dl-meta">' + r.type + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + ' · ' + plural(D.days(r.start, r.end), 'day') + '</span>' +
@@ -2378,7 +2388,7 @@
         (st === 'ok' ? 'All requests in this conflict are approved — the day marker is green.' : 'Over the daily max — resolve by denying a request, editing dates, or approving them all.') + '</div>' +
       cs.map(c => '<div class="dl-sec"><div class="dl-h"><span>' + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[c.role] + ' out: ' + c.list.length + ' · max ' + c.q + '</span></div>' +
         '<ul class="dl-list cf-list">' + c.list.map(row).join('') + '</ul></div>').join('') +
-      (S.isAdmin ? '' : '<p class="meta" style="white-space:normal">An admin resolves conflicts.</p>') +
+      (S.isAdmin ? '' : '<p class="meta" style="white-space:normal">Move or delete your request to clear the conflict, or leave it for an admin to decide.</p>') +
       '</div><div class="modal-f">' +
       (S.isAdmin && pending ? '<button class="btn ok" data-act="cfApproveAll" data-date="' + d + '"' + (only ? ' data-role="' + only + '"' : '') + '>' + icon('check', 15) + ' Approve all</button>' : '') +
       '<button class="btn" data-act="gotoDay" data-date="' + d + '">' + icon('calendar', 15) + ' Day view</button>' +
