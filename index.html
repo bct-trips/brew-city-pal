@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792489632"></script>
+    <script src="config.js?v=1792489735"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1435,7 +1435,7 @@
   .grp-past tr[data-id] td { opacity: .85; }
   /* Narrow month cells (e.g. calendar squeezed by the day panel): keep only the counters that are full or over the max. */
   .month:not(.compact) .cell { container-type: inline-size; }
-  @container (max-width: 150px) { .qc-day:not(.over):not(.full) { display: none; } .qc-day { padding: 0 4px; font-size: 11.5px; } }
+  @container (max-width: 185px) { .qc-day:not(.over):not(.full) { display: none; } .qc-day { padding: 0 4px; font-size: 11.5px; } }
   /* Selected = Brewers navy #12284B (Leave is the brighter royal blue; gold = Pass). Bold text marks it too. */
   .seg button.on, .fsel.on, .fdrop-btn.on, .btn.today-btn.on { font-weight: 800; }
   .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: var(--sel-bg); color: var(--sel-ink); }
@@ -1481,17 +1481,27 @@
   html body :is(.cell, .wk-day, .qd).today { --mark: var(--today-ring); box-shadow: none !important; }
   html body :is(.cell, .wk-day, .qd).is-open { --mark: var(--sel-ring); box-shadow: none !important; }
   html body :is(.cell, .wk-day, .qd):is(.today, .is-open)::before {
-    content: ""; position: absolute; inset: 3px; z-index: 3; pointer-events: none; border-radius: 12px;
+    content: ""; position: absolute; inset: 1px; z-index: 3; pointer-events: none; border-radius: 12px;
     border: 2px solid var(--mark); background: color-mix(in srgb, var(--mark) 12%, transparent); }
   html body .qd:is(.today, .is-open)::before { background: none; }
   html body :is(.cell, .wk-day, .qd).is-open::after { content: none; border: 0; }
   html body :is(.cell, .wk-day, .qd).today::after {
-    content: attr(data-d); position: absolute; top: 3px; left: 3px; right: auto; bottom: auto; inset: 3px auto auto 3px; z-index: 5; pointer-events: none;
+    content: attr(data-d); position: absolute; inset: 1px auto auto 1px; z-index: 5; pointer-events: none;
     height: var(--mk-h); min-width: calc(var(--mk-h) + 4px); padding: 0 7px; box-sizing: border-box; border: 0;
     display: inline-flex; align-items: center; justify-content: center; border-radius: 12px 0 12px 0;
     background: var(--mark); color: var(--on-primary); font-size: var(--mk-fs); font-weight: 800; font-variant-numeric: tabular-nums; }
   :root[data-theme="dark"] :is(.cell, .wk-day, .qd).is-open.today::after { color: #12284B; }
   html body :is(.cell.today .dnum, .cell.cc.today .cc-n, .wk-day.today .wk-num, .qd.today .qn) { opacity: 0; background: none; box-shadow: none; }
+  /* Counters and date sit inside the day marker ring (ring = 1px inset + 2px border), with a little room on every cell. */
+  .month:not(.compact) .cell-head { padding: 0 6px; }
+  /* Day strip (day view / day panel): the same day marker ring — today = --today-ring, selected day = --sel-ring. No separate fill colour. */
+  html body .ds-d { position: relative; }
+  html body .ds-d.today { --mark: var(--today-ring); }
+  html body .ds-d.on { --mark: var(--sel-ring); background: none; }
+  html body .ds-d:is(.today, .on)::before { content: ""; position: absolute; inset: 1px; pointer-events: none; border-radius: 12px;
+    border: 2px solid var(--mark); background: color-mix(in srgb, var(--mark) 12%, transparent); }
+  html body .ds-d.on .ds-w, html body .ds-d.on .ds-n { color: var(--on-surface); }
+  html body .ds-d.on .ds-n { font-weight: 800; }
 </style>
 
   </head>
