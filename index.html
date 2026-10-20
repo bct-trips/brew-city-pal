@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792526256"></script>
+    <script src="config.js?v=1792526310"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1806,6 +1806,11 @@
   .notes-more { display: block; width: 100%; min-height: 48px; border: 0; border-top: 1px solid var(--line); background: none; cursor: pointer;
     font: inherit; font-weight: 800; color: var(--primary); }
   .notes-more:hover { background: color-mix(in srgb, var(--on-surface) 6%, transparent); }
+  /* New badge builder (Admin → Unit badges → New badge). */
+  .badge-builder .bb-prev { display: grid; place-items: center; padding: 8px 0 14px; }
+  .badge-builder .bb-prev .ub { font-size: 16px; padding: 4px 12px; }
+  .badge-builder .cfg-code { flex: 0 0 110px; }
+  .cfg-new-btn { justify-content: flex-start; border-top: 0; }
 </style>
 
   </head>
@@ -3766,6 +3771,18 @@
         ' data-change="previewUnit"' + (code ? ' data-code="' + esc(code) + '"' : '') + ' aria-label="' + st + '"><span class="ub ub-' + st + '"></span></label>').join('') + '</div>';
   }
 
+  /** New badge builder: live preview, code, name and colour; Cancel · Add badge. */
+  function openBadgeBuilder() {
+    S.badgeDraft = { code: '' };
+    const html = modalHead('New badge', 'plus') + '<div class="modal-b unit-row badge-builder">' +
+      '<div class="bb-prev"><span class="ub ub-crimson" id="nuPrev">NEW</span></div>' +
+      '<div class="row"><div class="field cfg-code"><label for="nuCode">Code</label><input id="nuCode" maxlength="5" placeholder="GRB" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-model="badgeDraft.code" data-live="badgePrev" autofocus></div>' +
+      '<div class="field"><label for="nuUName">Name</label><input id="nuUName" maxlength="40" placeholder="Green Bay" autocomplete="off"></div></div>' +
+      '<div class="field"><span class="lbl">Colour</span>' + swatches('st-new', 'crimson', '') + '</div>' +
+      '<div class="err" id="nuErr"></div></div>' +
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="addUnit">' + icon('plus', 18) + 'Add badge</button></div>';
+    openModal('badge', html);
+  }
   /** Unit badges panel body. Any error shows inline instead of leaving the panel blank. */
   function adminUnits() {
     try {
@@ -3779,12 +3796,8 @@
             (used ? '' : '<button class="btn del" data-act="deleteUnit" data-code="' + esc(un.code) + '">' + icon('trash', 18) + ' Delete</button>') +
             '<button class="btn" data-act="saveUnit" data-code="' + esc(un.code) + '">Save</button></div></div>';
         }).join('') +
-        '<div class="cfg-unit cfg-new unit-row"><div class="cfg-sub-h">New badge</div><div class="cfg-unit-h">' +
-          '<span class="ub-prev"><span class="ub ub-crimson" id="nuPrev">NEW</span></span>' +
-          '<div class="field cfg-code"><label for="nuCode">Code</label><input id="nuCode" maxlength="5" placeholder="GRB" style="text-transform:uppercase" autocapitalize="characters"></div>' +
-          '<div class="field"><label for="nuUName">Name</label><input id="nuUName" maxlength="40" placeholder="Green Bay"></div></div>' +
-          swatches('st-new', 'crimson', '') +
-          '<div class="cfg-foot"><button class="btn primary" data-act="addUnit">' + icon('plus', 18) + ' Add badge</button></div></div>'
+        // A new badge is made in its own builder (a dialog), not an always-open form.
+        '<div class="cfg-foot cfg-new-btn"><button class="btn primary" data-act="newBadge">' + icon('plus', 18) + 'New badge</button></div>'
       );
     } catch (e) {
       return '<div class="msg e">' + icon('alert', 15) + '<span>Unit badges couldn’t load: ' + esc(String(e && e.message || e)) + '</span></div>';
@@ -5116,13 +5129,16 @@
       save(() => { S.settings.units = unitsList().map(x => x.code === code ? Object.assign({}, x, unit) : x); }, 'apiSaveUnit', S.token, unit);
       render(); toast(code + ' badge saved', 'ok', 1500);
     },
+    newBadge() { openBadgeBuilder(); },
+    badgePrev() { const p = $('#nuPrev'), c = $('#nuCode'); if (p && c) p.textContent = c.value.trim().toUpperCase() || 'NEW'; },
     async addUnit() {
-      const code = $('#nuCode').value.trim().toUpperCase();
-      if (!/^[A-Z0-9]{2,5}$/.test(code)) return toast('Unit code must be 2–5 letters or numbers.', 'error');
-      if (unitsList().some(x => x.code === code)) return toast(code + ' already exists — edit it above.', 'error');
-      const unit = { code, name: $('#nuUName').value || code, style: ($('.cfg-new .swatches input:checked') || {}).value || 'crimson' };
+      const code = $('#nuCode').value.trim().toUpperCase(), err = $('#nuErr');
+      if (!/^[A-Z0-9]{2,5}$/.test(code)) { err.textContent = 'The code must be 2–5 letters or numbers.'; return; }
+      if (unitsList().some(x => x.code === code)) { err.textContent = code + ' already exists — edit it in the list instead.'; return; }
+      const unit = { code, name: $('#nuUName').value.trim() || code, style: ($('#modal .swatches input:checked') || {}).value || 'crimson' };
+      S.nextSyncTab = 'admin';
       save(() => { S.settings.units = unitsList().concat([unit]); }, 'apiSaveUnit', S.token, unit);
-      render(); toast(code + ' badge added', 'ok', 1500);
+      closeModal(); render(); toast(code + ' badge added', 'ok', 1500);
     },
     async deleteUnit(el) {
       if (!confirm('Delete the ' + el.dataset.code + ' badge?')) return;
