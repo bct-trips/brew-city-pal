@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792484384"></script>
+    <script src="config.js?v=1792485022"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -691,9 +691,6 @@
   .mini-g button:hover { background: var(--card-2); }
   .mini-g button.out { color: var(--muted); font-weight: 500; }
   .mini-g button.today { box-shadow: inset 0 0 0 2px var(--gold); }
-  .mini-g button.in { background: color-mix(in srgb, var(--gold) 35%, var(--card)); border-radius: 0; color: var(--ink); }
-  .mini-g button.edge { background: var(--navy); color: #fff; border-radius: 8px; }
-  .mini-g button.busy::after { content: ""; display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--bad); margin: -2px auto 0; }
   .dur { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; margin-bottom: 8px; }
   .msgs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
   .msg { display: flex; gap: 8px; align-items: flex-start; font-size: 14.5px; font-weight: 600; padding: 8px 10px; border-radius: 10px; }
@@ -1270,6 +1267,28 @@
   .cfl-count { display: inline-flex; align-items: center; gap: 4px; color: var(--bad); font-weight: 800; }
   /* Home-screen (standalone) app on iPhone: keep the top bar clear of the status bar / notch. 0 everywhere else. */
   #app { padding-top: env(safe-area-inset-top, 0px); box-sizing: border-box; }
+
+  /* Request form, date step: calendar first, compact date fields under it. */
+  .wiz-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 2px 0 8px; }
+  .wiz-dates .field { min-width: 0; }
+  .wiz-dates input[type="date"] { display: block; width: 100%; min-width: 0; max-width: 100%; height: 44px; padding: 0 10px; box-sizing: border-box;
+    font-size: 16px; -webkit-appearance: none; appearance: none; text-align: left; }
+  .wiz-dates input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+  /* Selected range: green where it fits, orange where it would overbook, red where slots are already full. */
+  :root { --rg-ok: #1e7a3a; --rg-ok-ink: #ffffff; --rg-over: #c2560a; --rg-over-ink: #ffffff; --rg-full: #b3261e; --rg-full-ink: #ffffff; }
+  :root[data-theme="dark"] { --rg-ok: #86d99a; --rg-ok-ink: #17181d; --rg-over: #fdba74; --rg-over-ink: #17181d; --rg-full: #ffb4ab; --rg-full-ink: #17181d; }
+  .mini-g button.in { border-radius: 0; font-weight: 800; }
+  .mini-g button.rg-ok { background: var(--rg-ok); color: var(--rg-ok-ink); }
+  .mini-g button.rg-over { background: var(--rg-over); color: var(--rg-over-ink); }
+  .mini-g button.rg-full { background: var(--rg-full); color: var(--rg-full-ink); }
+  .mini-g button.r-s { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+  .mini-g button.r-e { border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+  .mini-g button.dot-over::after, .mini-g button.dot-full::after { content: ""; display: block; width: 6px; height: 6px; border-radius: 50%; margin: -2px auto 0; }
+  .mini-g button.dot-over::after { background: var(--rg-over); } .mini-g button.dot-full::after { background: var(--rg-full); }
+  .mini-key { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 8px; font-size: 13.5px; color: var(--muted); }
+  .mk { width: 12px; height: 12px; border-radius: 3px; margin-left: 6px; } .mk-ok { background: var(--rg-ok); } .mk-over { background: var(--rg-over); } .mk-full { background: var(--rg-full); }
+  .wiz-type .seg { display: flex; width: 100%; height: 44px; } .wiz-type .seg button { flex: 1 1 0; }
+  .modal-f [data-act="wizEditSave"] { flex: 1; }
 </style>
 
   </head>
@@ -3154,9 +3173,9 @@
   }
   function renderWizard() {
     const w = S.wiz;
-    const steps = [w.editId ? 'Type' : 'Type & Assignee', 'Dates & Note', 'Review'];
+    const steps = [w.editId ? 'Type' : 'Type & Assignee', 'Dates', 'Review'];
     const head = modalHead(w.editId ? 'Edit Request' : 'New Request', w.editId ? 'pencil' : 'plus');
-    const ind = '<div class="steps">' + steps.map((s, i) => '<div class="' + (i + 1 === w.step ? 'on' : i + 1 < w.step ? 'done' : '') + '">' + (i + 1) + '. ' + s + '</div>').join('') + '</div>';
+    const ind = w.step === 'edit' ? '' : '<div class="steps">' + steps.map((s, i) => '<div class="' + (i + 1 === w.step ? 'on' : i + 1 < w.step ? 'done' : '') + '">' + (i + 1) + '. ' + s + '</div>').join('') + '</div>';
     let body = '', foot = '';
     if (w.step === 1) {
       if (w.editId) {
@@ -3179,6 +3198,12 @@
         '<button type="button" class="choice pass' + (w.editId && w.type === 'Pass' ? ' on' : '') + '" data-act="wizType" data-v="Pass">Pass</button>' +
         '</div></div><div class="err" id="wizErr">' + esc(w.error) + '</div>';
       foot = '<button class="btn" data-act="closeModal">Cancel</button>';
+    } else if (w.step === 'edit') {
+      // Edit from Review: type, dates and notes on one page; Save returns to Review.
+      body = '<div class="sect"><div class="lbl">Type</div><div class="wiz-type">' + seg([['Leave', 'Leave'], ['Pass', 'Pass']], w.type, 'wizEditType') + '</div></div>' +
+        renderWizDates() +
+        '<div class="field"><label for="wzN">Trip reason &amp; notes (optional)</label><textarea id="wzN" maxlength="500" data-model="wiz.note" placeholder="Destination, reason, contact info…">' + esc(w.note) + '</textarea></div>';
+      foot = '<button class="btn primary" data-act="wizEditSave">' + icon('check', 18) + 'Save</button>';
     } else if (w.step === 2) {
       body = renderWizDates();
       foot = '<button class="btn" data-act="wizBack">' + icon('left', 15) + ' Back</button><button class="btn primary" data-act="wizNext" id="wizNext2">Review ' + icon('right', 15) + '</button>';
@@ -3190,21 +3215,34 @@
           '<div class="meta" style="margin-top:4px">For ' + esc(who) + (w.creating ? ' · new member' : '') + '</div></div>' +
         '<div class="rv"><span class="lbl">Travel &amp; absence dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
           '<div style="margin-top:4px;font-weight:700">' + plural(c.n, 'day') + '</div></div>' +
-        '<div class="rv"><span class="lbl">Trip reason &amp; notes</span><div class="note">' + (w.note.trim() ? esc(w.note.trim()) : '<span class="muted">No note provided.</span>') + '</div></div>' +
-        (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '') +
+        (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>'
+          : '<div class="msgs"><div class="msg i">' + icon('check', 15) + '<span>Dates look good — no conflicts.</span></div></div>') +
+        '<div class="field"><label for="wzN">Trip reason &amp; notes (optional)</label><textarea id="wzN" maxlength="500" data-model="wiz.note" placeholder="Destination, reason, contact info…">' + esc(w.note) + '</textarea></div>' +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
       foot = '<button class="btn" data-act="closeModal">Cancel</button><button class="btn" data-act="wizEdit">' + icon('pencil', 15) + ' Edit</button>' +
-        '<button class="btn primary" data-act="wizSubmit">' + icon('check', 15) + (w.editId ? ' Save Changes' : ' Submit Request') + '</button>';
+        '<button class="btn ok" data-act="wizSubmit">' + icon('check', 18) + (w.editId ? 'Save' : 'Submit') + '</button>';
     }
     openModal('wizard', head + '<div class="modal-b">' + ind + body + '</div><div class="modal-f">' + foot + '</div>', true);
   }
+  /* Step 2: pick dates on the calendar (or type them in the fields below it). Only blocking problems show here;
+     the summary, warnings and trip notes are on the Review step. */
   function renderWizDates() {
     const w = S.wiz;
-    return '<div class="row"><div class="field"><label for="wzS">Departure</label><input id="wzS" type="date" value="' + esc(w.start) + '" data-model="wiz.start" data-change="wizDates"></div>' +
+    return '<div id="wizMini">' + renderMini() + '</div>' +
+      '<div class="wiz-dates"><div class="field"><label for="wzS">Departure</label><input id="wzS" type="date" value="' + esc(w.start) + '" data-model="wiz.start" data-change="wizDates"></div>' +
       '<div class="field"><label for="wzE">Return</label><input id="wzE" type="date" value="' + esc(w.end) + '" data-model="wiz.end" data-change="wizDates"></div></div>' +
-      '<div id="wizMini">' + renderMini() + '</div>' +
-      '<div id="wizStatus">' + renderWizStatus() + '</div>' +
-      '<div class="field"><label for="wzN">Trip reason &amp; notes (optional)</label><textarea id="wzN" maxlength="500" data-model="wiz.note" placeholder="Destination, reason, contact info…">' + esc(w.note) + '</textarea></div>';
+      '<div id="wizStatus">' + renderWizStatus() + '</div>';
+  }
+  /** Slot state of a day for the request being made: 'ok' (green), 'over' (adding it overbooks, orange), 'full' (approved leave
+   *  already fills the slots, red). Passes and positions without a max are always 'ok'. Excludes the request being edited. */
+  function wizDayState(d) {
+    const w = S.wiz, role = wizRole(), q = w.type === 'Leave' ? quota(role) : 0;
+    if (!q) return 'ok';
+    const self = w.editId ? S.requests.find(r => r.id === w.editId) : null;
+    const own = self && self.type === 'Leave' && self.status !== 'Denied' && d >= self.start && d <= self.end;
+    const appr = IDX.live.filter(r => r.type === 'Leave' && r.status === 'Approved' && r.start <= d && r.end >= d && userOf(r.userId).role === role && r.id !== (self && self.id)).length;
+    const total = countOn(d, role) - (own ? 1 : 0) + 1;
+    return appr >= q ? 'full' : total > q ? 'over' : 'ok';
   }
   function renderMini() {
     const w = S.wiz, ms = w.mini, gs = D.weekStart(ms), role = wizRole(), q = w.type === 'Leave' ? quota(role) : 0;
@@ -3216,14 +3254,18 @@
       if (i === 35 && d.slice(0, 7) !== ms.slice(0, 7)) break;
       const inR = D.valid(w.start) && D.valid(w.end) && d >= w.start && d <= w.end;
       const edge = d === w.start || d === w.end;
-      const busy = q && countOn(d, role) >= q;
-      html += '<button type="button" data-act="miniPick" data-date="' + d + '" class="' + [d.slice(0, 7) !== ms.slice(0, 7) ? 'out' : '', d === S.today ? 'today' : '', inR ? 'in' : '', edge ? 'edge' : '', busy ? 'busy' : ''].join(' ') + '"' +
-        (busy ? ' title="' + role + ' leave slots already full"' : '') + '>' + Number(d.slice(8)) + '</button>';
+      const st = q ? wizDayState(d) : 'ok';
+      const first = d === w.start, last = d === w.end;
+      html += '<button type="button" data-act="miniPick" data-date="' + d + '" class="' + [d.slice(0, 7) !== ms.slice(0, 7) ? 'out' : '', d === S.today ? 'today' : '', inR ? 'in rg-' + st : '', first ? 'r-s' : '', last ? 'r-e' : '', !inR && st !== 'ok' ? 'dot-' + st : ''].join(' ') + '"' +
+        (st !== 'ok' ? ' title="' + esc(role + (st === 'full' ? ' leave slots already full' : ' leave would go over the daily max')) + '"' : '') + '>' + Number(d.slice(8)) + '</button>';
     }
-    return html + '</div><div class="meta" style="margin-top:6px;white-space:normal">' + (w.picking ? 'Now pick the return day.' : 'Tap departure, then return. Red dot = ' + esc(role) + ' quota already full.') + '</div></div>';
+    return html + '</div><div class="mini-key">' + (w.picking ? 'Now tap the return day.' : 'Tap departure, then return.') +
+      (q ? ' <span class="mk mk-ok"></span>Open <span class="mk mk-over"></span>Overbooks <span class="mk mk-full"></span>Full' : '') + '</div></div>';
   }
   function renderWizStatus() {
     const c = wizCheck();
+    // Date step: only blocking problems. The Review step shows the summary and warnings.
+    if (S.wiz.step === 2 || S.wiz.step === 'edit') return c.errs.length ? '<div class="msgs">' + c.errs.map(m => '<div class="msg e">' + icon('x', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '';
     const dur = c.n ? '<div class="dur"><span class="badge t-' + S.wiz.type.toLowerCase() + '">' + S.wiz.type + '</span>' + D.short(S.wiz.start) + ' → ' + D.short(S.wiz.end) + ' · ' + plural(c.n, 'day') + '</div>' : '';
     const msgs = c.errs.map(m => '<div class="msg e">' + icon('x', 15) + '<span>' + esc(m) + '</span></div>')
       .concat(c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>'));
@@ -3590,7 +3632,17 @@
     wizCreate() { S.ppMode = 'filter'; S.wiz.creating = true; S.wiz.error = ''; renderWizard(); },
     wizExisting() { S.wiz.creating = false; S.wiz.error = ''; renderWizard(); },
     wizBack() { S.wiz.step = 1; S.wiz.error = ''; renderWizard(); },
-    wizEdit() { S.wiz.step = 2; S.wiz.error = ''; renderWizard(); },
+    wizEdit() { S.wiz.step = 'edit'; S.wiz.error = ''; renderWizard(); },
+    wizEditType(el) {
+      S.wiz.type = el.dataset.v;
+      $$('#modal [data-act="wizEditType"]').forEach(b => b.classList.toggle('on', b.dataset.v === S.wiz.type));
+      refreshWizDates();
+    },
+    wizEditSave() {
+      const c = wizCheck();
+      if (c.errs.length) { toast(c.errs[0], 'error'); return; }
+      S.wiz.step = 3; renderWizard();
+    },
     wizNext() {
       const w = S.wiz;
       w.error = '';
