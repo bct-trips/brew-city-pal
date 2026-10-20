@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792487167"></script>
+    <script src="config.js?v=1792487445"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1376,6 +1376,30 @@
   .btn.icon-btn .ic { width: 20px; height: 20px; margin: 0; }
   .btn.icon-btn:hover { border-color: transparent; }
   .fp .fp-clear.icon-btn { border-radius: 0 20px 20px 0; color: var(--sel-ink) !important; }
+
+  /* ---------- Request tables (All / Mine): Leave / Pass bands, status icons, approved tint ---------- */
+  .rtable tbody.grp .grp-h th { padding: 0; background: var(--surface-high); border-top: 2px solid var(--outline); border-bottom: 1px solid var(--outline);
+    box-shadow: inset 4px 0 0 var(--rm); text-align: left; }
+  .rtable tbody.grp:first-of-type .grp-h th { border-top: 0; }
+  .grp-leave { --rm: var(--leave); } .grp-pass { --rm: var(--gold); }
+  .grp-in { position: sticky; left: 0; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; font-size: 13.5px; font-weight: 800;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--on-surface); }
+  .grp-in .band-tag { color: #ffffff; } .grp-pass .grp-in .band-tag { color: var(--navy); }
+  .grp-in .ct { background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 999px; padding: 0 8px; letter-spacing: 0; font-size: 12.5px; }
+  .rtable th.st-ic-h, .rtable td.st-ic-c { width: 44px; padding: 0 4px 0 12px; text-align: center; }
+  .st-ic { display: inline-grid; place-items: center; width: 28px; height: 28px; }
+  .st-ic .ic { stroke-width: 2.6; }
+  .st-ic-ok { color: #15803d; } .st-ic-pend { color: #b45309; } .st-ic-no { color: #c9302c; }
+  :root[data-theme="dark"] .st-ic-ok { color: #86d99a; } :root[data-theme="dark"] .st-ic-pend { color: #fbbf24; } :root[data-theme="dark"] .st-ic-no { color: #fca5a5; }
+  /* Approved rows: a soft green tint (pinned name cell too). */
+  .rtable tbody tr.st-approved td, .rtable tbody tr.st-approved:nth-child(even) td, .rtable tbody tr.st-approved td.stk, .rtable tbody tr.st-approved:nth-child(even) td.stk {
+    background: color-mix(in srgb, #22c55e 9%, var(--card)); }
+  .rtable tbody tr.st-approved:hover td, .rtable tbody tr.st-approved:hover td.stk { background: color-mix(in srgb, #22c55e 15%, var(--card)); }
+  /* Name cell: name and its small marks centred on one line. */
+  .rtable td.stk .stk-in { display: flex; align-items: center; gap: 6px; }
+  .rtable td.stk .cfl { margin-left: 0; flex: none; }
+  .cfl-warn { background: var(--rg-over); color: var(--rg-over-ink); }
+  .cfl-chg { background: color-mix(in srgb, #f59e0b 30%, var(--card)); color: var(--on-surface); }
 </style>
 
   </head>
@@ -2758,7 +2782,7 @@
   const ROLE_NAME = { Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' };
   const milDate = d => Number(d.slice(8)) + ' ' + D.f(d, { month: 'short' }) + ' ' + d.slice(0, 4);
   const COLS = [
-    ['type', 'Type'], ['unit', 'Unit'], ['last', 'Last Name'], ['first', 'First Name'], ['rank', 'Rank'], ['role', 'Position'],
+    ['st', ''], ['unit', 'Unit'], ['last', 'Last Name'], ['first', 'First Name'], ['rank', 'Rank'], ['role', 'Position'],
     ['start', 'Start'], ['end', 'End'], ['days', 'Days'], ['note', 'Notes'], ['status', 'Status']
   ];
   const SORT_KEYS = {
@@ -2810,9 +2834,15 @@
   /** Full-width requests table. table = 'list' | 'mine' (sortable state key) or '' for a fixed order. */
   function reqTable(rows, table) {
     const st = table === 'mine' ? S.mine : S.list;
-    const head = COLS.map(c => table ? sortTh(st, c[0], c[1], 'sortBy', ' data-table="' + table + '"') : '<th scope="col"' + (c[0] === 'last' ? ' class="stk"' : '') + '>' + c[1] + '</th>').join('') +
+    const head = COLS.map(c => c[0] === 'st' ? '<th scope="col" class="st-ic-h"><span class="sr">Status</span></th>'
+      : table ? sortTh(st, c[0], c[1], 'sortBy', ' data-table="' + table + '"') : '<th scope="col"' + (c[0] === 'last' ? ' class="stk"' : '') + '>' + c[1] + '</th>').join('') +
       '<th scope="col" class="th-acts">Actions</th>';
-    const body = rows.length ? rows.map(r => {
+    const stIcon = r => { const m = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'] }[r.status] || ['clock', 'pend'];
+      return '<span class="st-ic st-ic-' + m[1] + '" title="' + r.status + '" aria-label="' + r.status + '">' + icon(m[0], 18) + '</span>'; };
+    // Compact marks next to the name (instead of wide badges): Overlap (orange), changed by admin (pencil).
+    const marks = r => (dupsOf(r).length ? '<span class="cfl cfl-sm cfl-warn" title="' + esc('Overlap: ' + dupText(r)) + '" aria-label="Overlap">' + icon('alert', 13) + '</span>' : '') +
+      (isChanged(r) ? '<span class="cfl cfl-sm cfl-chg" title="Dates changed by admin" aria-label="Dates changed by admin">' + icon('pencil', 13) + '</span>' : '');
+    const rowHtml = r => {
       const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r), st2 = r.status.toLowerCase();
       let acts = '';
       if (S.isAdmin) {
@@ -2822,9 +2852,9 @@
       if (canEdit(r)) acts += '<button class="btn sm act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit request for ' + esc(u.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>';
       if (canDelete(r)) acts += '<button class="btn sm del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete request for ' + esc(u.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>';
       return '<tr class="t-' + r.type.toLowerCase() + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
-        '<td><span class="badge t-' + r.type.toLowerCase() + '">' + r.type + '</span>' + dupBadge(r) + changedBadge(r) + '</td>' +
+        '<td class="st-ic-c">' + stIcon(r) + '</td>' +
         '<td>' + unitBadge(u.unit) + '</td>' +
-        '<td class="strong stk">' + esc(lastName(u)) + conflictBadge(r, true) + '</td>' +
+        '<td class="strong stk"><div class="stk-in"><span class="stk-n">' + esc(lastName(u)) + '</span>' + conflictBadge(r, true) + marks(r) + '</div></td>' +
         '<td>' + esc(firstName(u)) + '</td>' +
         '<td>' + esc(u.rank) + '</td>' +
         '<td>' + esc(ROLE_NAME[u.role] || u.role) + '</td>' +
@@ -2836,8 +2866,13 @@
         '<td class="note" title="' + esc(r.note || '') + '"><div class="clamp">' + (r.note ? esc(r.note) : '<span class="muted">—</span>') + '</div></td>' +
         '<td><div class="st-cell"><span class="badge s-' + st2 + '">' + r.status + '</span>' + conflictBadge(r) + '</div></td>' +
         '<td class="acts-cell"><div class="row-acts">' + (acts || '<span class="muted">—</span>') + '</div></td></tr>';
-    }).join('') : '<tr class="empty-row"><td colspan="' + (COLS.length + 1) + '">No requests match.</td></tr>';
-    return '<div class="tbl-wrap" id="tbl-' + (table || 'queue') + '"><table class="rtable"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+    };
+    // Grouped like the Week view bands: Leave on top, Pass below, each with a header bar.
+    const group = (type, list) => list.length ? '<tbody class="grp grp-' + type.toLowerCase() + '"><tr class="grp-h"><th colspan="' + (COLS.length + 1) + '" scope="rowgroup">' +
+      '<div class="grp-in"><span class="band-tag">' + type[0] + '</span>' + (type === 'Leave' ? 'Leave' : 'Pass') + ' <span class="ct">' + list.length + '</span></div></th></tr>' + list.map(rowHtml).join('') + '</tbody>' : '';
+    const body = rows.length ? group('Leave', rows.filter(r => r.type === 'Leave')) + group('Pass', rows.filter(r => r.type === 'Pass'))
+      : '<tbody><tr class="empty-row"><td colspan="' + (COLS.length + 1) + '">No requests match.</td></tr></tbody>';
+    return '<div class="tbl-wrap" id="tbl-' + (table || 'queue') + '"><table class="rtable"><thead><tr>' + head + '</tr></thead>' + body + '</table></div>';
   }
 
   function renderListBody() {
