@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792527955"></script>
+    <script src="config.js?v=1792528125"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1401,7 +1401,7 @@
   .badge.t-now { display: inline-flex; align-items: center; gap: 6px; background: var(--now); color: #fff; }
   :root[data-theme="dark"] .badge.t-now { color: #111318; }
   /* On calendar bars the dot is static: an animated dot made Chromium paint today's cell over the bars. */
-  .idb-n .now-dot, .mn .now-dot { width: 7px; height: 7px; margin-right: 4px; vertical-align: 1px; animation: none; box-shadow: 0 0 0 1.5px #fff; }
+  .idb-n .now-dot, .mn .now-dot { width: 7px; height: 7px; margin-left: 5px; vertical-align: 1px; animation: none; box-shadow: 0 0 0 1.5px #fff; }
   .rtable tr.now > td:first-child { box-shadow: inset 4px 0 0 var(--now-dot); }
   /* Leave has no border in either theme (same as Pass): no light navy edge on bars, badges or the "On leave" header. */
   /* ---------- Day marker: ONE implementation for Month (desktop + phone), Stats, Week, Qtr and the day strip ----------
@@ -1858,6 +1858,17 @@
   .pm-pop .pm-row:last-child { border-radius: 0 0 16px 16px; }
   .pm-pop::after { content: ""; position: absolute; bottom: -7px; left: calc(var(--notch, 85%) - 7px); width: 14px; height: 14px; background: var(--card);
     border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: rotate(45deg); box-shadow: 4px 4px 8px rgba(0, 0, 0, .18); }
+  /* Requests table: the L / P badge, the name and the conflict / overlap marks sit the same distance apart. */
+  .rtable td.stk .stk-in { gap: 10px; }
+  .rtable td.stk .stk-in > * { margin-left: 0; margin-right: 0; }
+  .st-ic-now { display: inline-grid; place-items: center; width: 18px; height: 18px; }
+  .st-ic-now .now-dot { width: 11px; height: 11px; }
+  /* Profile tab icon: the round centre of the EARS patch (no banner), from assets/logo-disc-96.png. */
+  .nav-logo { display: block; width: 26px; height: 26px; border-radius: 50%; background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAAB/lBMVEXj4Nvc1tagnp7o5+VrZlzr4tCNkpQtLR6UaTS3tLekqrXBu7f6z1thYm2hhjvwsCD94ZxTMDpQOUlVVSXDfCz/uLje3rXHxL57dnl2eoaJf3m2usP/v/8oKD86OkQAAP8/SlU7UndUUj1ib4N/f/+IfmyRiHafgkaqqv+//7+8wLyq//+/wcPlvVnBvb7//3/+xC4RJ0oAAAD9/fzyuCyGckx6JSn////O0df8zVEbM1guRm0FHUQiO2N4aUvp6Oh0GygpOFGCJif/0S7568sBGD781G+BbEnorCv857PTmjH39fPp6ehVU0nTpjb83I1FVW19fn++vr3Hy9CZiWy2trb39vEsLURodYfX19f88dlNLTmpqamaSSm2lDpGREymWCq2vMTGxsXV1tTb2NWMOSmxZiqvtLzHxsf/wB7i19fs6eT59/IdOmY4Qk17hpa7cyu0k0ajpKe8wcfY19T28uhQU1VwMjaMjZKCjJuNlqKpiEOlp6uztrLNhyzMyMcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6pm4ZAAAAgHRSTlNf41ijGB0qDv+e/2P/////////B/8DFGJFHhpTBP8aARj///8C/xz/AwRBA5n/ugL//wD9////Av7////////2//////3////////Q0v////8EBv3/Urf//9T+/wX//////lJUsP///7L/9myW//////9m/phRFv9L////UjD/mK80m1UAAAhfSURBVHjatVr5VxtHEm6BbRwHn4lzZ3dz7mY32VUPo9E10sxoEMgyIAliWwGbgGNDAF+EOI7ttfOvp6q7567WaPxe6gfB6+n+vq6jq09mTJZRtYp/3mNHszevLyi5fvMBY6exvCo/TxA28ato/h6bDaHjcv3B09NBnTcjwJavjm7GMDcXQTY3o4KbR3kcbCL8T7MKaPHa0lK9DGKa+FufX7q0GHAwVbkYwW38tiLBB0tlUuoDSXKdnQJDFiJAnSX85qBeniD1waak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") center / contain no-repeat; }
+  /* Caret: points UP while the menu is closed (it opens upward) and DOWN while it's open. */
+  .nav-caret .ic { transform: rotate(180deg); transition: transform .18s ease; }
+  .nav button[aria-expanded="true"] .nav-caret { transform: none; }
+  .nav button[aria-expanded="true"] .nav-caret .ic { transform: rotate(0deg); }
 </style>
 
   </head>
@@ -2135,8 +2146,7 @@
   /** Over the daily max on some day and not yet resolved (not every request in that conflict is approved). */
   const openConflictOf = r => boConflict(r) || r.status !== 'Denied' && (S.priv ? !!(S.myConf[r.id] && !S.myConf[r.id].ok) : conflictDays(r).some(d => conflictState(d, userOf(r.userId).role) === 'bad'));
   /** Marks before a name on calendar bars: green dot = out today, red triangle = unresolved conflict. */
-  const barMarks = r => (isNow(r) ? '<i class="now-dot" title="Active now"></i>' : '') +
-    (openConflictOf(r) ? '<span class="cf-tri" title="Unresolved conflict" aria-label="Unresolved conflict">' + icon('alert', 12) + '</span>' : '');
+  const barMarks = r => (openConflictOf(r) ? '<span class="cf-tri" title="Unresolved conflict" aria-label="Unresolved conflict">' + icon('alert', 12) + '</span>' : '');
   /** Conflict mode with a person picked: their requests that are over the max, plus the other requests (same position,
    *  not denied) on those same over-max days — i.e. who they conflict with. */
   function conflictsWith(pid) {
@@ -2615,7 +2625,7 @@
   }
   const navOn = v => S.view === v || (v === 'people' && S.view === 'roster'); // Manage roster lives under the Roster tab
   // Profile opens a drop-up menu: a small caret after its label shows that (it flips while open).
-  const caret = v => v === 'profile' ? '<i class="nav-caret" aria-hidden="true">' + icon('down', 12) + '</i>' : '';
+  const caret = v => v === 'profile' ? '<i class="nav-caret" aria-hidden="true">' + icon('down', 14) + '</i>' : '';
   function renderNav() {
     const pending = IDX.live.filter(r => r.status === 'Pending').length;
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
@@ -2626,7 +2636,7 @@
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
       '<nav class="nav' + (S.isAdmin ? ' nav-admin' : '') + '" aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '">' + items.map(i =>
       '<button data-act="nav" data-v="' + i[0] + '"' + (i[0] === 'profile' ? ' aria-haspopup="menu" aria-expanded="false"' : '') + ' class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
-      '<span class="nav-ic' + (i[0] === syncTab() && S.pending ? ' syncing' : i[0] === syncTab() && S.syncErr ? ' sync-err' : '') + '">' + icon(i[2], 20) + '</span><span class="wide">' + i[1] + caret(i[0]) + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + caret(i[0]) + '</span>' +
+      '<span class="nav-ic' + (i[0] === syncTab() && S.pending ? ' syncing' : i[0] === syncTab() && S.syncErr ? ' sync-err' : '') + '">' + (i[0] === 'profile' ? '<span class="nav-logo" aria-hidden="true"></span>' : icon(i[2], 20)) + '</span><span class="wide">' + i[1] + caret(i[0]) + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + caret(i[0]) + '</span>' +
       (i[0] === 'all' && S.isAdmin && pending ? '<b class="dot">' + pending + '</b>' : '') +
       (i[0] === 'mine' && myChanged ? '<b class="dot warn" title="Dates changed by an admin">' + myChanged + '</b>' : '') +
       (i[0] === 'profile' && S.unread ? '<b class="dot" title="Unread notifications">' + S.unread + '</b>' : '') + '</button>').join('') + '</nav>';
@@ -2933,9 +2943,9 @@
     return { groups, solo: reqs.filter(r => !inGroup.has(r.id)) };
   }
   /** One shared bar's label: each person's badge (tap to open their request), separated by "/". */
-  function groupBadges(list, withStatus) {
+  function groupBadges(list, withStatus, from, to) {
     return list.map(r => '<span class="gb" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-      personBadge(r, withStatus) + '</span>').join('<span class="gsl" aria-hidden="true">/</span>');
+      personBadge(r, withStatus, from, to) + '</span>').join('<span class="gsl" aria-hidden="true">/</span>');
   }
   /** split = true: every request that starts this week is its own continuous bar. Requests carried over from the
    *  previous week are always merged into one shared middle bar per type (Leave / Pass) at the start of the row. */
@@ -2974,6 +2984,7 @@
         if (cur) segs.push(cur);
       });
     });
+    segs.forEach(sg => { sg.ws = ws; });
     return segs;
   }
 
@@ -3050,11 +3061,11 @@
         if (p.g) {
           const same = p.g.every(x => x.status === r.status);
           return '<span class="' + ['cs-bar grp', r.type === 'Leave' ? 'leave' : 'pass', same ? 'st-' + r.status.toLowerCase() : '', first ? 'b-s' : '', last ? 'b-e' : '', p.g.some(x => x.userId === S.me) ? 'mine' : ''].join(' ') +
-            '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '">' + groupBadges(p.g, true) + '</span>';
+            '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '">' + groupBadges(p.g, true, D.max(r.start, ws), D.min(r.end, we)) + '</span>';
         }
         const cls = ['cs-bar', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : '', r.userId === S.me ? 'mine' : ''].join(' ');
         return '<span class="' + cls + '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-          personBadge(r, true) + '</span>';
+          personBadge(r, true, D.max(r.start, ws), D.min(r.end, we)) + '</span>';
       }).join('') + hidden.map((n, i) => n ? '<span class="cs-more" style="grid-row:' + MAXL + ';grid-column:' + (i + 1) + '" data-act="pickDay" data-date="' + days[i] + '">+' + n + '</span>' : '').join('');
       html += '<div class="week-row">';
       days.forEach(d => {
@@ -3305,12 +3316,14 @@
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span></span>';
   }
   /* Full person badge on calendar bars: [P|MKE|Lastname] as one chip. Approved = green border. */
-  function personBadge(r, withStatus) {
+  /** Green "going on now" dot after a name — only on the bar that covers today (from–to = the dates that bar shows). */
+  const nowDot = (r, from, to) => isNow(r) && r.status !== 'Denied' && (!from || (S.today >= from && S.today <= to)) ? '<i class="now-dot" title="Going on now"></i>' : '';
+  function personBadge(r, withStatus, from, to) {
     const u = userOf(r.userId), L = (u.role || 'Other')[0];
     const un = unitsList().find(x => x.code === u.unit);
     return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r idb-' + L.toLowerCase() + '">' + L + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
-      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + (withStatus ? statusIcon(r.status) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
+      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + nowDot(r, from, to) + (withStatus ? statusIcon(r.status) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
@@ -3318,14 +3331,14 @@
     return m ? '<span class="sti sti-' + m[1] + '" title="' + st + '">' + icon(m[0], 14) + '</span>' : '';
   }
   /* Middle days: one badge per position — [P|Doe · Roe · Poe], or [P|4+ Pilots] when more than 3. */
-  function rolePuck(role, list) {
+  function rolePuck(role, list, from, to) {
     list = list.slice().sort(byLast);
     const L = role[0];
     const title = ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[role] + ': ' + list.map(r => fullName(userOf(r.userId)) + ' (' + r.status + ')').join('; ');
     const names = list.length > 3
       ? '<span class="rp-more">4+ ' + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[role] + '</span>'
       : list.map(r => '<span class="mn' + (dupsOf(r).length ? ' dup' : '') + (r.id === S.focus ? ' focus' : '') + (r.status === 'Denied' ? ' st-denied' : '') +
-          '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + barMarks(r) + esc(calName(userOf(r.userId))) + '</span>')
+          '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + '</span>')
           .join('<span class="rp-dot" aria-hidden="true">·</span>');
     return '<span class="idb pb rp" title="' + esc(title) + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
       '<span class="idb-n">' + names + '</span></span>';
@@ -3338,12 +3351,12 @@
       // Same-dates bar: one solid bar for everyone on it; each badge opens that person's request.
       const same = sg.people.every(r => r.status === r0.status);
       return '<div class="' + base + ' grp' + (same ? ' st-' + r0.status.toLowerCase() : '') + (sg.people.some(r => r.userId === S.me) ? ' mine' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"' +
-        ' title="' + esc(sg.people.map(describe).join('\n')) + '"><span class="evs-t">' + groupBadges(sg.people, sg.kind !== 'end') + '</span></div>';
+        ' title="' + esc(sg.people.map(describe).join('\n')) + '"><span class="evs-t">' + groupBadges(sg.people, sg.kind !== 'end', D.max(r0.start, sg.ws), D.min(r0.end, D.add(sg.ws, 6))) + '</span></div>';
     }
     if (sg.kind === 'mid') {
       const pucks = sg.quiet ? '' : ROLES.map(role => {
         const list = sg.people.filter(r => userOf(r.userId).role === role);
-        return list.length ? rolePuck(role, list) : '';
+        return list.length ? rolePuck(role, list, D.add(sg.ws, sg.a), D.add(sg.ws, sg.b)) : '';
       }).join('');
       // More than one person on this stretch (any positions): hatched "shared" bar.
       return '<div class="' + base + (sg.people.length > 1 ? ' shared' : '') + (sg.people.length === 1 && r0.id === S.focus ? ' focus' : '') + (sg.cat === 'Denied' ? ' st-denied' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"' +
@@ -3352,7 +3365,7 @@
     // First / last / single day: the shaped event bar holding the person's [P|MKE|Name] badge.
     const cls = base + ' st-' + r0.status.toLowerCase() + (r0.id === S.focus ? ' focus' : '') + (r0.userId === S.me ? ' mine' : '') + (dupsOf(r0).length ? ' dup' : '') + (isNow(r0) ? ' now' : '');
     return '<div class="' + cls + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r0.id) + '" style="' + pos + '"' +
-      ' title="' + esc(describe(r0)) + '" aria-label="' + esc(describe(r0)) + '"><span class="evs-t">' + personBadge(r0, sg.kind !== 'end') + '</span></div>';
+      ' title="' + esc(describe(r0)) + '" aria-label="' + esc(describe(r0)) + '"><span class="evs-t">' + personBadge(r0, sg.kind !== 'end', D.max(r0.start, sg.ws), D.min(r0.end, D.add(sg.ws, 6))) + '</span></div>';
   }
 
 
@@ -3470,9 +3483,9 @@
           const same = !g || g.every(x => x.status === r.status);
           const cls = ['wpuck', g ? 'grp' : '', r.type === 'Leave' ? 'leave' : 'pass', same ? 'st-' + r.status.toLowerCase() : '', r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : '', (g || [r]).some(isNow) ? 'now' : ''].join(' ');
           const sub = '<span class="s">' + r.type + (same ? ' · ' + r.status : '') + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span>';
-          if (g) return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '"><span class="n">' + groupBadges(g, false) + '</span>' + sub + '</div>';
+          if (g) return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '"><span class="n">' + groupBadges(g, false, D.max(r.start, ws), D.min(r.end, we)) + '</span>' + sub + '</div>';
           return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-            '<span class="n">' + personBadge(r) + '</span>' + sub + '</div>';
+            '<span class="n">' + personBadge(r, false, D.max(r.start, ws), D.min(r.end, we)) + '</span>' + sub + '</div>';
         }).join('');
         const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
         return '<div class="band band-' + b[0][0].toLowerCase() + '"><div class="band-title"><span class="band-tag">' + b[0][0] + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></div>' +
@@ -3605,7 +3618,8 @@
   const ROLE_NAME = { Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' };
   const milDate = d => Number(d.slice(8)) + ' ' + D.f(d, { month: 'short' }) + ' ' + d.slice(0, 4);
   const COLS = [
-    ['st', ''], ['unit', 'Unit'], ['last', 'Last Name'], ['first', 'First Name'], ['rank', 'Rank'], ['role', 'Position'],
+    // The pinned Last Name comes right after the status mark; Unit scrolls with the other columns.
+    ['st', ''], ['last', 'Last Name'], ['unit', 'Unit'], ['first', 'First Name'], ['rank', 'Rank'], ['role', 'Position'],
     ['start', 'Start'], ['end', 'End'], ['days', 'Days'], ['note', 'Notes'], ['status', 'Status']
   ];
   const SORT_KEYS = {
@@ -3660,7 +3674,10 @@
     const head = COLS.map(c => c[0] === 'st' ? '<th scope="col" class="st-ic-h"><span class="sr">Status</span></th>'
       : table ? sortTh(st, c[0], c[1], 'sortBy', ' data-table="' + table + '"') : '<th scope="col"' + (c[0] === 'last' ? ' class="stk"' : '') + '>' + c[1] + '</th>').join('') +
       '<th scope="col" class="th-acts">Actions</th>';
-    const stIcon = r => { const m = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'] }[r.status] || ['clock', 'pend'];
+    // Status mark; while the leave or pass is going on today it's the pulsing green dot instead.
+    const stIcon = r => {
+      if (isNow(r) && r.status !== 'Denied') return '<span class="st-ic st-ic-now" title="' + r.type + ' going on now · ' + r.status + '" aria-label="' + r.type + ' going on now, ' + r.status + '"><i class="now-dot"></i></span>';
+      const m = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'] }[r.status] || ['clock', 'pend'];
       return '<span class="st-ic st-ic-' + m[1] + '" title="' + r.status + '" aria-label="' + r.status + '">' + icon(m[0], 18) + '</span>'; };
     // Compact marks next to the name (instead of wide badges): Overlap (orange), changed by admin (pencil).
     const marks = r => (dupsOf(r).length ? '<span class="cfl cfl-sm cfl-warn" title="' + esc('Overlap: ' + dupText(r)) + '" aria-label="Overlap">' + icon('alert', 13) + '</span>' : '') +
@@ -3676,9 +3693,9 @@
       if (canDelete(r)) acts += '<button class="btn sm del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete request for ' + esc(u.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>';
       return '<tr class="t-' + r.type.toLowerCase() + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + (isNow(r) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
         '<td class="st-ic-c">' + stIcon(r) + '</td>' +
-        '<td>' + unitBadge(u.unit) + '</td>' +
         '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '<span class="sr"> ' + r.type.slice(1) + '</span></span>' : '') +
-          '<span class="stk-n">' + esc(lastName(u)) + '</span>' + (isNow(r) ? '<i class="now-dot row-now" title="Active now"><span class="sr">Active now</span></i>' : '') + conflictBadge(r, true) + marks(r) + '</div></td>' +
+          '<span class="stk-n">' + esc(lastName(u)) + '</span>' + conflictBadge(r, true) + marks(r) + '</div></td>' +
+        '<td>' + unitBadge(u.unit) + '</td>' +
         '<td>' + esc(firstName(u)) + '</td>' +
         '<td>' + esc(u.rank) + '</td>' +
         '<td>' + esc(ROLE_NAME[u.role] || u.role) + '</td>' +
