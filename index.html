@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792485022"></script>
+    <script src="config.js?v=1792485086"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1289,6 +1289,14 @@
   .mk { width: 12px; height: 12px; border-radius: 3px; margin-left: 6px; } .mk-ok { background: var(--rg-ok); } .mk-over { background: var(--rg-over); } .mk-full { background: var(--rg-full); }
   .wiz-type .seg { display: flex; width: 100%; height: 44px; } .wiz-type .seg button { flex: 1 1 0; }
   .modal-f [data-act="wizEditSave"] { flex: 1; }
+
+  /* Full-screen "Submitting…" cover (request submit / save). */
+  .blocker { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: rgba(4, 12, 28, .72); backdrop-filter: blur(3px); }
+  .blocker-box { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 32px; border-radius: 20px; background: var(--surface); box-shadow: 0 24px 60px rgba(0,0,0,.4); text-align: center; }
+  .blocker-spin { width: 56px; height: 56px; border-radius: 50%; border: 5px solid color-mix(in srgb, var(--primary) 22%, transparent); border-top-color: var(--primary); animation: spin .9s linear infinite; }
+  .blocker-t { font-size: 20px; font-weight: 800; color: var(--on-surface); }
+  .blocker-s { font-size: 14px; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { .blocker-spin { animation-duration: 2.4s; } }
 </style>
 
   </head>
@@ -1574,6 +1582,15 @@
     if (!S.pending) return;
     ev.preventDefault(); ev.returnValue = 'Changes are still saving. Leave anyway?'; return ev.returnValue;
   });
+  /** Full-screen "Submitting…" cover with a spinner; blocks taps until hideBlocker(). */
+  function showBlocker(label) {
+    hideBlocker();
+    const el = document.createElement('div');
+    el.id = 'blocker'; el.className = 'blocker'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-live', 'assertive'); el.setAttribute('aria-busy', 'true');
+    el.innerHTML = '<div class="blocker-box"><span class="blocker-spin" aria-hidden="true"></span><div class="blocker-t">' + esc(label) + '</div><div class="blocker-s">Keep the app open until this finishes.</div></div>';
+    document.body.appendChild(el);
+  }
+  function hideBlocker() { const el = document.getElementById('blocker'); if (el) el.remove(); }
   const findReq = id => S.requests.find(r => r.id === id);
   const nowIso = () => new Date().toISOString();
 
@@ -3676,32 +3693,35 @@
       else { const a = D.min(w.start, d), b = D.max(w.start, d); w.start = a; w.end = b; w.picking = false; }
       refreshWizDates();
     },
+    /* Submitting / saving a request waits for the server behind a full-screen "Submitting…" screen, so nobody closes
+       the app before it's saved. If it fails, the form stays open with the error so they can try again. */
     async wizSubmit() {
       const w = S.wiz, c = wizCheck();
       if (c.errs.length) { $('#wizErr').textContent = c.errs[0]; return; }
       const payload = { type: w.type, start: w.start, end: w.end, note: w.note.trim() };
+      let done;
       if (w.editId) {
         const id = w.editId;
-        save(() => {
+        showBlocker('Saving…');
+        done = save(() => {
           const r = findReq(id); if (!r) return;
           Object.assign(r, payload);
           if (!S.isAdmin && r.status === 'Denied') r.status = 'Pending'; // a member's edit resubmits a denied request
         }, 'apiUpdateRequest', S.token, id, payload);
-        closeModal(); render();
-        return toast('Request updated', 'ok', 1500);
+      } else {
+        if (S.isAdmin && w.creating) payload.newUser = w.nu;
+        else if (S.isAdmin) payload.assigneeId = w.assigneeId;
+        showBlocker('Submitting…');
+        done = save(null, 'apiCreateRequest', S.token, payload);
       }
-      if (S.isAdmin && w.creating) payload.newUser = w.nu;
-      else if (S.isAdmin) payload.assigneeId = w.assigneeId;
-      // Show the new request at once with a temporary id; it's swapped for the saved one when the save finishes.
-      // (A request for a brand-new member appears when the save finishes, since the member needs an id first.)
-      const who = S.isAdmin && !w.creating ? w.assigneeId : S.me;
-      save(w.creating ? null : () => {
-        S.requests.push(Object.assign({ id: 'tmp_' + Date.now(), userId: who, status: 'Pending', submittedAt: nowIso(), submittedBy: S.me }, payload));
-      }, 'apiCreateRequest', S.token, payload);
+      const data = await done;
+      await saveChain; // let the confirmed data apply
+      hideBlocker();
+      if (!data) { if (S.wiz) $('#wizErr') && ($('#wizErr').textContent = 'Not saved — check your connection and try again.'); return; }
       closeModal();
-      if (S.view === 'calendar') S.cursor = w.start;
+      if (!w.editId && S.view === 'calendar') S.cursor = w.start;
       render();
-      toast('Request submitted — pending approval', 'ok', 2000);
+      toast(w.editId ? 'Request updated' : 'Request submitted — pending approval', 'ok', 2200);
     }
   };
 
