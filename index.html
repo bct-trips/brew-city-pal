@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792512199"></script>
+    <script src="config.js?v=1792512428"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1765,6 +1765,7 @@
   .install-steps { margin: 4px 0 12px; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; font-size: 15.5px; }
   .install-steps .ic { display: inline-block; vertical-align: -3px; }
   .wiz-who.wiz-add { margin-top: 8px; width: 100%; }
+  .install-fab.on-login { bottom: calc(env(safe-area-inset-bottom) + 20px); }
 </style>
 
   </head>
@@ -2265,6 +2266,7 @@
       inner + '</div></div>';
     const f = $('.login-card input, .login-card select');
     if (f) f.focus();
+    renderInstallFab(); // phones: offer Add to Homescreen before signing in too
   }
   const pinInput = (id, label, ac) => '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="4–8 digits" autocomplete="' + ac + '"></div>';
   /** Handle any sign-in style result: choose-who, must-set-PIN, or straight into the app. */
@@ -3924,17 +3926,19 @@
   window.addEventListener('beforeinstallprompt', ev => { ev.preventDefault(); installEvt = ev; renderInstallFab(); });
   window.addEventListener('appinstalled', () => { installEvt = null; renderInstallFab(); refreshPushState(); });
   const isAndroid = () => /Android/i.test(navigator.userAgent);
-  const canOfferInstall = () => !!window.PAL_API_URL && !isStandalone() && (isIOS() || isAndroid() || !!installEvt);
+  // Phones and tablets only: desktop browsers never get the Add to Homescreen button, even when they could install.
+  const canOfferInstall = () => !!window.PAL_API_URL && !isStandalone() && (isIOS() || isAndroid());
   /** Floating "Add to Home Screen" button (with ✕ to hide it on this device; Profile still offers it). */
   function renderInstallFab() {
     const old = document.getElementById('installFab');
-    const show = !!S.me && canOfferInstall() && store.get('installHidden', '') !== '1';
+    const show = canOfferInstall() && store.get('installHidden', '') !== '1';
     if (!show) { if (old) old.remove(); return; }
-    if (old) return;
+    // Sign-in screens have no nav or Add Request bar, so the pill sits near the bottom edge there.
+    if (old) { old.classList.toggle('on-login', !S.me); return; }
     const el = document.createElement('div');
-    el.id = 'installFab'; el.className = 'install-fab';
-    el.innerHTML = '<button type="button" class="install-go" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Home Screen</button>' +
-      '<button type="button" class="install-x" data-act="installHide" aria-label="Hide Add to Home Screen" title="Hide">' + icon('x', 16) + '</button>';
+    el.id = 'installFab'; el.className = 'install-fab' + (S.me ? '' : ' on-login');
+    el.innerHTML = '<button type="button" class="install-go" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Homescreen</button>' +
+      '<button type="button" class="install-x" data-act="installHide" aria-label="Hide Add to Homescreen" title="Hide">' + icon('x', 16) + '</button>';
     document.body.appendChild(el);
   }
   /** iPhone (or a browser with no install prompt): the steps, with the icons they'll see. */
@@ -3943,13 +3947,13 @@
     const steps = ios
       ? ['Tap the <b>Share</b> button ' + icon('share', 16) + ' in Safari (on newer iPhones it’s in the <b>' + icon('more', 16) + '</b> menu).',
          'Scroll down and tap <b>Add to Home Screen</b> ' + icon('plusSquare', 16) + '.',
-         'Tap <b>Add</b>, then open <b>126 PAL</b> from your Home Screen.']
+         'Tap <b>Add</b>, then open <b>126 PAL</b> from your Homescreen.']
       : ['Open the browser menu ' + icon('more', 16) + ' (top or bottom corner).',
          'Tap <b>Add to Home screen</b> or <b>Install app</b>.',
-         'Open <b>126 PAL</b> from your Home Screen.'];
-    const html = modalHead('Add to Home Screen', 'plusSquare') + '<div class="modal-b"><p class="auth-note">PAL works best as a Home Screen app: full screen, and it can send you notifications when your requests are approved or changed.</p>' +
+         'Open <b>126 PAL</b> from your Homescreen.'];
+    const html = modalHead('Add to Homescreen', 'plusSquare') + '<div class="modal-b"><p class="auth-note">PAL works best as a Homescreen app: full screen, and it can send you notifications when your requests are approved or changed.</p>' +
       '<ol class="install-steps">' + steps.map(t => '<li>' + t + '</li>').join('') + '</ol>' +
-      (ios ? '<p class="meta">Use Safari for this. Afterwards, sign in once in the Home Screen app and turn on notifications under Profile.</p>' : '') +
+      (ios ? '<p class="meta">Use Safari for this. Afterwards, sign in once in the Homescreen app and turn on notifications under Profile.</p>' : '') +
       '</div><div class="modal-f"><button class="btn primary" data-act="closeModal">Got it</button></div>';
     openModal('install', html);
   }
@@ -3998,10 +4002,10 @@
       denied: 'Notifications are blocked for PAL on this device. Allow them in your phone’s Settings → Notifications → PAL (or the browser’s site settings), then come back.',
       off: 'Get a notification on this device when your requests are approved, denied, edited or deleted.',
       busy: 'Setting up notifications…',
-      install: 'Add PAL to your Home Screen to turn on notifications. Then open it from the Home Screen and come back here.',
+      install: 'Add PAL to your Homescreen to turn on notifications. Then open it from the Homescreen and come back here.',
       on: 'Notifications are on for this device.'
     }[pst];
-    const pushBtns = pst === 'install' ? '<button class="btn primary" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Home Screen</button>'
+    const pushBtns = pst === 'install' ? '<button class="btn primary" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Homescreen</button>'
       : pst === 'off' ? '<button class="btn primary" data-act="pushOn">' + icon('bell', 18) + 'Turn on notifications</button>'
       : pst === 'on' ? '<button class="btn" data-act="pushOff">Turn off</button><button class="btn" data-act="pushTest">Send test</button>'
       : pst === 'busy' ? '<button class="btn primary is-busy" aria-busy="true" tabindex="-1"><span class="btn-spin" aria-hidden="true"></span>Turning on…</button>' : '';
@@ -4724,7 +4728,7 @@
       }
       openInstallHelp();
     },
-    installHide() { store.set('installHidden', '1'); renderInstallFab(); toast('You can still add it from Profile → Notifications', 'hint', 3200); },
+    installHide() { store.set('installHidden', '1'); renderInstallFab(); if (S.me) toast('You can still add it from Profile → Notifications', 'hint', 3200); },
     clearPerson(el) { fState(el.dataset.scope).person = ''; S.openDrop = null; render(); if (S.modal === 'filters') openFilterSheet(el.dataset.scope, true); },
     pickPerson(el) { S.ppFromSheet = S.modal === 'filters'; openPersonPicker(el.dataset.scope); },
     setPerson(el) {
