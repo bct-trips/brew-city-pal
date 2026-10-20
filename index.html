@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792492256"></script>
+    <script src="config.js?v=1792492369"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1471,6 +1471,23 @@
   .mf-row .btn.act.act-lbl, .mf-row .btn.act.act-lbl:has(> .ic:first-child) { flex: 1 1 0; width: auto; border-radius: 20px; gap: 6px; padding: 0 14px; }
   .mf-row .btn.act.act-lbl .bl { display: inline; }
   .mf-row .btn.act:not(.act-lbl) { flex: none; }
+  /* Person filter active: Brewers yellow pill (desktop person pill + ✕, phone Filters button) so it's obvious the calendar is filtered to one person.
+     Conflict mode keeps its red (.fp-conf). */
+  .fp:not(.fp-conf):has(.fp-clear) .fperson, .fp:not(.fp-conf) .fp-clear, .fdrop-btn.fall.fp-active {
+    background: var(--gold); border-color: var(--gold); color: var(--navy) !important; font-weight: 800; }
+  .fp:not(.fp-conf) .fp-clear { border-left-color: color-mix(in srgb, var(--navy) 30%, transparent); }
+  /* Clear filters: an outlined "✕ Clear" button at the end of the filters on wide screens; on phones a ✕ joined to the Filters button,
+     in the same colour as it (tonal when filtered, yellow when a person is picked). */
+  .fall-clear { flex: none; }
+  .fall-clear:has(> .ic:first-child) { padding: 0 16px 0 12px; }
+  @media (max-width: 700px) {
+    .filters > .fall:has(+ .fall-clear) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+    .filters > .fall-clear, .filters > .fall-clear:has(> .ic:first-child) { width: 44px; min-width: 44px; padding: 0; margin-left: -6px; border-radius: 0 20px 20px 0;
+      border-left: 1px solid color-mix(in srgb, currentColor 30%, transparent); }
+    .filters > .fall-clear .bl { display: none; }
+    .filters > .fall.on + .fall-clear { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink); border-left-color: color-mix(in srgb, var(--sel-ink) 30%, transparent); }
+    .filters > .fall.fp-active + .fall-clear { background: var(--gold); border-color: var(--gold); color: var(--navy); border-left-color: color-mix(in srgb, var(--navy) 30%, transparent); }
+  }
 </style>
 
   </head>
@@ -1828,8 +1845,8 @@
     reindex();
     // Default the position filters to the signed-in member's own position (once per sign-in / account switch).
     if (S.filtersFor !== S.me) {
-      const role = (IDX.users.get(S.me) || {}).role;
-      if (role) S.f.role = [role];
+      // Default view: Pilots and Booms (Other is opt-in). Clear filters shows everything.
+      S.f.role = ['Pilot', 'Boom'];
       S.filtersFor = S.me;
     }
   }
@@ -2260,8 +2277,12 @@
   }
   function filterButton(sc) {
     const parts = filterSummary(sc);
-    return '<button type="button" class="fsel fdrop-btn fall' + (parts.length ? ' on' : '') + '" data-act="openFilters"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Filters: ' + esc(parts.join(' · ') || 'showing everything') + '">' +
-      icon('sliders', 16) + '<span>' + esc(parts.length ? parts.join(' · ') : 'Filters') + '</span>' + icon('down', 14) + '</button>';
+    // A person filter hides everyone else, so the button turns Brewers yellow (same as the person pill on desktop).
+    const st = fState(sc), person = !!st.person && !st.conf;
+    return '<button type="button" class="fsel fdrop-btn fall' + (parts.length ? ' on' : '') + (person ? ' fp-active' : '') + '" data-act="openFilters"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Filters: ' + esc(parts.join(' · ') || 'showing everything') + '">' +
+      icon('sliders', 16) + '<span>' + esc(parts.length ? parts.join(' · ') : 'Filters') + '</span>' + icon('down', 14) + '</button>' +
+      // Clear filters: back to every position, person, status and both Leave and Pass. Only while something is filtered.
+      (parts.length ? '<button type="button" class="btn fall-clear" data-act="clearFilters"' + scAttr(sc) + ' aria-label="Clear filters and show everything" title="Clear filters">' + icon('x', 18) + '<span class="bl">Clear</span></button>' : '');
   }
   function openFilterSheet(sc, inPlace) {
     S.openDrop = null; S.fsScope = sc || 'cal';
@@ -3786,6 +3807,14 @@
       closeModal(); render();
     },
     openFilters(el) { openFilterSheet(el.dataset.scope); },
+    clearFilters(el) {
+      const st = fState(el.dataset.scope);
+      st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
+      if (st.role) st.role = FILTERS[1].opts.map(o => o[0]);
+      if ('person' in st) st.person = '';
+      if ('conf' in st) st.conf = false;
+      render();
+    },
     resetFilters(el) {
       const st = fState(el.dataset.scope);
       st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
