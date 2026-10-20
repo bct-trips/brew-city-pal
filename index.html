@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792491713"></script>
+    <script src="config.js?v=1792491770"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1440,6 +1440,12 @@
   /* Unresolved conflict on a calendar bar: red warning triangle before the name (next to the active dot). Clears once every request in the conflict is approved. */
   .cf-tri { display: inline-flex; vertical-align: -2px; margin-right: 3px; color: #d92d20; }
   .cf-tri .ic { width: 12px; height: 12px; stroke-width: 2.8; }
+  /* Sensitive settings: amber card = caution (Default PIN), red card = danger (Admin PIN). Tinted fill, toned border and heading icon. */
+  .panel-warn { --tone: #d97706; } .panel-danger { --tone: #d92d20; }
+  :root[data-theme="dark"] .panel-warn { --tone: #f59e0b; } :root[data-theme="dark"] .panel-danger { --tone: #ff5a4e; }
+  .panel:is(.panel-warn, .panel-danger) { background: color-mix(in srgb, var(--tone) 9%, var(--card)); border-color: color-mix(in srgb, var(--tone) 60%, transparent); }
+  .panel:is(.panel-warn, .panel-danger) h3 .ic { color: var(--tone); }
+  .panel:is(.panel-warn, .panel-danger) input { background: var(--card); }
 </style>
 
   </head>
@@ -3208,11 +3214,11 @@
         adminUnits() + '</div>' +
 
       // PINs
-      '<div class="panel"><h3>' + icon('key', 16) + ' Default PIN</h3>' +
+      '<div class="panel panel-warn"><h3>' + icon('key', 16) + ' Default PIN</h3>' +
         '<p class="cfg-help">The temporary PIN for new members and anyone whose PIN you reset. They must replace it at their next sign-in.</p>' +
         pinPair('dp1', 'dp2', 'New default PIN', 'Confirm') +
         '<div class="cfg-foot"><button class="btn" data-act="saveDefaultPin">Update default PIN</button></div></div>' +
-      '<div class="panel"><h3>' + icon('shield', 16) + ' Admin PIN</h3>' +
+      '<div class="panel panel-danger"><h3>' + icon('shield', 16) + ' Admin PIN</h3>' +
         '<p class="cfg-help">Unlocks admin mode from Profile.</p>' +
         pinPair('pk1', 'pk2', 'New admin PIN', 'Confirm') +
         '<div class="cfg-foot"><button class="btn" data-act="savePasskey">Update admin PIN</button></div></div>' +
