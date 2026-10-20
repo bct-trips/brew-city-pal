@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792489204"></script>
+    <script src="config.js?v=1792489274"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1478,6 +1478,19 @@
      The date row sits above the ring so the pill keeps the exact ring colour. */
   .cell.today::before, .month.compact .cell.cc.today::before { z-index: 3; }
   .cell .cell-head, .month.compact .cell.cc > .cc-n { position: relative; z-index: 4; }
+  /* ---------- Brewers brand: Leave = Brewers navy #12284B, Pass = Brewers yellow #FFC52F (teamcolorcodes.com) ---------- */
+  :root, :root[data-theme="dark"] {
+    --navy: #12284B; --gold: #FFC52F; --gold-2: #e8ab12; --gold-3: #ffd970; --pass-pend: #ffe7a8;
+    --leave: #12284B; --leave-2: #2b4a7e; --leave-ink: #ffffff; --leave-tint: #dde3ee; --leave-tint-ink: #12284B; --leave-pend: #b9c6dd; --leave-pend-ink: #12284B; }
+  :root[data-theme="dark"] { --leave-tint: #23314d; --leave-tint-ink: #dde6f7; --leave-pend: #3a4d70; --leave-pend-ink: #ffffff; }
+  /* Dark mode: navy sits close to the background, so leave fills get a light navy edge. */
+  :root[data-theme="dark"] .evs.leave, :root[data-theme="dark"] .wpuck.leave, :root[data-theme="dark"] .badge.t-leave, :root[data-theme="dark"] .tchip-leave.on,
+  :root[data-theme="dark"] .mseg.leave, :root[data-theme="dark"] .qbar.leave, :root[data-theme="dark"] .cs-bar.leave, :root[data-theme="dark"] .dl-h.leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
+  /* Selection can't be a solid navy fill any more (that means Leave): Brewers navy outline on a pale navy tint, bold navy text. */
+  :root { --sel-bg: #dde3ee; --sel-ink: #12284B; --sel-ring: #12284B; }
+  :root[data-theme="dark"] { --sel-bg: #d3dcef; --sel-ink: #12284B; --sel-ring: #d3dcef; }
+  .seg button.on, .fdrop-btn.on, .fsel.on, .btn.today-btn.on { box-shadow: inset 0 0 0 1.5px var(--navy); }
+  :root[data-theme="dark"] .seg button.on, :root[data-theme="dark"] .fdrop-btn.on, :root[data-theme="dark"] .fsel.on { box-shadow: inset 0 0 0 1.5px #ffffff; }
 </style>
 
   </head>
