@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792530394"></script>
+    <script src="config.js?v=1792530562"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1907,6 +1907,33 @@
   .rtable th.stk { padding: 0; } .rtable th.stk .th-sort { padding-left: 8px; padding-right: 10px; } /* the header doesn't widen the column */
   .rtable td.stk .stk-in { gap: 8px; }
   .tbl-wrap.scrolled tr.t-leave td.stk, .tbl-wrap.scrolled tr.t-pass td.stk { padding-left: 12px; }
+  /* Notifications inside the Profile drop-up: header (count + Clear all), the newest 3 with a ✕ each, "+N more". */
+  .pm-notes { border-bottom: 1px solid color-mix(in srgb, var(--pm-edge, var(--line)) 60%, transparent); padding: 8px 0 4px; }
+  .pm-nh { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 16px 6px; font-weight: 800; font-size: 15px; }
+  .pm-nh > span { display: inline-flex; align-items: center; gap: 10px; }
+  .pm-nh .pm-ct { font-size: 12.5px; }
+  .pm-clear { font-size: 14px; }
+  .pm-nempty { padding: 2px 16px 10px 44px; color: var(--muted); font-size: 14px; }
+  .pm-n { position: relative; display: flex; align-items: stretch; }
+  .pm-n.unread { background: color-mix(in srgb, var(--sel-bg) 18%, transparent); }
+  .pm-nb { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 8px 4px 8px 14px; border: 0; background: none; color: var(--ink);
+    font: inherit; text-align: left; cursor: pointer; }
+  .pm-nb:hover { background: color-mix(in srgb, var(--on-surface) 6%, transparent); }
+  .pm-nb .note-ic { width: 26px; height: 26px; }
+  .pm-nt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 13.5px; line-height: 1.25; }
+  .pm-nt b, .pm-nt span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pm-nt span { color: var(--muted); }
+  .pm-ago { flex: none; font-size: 12px; color: var(--muted); }
+  .pm-nx { flex: none; width: 40px; display: grid; place-items: center; border: 0; background: none; color: var(--muted); cursor: pointer; }
+  .pm-nx:hover { color: var(--ink); background: color-mix(in srgb, var(--on-surface) 8%, transparent); }
+  .pm-more { display: block; width: 100%; padding: 8px 16px; border: 0; background: none; text-align: left; font: inherit; font-weight: 800; font-size: 14px;
+    color: var(--primary); cursor: pointer; }
+  /* Full list (from "+N more"): fits the sheet — no bleed margins, ✕ in its own column. */
+  .notes-drawer .notes-list { margin: 0; border-top: 0; }
+  .notes-drawer .note-row { padding: 12px 52px 12px 14px; gap: 10px; }
+  .notes-drawer .note-x { top: 50%; bottom: auto; transform: translateY(-50%); right: 4px; }
+  .notes-drawer .notes-lh { padding: 8px 14px; }
+  .notes-drawer .note-t span { overflow-wrap: anywhere; }
 </style>
 
   </head>
@@ -2664,6 +2691,11 @@
   const navOn = v => S.view === v || (v === 'people' && S.view === 'roster'); // Manage roster lives under the Roster tab
   // (No caret on Profile: the tab lights up and the menu's notch points at it while it's open.)
   const caret = () => '';
+  /** Profile badge: how many notifications are waiting (loaded in the background so the count is always right). */
+  function noteCount() {
+    if (S.notes == null) { if (S.token) setTimeout(loadNotes, 0); return S.unread || 0; }
+    return visibleNotes().length;
+  }
   function renderNav() {
     const pending = IDX.live.filter(r => r.status === 'Pending').length;
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
@@ -2673,11 +2705,11 @@
       : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
       '<nav class="nav' + (S.isAdmin ? ' nav-admin' : '') + '" aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '">' + items.map(i =>
-      '<button data-act="nav" data-v="' + i[0] + '"' + (i[0] === 'profile' ? ' aria-haspopup="menu" aria-expanded="false"' : '') + ' class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
+      '<button data-act="nav" data-v="' + i[0] + '"' + (i[0] === 'profile' ? ' aria-haspopup="menu" aria-expanded="' + !!document.getElementById('pmenu') + '"' : '') + ' class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
       '<span class="nav-ic' + (i[0] === syncTab() && S.pending ? ' syncing' : i[0] === syncTab() && S.syncErr ? ' sync-err' : '') + '">' + (i[0] === 'profile' ? '<span class="nav-logo" aria-hidden="true"></span>' : icon(i[2], 20)) + '</span><span class="wide">' + i[1] + caret(i[0]) + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + caret(i[0]) + '</span>' +
       (i[0] === 'all' && S.isAdmin && pending ? '<b class="dot">' + pending + '</b>' : '') +
       (i[0] === 'mine' && myChanged ? '<b class="dot warn" title="Dates changed by an admin">' + myChanged + '</b>' : '') +
-      (i[0] === 'profile' && S.unread ? '<b class="dot" title="Unread notifications">' + S.unread + '</b>' : '') + '</button>').join('') + '</nav>';
+      (i[0] === 'profile' && noteCount() ? '<b class="dot" title="' + plural(noteCount(), 'notification') + '">' + noteCount() + '</b>' : '') + '</button>').join('') + '</nav>';
   }
   function seg(options, current, act, extra) {
     return '<div class="seg" role="group">' + options.map(o => {
@@ -4258,8 +4290,12 @@
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   }
   /** Notifications to show: a deleted request takes its notifications with it (only the "deleted" notice stays). */
+  // Notifications cleared on this device stay cleared even if the server couldn't delete them (e.g. older Code.gs).
+  const hiddenNotes = () => new Set(store.get('notesHidden', []));
   function visibleNotes() {
+    const hid = hiddenNotes();
     return (S.notes || []).filter(n => {
+      if (hid.has(n.id)) return false;
       if (!n.requestId || n.kind === 'deleted') return true;
       const r = findReq(n.requestId);
       return !!r && r.status !== 'Cancelled';
@@ -4268,10 +4304,15 @@
   /** Take a notifications list from the server; the unread badge counts only what's shown. */
   function takeNotes(r) { S.notes = r.items; S.unread = visibleNotes().filter(n => !n.read).length; setBadge(); }
   async function dropNotes(ids) {
-    S.notes = ids === 'all' ? [] : (S.notes || []).filter(n => ids.indexOf(n.id) < 0);
+    const gone = ids === 'all' ? (S.notes || []).map(n => n.id) : ids;
+    S.notes = (S.notes || []).filter(n => gone.indexOf(n.id) < 0);
     S.unread = visibleNotes().filter(n => !n.read).length; setBadge(); redrawNotes(); renderNavOnly();
     try { takeNotes(await call('apiDeleteNotes', S.token, ids)); redrawNotes(); renderNavOnly(); }
-    catch (e) { toast(e.message, 'error', 5000); loadNotes(); }
+    catch (e) {
+      // The server couldn't delete them: keep them cleared on this device so they don't come back.
+      store.set('notesHidden', [...hiddenNotes()].concat(gone).slice(-500));
+      toast(e.message === OUTDATED ? 'Cleared on this device. Paste the latest Code.gs into Apps Script so it clears everywhere.' : e.message, 'error', 6000);
+    }
   }
   async function loadNotes() {
     if (S.notesLoading || !S.token) return;
@@ -4284,7 +4325,7 @@
   function redrawNotes() {
     const p = $('#notesPanel'); if (p) p.innerHTML = notesPanelHtml();
     const d = $('#notesDrawer'); if (d) d.innerHTML = notesListHtml();
-    const m = $('#pmNotesCt'); if (m) m.textContent = S.unread ? S.unread + ' new' : '';
+    const m = $('#pmNotes'); if (m) m.innerHTML = pmNotesHtml();
   }
   /* ---------- Profile menu: a drop-up that opens out of the Profile tab (not a dialog) ----------
      Who you are, then Notifications · Appearance (Light / Dark / System) · Settings · Sign out. Tapping outside, Esc or
@@ -4306,7 +4347,7 @@
         '<span class="bh-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
         '<span class="bh-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(me.unit) + '</span>' +
         '<span class="bh-n" aria-hidden="true">' + esc(calName(me)) + '</span></div>' +
-      row('openNotes', 'bell', 'Notifications', '<b class="pm-ct" id="pmNotesCt">' + (S.unread ? S.unread + ' new' : '') + '</b>') +
+      '<div class="pm-notes" id="pmNotes">' + pmNotesHtml() + '</div>' +
       '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full" role="group" aria-label="Appearance">' +
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
           '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '">' + icon(t[2], 15) + t[1] + '</button>').join('') + '</div></div>' +
@@ -4327,7 +4368,8 @@
     if (!m) return;
     if (ev.target.closest('.nav button[data-v="profile"]')) return; // the tab itself toggles it
     const item = ev.target.closest('#pmenu [data-act]');
-    if (!m.contains(ev.target) || (item && item.dataset.act !== 'theme')) closeProfileMenu();
+    const keepOpen = item && ['theme', 'noteDel', 'notesClear'].includes(item.dataset.act);
+    if (!m.contains(ev.target) || (item && !keepOpen)) closeProfileMenu();
   }, true);
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && document.getElementById('pmenu')) closeProfileMenu(); });
   /** Admin Mode (from the Profile menu): ask for the admin PIN. The box ignores password-manager autofill (it's
@@ -4342,11 +4384,29 @@
     box.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); A.unlockAdmin($('#admGo')); } });
     setTimeout(() => box.focus(), 50); // focusing arms it (see armPasskey)
   }
+  /** Notifications inside the Profile menu: the newest few, each with a ✕; "+N more" opens the whole list; Clear all. */
+  const PM_NOTES = 3;
+  function pmNotesHtml() {
+    if (S.notes == null) { setTimeout(loadNotes, 0); return '<div class="pm-nh"><span>' + icon('bell', 18) + 'Notifications</span></div><div class="pm-nempty">Loading…</div>'; }
+    const notes = visibleNotes();
+    const head = '<div class="pm-nh"><span>' + icon('bell', 18) + 'Notifications' + (notes.length ? ' <b class="pm-ct">' + notes.length + '</b>' : '') + '</span>' +
+      (notes.length ? '<button type="button" class="linkbtn pm-clear" data-act="notesClear">Clear all</button>' : '') + '</div>';
+    if (!notes.length) return head + '<div class="pm-nempty">You’re all caught up.</div>';
+    const rows = notes.slice(0, PM_NOTES).map(n => {
+      const k = NOTE_IC[n.kind] || ['bell', 'info'];
+      return '<div class="pm-n' + (n.read ? '' : ' unread') + '"><button type="button" class="pm-nb" data-act="noteOpen" data-id="' + esc(n.id) + '" data-req="' + esc(n.requestId || '') + '">' +
+        '<span class="note-ic note-' + k[1] + '">' + icon(k[0], 14) + '</span><span class="pm-nt"><b>' + esc(n.title) + '</b><span>' + esc(n.body) + '</span></span>' +
+        '<span class="pm-ago">' + esc(ago(n.ts)) + '</span></button>' +
+        '<button type="button" class="pm-nx" data-act="noteDel" data-id="' + esc(n.id) + '" aria-label="Clear notification: ' + esc(n.title) + '" title="Clear">' + icon('x', 16) + '</button></div>';
+    }).join('');
+    const more = notes.length > PM_NOTES ? '<button type="button" class="pm-more" data-act="openNotes">+' + (notes.length - PM_NOTES) + ' more</button>' : '';
+    return head + rows + more;
+  }
   /** Notifications drawer: the list, with Mark all read / Clear all and a ✕ on each. */
   function openNotesDrawer() {
-    S.notesAll = false;
+    S.notesAll = true; // the drawer is the full, scrollable list
     const html = modalHead('Notifications', 'bell') + '<div class="modal-b notes-drawer" id="notesDrawer">' + notesListHtml() + '</div>' +
-      '<div class="modal-f"><button class="btn" data-act="openSettings">' + icon('sliders', 16) + 'Notification settings</button><button class="btn primary" data-act="closeModal">Close</button></div>';
+      '<div class="modal-f"><button class="btn primary block" data-act="closeModal">Close</button></div>';
     openModal('notes', html);
     $('#modal .modal').classList.add('notes-sheet');
   }
