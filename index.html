@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792488462"></script>
+    <script src="config.js?v=1792489204"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -873,8 +873,8 @@
      Dark mode: bright fills (gold / green / red) with near-black text (the bar's own background).
      Light mode: deep fills (navy / green / red) with white text (the bar's own background).
      No more same-hue text on same-hue containers. All pairs ≥ 4.5:1 (checked). */
-  :root { --sel-bg: #FDB827; --sel-ink: #0A2351; --sel-ring: #0A2351; --go-bg: #1e6b35; --go-ink: #ffffff; --no-bg: #b3261e; --no-ink: #ffffff; }
-  :root[data-theme="dark"] { --sel-bg: #FDB827; --sel-ink: #17181d; --sel-ring: #FDB827; --go-bg: #86d99a; --go-ink: #17181d; --no-bg: #ffb4ab; --no-ink: #17181d; }
+  :root { --sel-bg: #12284B; --sel-ink: #ffffff; --sel-ring: #12284B; --go-bg: #1e6b35; --go-ink: #ffffff; --no-bg: #b3261e; --no-ink: #ffffff; }
+  :root[data-theme="dark"] { --sel-bg: #2c4f8f; --sel-ink: #ffffff; --sel-ring: #9db8ec; --go-bg: #86d99a; --go-ink: #17181d; --no-bg: #ffb4ab; --no-ink: #17181d; }
   .seg button.on, .fsel.on, .fdrop-btn.on, .btn.gold { background: var(--sel-bg); color: var(--sel-ink); border-color: var(--sel-bg); }
   .seg button.on:hover { background: var(--sel-bg); color: var(--sel-ink); }
   .btn.req-btn, .req-bar .req-btn, .btn.req-btn:hover { background: var(--go-bg); border-color: var(--go-bg); color: var(--go-ink); }
@@ -1076,7 +1076,9 @@
 
   /* ---------- Qtr availability tint (one position: mine, else the first selected) ---------- */
   :root { --av-open: #b9e6c4; --av-over: #fcc98f; --av-full: #f7aaa4; --av-open-dot: #1e7a3a; --av-over-dot: #c2560a; --av-full-dot: #b3261e; }
-  :root[data-theme="dark"] { --av-open: #1e5233; --av-over: #6b3f12; --av-full: #6e2222; --av-open-dot: #86d99a; --av-over-dot: #fdba74; --av-full-dot: #fca5a5; }
+  /* Dark mode: vivid "trading app" good / caution / bad — green #00C805, orange #FF9F0A, red #FF3B30 over the dark surface. */
+  :root[data-theme="dark"] { --av-open: color-mix(in srgb, #00C805 34%, #17181d); --av-over: color-mix(in srgb, #FF9F0A 40%, #17181d); --av-full: color-mix(in srgb, #FF3B30 42%, #17181d);
+    --av-open-dot: #00C805; --av-over-dot: #FF9F0A; --av-full-dot: #FF3B30; }
   .qd.av-open, .qd.av-open.wknd { background: var(--av-open); }
   .qd.av-over, .qd.av-over.wknd { background: var(--av-over); }
   .qd.av-full, .qd.av-full.wknd { background: var(--av-full); }
@@ -1443,6 +1445,39 @@
   /* Narrow month cells (e.g. calendar squeezed by the day panel): keep only the counters that are full or over the max. */
   .month:not(.compact) .cell { container-type: inline-size; }
   @container (max-width: 150px) { .qc-day:not(.over):not(.full) { display: none; } .qc-day { padding: 0 4px; font-size: 11.5px; } }
+  /* Selected = Brewers navy #12284B (Leave is the brighter royal blue; gold = Pass). Bold text marks it too. */
+  .seg button.on, .fsel.on, .fdrop-btn.on, .btn.today-btn.on { font-weight: 800; }
+  :root[data-theme="dark"] .seg button.on, :root[data-theme="dark"] .fdrop-btn.on, :root[data-theme="dark"] .fsel.on { box-shadow: inset 0 0 0 1px #9db8ec; }
+  .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: var(--sel-bg); color: var(--sel-ink); }
+  /* Out now: requests in progress today. Neutral high-contrast ring + live green dot. */
+  :root { --now: #111318; --now-dot: #00a35c; }
+  :root[data-theme="dark"] { --now: #ffffff; --now-dot: #00C805; }
+  /* Thin stripes inside the bar's shape (a ring or z-index would be clipped by the bar shape and made Chromium hide bars under today). */
+  .evs.now, .wpuck.now { background-image: linear-gradient(var(--now), var(--now)), linear-gradient(var(--now), var(--now));
+    background-size: 100% 2px; background-position: top, bottom; background-repeat: no-repeat; }
+  .now-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--now-dot); animation: nowPulse 1.8s ease-out infinite; flex: none; }
+  @keyframes nowPulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--now-dot) 70%, transparent); } 70%, 100% { box-shadow: 0 0 0 6px transparent; } }
+  @media (prefers-reduced-motion: reduce) { .now-dot { animation: none; } }
+  .now-tag { display: inline-flex; align-items: center; gap: 5px; margin-left: 6px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap;
+    color: var(--on-surface); border: 1.5px solid var(--now); line-height: 18px; }
+  .badge.t-now { display: inline-flex; align-items: center; gap: 6px; background: var(--now); color: #fff; }
+  :root[data-theme="dark"] .badge.t-now { color: #111318; }
+  /* On calendar bars the dot is static: an animated dot made Chromium paint today's cell over the bars. */
+  .idb-n .now-dot, .mn .now-dot { width: 7px; height: 7px; margin-right: 4px; vertical-align: 1px; animation: none; box-shadow: 0 0 0 1.5px #fff; }
+  .rtable tr.now > td:first-child { box-shadow: inset 4px 0 0 var(--now-dot); }
+  /* Today: the date pill is joined to the ring's top-left corner (rounded TL + BR, square TR + BL), same colour as the ring. */
+  :root { --today-ring: color-mix(in srgb, var(--primary) 72%, var(--surface)); }
+  .cell.today::before, .month.compact .cell.cc.today::before, .wk-day.today::before, .qd.today::before { border-color: var(--today-ring); }
+  .cell.today .cell-head { padding-left: 3px; align-items: flex-start; }
+  .cell.today .dnum, .cell.cc.today .cc-n { background: var(--today-ring); color: var(--on-primary); height: 24px; border-radius: 12px 0 12px 0; display: inline-flex; align-items: center; justify-content: center; }
+  .cell.today .dnum { margin-top: 3px; }
+  .cell.cc.today .cc-n { margin: -1px 0 0 0; }
+  /* Month cells: no isolation (Chromium hid bars under an isolated today cell). The ring sits above the cell background but below the bars (.mo z 2). */
+  .cell { isolation: auto; }
+  /* Today's ring sits ABOVE the bars (like the open-day ring) so Chromium can't paint it over them; the 12% tint lets bars show through.
+     The date row sits above the ring so the pill keeps the exact ring colour. */
+  .cell.today::before, .month.compact .cell.cc.today::before { z-index: 3; }
+  .cell .cell-head, .month.compact .cell.cc > .cc-n { position: relative; z-index: 4; }
 </style>
 
   </head>
@@ -2545,6 +2580,8 @@
     openModal('conflict', html, true);
   }
 
+  /** In progress today (not denied): the member is out right now. */
+  const isNow = r => r.status !== 'Denied' && r.start <= S.today && r.end >= S.today;
   function describe(r) {
     const u = userOf(r.userId);
     return fullName(u) + ', ' + ({ Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' })[u.role] + ', ' + (r.type === 'Leave' ? 'Ordinary Leave' : 'Special Pass') + ', ' + r.status + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
@@ -2578,7 +2615,7 @@
     const un = unitsList().find(x => x.code === u.unit);
     return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r idb-' + L.toLowerCase() + '">' + L + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
-      '<span class="idb-n">' + esc(calName(u)) + (withStatus ? statusIcon(r.status) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
+      '<span class="idb-n">' + (isNow(r) ? '<i class="now-dot" title="Active now"></i>' : '') + esc(calName(u)) + (withStatus ? statusIcon(r.status) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
@@ -2593,9 +2630,9 @@
     const names = list.length > 3
       ? '<span class="rp-more">4+ ' + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[role] + '</span>'
       : list.map(r => '<span class="mn' + (dupsOf(r).length ? ' dup' : '') + (r.id === S.focus ? ' focus' : '') + (r.status === 'Denied' ? ' st-denied' : '') +
-          '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + esc(calName(userOf(r.userId))) + '</span>')
+          '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + (isNow(r) ? '<i class="now-dot" title="Active now"></i>' : '') + esc(calName(userOf(r.userId))) + '</span>')
           .join('<span class="rp-dot" aria-hidden="true">·</span>');
-    return '<span class="idb pb rp" title=""' + esc(title) + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
+    return '<span class="idb pb rp" title="' + esc(title) + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
       '<span class="idb-n">' + names + '</span></span>';
   }
   function segHtml(sg) {
@@ -2608,10 +2645,10 @@
         return list.length ? rolePuck(role, list) : '';
       }).join('');
       // More than one person on this stretch (any positions): hatched "shared" bar.
-      return '<div class="' + base + (sg.people.length > 1 ? ' shared' : '') + (sg.people.length === 1 && r0.id === S.focus ? ' focus' : '') + (sg.cat === 'Denied' ? ' st-denied' : '') + '" style="' + pos + '"><span class="evs-t">' + pucks + '</span></div>';
+      return '<div class="' + base + (sg.people.length > 1 ? ' shared' : '') + (sg.people.length === 1 && r0.id === S.focus ? ' focus' : '') + (sg.cat === 'Denied' ? ' st-denied' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"><span class="evs-t">' + pucks + '</span></div>';
     }
     // First / last / single day: the shaped event bar holding the person's [P|MKE|Name] badge.
-    const cls = base + ' st-' + r0.status.toLowerCase() + (r0.id === S.focus ? ' focus' : '') + (r0.userId === S.me ? ' mine' : '') + (dupsOf(r0).length ? ' dup' : '');
+    const cls = base + ' st-' + r0.status.toLowerCase() + (r0.id === S.focus ? ' focus' : '') + (r0.userId === S.me ? ' mine' : '') + (dupsOf(r0).length ? ' dup' : '') + (isNow(r0) ? ' now' : '');
     return '<div class="' + cls + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r0.id) + '" style="' + pos + '"' +
       ' title="' + esc(describe(r0)) + '" aria-label="' + esc(describe(r0)) + '"><span class="evs-t">' + personBadge(r0, sg.kind !== 'end') + '</span></div>';
   }
@@ -2736,7 +2773,7 @@
         const pucks = evs.map(r => {
           const u = userOf(r.userId);
           const a = D.diff(ws, D.max(r.start, ws)) + 1, z = D.diff(ws, D.min(r.end, we)) + 2;
-          const cls = ['wpuck', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : ''].join(' ');
+          const cls = ['wpuck', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : '', isNow(r) ? 'now' : ''].join(' ');
           return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
             '<span class="n">' + personBadge(r) + '</span><span class="s">' + (r.type === 'Leave' ? 'Leave' : 'Pass') + ' · ' + r.status + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span></div>';
         }).join('');
@@ -2955,11 +2992,11 @@
       }
       if (canEdit(r)) acts += '<button class="btn sm act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit request for ' + esc(u.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>';
       if (canDelete(r)) acts += '<button class="btn sm del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete request for ' + esc(u.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>';
-      return '<tr class="t-' + r.type.toLowerCase() + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
+      return '<tr class="t-' + r.type.toLowerCase() + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + (isNow(r) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
         '<td class="st-ic-c">' + stIcon(r) + '</td>' +
         '<td>' + unitBadge(u.unit) + '</td>' +
         '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + r.type.toLowerCase() + ' t-sm">' + r.type + '</span>' : '') +
-          '<span class="stk-n">' + esc(lastName(u)) + '</span>' + conflictBadge(r, true) + marks(r) + '</div></td>' +
+          '<span class="stk-n">' + esc(lastName(u)) + '</span>' + (isNow(r) ? '<span class="now-tag" title="Active now"><i class="now-dot" aria-hidden="true"></i>Active</span>' : '') + conflictBadge(r, true) + marks(r) + '</div></td>' +
         '<td>' + esc(firstName(u)) + '</td>' +
         '<td>' + esc(u.rank) + '</td>' +
         '<td>' + esc(ROLE_NAME[u.role] || u.role) + '</td>' +
@@ -2978,15 +3015,17 @@
     // Current (ending today or later) leave and passes in their own bands; finished ones go to a Past band, collapsed by default.
     const group = (type, list) => {
       const closed = type === 'Past' ? col.Past !== false : !!col[type], n = COLS.length + 1;
-      const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : '<span class="badge t-' + type.toLowerCase() + '">' + type + '</span>';
+      const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : type === 'Now' ? '<span class="badge t-now"><i class="now-dot" aria-hidden="true"></i>Active Leave / Pass</span>' : '<span class="badge t-' + type.toLowerCase() + '">' + type + '</span>';
       return '<tbody class="grp grp-' + type.toLowerCase() + (closed ? ' closed' : '') + '"><tr class="grp-h"><th colspan="' + n + '" scope="rowgroup">' +
         '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + !closed + '">' +
         icon(closed ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button></th></tr>' +
-        (closed ? '' : list.length ? list.map(r => rowHtml(r, type === 'Past')).join('')
-          : '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + ({ Leave: 'No current leave', Pass: 'No current passes', Past: 'Nothing past' })[type] + ' to show.</span></td></tr>') + '</tbody>';
+        (closed ? '' : list.length ? list.map(r => rowHtml(r, type === 'Past' || type === 'Now')).join('')
+          : '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + ({ Leave: 'No upcoming leave to show.', Pass: 'No upcoming passes to show.', Past: 'Nothing past to show.', Now: 'No active leave or passes today.' })[type] + '</span></td></tr>') + '</tbody>';
     };
     const cur = rows.filter(r => r.end >= S.today), past = rows.filter(r => r.end < S.today);
-    const body = group('Leave', cur.filter(r => r.type === 'Leave')) + group('Pass', cur.filter(r => r.type === 'Pass')) + group('Past', past);
+    // Active Leave / Pass (in progress today: leave first, then passes), then upcoming Leave and Pass.
+    const now = cur.filter(r => isNow(r) && r.type === 'Leave').concat(cur.filter(r => isNow(r) && r.type === 'Pass')), next = cur.filter(r => !isNow(r));
+    const body = group('Now', now) + group('Leave', next.filter(r => r.type === 'Leave')) + group('Pass', next.filter(r => r.type === 'Pass')) + group('Past', past);
     return '<div class="tbl-wrap" id="tbl-' + key + '" data-table="' + key + '"><table class="rtable"><thead><tr>' + head + '</tr></thead>' + body + '</table></div>';
   }
 
