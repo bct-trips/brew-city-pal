@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792530249"></script>
+    <script src="config.js?v=1792530394"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2328,11 +2328,11 @@
     ev.preventDefault(); ev.returnValue = 'Changes are still saving. Leave anyway?'; return ev.returnValue;
   });
   /** Full-screen "Submitting…" cover with a spinner; blocks taps until hideBlocker(). */
-  function showBlocker(label) {
+  function showBlocker(label, sub) {
     hideBlocker();
     const el = document.createElement('div');
     el.id = 'blocker'; el.className = 'blocker'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-live', 'assertive'); el.setAttribute('aria-busy', 'true');
-    el.innerHTML = '<div class="blocker-box"><span class="brand-logo blocker-logo logo-loading" aria-hidden="true"></span><div class="blocker-t">' + esc(label) + '</div><div class="blocker-s">Keep the app open until this finishes.</div></div>';
+    el.innerHTML = '<div class="blocker-box"><span class="brand-logo blocker-logo logo-loading" aria-hidden="true"></span><div class="blocker-t">' + esc(label) + '</div>' + (sub === '' ? '' : '<div class="blocker-s">' + esc(sub || 'Keep the app open until this finishes.') + '</div>') + '</div>';
     document.body.appendChild(el);
   }
   function hideBlocker() { const el = document.getElementById('blocker'); if (el) el.remove(); }
@@ -5305,24 +5305,29 @@
       if (k.length > 8) { err.textContent = 'That’s more than 8 digits — clear the box and type the admin PIN once.'; box.value = ''; return; }
       err.textContent = '';
       box.disabled = true; // no typing while it checks
+      // Switching modes: the full logo with its loading ring and "Unlocking…" covers the screen until it's done.
+      showBlocker('Unlocking…', '');
       await busy(el, async () => {
         try {
           const data = await call('apiUnlockAdmin', S.token, k);
           apply(data); if (S.modal === 'adminPin') closeModal(); render(); toast('Admin mode unlocked');
         } catch (e) { box.disabled = false; err.textContent = e.message; box.value = ''; box.focus(); } // show the real reason (wrong PIN, too many tries…)
       });
+      hideBlocker();
     },
     openAdminPin() { openAdminPin(); },
     // Lock from the Profile menu (which has closed): the ring spins on the Profile tab while it locks.
     async menuLockAdmin() {
-      const ic = $('.nav button[data-v="profile"] .nav-ic'); if (ic) ic.classList.add('syncing');
+      showBlocker('Locking…', ''); // full logo + loading ring while it switches back to member mode
       const data = await run(null, 'apiLockAdmin', S.token);
-      if (ic) ic.classList.remove('syncing');
+      hideBlocker();
       if (!data) return;
       apply(data); render(); toast('Admin mode locked');
     },
     async lockAdmin(el) {
+      showBlocker('Locking…', '');
       const data = await run(el, 'apiLockAdmin', S.token);
+      hideBlocker();
       if (!data) return;
       apply(data); render();
       toast('Admin mode locked');
