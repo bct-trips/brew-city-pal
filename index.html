@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792531944"></script>
+    <script src="config.js?v=1792532458"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2887,7 +2887,7 @@
     const confRow = assign || sc === 'mine' ? '' : '<div class="pp-conf"><button type="button" class="btn conf-only' + (conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + conf + '">' +
       icon('alert', 18) + (conf ? 'Conflict mode on' : 'Conflict mode') + '</button><span class="pp-conf-t">' + (conf ? 'Pick a person to see who they conflict with, or All conflicts.' : 'Show only leave that’s over the daily max.') + '</span></div>';
     const html = modalHead(assign ? (S.wiz.editId ? 'Add members' : 'Request for') : conf ? 'Conflicts' : 'Show one person', assign ? 'users' : conf ? 'alert' : 'user') + confRow +
-      '<div class="pp-search"><div class="search">' + icon('search', 15) + '<input type="search" placeholder="Search name, rank, unit…" data-model="ppq" data-live="ppFilter" aria-label="Search people"></div></div>' +
+      '<div class="pp-search"><div class="search">' + icon('search', 15) + '<input type="search" placeholder="Search name, rank, unit…" data-model="ppq" data-live="ppFilter" aria-label="Search people" autocomplete="off" autofocus></div></div>' +
       '<div class="modal-b pp-list">' + (assign && S.wiz.editId ? '' : assign
         ? '<button type="button" class="pp-row pp-add" data-act="wizCreate">' + icon('userPlus', 20) + '<span class="pp-n"><b>Add new member</b></span></button>'
         : row('', '<span class="idb idb-all" aria-hidden="true"><span class="idb-r idb-p">P</span><span class="idb-r idb-b">B</span><span class="idb-r idb-o">O</span></span>' +
