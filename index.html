@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792487445"></script>
+    <script src="config.js?v=1792487636"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1400,6 +1400,18 @@
   .rtable td.stk .cfl { margin-left: 0; flex: none; }
   .cfl-warn { background: var(--rg-over); color: var(--rg-over-ink); }
   .cfl-chg { background: color-mix(in srgb, #f59e0b 30%, var(--card)); color: var(--on-surface); }
+
+  /* Band headers: sticky under the column titles, tap to collapse / expand. */
+  .rtable tbody.grp .grp-h th { position: sticky; top: var(--thead-h, 41px); z-index: 2; }
+  .tbl-wrap .rtable tbody.grp .grp-h th { top: var(--thead-h, 41px); }
+  button.grp-in { border: 0; background: transparent; font: inherit; font-size: 13.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+  button.grp-in:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+  .grp-in > .ic { color: var(--on-surface-variant); }
+  .grp-h:hover th { background: color-mix(in srgb, var(--on-surface) 6%, var(--surface-high)); }
+  .grp-empty td { padding: 10px 14px; }
+  .grp-empty-in { position: sticky; left: 14px; font-size: 13.5px; color: var(--muted); font-style: italic; }
+  .cfg-wait { color: var(--warn); }
+  .auth-done { text-align: center; } .auth-done > .ic { color: var(--ok); width: 40px; height: 40px; }
 </style>
 
   </head>
@@ -1771,6 +1783,12 @@
   const pinInput = (id, label, ac) => '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="4–8 digits" autocomplete="' + ac + '"></div>';
   /** Handle any sign-in style result: choose-who, must-set-PIN, or straight into the app. */
   function afterAuth(res, lastName, pin, first) {
+    if (res.pending) {
+      authShell('<div class="auth-done">' + icon('check', 28) + '<h2 class="auth-h">Request sent</h2><p class="auth-note">An admin needs to approve your account. Once they do, sign in with your last name and the PIN you chose.</p></div>' +
+        '<button class="btn primary block" id="toLogin2" style="margin-top:8px">Back to sign in</button>');
+      $('#toLogin2').addEventListener('click', ev => { ev.preventDefault(); showLogin(); });
+      return;
+    }
     if (res.need) return showInitials(lastName, pin, res.need, first);
     if (res.choose) return showChooser(res.choose, lastName, pin);
     S.token = res.token; store.set('token', res.token);
@@ -1897,7 +1915,7 @@
     Object.keys(keep).forEach(id => { const el = document.getElementById(id); if (el) { el.scrollTop = keep[id][0]; el.scrollLeft = keep[id][1]; } });
     if (isCalView() && S.cal === 'month') fitMonth();
     paintSel();
-    markOpenDay();
+    markOpenDay(); fitTables();
     store.set('view', S.view); store.set('cal', S.cal);
   }
   /* Person pucks: when the name would be cut off, drop the unit so it reads [P|Name] (DESIGN.md §Pills). */
@@ -1911,8 +1929,19 @@
   }
   // Re-fit after any re-render (full or partial) and on resize; batched to one pass per frame.
   let fitQueued = false;
-  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); markScrolled(); markOpenDay(); }); };
+  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); markScrolled(); markOpenDay(); fitTables(); }); };
   /** Outline the day that's open in the desktop day panel, in whichever calendar view is showing. */
+  /** Request tables: band headers stick just under the column titles; on first show, start both bands collapsed
+   *  when the rows don't fit on screen. */
+  function fitTables() {
+    $$('.tbl-wrap[data-table]').forEach(w => {
+      const th = w.querySelector('thead'); if (th) w.style.setProperty('--thead-h', th.offsetHeight + 'px');
+      const k = w.dataset.table; S.grpInit = S.grpInit || {};
+      if (S.grpInit[k] || !w.clientHeight) return;
+      S.grpInit[k] = true;
+      if (w.scrollHeight > w.clientHeight + 2) { (S.grpCol = S.grpCol || {})[k] = { Leave: true, Pass: true }; render(); }
+    });
+  }
   function markOpenDay() {
     $$('#calBody .is-open').forEach(e => e.classList.remove('is-open'));
     if (!S.dayPanel || !$('.dpanel')) return;
@@ -2486,7 +2515,7 @@
     const m = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['x', 'no'] }[st];
     return m ? '<span class="sti sti-' + m[1] + '" title="' + st + '">' + icon(m[0], 14) + '</span>' : '';
   }
-  /* Middle days: one badge per position — [P|Kowalski · Steel · Smith], or [P|4+ Pilots] when more than 3. */
+  /* Middle days: one badge per position — [P|Doe · Roe · Poe], or [P|4+ Pilots] when more than 3. */
   function rolePuck(role, list) {
     list = list.slice().sort(byLast);
     const L = role[0];
@@ -2868,11 +2897,18 @@
         '<td class="acts-cell"><div class="row-acts">' + (acts || '<span class="muted">—</span>') + '</div></td></tr>';
     };
     // Grouped like the Week view bands: Leave on top, Pass below, each with a header bar.
-    const group = (type, list) => list.length ? '<tbody class="grp grp-' + type.toLowerCase() + '"><tr class="grp-h"><th colspan="' + (COLS.length + 1) + '" scope="rowgroup">' +
-      '<div class="grp-in"><span class="band-tag">' + type[0] + '</span>' + (type === 'Leave' ? 'Leave' : 'Pass') + ' <span class="ct">' + list.length + '</span></div></th></tr>' + list.map(rowHtml).join('') + '</tbody>' : '';
-    const body = rows.length ? group('Leave', rows.filter(r => r.type === 'Leave')) + group('Pass', rows.filter(r => r.type === 'Pass'))
-      : '<tbody><tr class="empty-row"><td colspan="' + (COLS.length + 1) + '">No requests match.</td></tr></tbody>';
-    return '<div class="tbl-wrap" id="tbl-' + (table || 'queue') + '"><table class="rtable"><thead><tr>' + head + '</tr></thead>' + body + '</table></div>';
+    // Headers stick under the column titles and collapse / expand their band (remembered per table this session).
+    const key = table || 'queue', col = (S.grpCol = S.grpCol || {})[key] || {};
+    const group = (type, list) => {
+      const closed = !!col[type], n = COLS.length + 1;
+      return '<tbody class="grp grp-' + type.toLowerCase() + (closed ? ' closed' : '') + '"><tr class="grp-h"><th colspan="' + n + '" scope="rowgroup">' +
+        '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + !closed + '">' +
+        icon(closed ? 'right' : 'down', 16) + '<span class="band-tag">' + type[0] + '</span>' + (type === 'Leave' ? 'Leave' : 'Pass') + ' <span class="ct">' + list.length + '</span></button></th></tr>' +
+        (closed ? '' : list.length ? list.map(rowHtml).join('')
+          : '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + (type === 'Leave' ? 'No leave' : 'No passes') + ' to show.</span></td></tr>') + '</tbody>';
+    };
+    const body = group('Leave', rows.filter(r => r.type === 'Leave')) + group('Pass', rows.filter(r => r.type === 'Pass'));
+    return '<div class="tbl-wrap" id="tbl-' + key + '" data-table="' + key + '"><table class="rtable"><thead><tr>' + head + '</tr></thead>' + body + '</table></div>';
   }
 
   function renderListBody() {
@@ -3018,11 +3054,12 @@
 
   /* Roster page (admin): add members, edit, reset PINs, deactivate / reactivate. Opened from Admin → Squadron roster. */
   function renderRoster() {
-    const show = S.rosterShow || 'active';
+    // Open on "Inactive" when sign-ups are waiting, so they're easy to approve.
+    const show = S.rosterShow || (S.users.some(u => u.pending) ? 'inactive' : 'active');
     const q = (S.adq || '').trim().toLowerCase();
     const users = S.users.filter(u => (show === 'all' || (show === 'active') === !!u.active) && (!q || (u.rank + ' ' + u.name + ' ' + u.unit + ' ' + u.role).toLowerCase().indexOf(q) >= 0))
       .sort((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role) || lastName(a).localeCompare(lastName(b)));
-    // Visible label is the short verb ("Edit"); the full "Edit Sarah Brennan" goes to screen readers and the tooltip.
+    // Visible label is the short verb ("Edit"); the full "Edit Jane Doe" goes to screen readers and the tooltip.
     const act = (a, id, ic, short, who, cls) => '<button class="btn sm act' + (cls ? ' ' + cls : '') + '" data-act="' + a + '" data-id="' + esc(id) + '" aria-label="' + esc(short + ' ' + who) + '" title="' + esc(short + ' ' + who) + '">' + icon(ic, 16) + '<span class="bl">' + short + '</span></button>';
     const n = { active: S.users.filter(u => u.active).length, inactive: S.users.filter(u => !u.active).length, all: S.users.length };
     return '<section class="page admin-page roster-page"><div class="toolbar">' +
@@ -3035,9 +3072,9 @@
         '<div class="cfg-roster">' + users.map(u => '<div class="cfg-row' + (u.active ? '' : ' off') + '" data-q="' + esc((u.rank + ' ' + u.name + ' ' + u.unit + ' ' + u.role).toLowerCase()) + '">' +
           idBadge(u) + '<div class="cfg-who"><div class="cfg-nm"><b>' + esc(lastName(u)) + ',</b> ' + esc(firstName(u)) + '</div>' +
           '<div class="cfg-sub">' + esc(u.rank) + ' · ' + esc(ROLE_NAME[u.role] || u.role) + '</div>' +
-          (u.active && !u.mustChange ? '' : '<div class="cfg-tags">' + (u.active ? '' : '<span class="badge">Inactive</span>') + (u.mustChange ? '<span class="badge caution">Must set PIN</span>' : '') + '</div>') + '</div>' +
+          (u.active && !u.mustChange ? '' : '<div class="cfg-tags">' + (u.pending ? '<span class="badge caution">Awaiting approval</span>' : u.active ? '' : '<span class="badge">Inactive</span>') + (u.mustChange ? '<span class="badge caution">Must set PIN</span>' : '') + '</div>') + '</div>' +
           '<div class="cfg-acts">' + act('editUser', u.id, 'pencil', 'Edit', u.name) + act('resetPin', u.id, 'key', 'Reset PIN', 'for ' + u.name) +
-            (u.id === S.me ? '' : u.active ? act('toggleUser', u.id, 'ban', 'Deactivate', u.name, 'del') : act('toggleUser', u.id, 'check', 'Reactivate', u.name)) + '</div></div>').join('') +
+            (u.id === S.me ? '' : u.active ? act('toggleUser', u.id, 'ban', 'Deactivate', u.name, 'del') : act('toggleUser', u.id, 'check', u.pending ? 'Approve' : 'Reactivate', u.name, u.pending ? 'ok' : '')) + '</div></div>').join('') +
         '<div class="cfg-none"' + (users.length ? ' hidden' : '') + '>No members match.</div></div></div></div></section>';
   }
 
@@ -3056,7 +3093,8 @@
 
       // Roster: summary + link to its own page
       '<div class="panel"><h3>' + icon('users', 16) + ' Squadron roster</h3>' +
-        '<p class="cfg-help">' + S.users.filter(u => u.active).length + ' active · ' + S.users.filter(u => !u.active).length + ' inactive' +
+        '<p class="cfg-help">' + (S.users.some(u => u.pending) ? '<b class="cfg-wait">' + S.users.filter(u => u.pending).length + ' awaiting approval</b> · ' : '') +
+          S.users.filter(u => u.active).length + ' active · ' + S.users.filter(u => !u.active && !u.pending).length + ' inactive' +
           (S.users.some(u => u.mustChange) ? ' · ' + S.users.filter(u => u.mustChange).length + ' must set PIN' : '') + '</p>' +
         '<div class="cfg-foot"><button class="btn primary" data-act="openRoster">Manage roster ' + icon('right', 18) + '</button></div></div>' +
 
@@ -3545,6 +3583,10 @@
     fToggle(el) { toggleFilter(el.dataset.g, el.dataset.v, el.dataset.scope); },
     fCheck(el) { toggleFilter(el.dataset.g, el.dataset.v, el.dataset.scope); },
     mineMode(el) { S.mineMode = el.dataset.v; store.set('mineMode', S.mineMode); S.dayPanel = null; if (S.cal === 'day') S.cal = 'month'; render(); },
+    grpToggle(el) {
+      const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
+      c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
+    },
     mineConf() { S.mineConf = !S.mineConf; render(); },
     monthMode(el) { S.monthMode = el.dataset.v; try { localStorage.setItem('pal.monthMode', S.monthMode); } catch (e) {} render(); },
     pickAssignee() { openPersonPicker('cal', 'assign'); refreshData(); },
