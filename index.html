@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792528981"></script>
+    <script src="config.js?v=1792529241"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1829,7 +1829,7 @@
   /* Dark mode: the name section is a soft grey instead of bright white, so the header isn't a harsh white block. */
   :root[data-theme="dark"] .pm-bh .bh-n { background: #c9cdd6; }
   /* Same-dates bar: one solid bar (never hatched) holding each person's badge, separated by "/". */
-  .evs.grp .evs-t, .cs-bar.grp, .wpuck.grp .n { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; }
+  .evs.grp .evs-t, .cs-bar.grp, .wpuck.grp .n { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; padding: 3px; margin: -3px; } /* room for the badge outline so it isn't clipped */
   .evs.grp { background-image: none !important; }
   .gb { display: inline-flex; min-width: 0; flex: 0 1 auto; cursor: pointer; }
   .gsl { flex: none; font-weight: 900; opacity: .85; }
@@ -2970,10 +2970,10 @@
       const L = (b.u.role || 'Other')[0], un = unitsList().find(x => x.code === b.u.unit), r0 = b.list[0];
       const same = b.list.every(r => r.status === r0.status);
       const names = b.list.map(r => '<span class="mn" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-        barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + '</span>').join('<span class="rp-dot" aria-hidden="true">·</span>');
+        barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (withStatus && !onNow(r, from, to) ? statusIcon(r.status) : '') + '</span>').join('<span class="rp-dot" aria-hidden="true">·</span>');
       return '<span class="idb pb gbb' + (same ? ' st-' + r0.status.toLowerCase() : '') + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
         '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(b.u.unit) + '</span>' +
-        '<span class="idb-n">' + names + (withStatus && same ? statusIcon(r0.status) : '') + '</span></span>';
+        '<span class="idb-n">' + names + '</span></span>';
     }).join('<span class="gsl" aria-hidden="true">/</span>');
   }
   /** split = true: every request that starts this week is its own continuous bar. Requests carried over from the
@@ -3346,13 +3346,16 @@
   }
   /* Full person badge on calendar bars: [P|MKE|Lastname] as one chip. Approved = green border. */
   /** Green "going on now" dot after a name — only on the bar that covers today (from–to = the dates that bar shows). */
-  const nowDot = (r, from, to) => isNow(r) && r.status !== 'Denied' && (!from || (S.today >= from && S.today <= to)) ? '<i class="now-dot" title="Going on now"></i>' : '';
+  // On leave / pass right now = APPROVED and today is inside the dates (pending or denied isn't "on leave", even on those days).
+  // The green dot sits to the RIGHT of the name, in the ✓'s place (only on the bar that covers today: from–to).
+  const onNow = (r, from, to) => r.status === 'Approved' && isNow(r) && (!from || (S.today >= from && S.today <= to));
+  const nowDot = (r, from, to) => onNow(r, from, to) ? '<i class="now-dot" title="On ' + r.type.toLowerCase() + ' now"></i>' : '';
   function personBadge(r, withStatus, from, to) {
     const u = userOf(r.userId), L = (u.role || 'Other')[0];
     const un = unitsList().find(x => x.code === u.unit);
     return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r idb-' + L.toLowerCase() + '">' + L + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
-      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + nowDot(r, from, to) + (withStatus ? statusIcon(r.status) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
+      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + nowDot(r, from, to) + (withStatus ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
@@ -3705,7 +3708,7 @@
       '<th scope="col" class="th-acts">Actions</th>';
     // Status mark; while the leave or pass is going on today it's the pulsing green dot instead.
     const stIcon = r => {
-      if (isNow(r) && r.status !== 'Denied') return '<span class="st-ic st-ic-now" title="' + r.type + ' going on now · ' + r.status + '" aria-label="' + r.type + ' going on now, ' + r.status + '"><i class="now-dot"></i></span>';
+      if (onNow(r)) return '<span class="st-ic st-ic-now" title="' + r.type + ' going on now · ' + r.status + '" aria-label="' + r.type + ' going on now, ' + r.status + '"><i class="now-dot"></i></span>';
       const m = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'] }[r.status] || ['clock', 'pend'];
       return '<span class="st-ic st-ic-' + m[1] + '" title="' + r.status + '" aria-label="' + r.status + '">' + icon(m[0], 18) + '</span>'; };
     // Compact marks next to the name (instead of wide badges): Overlap (orange), changed by admin (pencil).
