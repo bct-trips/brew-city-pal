@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792488101"></script>
+    <script src="config.js?v=1792488372"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1296,10 +1296,14 @@
   @media (prefers-reduced-motion: reduce) { .blocker-spin { animation-duration: 2.4s; } }
 
   /* Today: a soft tinted cell with a 2px soft-primary outline (visible but not harsh), in every calendar view. */
-  .cell.today, .month.compact .cell.cc.today, .wk-day.today, .slot.today {
-    background-color: color-mix(in srgb, var(--primary) 11%, var(--surface)) !important;
-    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 55%, transparent) !important; }
-  .qd.today { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 70%, transparent) !important; } /* keeps its availability colour */
+  /* Today and the open day are rounded rings drawn just inside the cell (like the pucks), not square cell borders. */
+  .cell.today, .month.compact .cell.cc.today, .wk-day.today, .qd.today { box-shadow: none !important; }
+  .cell, .wk-day, .qd { position: relative; isolation: isolate; }
+  .cell.today::before, .month.compact .cell.cc.today::before, .wk-day.today::before, .qd.today::before {
+    content: ""; position: absolute; inset: 3px; z-index: -1; pointer-events: none; border-radius: 12px;
+    border: 2px solid color-mix(in srgb, var(--primary) 60%, transparent); background: color-mix(in srgb, var(--primary) 12%, transparent); }
+  .qd.today::before { background: none; } /* Qtr keeps its availability colour */
+  .slot.today { background-color: color-mix(in srgb, var(--primary) 8%, transparent) !important; box-shadow: none !important; }
 
   /* ---------- Desktop day panel (≥900px): slides in from the left; the calendar narrows beside it ---------- */
   .cal-split { flex: 1; min-height: 0; display: flex; }
@@ -1317,7 +1321,9 @@
   .dp-x { margin-left: 4px; }
   .dayv-panel .day-groups .dl-who { flex-basis: 100%; }
   /* Open day in the calendar: a solid selection-colour outline (stronger than Today's). */
-  .cell.is-open, .wk-day.is-open, .qd.is-open { box-shadow: inset 0 0 0 3px var(--sel-bg) !important; position: relative; z-index: 1; }
+  .cell.is-open, .wk-day.is-open, .qd.is-open { box-shadow: none !important; }
+  .cell.is-open::after, .wk-day.is-open::after, .qd.is-open::after {
+    content: ""; position: absolute; inset: 2px; z-index: 4; pointer-events: none; border-radius: 12px; border: 3px solid var(--sel-bg); }
 
   /* ---------- Week view: clearer position bands ---------- */
   .band { border-bottom: 0; }
@@ -1427,6 +1433,16 @@
   /* "Everyone" row badge: [P|B|O] in the same puck style as people. */
   .idb.idb-all { margin-right: 0; box-shadow: 0 0 0 1.5px #0b1730; }
   .idb.idb-all .idb-r + .idb-r { border-left: 1.5px solid #0b1730; }
+
+  /* Band headers use the type badge itself (no L / P tag); Past is neutral and starts collapsed. */
+  .grp-in .badge { font-size: 12.5px; letter-spacing: .04em; text-transform: none; }
+  .badge.t-past { background: var(--surface); border: 1px solid var(--outline); color: var(--on-surface); }
+  .grp-past { --rm: var(--outline); }
+  .badge.t-sm { height: 20px; padding: 0 6px; font-size: 11.5px; flex: none; }
+  .grp-past tr[data-id] td { opacity: .85; }
+  /* Narrow month cells (e.g. calendar squeezed by the day panel): keep only the counters that are full or over the max. */
+  .month:not(.compact) .cell { container-type: inline-size; }
+  @container (max-width: 150px) { .qc-day:not(.over):not(.full) { display: none; } .qc-day { padding: 0 4px; font-size: 11.5px; } }
 </style>
 
   </head>
@@ -2460,7 +2476,7 @@
     const msg = quotaMsg(d, role) + (over ? (ok ? ' All approved.' : '') + ' Click to review the conflict.' : '');
     const st = over ? ' over' + (ok ? ' ok' : '') : q && c === q ? ' full' : c ? '' : ' zero';
     return '<button class="qc-day' + st + '" data-act="quotaInfo" data-date="' + d + '" data-role="' + role + '" title="' + esc(msg) + '" aria-label="' + esc(msg) + '">' +
-      role[0] + ': ' + c + '/' + (q || '∞') + '</button>';
+      role[0] + ': ' + c + (q ? '/' + q : '') + '</button>';
   }
 
   /* ---------- Conflict days ----------
@@ -2709,8 +2725,8 @@
       return '<div class="wk-day' + (d === S.today ? ' today' : '') + '" data-act="gotoDay" data-date="' + d + '">' +
         '<div class="wk-dow">' + DOW[D.dow(d)] + '</div><div class="wk-num">' + Number(d.slice(8)) + '</div>' +
         '<div class="wk-date">' + D.f(d, { month: 'short' }) + '</div>' +
-        '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">P: ' + p + '/' + (qp || '∞') + '</span>' +
-        '<span class="' + (qb && b > qb ? 'over' : '') + '">B: ' + b + '/' + (qb || '∞') + '</span></div></div>';
+        '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">P: ' + p + (qp ? '/' + qp : '') + '</span>' +
+        '<span class="' + (qb && b > qb ? 'over' : '') + '">B: ' + b + (qb ? '/' + qb : '') + '</span></div></div>';
     }).join('');
     const bands = [['Pilot', 'PILOTS ACTIVE SCHEDULE'], ['Boom', 'BOOM OPERATORS ACTIVE SCHEDULE'], ['Other', 'OTHER SQUADRON PERSONNEL']]
       .filter(b => S.f.role.includes(b[0]))
@@ -2930,7 +2946,7 @@
     // Compact marks next to the name (instead of wide badges): Overlap (orange), changed by admin (pencil).
     const marks = r => (dupsOf(r).length ? '<span class="cfl cfl-sm cfl-warn" title="' + esc('Overlap: ' + dupText(r)) + '" aria-label="Overlap">' + icon('alert', 13) + '</span>' : '') +
       (isChanged(r) ? '<span class="cfl cfl-sm cfl-chg" title="Dates changed by admin" aria-label="Dates changed by admin">' + icon('pencil', 13) + '</span>' : '');
-    const rowHtml = r => {
+    const rowHtml = (r, showType) => {
       const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r), st2 = r.status.toLowerCase();
       let acts = '';
       if (S.isAdmin) {
@@ -2942,7 +2958,8 @@
       return '<tr class="t-' + r.type.toLowerCase() + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
         '<td class="st-ic-c">' + stIcon(r) + '</td>' +
         '<td>' + unitBadge(u.unit) + '</td>' +
-        '<td class="strong stk"><div class="stk-in"><span class="stk-n">' + esc(lastName(u)) + '</span>' + conflictBadge(r, true) + marks(r) + '</div></td>' +
+        '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + r.type.toLowerCase() + ' t-sm">' + r.type + '</span>' : '') +
+          '<span class="stk-n">' + esc(lastName(u)) + '</span>' + conflictBadge(r, true) + marks(r) + '</div></td>' +
         '<td>' + esc(firstName(u)) + '</td>' +
         '<td>' + esc(u.rank) + '</td>' +
         '<td>' + esc(ROLE_NAME[u.role] || u.role) + '</td>' +
@@ -2958,15 +2975,18 @@
     // Grouped like the Week view bands: Leave on top, Pass below, each with a header bar.
     // Headers stick under the column titles and collapse / expand their band (remembered per table this session).
     const key = table || 'queue', col = (S.grpCol = S.grpCol || {})[key] || {};
+    // Current (ending today or later) leave and passes in their own bands; finished ones go to a Past band, collapsed by default.
     const group = (type, list) => {
-      const closed = !!col[type], n = COLS.length + 1;
+      const closed = type === 'Past' ? col.Past !== false : !!col[type], n = COLS.length + 1;
+      const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : '<span class="badge t-' + type.toLowerCase() + '">' + type + '</span>';
       return '<tbody class="grp grp-' + type.toLowerCase() + (closed ? ' closed' : '') + '"><tr class="grp-h"><th colspan="' + n + '" scope="rowgroup">' +
         '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + !closed + '">' +
-        icon(closed ? 'right' : 'down', 16) + '<span class="band-tag">' + type[0] + '</span>' + (type === 'Leave' ? 'Leave' : 'Pass') + ' <span class="ct">' + list.length + '</span></button></th></tr>' +
-        (closed ? '' : list.length ? list.map(rowHtml).join('')
-          : '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + (type === 'Leave' ? 'No leave' : 'No passes') + ' to show.</span></td></tr>') + '</tbody>';
+        icon(closed ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button></th></tr>' +
+        (closed ? '' : list.length ? list.map(r => rowHtml(r, type === 'Past')).join('')
+          : '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + ({ Leave: 'No current leave', Pass: 'No current passes', Past: 'Nothing past' })[type] + ' to show.</span></td></tr>') + '</tbody>';
     };
-    const body = group('Leave', rows.filter(r => r.type === 'Leave')) + group('Pass', rows.filter(r => r.type === 'Pass'));
+    const cur = rows.filter(r => r.end >= S.today), past = rows.filter(r => r.end < S.today);
+    const body = group('Leave', cur.filter(r => r.type === 'Leave')) + group('Pass', cur.filter(r => r.type === 'Pass')) + group('Past', past);
     return '<div class="tbl-wrap" id="tbl-' + key + '" data-table="' + key + '"><table class="rtable"><thead><tr>' + head + '</tr></thead>' + body + '</table></div>';
   }
 
@@ -3311,7 +3331,7 @@
   }
   function conflictText(d, c) {
     const day = D.f(d, { weekday: 'short', month: 'short', day: 'numeric' });
-    if (!c.bad) return day + ': no conflict' + (c.peers.length ? ' (' + (c.peers.length + 1) + ' of ' + (c.q || '∞') + ' ' + ROLE_PLURAL[c.role] + ' out)' : '') + '.';
+    if (!c.bad) return day + ': no conflict' + (c.peers.length ? ' (' + (c.peers.length + 1) + (c.q ? ' of ' + c.q : '') + ' ' + ROLE_PLURAL[c.role] + ' out)' : '') + '.';
     const parts = [];
     if (c.over) parts.push('over the ' + ROLE_PLURAL[c.role] + ' max (' + (c.peers.length + 1) + ' of ' + c.q + ') with ' +
       c.peers.map(x => fullName(userOf(x.userId)) + ' – ' + x.type.toLowerCase() + ', ' + x.status.toLowerCase()).join('; '));
@@ -3645,7 +3665,8 @@
     mineMode(el) { S.mineMode = el.dataset.v; store.set('mineMode', S.mineMode); S.dayPanel = null; if (S.cal === 'day') S.cal = 'month'; render(); },
     grpToggle(el) {
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
-      c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
+      if (t === 'Past') c.Past = c.Past === false; // Past starts closed: first tap opens it (false = open)
+      else c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
     },
     dayRole(el) {
       const cur = S.dayRoles || ROLES.slice(), v = el.dataset.v;
