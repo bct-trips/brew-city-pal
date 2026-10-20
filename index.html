@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792531531"></script>
+    <script src="config.js?v=1792531738"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2401,7 +2401,8 @@
     S.me = data.me; S.isAdmin = !!data.isAdmin; S.users = (data.users || []).map(cleanUser); S.requests = (data.requests || []).map(cleanReq);
     S.settings = Object.assign(S.settings, data.settings || {}); S.sheetUrl = data.sheetUrl || '';
     // Notifications: unread count (Profile badge + home-screen badge), push key, admin alert preference.
-    if (typeof data.unread === 'number') { if (data.unread !== S.unread) S.notes = null; S.unread = data.unread; setBadge(); }
+    // A change in the server's unread count means new notifications: refresh the list in the background (keep showing the old one meanwhile).
+    if (typeof data.unread === 'number' && data.unread !== S.serverUnread) { S.serverUnread = data.unread; if (S.notes != null) setTimeout(loadNotes, 0); }
     S.vapid = data.vapidPublicKey || S.vapid || ''; S.adminAlerts = !!data.adminAlerts;
     // Hide user schedules (members only): the server sent just my requests, day availability for my position, and my
     // conflicts as counts. Everyone else's names and requests aren't on this device at all.
@@ -2710,7 +2711,8 @@
   const caret = () => '';
   /** Profile badge: how many notifications are waiting (loaded in the background so the count is always right). */
   function noteCount() {
-    if (S.notes == null) { if (S.token) setTimeout(loadNotes, 0); return S.unread || 0; }
+    // Only ever count what the list would show (never the server's raw unread number, which includes hidden ones).
+    if (S.notes == null) { if (S.token) setTimeout(loadNotes, 0); return 0; }
     return visibleNotes().length;
   }
   function renderNav() {
@@ -4240,7 +4242,9 @@
   const pushCapable = () => !!(window.PAL_API_URL && window.isSecureContext && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
   let swReg = null;
   function setBadge() {
-    try { if (navigator.setAppBadge) { if (S.unread) navigator.setAppBadge(S.unread); else navigator.clearAppBadge(); } } catch (e) { /* not supported */ }
+    // Home-screen icon badge = the same number as the Profile tab: notifications you can actually see.
+    const n = S.notes ? visibleNotes().length : 0;
+    try { if (navigator.setAppBadge) { if (n) navigator.setAppBadge(n); else navigator.clearAppBadge(); } } catch (e) { /* not supported */ }
   }
   async function initPush() {
     if (window.PAL_API_URL && window.isSecureContext && 'serviceWorker' in navigator) {
