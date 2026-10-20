@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792530562"></script>
+    <script src="config.js?v=1792531204"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2594,9 +2594,8 @@
   }
   /** Shown after first sign-in, an admin reset, or a shared PIN: the member must choose their own PIN. */
   function showSetPin(me) {
-    authShell('<form id="setPinForm"><h2 class="auth-h">Set your own PIN</h2>' +
-      '<p class="auth-note">' + (me ? 'Welcome, <b>' + esc((me.rank ? me.rank + ' ' : '') + me.name) + '</b>. ' : '') +
-      'Before you continue, replace your temporary PIN with one only you know. It can’t be the default PIN or match another member with your last name.</p>' +
+    // Short and direct; the rules (not the default PIN, not shared with a namesake) show only if they're broken.
+    authShell('<form id="setPinForm"><h2 class="auth-h">Please set your PIN!</h2>' +
       '<div class="row">' + pinInput('spPin', 'New PIN', 'new-password') + pinInput('spPin2', 'Confirm new PIN', 'new-password') + '</div>' +
       '<div class="err" id="spErr"></div>' +
       '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('check', 16) + ' Save PIN and continue</button></form>' +
