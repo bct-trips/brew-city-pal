@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792505592"></script>
+    <script src="config.js?v=1792506259"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1602,6 +1602,26 @@
   .cfg-note { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; color: var(--warn); }
   /* Nav hover on the dark bars: labels stay light (white), the icon gets a faint light pill. */
   .nav button:hover, .nav.nav-admin button:hover { color: #ffffff; }
+  /* ---------- Blackout dates: brick diagonal stripes on every calendar, brick chips ---------- */
+  :root { --bo-stripe: color-mix(in srgb, var(--brick) 26%, transparent); }
+  :root[data-theme="dark"] { --bo-stripe: color-mix(in srgb, #e0645f 34%, transparent); }
+  .month:not(.compact) .cell.bo, .month.compact .cell.cc.bo, .wk-day.bo, .slot.bo, .qd.bo, .mini-g button.bo, .mini-g > span.bo, .mk.mk-bo {
+    background-image: repeating-linear-gradient(135deg, var(--bo-stripe) 0 5px, transparent 5px 10px); }
+  .mk.mk-bo { box-shadow: inset 0 0 0 1px var(--brick); }
+  .cfl.cfl-bo { background: var(--brick); color: #ffffff; }
+  :root[data-theme="dark"] .cfl.cfl-bo { background: #e0645f; color: #17181d; }
+  .bo-msg { align-items: center; } .bo-msg .btn { margin-left: auto; flex: none; }
+  .bo-day { margin: 8px 0 0; }
+  .bo-list { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; margin: 6px 0 12px; }
+  .bo-row { display: flex; align-items: center; gap: 10px; padding: 10px 6px 10px 12px; border-bottom: 1px solid var(--line); }
+  .bo-row:last-child { border-bottom: 0; }
+  .bo-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .bo-badge { background: var(--brick); color: #ffffff; margin-left: 4px; }
+  .bo-n { color: var(--bad); }
+  .bo-del { color: var(--error); }
+  .bo-add { border-top: 1px solid var(--line); padding-top: 12px; }
+  .bo-types .seg { display: flex; width: 100%; height: 44px; } .bo-types .seg button { flex: 1 1 0; }
+  .note-prefs .push-btns .chip-tog { padding: 0 14px; }
 </style>
 
   </head>
@@ -1803,6 +1823,24 @@
     return apprOn(d, role) >= q ? 'av-full' : countOn(d, role) >= q ? 'av-over' : 'av-open';
   }
   const myRole = () => (IDX.users.get(S.me) || {}).role;
+  /* ---------- Blackout dates (Admin → Blackout dates) ---------- */
+  const blackouts = () => (S.settings && S.settings.blackouts) || [];
+  /** Blackouts covering day d (optionally only those that apply to a request type). */
+  const blackoutsOn = (d, type) => blackouts().filter(b => b.start <= d && b.end >= d && (!type || b.types === 'Both' || b.types === type));
+  const boLabel = b => b.types === 'Both' ? 'Leave & pass blackout' : b.types + ' blackout';
+  /** ' bo' class for any blackout on day d (shown striped on every calendar). */
+  const boCls = (d, type) => blackoutsOn(d, type).length ? ' bo' : '';
+  const boTitle = d => blackoutsOn(d).map(b => boLabel(b) + (b.note ? ': ' + b.note : '')).join(' · ');
+  function blackoutDaysOf(r) {
+    const out = [];
+    blackouts().forEach(b => {
+      if (b.types !== 'Both' && b.types !== r.type) return;
+      for (let d = D.max(r.start, b.start); d <= D.min(r.end, b.end); d = D.add(d, 1)) if (!out.includes(d)) out.push(d);
+    });
+    return out.sort();
+  }
+  /** A request on blackout days is a conflict until an admin allows it (approving it allows it too). */
+  const boConflict = r => r.status !== 'Denied' && r.status !== 'Cancelled' && r.boOk !== 'true' && blackoutDaysOf(r).length > 0;
   function conflictDays(r) {
     const u = userOf(r.userId), q = quota(u.role);
     if (!q || r.type !== 'Leave' || r.status === 'Denied' || r.status === 'Cancelled') return [];
@@ -1831,9 +1869,9 @@
     return mine.concat(others);
   }
   /** Conflict mode: a leave request on a day where its position is over the daily max. */
-  const inConflict = r => S.priv ? !!S.myConf[r.id] : conflictDays(r).length > 0;
+  const inConflict = r => boConflict(r) || (S.priv ? !!S.myConf[r.id] : conflictDays(r).length > 0);
   /** Over the daily max on some day and not yet resolved (not every request in that conflict is approved). */
-  const openConflictOf = r => r.status !== 'Denied' && (S.priv ? !!(S.myConf[r.id] && !S.myConf[r.id].ok) : conflictDays(r).some(d => conflictState(d, userOf(r.userId).role) === 'bad'));
+  const openConflictOf = r => boConflict(r) || r.status !== 'Denied' && (S.priv ? !!(S.myConf[r.id] && !S.myConf[r.id].ok) : conflictDays(r).some(d => conflictState(d, userOf(r.userId).role) === 'bad'));
   /** Marks before a name on calendar bars: green dot = out today, red triangle = unresolved conflict. */
   const barMarks = r => (isNow(r) ? '<i class="now-dot" title="Active now"></i>' : '') +
     (openConflictOf(r) ? '<span class="cf-tri" title="Unresolved conflict" aria-label="Unresolved conflict">' + icon('alert', 12) + '</span>' : '');
@@ -1990,6 +2028,7 @@
     // Hide user schedules (members only): the server sent just my requests, day availability for my position, and my
     // conflicts as counts. Everyone else's names and requests aren't on this device at all.
     S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
+    S.notePrefs = data.notePrefs || S.notePrefs || { approved: true, denied: true, edited: true };
     if (S.priv) { S.f.role = ROLES.slice(); S.f.person = ''; S.f.conf = false; if (S.view === 'all') S.view = 'mine'; }
     S.today = localToday();
     if (!S.isAdmin && (S.view === 'admin' || S.view === 'people' || S.view === 'roster')) S.view = 'calendar';
@@ -2635,7 +2674,7 @@
         const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' + (S.priv
           ? ({ 'av-open': 'slots open', 'av-over': 'slots overbooked', 'av-full': 'slots full' })[av] || ''
           : roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : ''));
-        html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + (over.length && !S.priv ? ' over' : '') + (av ? ' ' + av : '') + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
+        html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + boCls(d) + (over.length && !S.priv ? ' over' : '') + (av ? ' ' + av : '') + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
           '<span class="cc-n">' + Number(d.slice(8)) + '</span></button>';
       });
       html += '<div class="cs-lanes">' + bars + '</div></div>';
@@ -2660,7 +2699,7 @@
         const over = roles.filter(role => quota(role) && c[role] > quota(role));
         const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' +
           roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : '');
-        html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
+        html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
           '<span class="cc-n">' + Number(d.slice(8)) + '</span>' + roles.map(role => roleMeter(role, c[role])).join('') + '</button>';
       }
       html += '</div>';
@@ -2730,8 +2769,8 @@
     days.forEach((d, i) => {
       const over = ROLES.filter(role => quota(role) && countOn(d, role) > quota(role));
       // Hide user schedules: the day is tinted by my position's availability instead of showing P / B / O counts.
-      const cls = ['cell', d.slice(0, 7) !== month ? 'out' : '', d === S.today ? 'today' : '', (i === 0 || i === 6) ? 'wknd' : '', S.priv ? availClass(d, myRole()) : ''].join(' ');
-      html += '<div class="' + cls + '" data-act="pickDay" data-date="' + d + '">' +
+      const cls = ['cell', d.slice(0, 7) !== month ? 'out' : '', d === S.today ? 'today' : '', (i === 0 || i === 6) ? 'wknd' : '', S.priv ? availClass(d, myRole()) : '', boCls(d).trim()].join(' ');
+      html += '<div class="' + cls + '" data-act="pickDay" data-date="' + d + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + '>' +
         '<div class="cell-head"><button class="dnum" data-act="gotoDay" data-date="' + d + '" aria-label="Open day view for ' + D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + '">' + Number(d.slice(8)) + '</button>' +
         (S.priv ? '' : '<span class="qday">' + qChip(d, 'Pilot') + qChip(d, 'Boom') + qChip(d, 'Other') + '</span>') +
         '</div>' +
@@ -2772,6 +2811,16 @@
    *  Red while any request in the conflict is pending; grey "Over max · approved" once all are approved.
    *  Opens the conflict resolver for that day. */
   function conflictBadge(r, compact) {
+    return blackoutBadge(r, compact) + quotaBadge(r, compact);
+  }
+  /** "Blackout" chip: the request falls on blackout days and no admin has allowed it yet. Opens the request. */
+  function blackoutBadge(r, compact) {
+    if (!boConflict(r)) return '';
+    const days = blackoutDaysOf(r), tip = 'Falls on blackout days (' + days.map(D.short).join(', ') + '). An admin needs to review it.';
+    return '<button type="button" class="cfl cfl-bad cfl-bo' + (compact ? ' cfl-sm' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
+      icon('ban', compact ? 13 : 14) + (compact ? '' : '<span>Blackout</span>') + '</button>';
+  }
+  function quotaBadge(r, compact) {
     if (S.priv) { // Hide user schedules: how many other requests, never who
       const c = S.myConf[r.id];
       if (!c) return '';
@@ -2983,7 +3032,7 @@
         }
         const av = avail(d);
         if (av) label += '. ' + ROLE_PL[aRole] + ' slots ' + ({ 'av-open': 'open', 'av-over': 'overbooked', 'av-full': 'full' })[av];
-        cells += '<div class="qd ' + av + (d === S.today ? ' today' : '') + (D.dow(d) === 0 || D.dow(d) === 6 ? ' wknd' : '') + '"' +
+        cells += '<div class="qd ' + av + (d === S.today ? ' today' : '') + boCls(d) + (D.dow(d) === 0 || D.dow(d) === 6 ? ' wknd' : '') + '"' +
           ' data-act="pickDay" data-date="' + d + '" title="' + esc(label) + '">' +
           '<button class="qn" data-act="gotoDay" data-date="' + d + '" aria-label="' + esc(label) + '">' + Number(d.slice(8)) + '</button>' +
           '<div class="qm">' + body + '</div></div>';
@@ -3001,7 +3050,7 @@
     const reqs = calRequests().filter(r => r.start <= we && r.end >= ws);
     const head = days.map(d => {
       const p = countOn(d, 'Pilot'), b = countOn(d, 'Boom'), qp = quota('Pilot'), qb = quota('Boom');
-      return '<div class="wk-day' + (d === S.today ? ' today' : '') + (S.priv ? ' ' + availClass(d, myRole()) : '') + '" role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
+      return '<div class="wk-day' + (d === S.today ? ' today' : '') + (S.priv ? ' ' + availClass(d, myRole()) : '') + boCls(d) + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + ' role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
         '<div class="wk-dow">' + DOW[D.dow(d)] + '</div><div class="wk-num">' + Number(d.slice(8)) + '</div>' +
         '<div class="wk-date">' + D.f(d, { month: 'short' }) + '</div>' +
         (S.priv ? '' : '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">P: ' + p + (qp ? '/' + qp : '') + '</span>' +
@@ -3019,7 +3068,7 @@
           return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
             '<span class="n">' + personBadge(r) + '</span><span class="s">' + r.type + ' · ' + r.status + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span></div>';
         }).join('');
-        const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
+        const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
         return '<div class="band band-' + b[0][0].toLowerCase() + '"><div class="band-title"><span class="band-tag">' + b[0][0] + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></div>' +
           '<div class="band-body"><div class="band-inner"><div class="band-slots g7">' + slots + '</div><div class="band-pucks">' + pucks + '</div></div></div></div>';
       }).join('');
@@ -3073,7 +3122,7 @@
       '<button type="button" class="' + (dr.includes(o[0]) ? 'on' : '') + '" aria-pressed="' + dr.includes(o[0]) + '" data-act="dayRole" data-v="' + o[0] + '">' + o[1] + '</button>').join('') + '</div></div>';
     return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top.replace('<div class="dsum">', roleBar + '<div class="dsum">') +
         meters + '</div></div>' +
-      '<div class="dayv-in">' +
+      '<div class="dayv-in">' + blackoutsOn(d).map(b => '<div class="msg e bo-day">' + icon('ban', 15) + '<span><b>' + esc(boLabel(b)) + '</b>' + (b.note ? ' — ' + esc(b.note) : '') + '</span></div>').join('') +
       // Overlap conflicts: one member with leave and a pass (or two requests) on this day.
       [...new Set(IDX.live.filter(r => r.status !== 'Denied' && r.start <= d && r.end >= d && dupsOf(r).length).map(r => r.userId))].map(uid => {
         const mine = IDX.live.filter(r => r.userId === uid && r.status !== 'Denied' && r.start <= d && r.end >= d);
@@ -3456,6 +3505,28 @@
   }
 
   /* Admin page: settings only (roster & PINs, leave limits, unit badges). Scheduling lives on the calendar and request lists. */
+  /** Admin → Blackout dates: list (with how many requests each one flags) and an add form. */
+  function blackoutPanel() {
+    const dr = S.boDraft || (S.boDraft = { start: '', end: '', types: 'Both', note: '' });
+    const flagged = b => IDX.live.filter(r => r.status !== 'Denied' && r.boOk !== 'true' && (b.types === 'Both' || b.types === r.type) && r.start <= b.end && r.end >= b.start).length;
+    const span = b => b.start === b.end ? D.f(b.start, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+      : D.f(b.start, { month: 'short', day: 'numeric' }) + ' – ' + D.f(b.end, { month: 'short', day: 'numeric', year: 'numeric' });
+    const list = blackouts().length ? '<div class="bo-list">' + blackouts().map(b => {
+      const n = flagged(b);
+      return '<div class="bo-row"><div class="bo-t"><div><b>' + esc(span(b)) + '</b> <span class="badge bo-badge">' + esc(boLabel(b)) + '</span></div>' +
+        '<div class="meta">' + (b.note ? esc(b.note) + ' · ' : '') + (n ? '<b class="bo-n">' + plural(n, 'request') + ' to review</b>' : 'no conflicts') + '</div></div>' +
+        '<button class="btn icon-btn bo-del" data-act="delBlackout" data-id="' + esc(b.id) + '" aria-label="Delete blackout ' + esc(span(b)) + '" title="Delete blackout">' + icon('trash', 18) + '</button></div>';
+    }).join('') + '</div>' : '<p class="meta">No blackout dates yet.</p>';
+    return '<div class="panel"><h3>' + icon('ban', 16) + ' Blackout dates</h3>' +
+      '<p class="cfg-help">Days when leave and / or passes shouldn’t be taken. Members can still submit over them, but those requests show as conflicts until you allow, move, deny or delete them — including ones already approved.</p>' +
+      list +
+      '<div class="bo-add"><div class="wiz-dates"><div class="field"><label for="boS">First day</label><input id="boS" type="date" value="' + esc(dr.start) + '" data-model="boDraft.start"></div>' +
+        '<div class="field"><label for="boE">Last day</label><input id="boE" type="date" value="' + esc(dr.end) + '" data-model="boDraft.end"></div></div>' +
+        '<div class="field"><span class="lbl">Applies to</span><div class="bo-types">' + seg([['Leave', 'Leave'], ['Pass', 'Pass'], ['Both', 'Both']], dr.types, 'boType') + '</div></div>' +
+        '<div class="field"><label for="boN">Reason (optional)</label><input id="boN" maxlength="80" placeholder="e.g. ORE week, UTA" value="' + esc(dr.note) + '" data-model="boDraft.note"></div>' +
+        '<div class="err" id="boErr"></div>' +
+        '<div class="cfg-foot"><button class="btn primary" data-act="addBlackout">' + icon('plus', 18) + 'Add blackout</button></div></div></div>';
+  }
   function renderAdmin() {
     const st = S.settings;
     const pinPair = (id1, id2, l1, l2) => '<div class="cfg-grid2">' +
@@ -3467,6 +3538,8 @@
       (S.sheetUrl ? '<a class="btn act" href="' + esc(S.sheetUrl) + '" target="_blank" rel="noopener" aria-label="Open data sheet" title="Data sheet">' + icon('sheet', 18) + '<span class="bl">Data sheet</span></a>' : '') +
       '<button class="btn act" data-act="lockAdmin" aria-label="Lock admin" title="Lock admin">' + icon('lock', 18) + '<span class="bl">Lock</span></button></div></div>' +
       '<div class="scroll" id="adminScroll">' +
+
+      blackoutPanel() +
 
       // Privacy: members see only their own schedule plus day availability. Admins always see everything.
       '<div class="panel"><div class="cfg-row-tog"><div><h3>' + icon('lock', 16) + ' Hide user schedules</h3>' +
@@ -3668,6 +3741,11 @@
     return '<div class="notes-h"><h3>' + icon('bell', 16) + ' Notifications' + (S.unread ? '<span class="ct">' + S.unread + ' new</span>' : '') + '</h3>' +
         (S.unread ? '<button class="btn ghost sm" data-act="notesAllRead">Mark all read</button>' : '') + '</div>' +
       '<div class="push-row push-' + pst + '"><p>' + (pst === 'on' ? icon('check', 16) : '') + esc(pushMsg) + '</p>' + (pushBtns ? '<div class="push-btns">' + pushBtns + '</div>' : '') + '</div>' +
+      '<div class="push-row note-prefs"><p><b>Notify me when my request is</b></p><div class="push-btns">' +
+        [['approved', 'Approved'], ['denied', 'Denied'], ['edited', 'Changed']].map(k => {
+          const on = S.notePrefs[k[0]] !== false;
+          return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="notePref" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>';
+        }).join('') + '</div></div>' +
       (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin alerts</b> — new requests, member edits and deletions, new accounts.</p><div class="push-btns">' +
         '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' : '') +
       list;
@@ -3720,16 +3798,19 @@
       const n = S.priv ? (r.type === 'Leave' ? Math.max(0, countOn(d, u.role) - self) : 0) : peers.length;
       const dups = others.filter(x => x.userId === r.userId);
       const over = r.type === 'Leave' && !!q && n + 1 > q;
-      out.set(d, { peers, n, dups, over, bad: over || dups.length > 0, q, role: u.role });
+      const bo = r.boOk !== 'true' && blackoutsOn(d, r.type).length > 0;
+      out.set(d, { peers, n, dups, over, bo, bad: over || bo || dups.length > 0, q, role: u.role });
     }
     return out;
   }
+  const r_bo_text = d => 'a blackout day (' + blackoutsOn(d).map(b => boLabel(b).toLowerCase() + (b.note ? ' — ' + b.note : '')).join('; ') + ')';
   function conflictText(d, c) {
     const day = D.f(d, { weekday: 'short', month: 'short', day: 'numeric' });
     if (!c.bad) return day + ': no conflict' + (c.n ? ' (' + (c.n + 1) + (c.q ? ' of ' + c.q : '') + ' ' + ROLE_PLURAL[c.role] + ' out)' : '') + '.';
     const parts = [];
     if (c.over) parts.push('over the ' + ROLE_PLURAL[c.role] + ' max (' + (c.n + 1) + ' of ' + c.q + ') with ' + (S.priv ? plural(c.n, 'other leave request')
       : c.peers.map(x => fullName(userOf(x.userId)) + ' – ' + x.type.toLowerCase() + ', ' + x.status.toLowerCase()).join('; ')));
+    if (c.bo) parts.push(r_bo_text(d));
     if (c.dups.length) parts.push('duplicate of own ' + c.dups.map(x => x.type.toLowerCase() + ' ' + D.short(x.start) + '–' + D.short(x.end)).join(', '));
     return day + ': conflicts — ' + parts.join('. ') + '.';
   }
@@ -3747,7 +3828,7 @@
         if (i === 35 && d.slice(0, 7) !== mon) break;
         if (d.slice(0, 7) !== mon) { cells += '<span class="blank"></span>'; continue; }
         const today = d === S.today ? ' today' : '', c = cf.get(d);
-        if (!c) { cells += '<span class="' + today.trim() + '">' + Number(d.slice(8)) + '</span>'; continue; }
+        if (!c) { cells += '<span class="' + (today + boCls(d, r.type)).trim() + '">' + Number(d.slice(8)) + '</span>'; continue; }
         const txt = conflictText(d, c);
         cells += '<button type="button" class="in ' + (c.bad ? 'rg-full' : 'rg-ok') + (d === r.start ? ' r-s' : '') + (d === r.end ? ' r-e' : '') + today + '"' +
           ' data-act="confDay" data-date="' + d + '" data-id="' + esc(r.id) + '" aria-label="' + esc(txt) + '" title="' + esc(txt) + '">' + Number(d.slice(8)) + '</button>';
@@ -3782,6 +3863,11 @@
       '<div class="sect"><div class="lbl">Type</div><div class="wiz-type"><div class="seg seg-ro" role="group" aria-label="Type">' +
         ['Leave', 'Pass'].map(t => '<button type="button" tabindex="-1" aria-disabled="true" class="' + (t === r.type ? 'on' : '') + '">' + t + '</button>').join('') + '</div></div></div>' +
       (isCaution(r) ? '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(cautionText(r)) + '</span></div>' : '') +
+      (blackoutDaysOf(r).length && r.status !== 'Cancelled' ? (r.boOk === 'true'
+        ? '<div class="msg i">' + icon('check', 15) + '<span>Falls on blackout days (' + esc(blackoutDaysOf(r).map(D.short).join(', ')) + ') — allowed by an admin.</span></div>'
+        : '<div class="msg e bo-msg">' + icon('ban', 15) + '<span>Falls on blackout days: ' + esc(blackoutDaysOf(r).map(D.short).join(', ')) + '. ' +
+          (S.isAdmin ? 'Allow it, change the dates, deny or delete it.' : 'An admin needs to review it.') + '</span>' +
+          (S.isAdmin && r.status !== 'Denied' ? '<button class="btn sm" data-act="allowBlackout" data-id="' + esc(r.id) + '">' + icon('check', 13) + 'Allow</button>' : '') + '</div>') : '') +
       (isChanged(r) ? '<div class="msg w chg-msg">' + icon('alert', 15) + '<span>' + esc(changeText(r)) +
         (r.userId === S.me ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('check', 13) + ' Got it</button>' : ' The member has not acknowledged this yet.') + '</span></div>' : '') +
       (dupsOf(r).length ? '<div class="msg e">' + icon('alert', 15) + '<span>Overlap: this member also has ' + esc(dupText(r)) + '. A member can’t be on leave and a pass (or two requests) at the same time.</span></div>' : '') +
@@ -3921,6 +4007,8 @@
         if (clash.length) warns.push('Overlap: these dates overlap ' + clash.map(c => 'an existing ' + c.type.toLowerCase() + ' (' + D.short(c.start) + ' → ' + D.short(c.end) + ', ' + c.status.toLowerCase() + ')').join(' and ') + '. A member can’t be on leave and a pass at the same time — leadership will see a conflict warning.');
       }
       if (w.start < S.today) warns.push('Departure date is in the past.');
+      const bo = blackoutDaysOf({ type: w.type, start: w.start, end: w.end });
+      if (bo.length) warns.push('Blackout: ' + bo.map(D.short).join(', ') + ' ' + (bo.length === 1 ? 'is a' : 'are') + ' ' + w.type.toLowerCase() + ' blackout day' + (bo.length === 1 ? '' : 's') + '. You can still submit, but it will show as a conflict for an admin to review.');
     }
     return { errs, warns, n };
   }
@@ -3998,11 +4086,13 @@
       const edge = d === w.start || d === w.end;
       const st = q ? wizDayState(d) : 'ok';
       const first = d === w.start, last = d === w.end || (!D.valid(w.end) && d === w.start);
-      html += '<button type="button" data-act="miniPick" data-date="' + d + '" class="' + [d.slice(0, 7) !== ms.slice(0, 7) ? 'out' : '', d === S.today ? 'today' : '', inR ? 'in rg-' + st : '', first ? 'r-s' : '', last ? 'r-e' : '', !inR && st !== 'ok' ? 'dot-' + st : ''].join(' ') + '"' +
+      html += '<button type="button" data-act="miniPick" data-date="' + d + '" class="' + [d.slice(0, 7) !== ms.slice(0, 7) ? 'out' : '', d === S.today ? 'today' : '', blackoutsOn(d, w.type).length ? 'bo' : '', inR ? 'in rg-' + st : '', first ? 'r-s' : '', last ? 'r-e' : '', !inR && st !== 'ok' ? 'dot-' + st : ''].join(' ') + '"' +
         (st !== 'ok' ? ' title="' + esc(role + (st === 'full' ? ' leave slots already full' : ' leave would go over the daily max')) + '"' : '') + '>' + Number(d.slice(8)) + '</button>';
     }
     // Colour key only (leave with a daily max); each swatch stays with its label when wrapping.
-    return html + '</div>' + (q ? '<div class="mini-key"><span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-over"></span>Overbooks</span><span class="mk-i"><span class="mk mk-full"></span>Full</span></div>' : '') + '</div>' +
+    const anyBo = blackouts().some(b => (b.types === 'Both' || b.types === w.type) && b.end >= gs && b.start <= D.add(gs, 41));
+    return html + '</div>' + (q || anyBo ? '<div class="mini-key">' + (q ? '<span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-over"></span>Overbooks</span><span class="mk-i"><span class="mk mk-full"></span>Full</span>' : '') +
+      (anyBo ? '<span class="mk-i"><span class="mk mk-bo"></span>Blackout</span>' : '') + '</div>' : '') + '</div>' +
       (w.creating ? '' : leaveTally(w.assigneeId, w.type, w.start, w.end, w.editId));
   }
   function renderWizStatus() {
@@ -4094,6 +4184,38 @@
     async pushTest() {
       try { const r = await call('apiPushTest', S.token); toast('Test sent to ' + plural(r.sent, 'device')); }
       catch (e) { toast(e.message, 'error'); }
+    },
+    boType(el) { S.boDraft.types = el.dataset.v; render(); },
+    addBlackout() {
+      const b = Object.assign({}, S.boDraft), err = $('#boErr');
+      if (!D.valid(b.start) || !D.valid(b.end)) { if (err) err.textContent = 'Choose the first and last day.'; return; }
+      if (b.end < b.start) { if (err) err.textContent = 'The last day must be on or after the first day.'; return; }
+      const tmp = Object.assign({ id: 'tmp_' + Date.now() }, b);
+      S.nextSyncTab = 'admin';
+      save(() => { S.settings.blackouts = blackouts().concat([tmp]).sort((x, y) => x.start < y.start ? -1 : 1); }, 'apiSaveBlackout', S.token, b);
+      S.boDraft = { start: '', end: '', types: b.types, note: '' };
+      const n = IDX.live.filter(r => r.status !== 'Denied' && r.boOk !== 'true' && (b.types === 'Both' || b.types === r.type) && r.start <= b.end && r.end >= b.start).length;
+      render();
+      toast(n ? 'Blackout added — ' + plural(n, 'request') + (n === 1 ? ' needs' : ' need') + ' your review' : 'Blackout added');
+    },
+    delBlackout(el) {
+      if (!confirm('Delete this blackout? Requests on those days stop showing a blackout conflict.')) return;
+      const id = el.dataset.id;
+      S.nextSyncTab = 'admin';
+      save(() => { S.settings.blackouts = blackouts().filter(b => b.id !== id); }, 'apiDeleteBlackout', S.token, id);
+      render();
+    },
+    allowBlackout(el) {
+      const id = el.dataset.id, r = S.requests.find(x => x.id === id);
+      if (!r) return;
+      S.nextSyncTab = 'admin';
+      save(() => { r.boOk = 'true'; }, 'apiAllowBlackout', S.token, id);
+      render(); openRequest(id); toast('Allowed over blackout');
+    },
+    notePref(el) {
+      const k = el.dataset.v, next = Object.assign({}, S.notePrefs, { [k]: S.notePrefs[k] === false });
+      save(() => { S.notePrefs = next; }, 'apiSetNotePrefs', S.token, next);
+      redrawNotes();
     },
     // Optimistic: flips at once; the ring spins on the Admin icon until the server has saved it.
     hideSchedules() {
@@ -4249,7 +4371,8 @@
       const c = reqConflicts(r).get(d), box = $('#ccDetail');
       $$('[data-act="confDay"].sel').forEach(x => x.classList.remove('sel'));
       el.classList.add('sel');
-      const head = '<div class="cc-dh">' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '</div>';
+      const head = '<div class="cc-dh">' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '</div>' +
+        (c.bo ? '<p class="cc-why">' + icon('ban', 13) + ' ' + esc(r_bo_text(d).replace(/^a b/, 'B')) + '</p>' : '');
       if (!c.bad) { box.innerHTML = head + '<p class="muted">No conflict' + (c.peers.length ? ' — also out: ' + esc(c.peers.map(x => fullName(userOf(x.userId))).join(', ')) : '') + '.</p>'; return; }
       if (S.priv) { // count only, never names
         box.innerHTML = head + (c.over ? '<p class="cc-why">' + (c.n + 1) + ' ' + ROLE_PLURAL[c.role] + ' requested leave — the max is ' + c.q + '. This conflicts with ' + plural(c.n, 'other leave request') + '; an admin will decide.</p>' : '') +
