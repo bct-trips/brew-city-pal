@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792492175"></script>
+    <script src="config.js?v=1792492256"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1465,6 +1465,12 @@
     .stats-bar .seg button { flex: 1 1 0; min-width: 0; padding: 0 6px; }
     .stats-bar .chip-tog { flex: none; padding: 0 14px; }
   }
+  /* Request details footer: rows. Admin decision row (Deny · Approve, labelled, half width each) above Delete · Cancel · Edit. */
+  .modal-f.modal-f-rows { flex-direction: column; align-items: stretch; gap: 10px; }
+  .mf-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .mf-row .btn.act.act-lbl, .mf-row .btn.act.act-lbl:has(> .ic:first-child) { flex: 1 1 0; width: auto; border-radius: 20px; gap: 6px; padding: 0 14px; }
+  .mf-row .btn.act.act-lbl .bl { display: inline; }
+  .mf-row .btn.act:not(.act-lbl) { flex: none; }
 </style>
 
   </head>
@@ -3436,15 +3442,16 @@
     if (!r) return;
     S.reqOpen = id;
     const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r);
-    // Footer order (DESIGN.md): destructive on the left, Cancel in the middle, the main action (Edit) on the far right.
-    let acts = '';
-    if (S.isAdmin && r.status !== 'Cancelled') {
-      acts += '<button class="btn bad act" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' disabled' : '') + ' aria-label="Deny" title="Deny">' + icon('ban', 15) + '<span class="bl">Deny</span></button>' +
-        '<button class="btn ok act" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' disabled' : '') + ' aria-label="Approve" title="Approve">' + icon('check', 15) + '<span class="bl">Approve</span></button>';
-    }
-    if (canEdit(r)) acts += '<button class="btn act act-lbl act-edit" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>';
+    // Footer (DESIGN.md): admins get a decision row on top (Deny · Approve), then Delete · Cancel · Edit —
+    // destructive on the left, Cancel in the middle, the main action on the far right.
+    const decide = S.isAdmin && r.status !== 'Cancelled'
+      ? '<button class="btn bad act act-lbl" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' disabled' : '') + ' aria-label="Deny" title="Deny">' + icon('ban', 15) + '<span class="bl">Deny</span></button>' +
+        '<button class="btn ok act act-lbl" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' disabled' : '') + ' aria-label="Approve" title="Approve">' + icon('check', 15) + '<span class="bl">Approve</span></button>'
+      : '';
+    const edit = canEdit(r) ? '<button class="btn act act-lbl act-edit" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>' : '';
     const del = canDelete(r) ? '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' : '';
-    const foot = del || acts ? del + '<button class="btn act act-lbl" data-act="closeModal" aria-label="Cancel" title="Cancel">' + icon('x', 15) + '<span class="bl">Cancel</span></button>' + acts : '';
+    const main = del || edit || decide ? '<div class="mf-row">' + del + '<button class="btn act act-lbl" data-act="closeModal" aria-label="Cancel" title="Cancel">' + icon('x', 15) + '<span class="bl">Cancel</span></button>' + edit + '</div>' : '';
+    const foot = (decide ? '<div class="mf-row mf-decide">' + decide + '</div>' : '') + main;
     const bad = [...reqConflicts(r).values()].filter(c => c.bad).length;
     const longDate = d => D.f(d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     // Same layout as the request form (DESIGN.md §Request details): who, type, calendar, dates, notes — read-only.
@@ -3470,7 +3477,7 @@
         '<div class="field"><span class="lbl">Return</span><div class="ro-val">' + longDate(r.end) + '</div></div></div>' +
       '<div class="ro-days">' + plural(n, 'day') + '</div>' +
       '<div class="field"><span class="lbl">Trip reason &amp; notes</span><div class="ro-val ro-note">' + (r.note ? esc(r.note) : '<span class="muted">No note provided.</span>') + '</div></div>' +
-      '</div>' + (foot ? '<div class="modal-f">' + foot + '</div>' : '');
+      '</div>' + (foot ? '<div class="modal-f modal-f-rows">' + foot + '</div>' : '');
     openModal('req', html);
   }
 
