@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792488372"></script>
+    <script src="config.js?v=1792488462"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -873,8 +873,8 @@
      Dark mode: bright fills (gold / green / red) with near-black text (the bar's own background).
      Light mode: deep fills (navy / green / red) with white text (the bar's own background).
      No more same-hue text on same-hue containers. All pairs ≥ 4.5:1 (checked). */
-  :root { --sel-bg: #0A2351; --sel-ink: #ffffff; --go-bg: #1e6b35; --go-ink: #ffffff; --no-bg: #b3261e; --no-ink: #ffffff; }
-  :root[data-theme="dark"] { --sel-bg: #FDB827; --sel-ink: #17181d; --go-bg: #86d99a; --go-ink: #17181d; --no-bg: #ffb4ab; --no-ink: #17181d; }
+  :root { --sel-bg: #FDB827; --sel-ink: #0A2351; --sel-ring: #0A2351; --go-bg: #1e6b35; --go-ink: #ffffff; --no-bg: #b3261e; --no-ink: #ffffff; }
+  :root[data-theme="dark"] { --sel-bg: #FDB827; --sel-ink: #17181d; --sel-ring: #FDB827; --go-bg: #86d99a; --go-ink: #17181d; --no-bg: #ffb4ab; --no-ink: #17181d; }
   .seg button.on, .fsel.on, .fdrop-btn.on, .btn.gold { background: var(--sel-bg); color: var(--sel-ink); border-color: var(--sel-bg); }
   .seg button.on:hover { background: var(--sel-bg); color: var(--sel-ink); }
   .btn.req-btn, .req-bar .req-btn, .btn.req-btn:hover { background: var(--go-bg); border-color: var(--go-bg); color: var(--go-ink); }
@@ -1323,7 +1323,7 @@
   /* Open day in the calendar: a solid selection-colour outline (stronger than Today's). */
   .cell.is-open, .wk-day.is-open, .qd.is-open { box-shadow: none !important; }
   .cell.is-open::after, .wk-day.is-open::after, .qd.is-open::after {
-    content: ""; position: absolute; inset: 2px; z-index: 4; pointer-events: none; border-radius: 12px; border: 3px solid var(--sel-bg); }
+    content: ""; position: absolute; inset: 2px; z-index: 4; pointer-events: none; border-radius: 12px; border: 3px solid var(--sel-ring, var(--sel-bg)); }
 
   /* ---------- Week view: clearer position bands ---------- */
   .band { border-bottom: 0; }
