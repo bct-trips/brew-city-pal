@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792529446"></script>
+    <script src="config.js?v=1792529659"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1403,7 +1403,10 @@
   /* On calendar bars the dot is static: an animated dot made Chromium paint today's cell over the bars. */
   .idb-n .now-dot, .mn .now-dot { width: 7px; height: 7px; margin-left: 5px; vertical-align: 1px; animation: none; box-shadow: 0 0 0 1.5px #fff; }
   .rtable tr.now > td:first-child { box-shadow: inset 4px 0 0 var(--now-dot); }
-  /* Leave has no border in either theme (same as Pass): no light navy edge on bars, badges or the "On leave" header. */
+  /* Dark mode: navy sits close to the dark background, so leave BARS on the calendars (Month, phone month, Week, Qtr)
+     get a light navy edge. Badges and the "On leave" header have no border (same as Pass). */
+  :root[data-theme="dark"] .evs.leave, :root[data-theme="dark"] .cs-bar.leave, :root[data-theme="dark"] .wpuck.leave,
+  :root[data-theme="dark"] .qbar.leave, :root[data-theme="dark"] .mseg.leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
   /* ---------- Day marker: ONE implementation for Month (desktop + phone), Stats, Week, Qtr and the day strip ----------
      ::before = rounded ring, ::after = the date pill joined to its top-left corner. Both use --mark, so they always match.
      Today uses --today-ring; the open day (desktop day panel) uses --sel-ring, and so does today when it is the open day.
