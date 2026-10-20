@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792507402"></script>
+    <script src="config.js?v=1792507867"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1627,9 +1627,7 @@
     filter: drop-shadow(0 10px 24px rgba(0, 0, 0, .45)); flex: none; }
   .splash .brand-logo { width: 120px; height: 120px; }
   .splash, .login { background: radial-gradient(120% 90% at 50% 0%, #1d3d6e 0%, var(--navy) 55%, #0a1a33 100%); }
-  .login-card { position: relative; overflow: hidden; padding-top: 26px; }
-  .login-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px;
-    background: linear-gradient(90deg, var(--brick) 0 72%, var(--gold) 72% 100%); }
+  .login-card h1 + * { margin-top: 14px; }
   .login-card h1 { margin-top: 0; color: var(--navy); }
   :root[data-theme="dark"] .login-card h1 { color: #ffffff; }
   .login-card .linkbtn, .auth-alt .linkbtn { color: var(--brick); font-weight: 700; }
@@ -1638,6 +1636,30 @@
   /* Submitting cover: the squadron logo spins while the request saves. */
   .blocker-logo { width: 96px; height: 96px; animation: spin 1.6s linear infinite; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .3)); }
   @media (prefers-reduced-motion: reduce) { .blocker-logo { animation-duration: 4s; } }
+  /* Blackout event bars (Month lanes, phone strips, Week band): brick, white text, rounded where the blackout starts / ends. */
+  .bo-ev { position: relative; align-self: start; min-width: 0; height: var(--bar-h); margin: 0 0 2px; padding: 0 8px; display: flex; align-items: center;
+    background: var(--brick); color: #ffffff; font-size: 12.5px; font-weight: 700; cursor: pointer; pointer-events: auto; overflow: hidden; z-index: 1; }
+  .bo-ev.b-s { margin-left: 3px; border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+  .bo-ev.b-e { margin-right: 3px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
+  .bo-ev-t { display: inline-flex; align-items: center; gap: 4px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bo-ev-t span { overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .bo-ev-t .ic { flex: none; }
+  .bo-ev:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+  :root[data-theme="dark"] .bo-ev { box-shadow: inset 0 0 0 1.5px #e0645f; }
+  .cs-bo { height: 22px; font-size: 11.5px; padding: 0 5px; margin: 0 -1px; }
+  .cs-bo.b-s { margin-left: 2px; } .cs-bo.b-e { margin-right: 2px; }
+  .wk-bo { height: 30px; margin: 0 4px; border-radius: 0; }
+  .wk-bo.b-s { border-top-left-radius: 9px; border-bottom-left-radius: 9px; } .wk-bo.b-e { border-top-right-radius: 9px; border-bottom-right-radius: 9px; }
+  .band-bo { --rm: var(--brick); }
+  .band-bo .band-tag { background: var(--brick); color: #ffffff; }
+  /* Lists: Blackouts band */
+  .grp-bo { --rm: var(--brick); }
+  .bo-tr td { padding: 10px 14px; cursor: pointer; }
+  .bo-cell { position: sticky; left: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+  .bo-cell .badge { margin: 0; }
+  .grp-in .bo-badge { display: inline-flex; align-items: center; gap: 4px; }
+  .bo-tbl { margin-top: 8px; border: 1px solid var(--line); border-radius: 12px; }
+  .bo-tbl tbody tr { cursor: pointer; }
 </style>
 
   </head>
@@ -1855,6 +1877,13 @@
     });
     return out.sort();
   }
+  const boSpan = b => b.start === b.end ? D.f(b.start, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+    : D.f(b.start, { month: 'short', day: 'numeric' }) + ' – ' + D.f(b.end, { month: 'short', day: 'numeric', year: 'numeric' });
+  /** Requests a blackout flags (on its days, of its types, not denied, not already allowed). */
+  const boFlagged = b => IDX.live.filter(r => r.status !== 'Denied' && r.boOk !== 'true' && (b.types === 'Both' || b.types === r.type) && r.start <= b.end && r.end >= b.start);
+  /** Blackout event bar (calendar lanes): brick, "⊘ Blackout · reason", opens the blackout. */
+  const boBar = (b, cls, style) => '<div class="bo-ev ' + (cls || '') + '" style="' + style + '" role="button" tabindex="0" data-act="openBlackout" data-id="' + esc(b.id) + '" title="' + esc(boLabel(b) + (b.note ? ': ' + b.note : '') + ' · ' + boSpan(b)) + '">' +
+    '<span class="bo-ev-t">' + icon('ban', 12) + '<b>Blackout</b>' + (b.note ? '<span> · ' + esc(b.note) + '</span>' : '') + '</span></div>';
   /** A request on blackout days is a conflict until an admin allows it (approving it allows it too). */
   const boConflict = r => r.status !== 'Denied' && r.status !== 'Cancelled' && r.boOk !== 'true' && blackoutDaysOf(r).length > 0;
   function conflictDays(r) {
@@ -2100,7 +2129,7 @@
   /* ---------- Sign in / create account / set PIN ---------- */
   function authShell(inner) {
     $('#app').innerHTML = '<div class="login"><div class="brand-logo" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div><div class="login-card"><h1>Brew City PAL</h1>' +
-      '<p class="sub">128th Air Refueling Wing · Pass &amp; Leave</p>' + inner + '</div></div>';
+      inner + '</div></div>';
     const f = $('.login-card input, .login-card select');
     if (f) f.focus();
   }
@@ -2186,7 +2215,8 @@
       '<div class="row"><div class="field"><label for="rgRank">Rank</label>' + sel('rgRank', RANKS.map(r => [r, r])) + '</div>' +
       '<div class="field"><label for="rgRole">Position</label>' + sel('rgRole', [['Pilot', 'Pilot'], ['Boom', 'Boom Operator'], ['Other', 'Other']]) + '</div></div>' +
       '<div class="field"><label for="rgUnit">Unit</label>' + sel('rgUnit', cfg.units.map(u => [u.code, u.code + (u.name && u.name !== u.code ? ' — ' + u.name : '')])) + '</div>' +
-      '<div class="row">' + pinInput('rgPin', 'Choose a PIN', 'new-password') + pinInput('rgPin2', 'Confirm PIN', 'new-password') + '</div>' +
+      pinInput('rgPin', 'Squadron default PIN', 'off') +
+      '<p class="auth-note">Ask an admin for the default PIN. After you create your account you’ll choose your own PIN.</p>' +
       '<div class="err" id="rgErr"></div>' +
       '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('userPlus', 16) + ' Create account</button></form>' +
       '<div class="auth-alt">Already have an account? <button class="linkbtn" id="toLogin">Sign in</button></div>';
@@ -2196,11 +2226,10 @@
     $('#regForm').addEventListener('submit', async ev => {
       ev.preventDefault();
       const reg = { first: $('#rgFirst').value.trim(), middle: $('#rgMid').value.trim(), last: $('#rgLast').value.trim(), rank: $('#rgRank').value, role: $('#rgRole').value,
-        unit: $('#rgUnit').value, pin: $('#rgPin').value.trim(), confirm: $('#rgPin2').value.trim() };
+        unit: $('#rgUnit').value, pin: $('#rgPin').value.trim() };
       const err = $('#rgErr');
       if (!reg.first || !reg.last) return (err.textContent = 'Enter your first and last name.');
-      if (!/^\d{4,8}$/.test(reg.pin)) return (err.textContent = 'PIN must be 4–8 digits.');
-      if (reg.pin !== reg.confirm) return (err.textContent = 'The two PIN entries do not match.');
+      if (!/^\d{4,8}$/.test(reg.pin)) return (err.textContent = 'Enter the squadron’s default PIN (4–8 digits).');
       const btn = ev.target.querySelector('button[type=submit]'); btn.disabled = true;
       try { store.set('lastName', reg.last); afterAuth(await call('apiRegister', reg)); }
       catch (e) { err.textContent = e.message; btn.disabled = false; }
@@ -2661,8 +2690,16 @@
       const days = Array.from({ length: 7 }, (_, i) => D.add(ws, i));
       const evs = all.filter(r => r.start <= we && r.end >= ws)
         .sort((x, y) => stackRank(x) - stackRank(y) || (x.start < y.start ? -1 : x.start > y.start ? 1 : D.diff(y.start, y.end) - D.diff(x.start, x.end)) || byLast(x, y));
-      // Lane packing: each bar takes the first lane free across all its days.
+      // Lane packing: each bar takes the first lane free across all its days. Blackouts go first (top lanes).
       const lanes = [], placed = [];
+      blackouts().filter(b => b.start <= we && b.end >= ws).forEach(b => {
+        const a = D.diff(ws, D.max(b.start, ws)), z = D.diff(ws, D.min(b.end, we));
+        let l = 0;
+        while ((lanes[l] || []).slice(a, z + 1).some(Boolean)) l++;
+        lanes[l] = lanes[l] || [];
+        for (let i = a; i <= z; i++) lanes[l][i] = true;
+        placed.push({ bo: b, a, z, l });
+      });
       evs.forEach(r => {
         const a = D.diff(ws, D.max(r.start, ws)), z = D.diff(ws, D.min(r.end, we));
         let l = 0;
@@ -2675,8 +2712,9 @@
       // on days that do, that slot holds "+N" for everyone not shown.
       const over = days.map((_, i) => placed.filter(p => p.l >= MAXL && p.a <= i && p.z >= i).length > 0);
       const shown = p => p.l < MAXL - 1 || (p.l === MAXL - 1 && !over.slice(p.a, p.z + 1).some(Boolean));
-      const hidden = days.map((_, i) => placed.filter(p => !shown(p) && p.a <= i && p.z >= i).length);
+      const hidden = days.map((_, i) => placed.filter(p => !p.bo && !shown(p) && p.a <= i && p.z >= i).length);
       const bars = placed.filter(shown).map(p => {
+        if (p.bo) return boBar(p.bo, 'cs-bo' + (p.bo.start >= ws ? ' b-s' : '') + (p.bo.end <= we ? ' b-e' : ''), 'grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2));
         const r = p.r, u = userOf(r.userId), first = r.start >= ws, last = r.end <= we;
         const cls = ['cs-bar', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : '', r.userId === S.me ? 'mine' : ''].join(' ');
         return '<span class="' + cls + '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
@@ -2769,12 +2807,18 @@
     const startIds = new Set(segs.filter(sg => sg.kind === 'start').map(sg => sg.people[0].id));
     segs.forEach(sg => { sg.quiet = sg.kind === 'mid' && sg.people.length === 1 && startIds.has(sg.people[0].id); });
 
+    // Blackouts take the top lanes of the week (everyone sees them, even with Hide user schedules on).
+    const we = days[6], wbo = blackouts().filter(b => b.start <= we && b.end >= ws);
+    segs.forEach(sg => { sg.lane += wbo.length; });
     // Fit to the measured row height.
-    let ln = lanes.length;
-    if (ln * lineH > avail) while (ln > 0 && ln * lineH + moreH > avail) ln--;
+    let ln = lanes.length + wbo.length;
+    if (ln * lineH > avail) while (ln > wbo.length && ln * lineH + moreH > avail) ln--;
 
     const hidden = days.map(() => 0);
-    let overlay = '';
+    let overlay = wbo.map((b, i) => {
+      const a = D.diff(ws, D.max(b.start, ws)), z = D.diff(ws, D.min(b.end, we));
+      return boBar(b, (b.start >= ws ? 'b-s ' : '') + (b.end <= we ? 'b-e' : ''), 'grid-row:' + (i + 1) + ';grid-column:' + (a + 1) + '/' + (z + 2));
+    }).join('');
     segs.forEach(sg => {
       if (sg.lane >= ln) { for (let i = sg.a; i <= sg.b; i++) hidden[i] += sg.people.length; return; }
       overlay += segHtml(sg);
@@ -3088,7 +3132,13 @@
         return '<div class="band band-' + b[0][0].toLowerCase() + '"><div class="band-title"><span class="band-tag">' + b[0][0] + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></div>' +
           '<div class="band-body"><div class="band-inner"><div class="band-slots g7">' + slots + '</div><div class="band-pucks">' + pucks + '</div></div></div></div>';
       }).join('');
-    return '<div class="week"><div class="wk-head g7">' + head + '</div><div class="bands">' + bands + '</div></div>';
+    // Blackouts band on top (everyone sees it).
+    const wbo = blackouts().filter(b => b.start <= we && b.end >= ws);
+    const boBand = wbo.length ? '<div class="band band-bo"><div class="band-title"><span class="band-tag">' + icon('ban', 12) + '</span>BLACKOUT DATES <span class="ct">' + wbo.length + '</span></div>' +
+      '<div class="band-body"><div class="band-inner"><div class="band-slots g7">' + days.map(d => '<div class="slot' + boCls(d) + '"></div>').join('') + '</div><div class="band-pucks">' +
+      wbo.map(b => boBar(b, 'wk-bo' + (b.start >= ws ? ' b-s' : '') + (b.end <= we ? ' b-e' : ''), 'grid-column:' + (D.diff(ws, D.max(b.start, ws)) + 1) + '/' + (D.diff(ws, D.min(b.end, we)) + 2))).join('') +
+      '</div></div></div></div>' : '';
+    return '<div class="week"><div class="wk-head g7">' + head + '</div><div class="bands">' + boBand + bands + '</div></div>';
   }
 
   /** Desktop (≥900px): tapping a day opens it in a panel on the left, beside the calendar, instead of switching views. */
@@ -3311,8 +3361,20 @@
     };
     const cur = rows.filter(r => r.end >= S.today), past = rows.filter(r => r.end < S.today);
     // Active Leave / Pass (in progress today: leave first, then passes), then upcoming Leave and Pass.
+    // Blackouts (current and upcoming) get their own band at the top of All Requests and My Requests — everyone sees them.
+    const bos = table ? blackouts().filter(b => b.end >= S.today) : [];
+    const boGroup = () => {
+      if (!bos.length) return '';
+      const closed = !!col.Blackouts, n = COLS.length + 1;
+      return '<tbody class="grp grp-bo' + (closed ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="Blackouts"><th colspan="' + n + '" scope="rowgroup">' +
+        '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="Blackouts" aria-expanded="' + !closed + '">' +
+        icon(closed ? 'right' : 'down', 16) + '<span class="badge bo-badge">' + icon('ban', 12) + ' Blackouts</span><span class="ct">' + bos.length + '</span></button></th></tr>' +
+        (closed ? '' : bos.map(b => '<tr class="bo-tr" data-act="openBlackout" data-id="' + esc(b.id) + '" tabindex="0"><td colspan="' + n + '"><div class="bo-cell">' +
+          '<b>' + esc(boSpan(b)) + '</b><span class="badge bo-badge">' + esc(boLabel(b)) + '</span>' + (b.note ? '<span class="muted">' + esc(b.note) + '</span>' : '') +
+          '</div></td></tr>').join('')) + '</tbody>';
+    };
     const now = cur.filter(r => isNow(r) && r.type === 'Leave').concat(cur.filter(r => isNow(r) && r.type === 'Pass')), next = cur.filter(r => !isNow(r));
-    const body = group('Now', now) + group('Leave', next.filter(r => r.type === 'Leave')) + group('Pass', next.filter(r => r.type === 'Pass')) + group('Past', past);
+    const body = boGroup() + group('Now', now) + group('Leave', next.filter(r => r.type === 'Leave')) + group('Pass', next.filter(r => r.type === 'Pass')) + group('Past', past);
     return '<div class="tbl-wrap" id="tbl-' + key + '" data-table="' + key + '"><table class="rtable"><thead><tr>' + head + '</tr></thead>' + body + '</table></div>';
   }
 
@@ -3521,27 +3583,24 @@
   }
 
   /* Admin page: settings only (roster & PINs, leave limits, unit badges). Scheduling lives on the calendar and request lists. */
-  /** Admin → Blackout dates: list (with how many requests each one flags) and an add form. */
+  /** Admin → Blackout dates: a table of blackouts (edit / delete); new ones are added with the request form. */
   function blackoutPanel() {
-    const dr = S.boDraft || (S.boDraft = { start: '', end: '', types: 'Both', note: '' });
-    const flagged = b => IDX.live.filter(r => r.status !== 'Denied' && r.boOk !== 'true' && (b.types === 'Both' || b.types === r.type) && r.start <= b.end && r.end >= b.start).length;
-    const span = b => b.start === b.end ? D.f(b.start, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-      : D.f(b.start, { month: 'short', day: 'numeric' }) + ' – ' + D.f(b.end, { month: 'short', day: 'numeric', year: 'numeric' });
-    const list = blackouts().length ? '<div class="bo-list">' + blackouts().map(b => {
-      const n = flagged(b);
-      return '<div class="bo-row"><div class="bo-t"><div><b>' + esc(span(b)) + '</b> <span class="badge bo-badge">' + esc(boLabel(b)) + '</span></div>' +
-        '<div class="meta">' + (b.note ? esc(b.note) + ' · ' : '') + (n ? '<b class="bo-n">' + plural(n, 'request') + ' to review</b>' : 'no conflicts') + '</div></div>' +
-        '<button class="btn icon-btn bo-del" data-act="delBlackout" data-id="' + esc(b.id) + '" aria-label="Delete blackout ' + esc(span(b)) + '" title="Delete blackout">' + icon('trash', 18) + '</button></div>';
-    }).join('') + '</div>' : '<p class="meta">No blackout dates yet.</p>';
-    return '<div class="panel"><h3>' + icon('ban', 16) + ' Blackout dates</h3>' +
-      '<p class="cfg-help">Days when leave and / or passes shouldn’t be taken. Members can still submit over them, but those requests show as conflicts until you allow, move, deny or delete them — including ones already approved.</p>' +
-      list +
-      '<div class="bo-add"><div class="wiz-dates"><div class="field"><label for="boS">First day</label><input id="boS" type="date" value="' + esc(dr.start) + '" data-model="boDraft.start"></div>' +
-        '<div class="field"><label for="boE">Last day</label><input id="boE" type="date" value="' + esc(dr.end) + '" data-model="boDraft.end"></div></div>' +
-        '<div class="field"><span class="lbl">Applies to</span><div class="bo-types">' + seg([['Leave', 'Leave'], ['Pass', 'Pass'], ['Both', 'Both']], dr.types, 'boType') + '</div></div>' +
-        '<div class="field"><label for="boN">Reason (optional)</label><input id="boN" maxlength="80" placeholder="e.g. ORE week, UTA" value="' + esc(dr.note) + '" data-model="boDraft.note"></div>' +
-        '<div class="err" id="boErr"></div>' +
-        '<div class="cfg-foot"><button class="btn primary" data-act="addBlackout">' + icon('plus', 18) + 'Add blackout</button></div></div></div>';
+    const rows = blackouts().map(b => {
+      const n = boFlagged(b).length;
+      return '<tr data-act="openBlackout" data-id="' + esc(b.id) + '" tabindex="0"><td class="strong">' + esc(boSpan(b)) + '</td>' +
+        '<td><span class="badge bo-badge">' + esc(boLabel(b)) + '</span></td>' +
+        '<td class="note"><div class="clamp">' + (b.note ? esc(b.note) : '<span class="muted">—</span>') + '</div></td>' +
+        '<td class="num">' + (n ? '<b class="bo-n">' + n + '</b>' : '<span class="muted">0</span>') + '</td>' +
+        '<td class="acts-cell"><div class="row-acts">' +
+          '<button class="btn sm act" data-act="editBlackout" data-id="' + esc(b.id) + '" aria-label="Edit blackout ' + esc(boSpan(b)) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
+          '<button class="btn sm del act" data-act="delBlackout" data-id="' + esc(b.id) + '" aria-label="Delete blackout ' + esc(boSpan(b)) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>' +
+        '</div></td></tr>';
+    }).join('');
+    return '<div class="panel"><div class="cfg-h"><h3>' + icon('ban', 16) + ' Blackout dates</h3>' +
+        '<button class="btn primary" data-act="newBlackout">' + icon('plus', 18) + 'Add blackout</button></div>' +
+      '<p class="cfg-help">Days when leave and / or passes shouldn’t be taken. Everyone sees them on the calendar and in their lists. Requests on these days — including approved ones — show a conflict until you allow, move, deny or delete them.</p>' +
+      (rows ? '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Dates</th><th scope="col">Blacks out</th><th scope="col">Reason</th><th scope="col" class="num">To review</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+        : '<p class="meta">No blackout dates yet.</p>') + '</div>';
   }
   function renderAdmin() {
     const st = S.settings;
@@ -3976,6 +4035,39 @@
     };
     renderWizard();
   }
+  /** Admins: the request form in Blackout mode — new (no id) or editing an existing blackout. */
+  function openBlackoutWizard(id, start) {
+    const b = id ? blackouts().find(x => x.id === id) : null;
+    S.wiz = {
+      step: 1, type: 'Blackout', editBoId: b ? b.id : '', boTypes: b ? b.types : 'Both', assigneeId: S.me, creating: false,
+      nu: { name: '', rank: 'Capt', role: 'Pilot', unit: 'MKE', pin: '' },
+      start: b ? b.start : start || '', end: b ? b.end : '', note: b ? b.note || '' : '',
+      mini: D.monthStart((b && b.start) || start || S.today), picking: !b && !!start, error: ''
+    };
+    renderWizard();
+  }
+  /** Blackout details: dates, what it blocks, reason, requests it flags. Admins: Delete · Cancel · Edit. */
+  function openBlackout(id) {
+    const b = blackouts().find(x => x.id === id);
+    if (!b) return;
+    const hits = S.isAdmin ? boFlagged(b) : [];
+    const foot = S.isAdmin
+      ? '<button class="btn del act" data-act="delBlackout" data-id="' + esc(b.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' +
+        '<button class="btn act act-lbl" data-act="closeModal" aria-label="Cancel" title="Cancel">' + icon('x', 15) + '<span class="bl">Cancel</span></button>' +
+        '<button class="btn act act-lbl act-edit" data-act="editBlackout" data-id="' + esc(b.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>'
+      : '<button class="btn" data-act="closeModal">Close</button>';
+    const html = modalHead('Blackout', 'ban') + '<div class="modal-b"><div class="review">' +
+      '<div class="rv"><span class="lbl">Dates</span><div class="big">' + esc(boSpan(b)) + '</div><div class="meta" style="margin-top:2px">' + plural(D.days(b.start, b.end), 'day') + '</div></div>' +
+      '<div class="rv"><span class="lbl">Blacks out</span><div class="big"><span class="badge bo-badge">' + esc(boLabel(b)) + '</span></div>' +
+        '<div class="meta" style="margin-top:4px;white-space:normal">Requests on these days show a conflict until an admin allows, moves, denies or deletes them.</div></div>' +
+      '<div class="rv"><span class="lbl">Reason &amp; notes</span><div class="note">' + (b.note ? esc(b.note) : '<span class="muted">No reason given.</span>') + '</div></div>' +
+      (S.isAdmin ? '<div class="rv"><span class="lbl">Requests to review</span>' + (hits.length
+        ? '<ul class="dl-list">' + hits.map(r => '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '"><span class="dl-who">' + idBadge(userOf(r.userId)) + nameHtml(userOf(r.userId)) + '</span>' +
+            '<span class="dl-meta">' + r.type + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + '</span><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>').join('') + '</ul>'
+        : '<div class="note muted">None — nothing on these days needs a decision.</div>') + '</div>' : '') +
+      '</div></div><div class="modal-f">' + foot + '</div>';
+    openModal('blackout', html);
+  }
   function openEditWizard(id) {
     const r = S.requests.find(x => x.id === id);
     if (!r || !canEdit(r)) return;
@@ -3998,6 +4090,11 @@
       errs.push('Select departure and return dates.');
     } else if (w.end < w.start) {
       errs.push('Return date must be on or after the departure date.');
+    } else if (w.type === 'Blackout') {
+      n = D.days(w.start, w.end);
+      if (n > 366) errs.push('A blackout can be at most a year long.');
+      const hit = boFlagged({ start: w.start, end: w.end, types: w.boTypes });
+      if (hit.length) warns.push(plural(hit.length, 'request') + ' already on these days will show a Blackout conflict for you to review.');
     } else {
       n = D.days(w.start, w.end);
       const rule = lenRule(w.type), tn = w.type === 'Pass' ? 'Pass' : 'Leave';
@@ -4031,10 +4128,13 @@
   function renderWizard() {
     const w = S.wiz;
     if (w.step !== 3) w.step = 'form';
-    const head = modalHead(w.editId ? 'Edit Request' : 'New Request', w.editId ? 'pencil' : 'plus');
+    const isBo = w.type === 'Blackout';
+    const head = modalHead(isBo ? (w.editBoId ? 'Edit Blackout' : 'New Blackout') : w.editId ? 'Edit Request' : 'New Request', w.editId || w.editBoId ? 'pencil' : isBo ? 'ban' : 'plus');
     let body = '', foot = '';
     if (w.step === 'form') {
-      if (w.editId) {
+      if (isBo) {
+        // Blackout: no member; choose what it blocks. (Editing a blackout can't turn it into a request.)
+      } else if (w.editId) {
         body += '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request for</div><div style="font-weight:700">' + esc(fullName(userOf(w.assigneeId))) + '</div>' +
           (w.editStatus === 'Approved' ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>This request is already approved. Admin edits keep it approved.</span></div>' : '') +
           (w.editStatus === 'Denied' && !S.isAdmin ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>Saving changes resubmits this denied request as Pending.</span></div>' : '') + '</div>';
@@ -4046,15 +4146,25 @@
                 idBadge(userOf(w.assigneeId)) + '<span>' + esc(nameText(userOf(w.assigneeId))) + '</span>' + icon('down', 14) + '</button></div>') +
           '</div>';
       }
-      body += '<div class="sect"><div class="lbl">Type</div><div class="wiz-type">' + seg([['Leave', 'Leave'], ['Pass', 'Pass']], w.type, 'wizEditType') + '</div></div>' +
+      // Admins can also add a blackout from here (not when editing a request or a blackout).
+      const types = [['Leave', 'Leave'], ['Pass', 'Pass']].concat(S.isAdmin && !w.editId && !w.editBoId ? [['Blackout', 'Blackout']] : []);
+      body += (w.editBoId ? '' : '<div class="sect"><div class="lbl">Type</div><div class="wiz-type">' + seg(types, w.type, 'wizEditType') + '</div></div>') +
+        (isBo ? '<div class="sect"><div class="lbl">Blacks out</div><div class="wiz-type">' + seg([['Leave', 'Leave'], ['Pass', 'Pass'], ['Both', 'Both']], w.boTypes, 'wizBoTypes') + '</div></div>' : '') +
         renderWizDates() +
-        '<div class="field"><label for="wzN">Trip reason &amp; notes (optional)</label><textarea id="wzN" maxlength="500" data-model="wiz.note" placeholder="Destination, reason, contact info…">' + esc(w.note) + '</textarea></div>' +
+        '<div class="field"><label for="wzN">' + (isBo ? 'Reason &amp; notes (optional)' : 'Trip reason &amp; notes (optional)') + '</label><textarea id="wzN" maxlength="' + (isBo ? 80 : 500) + '" data-model="wiz.note" placeholder="' + (isBo ? 'e.g. ORE week, UTA' : 'Destination, reason, contact info…') + '">' + esc(w.note) + '</textarea></div>' +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div>';
       foot = '<button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="wizReview">Review ' + icon('right', 18) + '</button>';
     } else {
       const c = wizCheck();
       const who = w.creating ? (w.nu.rank + ' ' + w.nu.name + ' (' + w.nu.unit + ')') : fullName(userOf(w.assigneeId));
-      body = '<div class="review">' +
+      if (isBo) body = '<div class="review">' +
+        '<div class="rv"><span class="lbl">Blackout</span><div class="big"><span class="badge bo-badge" style="font-size:12px">' + esc(boLabel({ types: w.boTypes })) + '</span></div></div>' +
+        '<div class="rv"><span class="lbl">Dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
+          '<div style="margin-top:4px;font-weight:700">' + plural(c.n, 'day') + '</div></div>' +
+        '<div class="rv"><span class="lbl">Reason &amp; notes</span><div class="note">' + (w.note.trim() ? esc(w.note.trim()) : '<span class="muted">No reason given.</span>') + '</div></div>' +
+        (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '') +
+        '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
+      else body = '<div class="review">' +
         '<div class="rv"><span class="lbl">Requested absence type</span><div class="big"><span class="badge t-' + w.type.toLowerCase() + '" style="font-size:12px">' + w.type + '</span></div>' +
           '<div class="meta" style="margin-top:4px">For ' + esc(who) + (w.creating ? ' · new member' : '') + '</div></div>' +
         '<div class="rv"><span class="lbl">Travel &amp; absence dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
@@ -4064,7 +4174,7 @@
           : '<div class="msgs"><div class="msg i">' + icon('check', 15) + '<span>Dates look good — no conflicts.</span></div></div>') +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
       foot = '<button class="btn" data-act="wizEdit">' + icon('pencil', 18) + 'Edit</button>' +
-        '<button class="btn ok" data-act="wizSubmit">' + icon('check', 18) + (w.editId ? 'Save' : 'Submit') + '</button>';
+        '<button class="btn ok" data-act="wizSubmit">' + icon('check', 18) + (w.editId || w.editBoId ? 'Save' : isBo ? 'Add blackout' : 'Submit') + '</button>';
     }
     openModal('wizard', head + '<div class="modal-b">' + body + '</div><div class="modal-f">' + foot + '</div>', true);
   }
@@ -4101,14 +4211,14 @@
       const edge = d === w.start || d === w.end;
       const st = q ? wizDayState(d) : 'ok';
       const first = d === w.start, last = d === w.end || (!D.valid(w.end) && d === w.start);
-      html += '<button type="button" data-act="miniPick" data-date="' + d + '" class="' + [d.slice(0, 7) !== ms.slice(0, 7) ? 'out' : '', d === S.today ? 'today' : '', blackoutsOn(d, w.type).length ? 'bo' : '', inR ? 'in rg-' + st : '', first ? 'r-s' : '', last ? 'r-e' : '', !inR && st !== 'ok' ? 'dot-' + st : ''].join(' ') + '"' +
+      html += '<button type="button" data-act="miniPick" data-date="' + d + '" class="' + [d.slice(0, 7) !== ms.slice(0, 7) ? 'out' : '', d === S.today ? 'today' : '', blackoutsOn(d, w.type === 'Blackout' ? '' : w.type).filter(b => b.id !== w.editBoId).length ? 'bo' : '', inR ? 'in rg-' + st : '', first ? 'r-s' : '', last ? 'r-e' : '', !inR && st !== 'ok' ? 'dot-' + st : ''].join(' ') + '"' +
         (st !== 'ok' ? ' title="' + esc(role + (st === 'full' ? ' leave slots already full' : ' leave would go over the daily max')) + '"' : '') + '>' + Number(d.slice(8)) + '</button>';
     }
     // Colour key only (leave with a daily max); each swatch stays with its label when wrapping.
-    const anyBo = blackouts().some(b => (b.types === 'Both' || b.types === w.type) && b.end >= gs && b.start <= D.add(gs, 41));
+    const anyBo = blackouts().some(b => b.id !== w.editBoId && (w.type === 'Blackout' || b.types === 'Both' || b.types === w.type) && b.end >= gs && b.start <= D.add(gs, 41));
     return html + '</div>' + (q || anyBo ? '<div class="mini-key">' + (q ? '<span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-over"></span>Overbooks</span><span class="mk-i"><span class="mk mk-full"></span>Full</span>' : '') +
       (anyBo ? '<span class="mk-i"><span class="mk mk-bo"></span>Blackout</span>' : '') + '</div>' : '') + '</div>' +
-      (w.creating ? '' : leaveTally(w.assigneeId, w.type, w.start, w.end, w.editId));
+      (w.creating || w.type === 'Blackout' ? '' : leaveTally(w.assigneeId, w.type, w.start, w.end, w.editId));
   }
   function renderWizStatus() {
     const c = wizCheck();
@@ -4218,8 +4328,12 @@
       const id = el.dataset.id;
       S.nextSyncTab = 'admin';
       save(() => { S.settings.blackouts = blackouts().filter(b => b.id !== id); }, 'apiDeleteBlackout', S.token, id);
-      render();
+      if (S.modal === 'blackout') closeModal();
+      render(); toast('Blackout deleted');
     },
+    openBlackout(el) { openBlackout(el.dataset.id); },
+    editBlackout(el) { if (S.isAdmin) openBlackoutWizard(el.dataset.id); },
+    newBlackout() { if (S.isAdmin) openBlackoutWizard(); },
     allowBlackout(el) {
       const id = el.dataset.id, r = S.requests.find(x => x.id === id);
       if (!r) return;
@@ -4607,8 +4721,11 @@
       if (c.errs.length) return err(c.errs[0]);
       w.error = ''; w.step = 3; renderWizard();
     },
+    wizBoTypes(el) { S.wiz.boTypes = el.dataset.v; renderWizard(); },
     wizEditType(el) {
+      const was = S.wiz.type;
       S.wiz.type = el.dataset.v;
+      if (was === 'Blackout' || S.wiz.type === 'Blackout') { S.wiz.boTypes = S.wiz.boTypes || 'Both'; S.wiz.note = ($('#wzN') || {}).value || S.wiz.note; renderWizard(); return; }
       $$('#modal [data-act="wizEditType"]').forEach(b => b.classList.toggle('on', b.dataset.v === S.wiz.type));
       refreshWizDates();
     },
@@ -4633,6 +4750,21 @@
     async wizSubmit() {
       const w = S.wiz, c = wizCheck();
       if (c.errs.length) { $('#wizErr').textContent = c.errs[0]; return; }
+      if (w.type === 'Blackout') {
+        const b = { id: w.editBoId || '', start: w.start, end: w.end, types: w.boTypes, note: w.note.trim().slice(0, 80) };
+        showBlocker('Saving…');
+        S.nextSyncTab = 'admin';
+        const data = await save(() => {
+          const list = blackouts().filter(x => x.id !== b.id);
+          S.settings.blackouts = list.concat([Object.assign({}, b, { id: b.id || 'tmp_' + Date.now() })]).sort((x, y) => x.start < y.start ? -1 : 1);
+        }, 'apiSaveBlackout', S.token, b);
+        await saveChain;
+        hideBlocker();
+        if (!data) { if ($('#wizErr')) $('#wizErr').textContent = 'Not saved — check your connection and try again.'; return; }
+        closeModal(); render();
+        toast(w.editBoId ? 'Blackout updated' : 'Blackout added', 'ok', 2200);
+        return;
+      }
       const payload = { type: w.type, start: w.start, end: w.end, note: w.note.trim() };
       let done;
       if (w.editId) {
