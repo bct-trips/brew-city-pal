@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792512428"></script>
+    <script src="config.js?v=1792513660"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1766,6 +1766,16 @@
   .install-steps .ic { display: inline-block; vertical-align: -3px; }
   .wiz-who.wiz-add { margin-top: 8px; width: 100%; }
   .install-fab.on-login { bottom: calc(env(safe-area-inset-bottom) + 20px); }
+  /* Notifications: each row has a ✕ to delete it; "Clear all" above the list deletes every one. */
+  .note-item { position: relative; border-bottom: 1px solid var(--line); }
+  .note-item:last-child { border-bottom: 0; }
+  .note-item .note-row { border-bottom: 0; padding-right: 54px; }
+  .note-item:last-child .note-row { border-radius: 0 0 14px 14px; }
+  .note-x { position: absolute; right: 6px; bottom: 8px; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 20px;
+    background: none; color: var(--muted); cursor: pointer; }
+  .note-x:hover { background: color-mix(in srgb, var(--on-surface) 8%, transparent); color: var(--ink); }
+  .notes-lh { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px 4px; border-top: 1px solid var(--line);
+    font-size: 12.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 </style>
 
   </head>
@@ -3976,10 +3986,26 @@
     else if (h === 'notes') { S.view = 'profile'; render(); }
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   }
+  /** Notifications to show: a deleted request takes its notifications with it (only the "deleted" notice stays). */
+  function visibleNotes() {
+    return (S.notes || []).filter(n => {
+      if (!n.requestId || n.kind === 'deleted') return true;
+      const r = findReq(n.requestId);
+      return !!r && r.status !== 'Cancelled';
+    });
+  }
+  /** Take a notifications list from the server; the unread badge counts only what's shown. */
+  function takeNotes(r) { S.notes = r.items; S.unread = visibleNotes().filter(n => !n.read).length; setBadge(); }
+  async function dropNotes(ids) {
+    S.notes = ids === 'all' ? [] : (S.notes || []).filter(n => ids.indexOf(n.id) < 0);
+    S.unread = visibleNotes().filter(n => !n.read).length; setBadge(); redrawNotes(); renderNavOnly();
+    try { takeNotes(await call('apiDeleteNotes', S.token, ids)); redrawNotes(); renderNavOnly(); }
+    catch (e) { toast(e.message, 'error', 5000); loadNotes(); }
+  }
   async function loadNotes() {
     if (S.notesLoading || !S.token) return;
     S.notesLoading = true;
-    try { const r = await call('apiNotifications', S.token); S.notes = r.items; S.unread = r.unread; setBadge(); }
+    try { takeNotes(await call('apiNotifications', S.token)); }
     catch (e) { S.notes = S.notes || []; }
     S.notesLoading = false; redrawNotes(); renderNavOnly();
   }
@@ -4009,14 +4035,16 @@
       : pst === 'off' ? '<button class="btn primary" data-act="pushOn">' + icon('bell', 18) + 'Turn on notifications</button>'
       : pst === 'on' ? '<button class="btn" data-act="pushOff">Turn off</button><button class="btn" data-act="pushTest">Send test</button>'
       : pst === 'busy' ? '<button class="btn primary is-busy" aria-busy="true" tabindex="-1"><span class="btn-spin" aria-hidden="true"></span>Turning on…</button>' : '';
+    const notes = visibleNotes();
     const list = S.notes == null ? '<div class="notes-empty">Loading…</div>'
-      : !S.notes.length ? '<div class="notes-empty">No notifications yet. Approvals, denials and changes to your requests will show up here.</div>'
-      : '<div class="notes-list">' + S.notes.map(n => {
+      : !notes.length ? '<div class="notes-empty">No notifications yet. Approvals, denials and changes to your requests will show up here.</div>'
+      : '<div class="notes-list">' + notes.map(n => {
         const k = NOTE_IC[n.kind] || ['bell', 'info'];
-        return '<button type="button" class="note-row' + (n.read ? '' : ' unread') + '" data-act="noteOpen" data-id="' + esc(n.id) + '" data-req="' + esc(n.requestId || '') + '">' +
+        return '<div class="note-item"><button type="button" class="note-row' + (n.read ? '' : ' unread') + '" data-act="noteOpen" data-id="' + esc(n.id) + '" data-req="' + esc(n.requestId || '') + '">' +
           '<span class="note-ic note-' + k[1] + '">' + icon(k[0], 16) + '</span>' +
           '<span class="note-t"><b>' + esc(n.title) + '</b><span>' + esc(n.body) + '</span></span>' +
-          '<span class="note-time">' + esc(ago(n.ts)) + (n.read ? '' : '<i class="note-dot" aria-label="Unread"></i>') + '</span></button>';
+          '<span class="note-time">' + esc(ago(n.ts)) + (n.read ? '' : '<i class="note-dot" aria-label="Unread"></i>') + '</span></button>' +
+          '<button type="button" class="note-x" data-act="noteDel" data-id="' + esc(n.id) + '" aria-label="Delete notification: ' + esc(n.title) + '" title="Delete">' + icon('x', 16) + '</button></div>';
       }).join('') + '</div>';
     return '<div class="notes-h"><h3>' + icon('bell', 16) + ' Notifications' + (S.unread ? '<span class="ct">' + S.unread + ' new</span>' : '') + '</h3>' +
         (S.unread ? '<button class="btn ghost sm" data-act="notesAllRead">Mark all read</button>' : '') + '</div>' +
@@ -4028,6 +4056,7 @@
         }).join('') + '</div></div>' +
       (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin alerts</b> — new requests, member edits and deletions, new accounts.</p><div class="push-btns">' +
         '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' : '') +
+      (notes.length ? '<div class="notes-lh"><span>Recent</span><button class="btn ghost sm" data-act="notesClear">' + icon('trash', 14) + 'Clear all</button></div>' : '') +
       list;
   }
   const b64ToU8 = b => { const s = atob(b.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((b.length + 3) % 4)); return Uint8Array.from(s, c => c.charCodeAt(0)); };
@@ -4659,8 +4688,11 @@
     },
     async notesAllRead() {
       (S.notes || []).forEach(n => { n.read = true; }); S.unread = 0; setBadge(); redrawNotes(); renderNavOnly();
-      try { const r = await call('apiMarkNotesRead', S.token, 'all'); S.notes = r.items; S.unread = r.unread; setBadge(); redrawNotes(); } catch (e) { /* next refresh fixes it */ }
+      try { takeNotes(await call('apiMarkNotesRead', S.token, 'all')); redrawNotes(); } catch (e) { /* next refresh fixes it */ }
     },
+    // Delete one notification, or all of them: gone at once, then removed on the server.
+    noteDel(el) { dropNotes([el.dataset.id]); },
+    notesClear() { if (confirm('Delete all your notifications?')) dropNotes('all'); },
     nav(el) {
       const v = el.dataset.v;
       if (v === 'calendar') S.cal = 'month'; // the Calendar tab always returns to Month view
