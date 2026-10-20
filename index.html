@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792493172"></script>
+    <script src="config.js?v=1792493216"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3517,7 +3517,7 @@
     const bad = [...reqConflicts(r).values()].filter(c => c.bad).length;
     const longDate = d => D.f(d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     // Same layout as the request form (DESIGN.md §Request details): who, type, calendar, dates, notes — read-only.
-    const html = modalHead(escr.type, r.type === 'Leave' ? 'calendar' : 'clipboard') +
+    const html = modalHead(esc(r.type), r.type === 'Leave' ? 'calendar' : 'clipboard') +
       '<div class="modal-b req-view">' +
       '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request for</div>' +
         '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(lastName(u) + ', ' + firstName(u) + ' · ' + u.rank) + '</span>' +
