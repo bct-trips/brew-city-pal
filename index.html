@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792493158"></script>
+    <script src="config.js?v=1792493172"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2670,7 +2670,7 @@
   const isNow = r => r.status !== 'Denied' && r.start <= S.today && r.end >= S.today;
   function describe(r) {
     const u = userOf(r.userId);
-    return fullName(u) + ', ' + ({ Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' })[u.role] + ', ' + (r.type === 'Leave' ? 'Leave' : 'Pass') + ', ' + r.status + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
+    return fullName(u) + ', ' + ({ Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' })[u.role] + ', ' + r.type + ', ' + r.status + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
       (dupsOf(r).length ? ', overlap' : '');
   }
   const dupsOf = r => (IDX.dups && IDX.dups.get(r.id)) || [];
@@ -2804,7 +2804,7 @@
     const bar = (r, d) => {
       const first = d === r.start, last = d === r.end, lbl = first || D.dow(d) === 0 || d.slice(8) === '01';
       const cls = ['qbar', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : ''].join(' ');
-      return '<span class="' + cls + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' + (lbl ? '<span>' + (r.type === 'Leave' ? 'Leave' : 'Pass') + '</span>' : '') + '</span>';
+      return '<span class="' + cls + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' + (lbl ? '<span>' + r.type + '</span>' : '') + '</span>';
     };
     return key + '<div class="quad' + (person ? ' q-person' : '') + '">' + months.map(m0 => {
       const gs = D.weekStart(m0), mon = m0.slice(0, 7);
@@ -2860,7 +2860,7 @@
           const a = D.diff(ws, D.max(r.start, ws)) + 1, z = D.diff(ws, D.min(r.end, we)) + 2;
           const cls = ['wpuck', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : '', isNow(r) ? 'now' : ''].join(' ');
           return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-            '<span class="n">' + personBadge(r) + '</span><span class="s">' + (r.type === 'Leave' ? 'Leave' : 'Pass') + ' · ' + r.status + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span></div>';
+            '<span class="n">' + personBadge(r) + '</span><span class="s">' + r.type + ' · ' + r.status + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span></div>';
         }).join('');
         const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
         return '<div class="band band-' + b[0][0].toLowerCase() + '"><div class="band-title"><span class="band-tag">' + b[0][0] + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></div>' +
@@ -3517,7 +3517,7 @@
     const bad = [...reqConflicts(r).values()].filter(c => c.bad).length;
     const longDate = d => D.f(d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     // Same layout as the request form (DESIGN.md §Request details): who, type, calendar, dates, notes — read-only.
-    const html = modalHead(esc(r.type === 'Leave' ? 'Leave' : 'Pass'), r.type === 'Leave' ? 'calendar' : 'clipboard') +
+    const html = modalHead(escr.type, r.type === 'Leave' ? 'calendar' : 'clipboard') +
       '<div class="modal-b req-view">' +
       '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request for</div>' +
         '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(lastName(u) + ', ' + firstName(u) + ' · ' + u.rank) + '</span>' +
@@ -3660,7 +3660,7 @@
       const c = wizCheck();
       const who = w.creating ? (w.nu.rank + ' ' + w.nu.name + ' (' + w.nu.unit + ')') : fullName(userOf(w.assigneeId));
       body = '<div class="review">' +
-        '<div class="rv"><span class="lbl">Requested absence type</span><div class="big"><span class="badge t-' + w.type.toLowerCase() + '" style="font-size:12px">' + w.type + '</span>' + (w.type === 'Leave' ? 'Leave' : 'Pass') + '</div>' +
+        '<div class="rv"><span class="lbl">Requested absence type</span><div class="big"><span class="badge t-' + w.type.toLowerCase() + '" style="font-size:12px">' + w.type + '</span></div>' +
           '<div class="meta" style="margin-top:4px">For ' + esc(who) + (w.creating ? ' · new member' : '') + '</div></div>' +
         '<div class="rv"><span class="lbl">Travel &amp; absence dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
           '<div style="margin-top:4px;font-weight:700">' + plural(c.n, 'day') + '</div></div>' +
