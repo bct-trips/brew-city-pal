@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792504700"></script>
+    <script src="config.js?v=1792505094"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1220,7 +1220,7 @@
      instead of fading the controls; the bottom (home indicator) area is the nav's own colour. */
   #app { padding-top: env(safe-area-inset-top, 0px); box-sizing: border-box; }
   #app::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--card); z-index: 50; pointer-events: none; }
-  html, body { background: var(--nav-bg); }
+  html, body { background: var(--navy); } /* below the nav bar on phones (home indicator) */
 
   /* Request form, date step: calendar first, compact date fields under it. */
   .wiz-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 2px 0 8px; }
@@ -1558,13 +1558,21 @@
   .y-pend { background: var(--rg-over); color: var(--rg-over-ink); }
   .y-den { background: var(--no-bg); color: var(--no-ink); }
   :root[data-theme="dark"] .y-ap-leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
-  /* Admin mode: the nav bar turns Brewers navy with a yellow selection pill, so it's obvious admin powers are unlocked. */
-  .nav.nav-admin { background: var(--navy); border-top-color: var(--navy); }
-  .nav.nav-admin button { color: #c9d3e8; }
-  .nav.nav-admin button.on { color: #ffffff; }
-  .nav.nav-admin button:hover .nav-ic { background: rgba(255, 255, 255, .10); }
-  .nav.nav-admin button.on .nav-ic { background: var(--gold); color: var(--navy); }
-  :root[data-theme="dark"] .nav.nav-admin { border-top: 1px solid var(--navy-edge); }
+  /* Nav bar: Brewers navy for everyone, Brewers brick (#7C2529, PMS 1815 C) in admin mode. Light labels, yellow selection pill.
+     --nav-bg is set on the bar itself so the badge rings and the home-indicator strip match its colour. */
+  :root { --brick: #7C2529; }
+  .nav { --nav-bg: var(--navy); background: var(--nav-bg); border-top: 1px solid var(--nav-bg); }
+  .nav.nav-admin { --nav-bg: var(--brick); }
+  :root[data-theme="dark"] .nav { border-top-color: rgba(255, 255, 255, .14); }
+  .nav button { color: #c9d3e8; }
+  .nav.nav-admin button { color: #f1d6d3; }
+  .nav button.on, .nav.nav-admin button.on { color: #ffffff; }
+  .nav button:hover .nav-ic { background: rgba(255, 255, 255, .10); }
+  .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: var(--gold); color: var(--navy); }
+  .nav .dot { background: var(--gold); color: var(--navy); }
+  .nav .dot.warn { background: #ffffff; color: #c2410c; }
+  .nav .nav-ic.syncing::after { border-color: rgba(255, 255, 255, .25); border-top-color: #ffffff; }
+  .nav button.on .nav-ic.syncing::after { border-color: color-mix(in srgb, var(--navy) 25%, transparent); border-top-color: var(--navy); }
   .modal.modal-wide:has(.y-grid) { max-width: 1100px; }
   @media (min-width: 900px) { .y-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   /* My Requests: List | Calendar ("Cal" on phones) in the filter row, at every width. */
@@ -1588,6 +1596,10 @@
   .day-avail.av-open i { background: var(--av-open-dot, #22c55e); } .day-avail.av-over i { background: var(--av-over-dot, #f59e0b); } .day-avail.av-full i { background: var(--av-full-dot, #ef4444); }
   .cfg-row-tog { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
   .cfg-row-tog .chip-tog { flex: none; }
+  .stats-bar .manage-btn { flex: none; }
+  .manage-ct { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--gold); color: var(--navy); font-size: 12px; display: inline-grid; place-items: center; }
+  @media (max-width: 700px) { .stats-bar .manage-btn { padding: 0 14px 0 10px; } }
+  .cfg-note { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; color: var(--warn); }
 </style>
 
   </head>
@@ -1851,6 +1863,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
+  const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
     const fail = (err, reject) => {
@@ -1858,10 +1871,13 @@
       const msg = raw.replace(/^(Exception|Error):\s*/i, '');
       if (/AUTH:/.test(msg)) { signOutLocal(); return reject(new Error(msg.replace(/.*AUTH:\s*/, ''))); }
       if (/MUSTCHANGE:/.test(msg)) { closeModal(); showSetPin(null); return reject(new Error('Set a new PIN to continue.')); }
+      if (/^Unknown action\.?$/.test(msg)) return reject(new Error(OUTDATED));
       reject(new Error(msg));
     };
     return new Promise((resolve, reject) => {
       if (window.google && google.script && google.script.run) {
+        // A server function the page expects but the deployed Code.gs doesn't have yet = old server code.
+        if (typeof google.script.run[fn] !== 'function') return reject(new Error(OUTDATED));
         google.script.run.withSuccessHandler(resolve).withFailureHandler(err => fail(err, reject))[fn].apply(null, args);
         return;
       }
@@ -2220,7 +2236,7 @@
     if (S.view === 'profile') return renderProfile();
     return renderCalendar();
   }
-  const navOn = v => S.view === v || (v === 'admin' && S.view === 'roster'); // Roster lives under the Admin tab
+  const navOn = v => S.view === v || (v === 'people' && S.view === 'roster'); // Manage roster lives under the Roster tab
   function renderNav() {
     const pending = IDX.live.filter(r => r.status === 'Pending').length;
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
@@ -3368,6 +3384,9 @@
       '<div class="lsearch">' + icon('search', 16) + '<input type="search" placeholder="Search name, rank, unit…" value="' + esc(P.q) + '" data-model="people.q" data-live="peopleRefresh" aria-label="Search members"></div>' +
       seg([['12m', '12 mo'], ['fy', fy], ['cy', cy], ['all', 'All']], P.period, 'peoplePeriod').replace('role="group"', 'role="group" aria-label="Period"') +
       '<button type="button" class="btn chip-tog' + (P.inactive ? ' on' : '') + '" aria-pressed="' + !!P.inactive + '" data-act="peopleInactive">' + (P.inactive ? icon('check', 18) : '') + 'Inactive</button>' +
+      // Manage roster (add / edit / approve / reset PIN) lives here now; it shows how many sign-ups are waiting.
+      '<button type="button" class="btn primary manage-btn" data-act="openRoster">' + icon('userPlus', 18) + 'Manage' +
+        (S.users.some(u => u.pending) ? ' <b class="manage-ct">' + S.users.filter(u => u.pending).length + '</b>' : '') + '</button>' +
       '</div><div class="tbl-page" id="peopleBody">' + renderPeopleBody() + '</div></section>';
   }
 
@@ -3403,7 +3422,7 @@
     }
   }
 
-  /* Roster page (admin): add members, edit, reset PINs, deactivate / reactivate. Opened from Admin → Squadron roster. */
+  /* Roster page (admin): add members, edit, reset PINs, deactivate / reactivate. Opened from the Roster tab → Manage. */
   function renderRoster() {
     // Open on "Inactive" when sign-ups are waiting, so they're easy to approve.
     const show = S.rosterShow || (S.users.some(u => u.pending) ? 'inactive' : 'active');
@@ -3414,7 +3433,7 @@
     const act = (a, id, ic, short, who, cls) => '<button class="btn sm act' + (cls ? ' ' + cls : '') + '" data-act="' + a + '" data-id="' + esc(id) + '" aria-label="' + esc(short + ' ' + who) + '" title="' + esc(short + ' ' + who) + '">' + icon(ic, 16) + '<span class="bl">' + short + '</span></button>';
     const n = { active: S.users.filter(u => u.active).length, inactive: S.users.filter(u => !u.active).length, all: S.users.length };
     return '<section class="page admin-page roster-page"><div class="toolbar">' +
-      '<button class="btn act" data-act="backAdmin" aria-label="Back to Admin" title="Back to Admin">' + icon('left', 18) + '<span class="bl">Admin</span></button>' +
+      '<button class="btn act" data-act="backAdmin" aria-label="Back to Roster" title="Back to Roster">' + icon('left', 18) + '<span class="bl">Roster</span></button>' +
       '<span class="title">Manage roster</span>' +
       '<div class="cfg-tools"><button class="btn primary" data-act="editUser" data-id="">' + icon('userPlus', 18) + ' Add member</button></div></div>' +
       '<div class="scroll" id="rosterScroll"><div class="panel">' +
@@ -3445,14 +3464,9 @@
       // Privacy: members see only their own schedule plus day availability. Admins always see everything.
       '<div class="panel"><div class="cfg-row-tog"><div><h3>' + icon('lock', 16) + ' Hide user schedules</h3>' +
         '<p class="cfg-help">Members see only their own requests. Other days show just green, orange or red availability for their position, conflicts show how many other leave requests are involved but never who, and All Requests is hidden. Admin mode always shows everything.</p></div>' +
-        '<button type="button" class="btn chip-tog' + (st.hideSchedules ? ' on' : '') + '" aria-pressed="' + !!st.hideSchedules + '" data-act="hideSchedules">' + (st.hideSchedules ? icon('check', 18) + 'On' : 'Off') + '</button></div></div>' +
+        '<button type="button" class="btn chip-tog' + (st.hideSchedules ? ' on' : '') + '" aria-pressed="' + !!st.hideSchedules + '" data-act="hideSchedules">' + (st.hideSchedules ? icon('check', 18) + 'On' : 'Off') + '</button></div>' +
+        (st.hideSchedules ? '<p class="cfg-help cfg-note">' + icon('alert', 14) + ' You’re in admin mode, so you still see everyone. Lock admin mode (Profile) to see what members see.</p>' : '') + '</div>' +
 
-      // Roster: summary + link to its own page
-      '<div class="panel"><h3>' + icon('users', 16) + ' Squadron roster</h3>' +
-        '<p class="cfg-help">' + (S.users.some(u => u.pending) ? '<b class="cfg-wait">' + S.users.filter(u => u.pending).length + ' awaiting approval</b> · ' : '') +
-          S.users.filter(u => u.active).length + ' active · ' + S.users.filter(u => !u.active && !u.pending).length + ' inactive' +
-          (S.users.some(u => u.mustChange) ? ' · ' + S.users.filter(u => u.mustChange).length + ' must set PIN' : '') + '</p>' +
-        '<div class="cfg-foot"><button class="btn primary" data-act="openRoster">Manage roster ' + icon('right', 18) + '</button></div></div>' +
 
       // Leave limits
       '<div class="panel"><h3>' + icon('sliders', 16) + ' Max on leave per day</h3>' +
@@ -4343,7 +4357,7 @@
       if (prev) prev.className = 'ub ub-' + el.value;
     },
     openRoster() { S.view = 'roster'; S.adq = ''; render(); },
-    backAdmin() { S.view = 'admin'; render(); },
+    backAdmin() { S.view = 'people'; render(); }, // Manage roster ← Roster tab
     rosterShow(el) { S.rosterShow = el.dataset.v; render(); },
     adFilter() {
       const q = (S.adq || '').trim().toLowerCase();
