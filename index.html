@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792528649"></script>
+    <script src="config.js?v=1792528981"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2952,10 +2952,29 @@
     const inGroup = new Set(groups.flat().map(r => r.id));
     return { groups, solo: reqs.filter(r => !inGroup.has(r.id)) };
   }
-  /** One shared bar's label: each person's badge (tap to open their request), separated by "/". */
+  /** One shared bar's label. People with the same position AND unit share one badge — [P|MKE|Ilich, N · Ilich, L] —
+   *  and different position/unit pairs get their own badge, separated by "/". Each name opens that person's request. */
   function groupBadges(list, withStatus, from, to) {
-    return list.map(r => '<span class="gb" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-      personBadge(r, withStatus, from, to) + '</span>').join('<span class="gsl" aria-hidden="true">/</span>');
+    const buckets = [];
+    list.forEach(r => {
+      const u = userOf(r.userId), k = (u.role || 'Other') + '|' + u.unit;
+      const b = buckets.find(x => x.k === k);
+      if (b) b.list.push(r); else buckets.push({ k, u, list: [r] });
+    });
+    return buckets.map(b => {
+      if (b.list.length === 1) {
+        const r = b.list[0];
+        return '<span class="gb" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
+          personBadge(r, withStatus, from, to) + '</span>';
+      }
+      const L = (b.u.role || 'Other')[0], un = unitsList().find(x => x.code === b.u.unit), r0 = b.list[0];
+      const same = b.list.every(r => r.status === r0.status);
+      const names = b.list.map(r => '<span class="mn" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
+        barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + '</span>').join('<span class="rp-dot" aria-hidden="true">·</span>');
+      return '<span class="idb pb gbb' + (same ? ' st-' + r0.status.toLowerCase() : '') + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
+        '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(b.u.unit) + '</span>' +
+        '<span class="idb-n">' + names + (withStatus && same ? statusIcon(r0.status) : '') + '</span></span>';
+    }).join('<span class="gsl" aria-hidden="true">/</span>');
   }
   /** split = true: every request that starts this week is its own continuous bar. Requests carried over from the
    *  previous week are always merged into one shared middle bar per type (Leave / Pass) at the start of the row. */
