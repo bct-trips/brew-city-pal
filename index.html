@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792492700"></script>
+    <script src="config.js?v=1792492964"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1858,8 +1858,8 @@
     reindex();
     // Default the position filters to the signed-in member's own position (once per sign-in / account switch).
     if (S.filtersFor !== S.me) {
-      // Default view: Pilots and Booms (Other is opt-in). Clear filters shows everything.
-      S.f.role = ['Pilot', 'Boom'];
+      // Default view: Pilots and Booms (Other is opt-in); Clear filters returns here.
+      S.f.role = DEFAULT_ROLES.slice();
       S.filtersFor = S.me;
     }
   }
@@ -2291,14 +2291,28 @@
       : plural(n, 'request') + ' over the daily max') + '</span>' +
       '<button type="button" class="btn icon-btn conf-x" data-act="confOff" aria-label="Leave conflict mode" title="Leave conflict mode">' + icon('x', 18) + '</button></div>';
   }
+  /* Default filters: Pilots and Booms (Other is opt-in), all statuses, Leave and Pass, nobody picked, conflict mode off.
+     Clear filters returns to exactly this, and only shows when the filters differ from it. */
+  const DEFAULT_ROLES = ['Pilot', 'Boom'];
+  function setDefaultFilters(st) {
+    st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
+    if (st.role) st.role = DEFAULT_ROLES.slice();
+    if ('person' in st) st.person = '';
+    if ('conf' in st) st.conf = false;
+  }
+  function isDefaultFilters(st) {
+    const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+    return same(st.status, FILTERS[0].opts.map(o => o[0])) && same(st.type, ['Leave', 'Pass']) &&
+      (!st.role || same(st.role, DEFAULT_ROLES)) && !st.person && !st.conf;
+  }
   function filterButton(sc) {
     const parts = filterSummary(sc);
     // A person filter hides everyone else, so the button turns Brewers yellow (same as the person pill on desktop).
     const st = fState(sc), person = !!st.person && !st.conf;
     return '<button type="button" class="fsel fdrop-btn fall' + (parts.length ? ' on' : '') + (person ? ' fp-active' : '') + '" data-act="openFilters"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Filters: ' + esc(parts.join(' · ') || 'showing everything') + '">' +
       icon('sliders', 16) + '<span>' + esc(parts.length ? parts.join(' · ') : 'Filters') + '</span>' + icon('down', 14) + '</button>' +
-      // Clear filters: back to every position, person, status and both Leave and Pass. Only while something is filtered.
-      (parts.length ? '<button type="button" class="btn fall-clear" data-act="clearFilters"' + scAttr(sc) + ' aria-label="Clear filters and show everything" title="Clear filters">' + icon('x', 18) + '<span class="bl">Clear</span></button>' : '');
+      // Clear filters: back to the defaults (Pilots + Booms, everyone, all statuses, Leave and Pass). Only when filters differ from that.
+      (!isDefaultFilters(st) ? '<button type="button" class="btn fall-clear" data-act="clearFilters"' + scAttr(sc) + ' aria-label="Clear filters and show everything" title="Clear filters">' + icon('x', 18) + '<span class="bl">Clear</span></button>' : '');
   }
   function openFilterSheet(sc, inPlace) {
     S.openDrop = null; S.fsScope = sc || 'cal';
@@ -3824,14 +3838,7 @@
       closeModal(); render();
     },
     openFilters(el) { openFilterSheet(el.dataset.scope); },
-    clearFilters(el) {
-      const st = fState(el.dataset.scope);
-      st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
-      if (st.role) st.role = FILTERS[1].opts.map(o => o[0]);
-      if ('person' in st) st.person = '';
-      if ('conf' in st) st.conf = false;
-      render();
-    },
+    clearFilters(el) { setDefaultFilters(fState(el.dataset.scope)); render(); },
     resetFilters(el) {
       const st = fState(el.dataset.scope);
       st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
