@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792511300"></script>
+    <script src="config.js?v=1792511489"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1225,7 +1225,7 @@
      instead of fading the controls; the bottom (home indicator) area is the nav's own colour. */
   #app { padding-top: env(safe-area-inset-top, 0px); box-sizing: border-box; }
   #app::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--card); z-index: 50; pointer-events: none; }
-  html, body { background: var(--navy); } /* below the nav bar on phones (home indicator) */
+  html, body { background: var(--bg); } /* the nav bar pads itself over the home indicator, so nothing navy shows around the app */
 
   /* Request form, date step: calendar first, compact date fields under it. */
   .wiz-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 2px 0 8px; }
@@ -1574,6 +1574,9 @@
   .nav { --nav-bg: var(--navy); background: var(--nav-bg); border-top: 1px solid var(--nav-bg); }
   .nav.nav-admin { --nav-bg: var(--brick); }
   :root[data-theme="dark"] .nav { border-top-color: rgba(255, 255, 255, .14); }
+  /* Dark mode: the regular nav bar is dark (not navy); admin mode stays brick so it's still obvious. */
+  :root[data-theme="dark"] .nav:not(.nav-admin) { --nav-bg: #1d1e24; }
+  :root[data-theme="dark"] .nav:not(.nav-admin) button:not(.on) { color: #c5c6d0; }
   .nav button { color: #c9d3e8; }
   .nav.nav-admin button { color: #f1d6d3; }
   .nav button.on, .nav.nav-admin button.on { color: #ffffff; }
@@ -1656,7 +1659,7 @@
 
   /* Button spinner (busy() in App.html): a ring in the button's own text colour replaces its icon while it waits on the
      server. The button keeps its colours (it isn't greyed out) and ignores taps. */
-  .is-busy { pointer-events: none; cursor: progress; }
+  .is-busy, .is-waiting { pointer-events: none; cursor: progress; }
   .is-busy > .ic { display: none; }
   .btn-spin { flex: none; display: inline-block; width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box;
     border: 2px solid color-mix(in srgb, currentColor 28%, transparent); border-top-color: currentColor; animation: spin .7s linear infinite; }
@@ -1743,6 +1746,13 @@
   /* Long server messages (URLs, scope names) wrap inside the toast instead of running off the screen. */
   #toast { width: max-content; max-width: calc(100vw - 32px); }
   #toast > div > span { min-width: 0; overflow-wrap: anywhere; }
+  /* Request form calendar: swiping slides the new month in from the side it came from. */
+  .mini-g.mini-in-r { animation: miniInR .18s ease-out; }
+  .mini-g.mini-in-l { animation: miniInL .18s ease-out; }
+  @keyframes miniInR { from { transform: translateX(24px); opacity: .3; } }
+  @keyframes miniInL { from { transform: translateX(-24px); opacity: .3; } }
+  @media (prefers-reduced-motion: reduce) { .mini-g.mini-in-r, .mini-g.mini-in-l { animation: none; } }
+  .wiz-sheet #wizMini .mini { touch-action: pan-y; overflow: hidden; }
 </style>
 
   </head>
@@ -2072,6 +2082,20 @@
     try { return await work(); }
     finally { if (btn) { btn.classList.remove('is-busy'); btn.removeAttribute('aria-busy'); if (sp) sp.remove(); } }
   }
+  /** Sign-in screens: while the server works, the arc runs around the squadron logo instead of a spinner on the button.
+   *  The button still ignores taps (and Enter) until it finishes. */
+  async function authBusy(btn, work) {
+    const logo = $('.login .brand-logo');
+    if (!logo) return busy(btn, work);
+    if (btn && btn.classList.contains('is-waiting')) return undefined;
+    if (btn) { btn.classList.add('is-waiting'); btn.setAttribute('aria-busy', 'true'); }
+    logo.classList.add('logo-loading');
+    try { return await work(); }
+    finally {
+      logo.classList.remove('logo-loading');
+      if (btn) { btn.classList.remove('is-waiting'); btn.removeAttribute('aria-busy'); }
+    }
+  }
   /** Call the server with a spinner on btn; returns null on failure (error is toasted). */
   async function run(btn, fn) {
     if (S.busy) return null;
@@ -2256,7 +2280,7 @@
       const ln = $('#lgLast').value.trim(), pin = $('#lgPin').value.trim();
       if (!ln || !pin) { $('#lgErr').textContent = 'Enter your last name and PIN.'; return; }
       $('#lgErr').textContent = '';
-      await busy(ev.target.querySelector('button[type=submit]'), async () => {
+      await authBusy(ev.target.querySelector('button[type=submit]'), async () => {
         try {
           const res = await call('apiLogin', ln, pin);
           store.set('lastName', ln);
@@ -2283,7 +2307,7 @@
       ev.preventDefault();
       const f = $('#inFirst').value.trim(), m = mid ? $('#inMid').value.trim() : '';
       if (!/^[a-z]$/i.test(f) || (mid && !/^[a-z]$/i.test(m))) { $('#inErr').textContent = 'Enter a single letter.'; return; }
-      await busy(ev.target.querySelector('button[type=submit]'), async () => {
+      await authBusy(ev.target.querySelector('button[type=submit]'), async () => {
         try { afterAuth(await call('apiLogin', ln, pin, f, m), ln, pin, f); }
         catch (e) { $('#inErr').textContent = e.message; }
       });
@@ -2296,16 +2320,18 @@
     $('#toLogin').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); showLogin(); });
     $$('.chooser [data-uid]').forEach(b => b.addEventListener('click', async ev => {
       ev.preventDefault(); ev.stopPropagation();
-      if ($('.chooser .is-busy')) return;
-      await busy(b, async () => {
+      if ($('.chooser .is-waiting')) return;
+      await authBusy(b, async () => {
         try { afterAuth(await call('apiLoginAs', ln, pin, b.dataset.uid)); } catch (e) { $('#chErr').textContent = e.message; }
       });
     }));
   }
   async function showRegister() {
-    authShell('<div class="muted auth-loading" id="rgBody"><span class="btn-spin" aria-hidden="true"></span>Loading…</div>');
+    authShell('<div class="muted auth-loading" id="rgBody">Loading…</div>');
     let cfg;
+    $('.login .brand-logo').classList.add('logo-loading');
     try { cfg = await call('apiPublicConfig'); } catch (e) { $('#rgBody').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; return; }
+    finally { const l = $('.login .brand-logo'); if (l) l.classList.remove('logo-loading'); }
     const sel = (id, opts) => '<select id="' + id + '">' + opts.map(o => '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>').join('') + '</select>';
     $('#rgBody').outerHTML = '<form id="regForm" autocomplete="on"><h2 class="auth-h">Create an account</h2>' +
       '<div class="row"><div class="field"><label for="rgFirst">First name</label><input id="rgFirst" autocomplete="given-name"></div>' +
@@ -2330,7 +2356,7 @@
       if (!reg.first || !reg.last) return (err.textContent = 'Enter your first and last name.');
       if (!/^\d{4,8}$/.test(reg.pin)) return (err.textContent = 'Enter the squadron’s default PIN (4–8 digits).');
       err.textContent = '';
-      await busy(ev.target.querySelector('button[type=submit]'), async () => {
+      await authBusy(ev.target.querySelector('button[type=submit]'), async () => {
         try { store.set('lastName', reg.last); afterAuth(await call('apiRegister', reg)); }
         catch (e) { err.textContent = e.message; }
       });
@@ -2352,7 +2378,7 @@
       if (!/^\d{4,8}$/.test(a)) return (err.textContent = 'PIN must be 4–8 digits.');
       if (a !== b) return (err.textContent = 'The two PIN entries do not match.');
       err.textContent = '';
-      await busy(ev.target.querySelector('button[type=submit]'), async () => {
+      await authBusy(ev.target.querySelector('button[type=submit]'), async () => {
         try { apply(await call('apiChangePin', S.token, a, b)); render(); toast('PIN saved'); }
         catch (e) { err.textContent = e.message; $('#spPin').value = ''; $('#spPin2').value = ''; $('#spPin').focus(); }
       });
@@ -4454,6 +4480,27 @@
       swipeCue(dx < 0 ? 'right' : 'left');
     }, { passive: true });
   })();
+  /* Request form: swipe the small calendar left / right for the next / previous month. */
+  let miniSwipedAt = 0;
+  (function () {
+    let sx = 0, sy = 0, st = 0, on = false;
+    document.addEventListener('touchstart', ev => {
+      const t = ev.touches[0];
+      on = ev.touches.length === 1 && S.modal === 'wizard' && !!S.wiz && !!ev.target.closest('#wizMini .mini');
+      if (on) { sx = t.clientX; sy = t.clientY; st = Date.now(); }
+    }, { passive: true });
+    document.addEventListener('touchend', ev => {
+      if (!on) return;
+      on = false;
+      const t = ev.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Date.now() - st > 700 || Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      miniSwipedAt = Date.now(); // a swipe that ends on a day must not also pick it
+      S.wiz.mini = D.addMonths(S.wiz.mini, dx < 0 ? 1 : -1);
+      refreshWizDates();
+      const g = $('#wizMini .mini-g');
+      if (g) g.classList.add(dx < 0 ? 'mini-in-r' : 'mini-in-l');
+    }, { passive: true });
+  })();
 
   const A = {
     async pushOn() {
@@ -4953,6 +5000,7 @@
     },
     miniNav(el) { S.wiz.mini = D.addMonths(S.wiz.mini, Number(el.dataset.v)); refreshWizDates(); },
     miniPick(el) {
+      if (Date.now() - miniSwipedAt < 400) return;
       const w = S.wiz, d = el.dataset.date;
       // First tap = Departure (Return stays empty); second tap = Return. Tap the same day twice for a one-day request.
       if (!w.picking) { w.start = d; w.end = ''; w.picking = true; }
