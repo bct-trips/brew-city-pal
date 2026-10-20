@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792526310"></script>
+    <script src="config.js?v=1792526708"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1650,13 +1650,19 @@
   :root[data-theme="dark"] .login-card h1 { color: #ffffff; }
   .login-card .linkbtn, .auth-alt .linkbtn { color: var(--brick); font-weight: 700; }
   :root[data-theme="dark"] .login-card .linkbtn, :root[data-theme="dark"] .auth-alt .linkbtn { color: var(--gold); }
-  /* Loading (.logo-loading): the squadron logo NEVER spins. A brick arc runs around the white rim of the patch's inner
-     circle (the disc with the bolt), measured from the logo image: centre 50% across / 44.7% down, rim from 39.8% to
-     42.1% of the logo's width. Used on the opening splash and the Submitting / Saving cover. */
-  .logo-loading { position: relative; container-type: inline-size; }
-  .logo-loading::after { content: ""; position: absolute; left: 7.9%; top: 2.6%; width: 84.2%; height: 84.2%; box-sizing: border-box;
-    border-radius: 50%; border: 2.4cqi solid transparent; border-top-color: var(--brick); border-right-color: var(--brick);
-    animation: spin 1.1s linear infinite; }
+  /* Loading (.logo-loading): the squadron logo NEVER spins. A brick arc sweeps around the white rim of the patch's inner
+     circle (the disc with the bolt). The rim was fitted all the way round on the full-size logo: it's a very slightly tall
+     ellipse, centre 50.00% across / 44.87% down, white band from 39.71%–42.09% (across) and 40.01%–42.37% (down) of the
+     logo's width. The ring shape covers the band plus a hair each side and stays still (a rotating ellipse would wobble
+     off the rim); only the arc moves, by turning the conic gradient (--arc-a). Used on the splash, sign-in screens and
+     the Submitting cover. */
+  @property --arc-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+  .logo-loading { position: relative; }
+  .logo-loading::after { content: ""; position: absolute; left: 7.61%; top: 2.20%; width: 84.78%; height: 85.34%; border-radius: 50%;
+    background: conic-gradient(from var(--arc-a), var(--brick) 0deg 110deg, transparent 110deg 360deg);
+    -webkit-mask: radial-gradient(farthest-side, transparent 92.9%, #000 93.1%); mask: radial-gradient(farthest-side, transparent 92.9%, #000 93.1%);
+    animation: arcSweep 1.1s linear infinite; }
+  @keyframes arcSweep { to { --arc-a: 360deg; } }
   @media (prefers-reduced-motion: reduce) { .logo-loading::after { animation-duration: 3s; } }
   .blocker-logo { display: block; width: 112px; height: 112px; }
 
@@ -1779,9 +1785,13 @@
   .note-x:hover { background: color-mix(in srgb, var(--on-surface) 8%, transparent); color: var(--ink); }
   .notes-lh { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px 4px; border-top: 1px solid var(--line);
     font-size: 12.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-  /* Profile menu (the Profile tab): who you are, then Notifications · Appearance · Settings · Sign out. Bottom sheet on phones. */
-  .pm-sheet { max-width: 440px; }
-  .pm-body { padding: 0 0 8px; }
+  /* Profile menu: a drop-up that opens out of the Profile tab (anchored above it, right-aligned), not a dialog.
+     Who you are, then Notifications · Appearance · Settings · Sign out. */
+  .pm-pop { position: fixed; z-index: 60; width: min(320px, calc(100vw - 16px)); background: var(--card); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 -6px 30px rgba(0, 0, 0, .28); overflow: hidden;
+    transform-origin: bottom right; animation: pmUp .14s ease-out; }
+  @keyframes pmUp { from { opacity: 0; transform: translateY(8px) scale(.97); } }
+  @media (prefers-reduced-motion: reduce) { .pm-pop { animation: none; } }
   .pm-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
   .pm-head .nm { font-weight: 800; font-size: 17px; }
   .pm-row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 0 16px; border: 0; border-bottom: 1px solid var(--line);
@@ -2137,12 +2147,12 @@
     if (btn && btn.classList.contains('is-busy')) return undefined;
     let sp = null;
     if (btn) {
-      btn.classList.add('is-busy'); btn.setAttribute('aria-busy', 'true');
+      btn.classList.add('is-busy'); btn.setAttribute('aria-busy', 'true'); btn.disabled = true; // no double submits
       sp = document.createElement('span'); sp.className = 'btn-spin'; sp.setAttribute('aria-hidden', 'true');
       btn.insertBefore(sp, btn.firstChild);
     }
     try { return await work(); }
-    finally { if (btn) { btn.classList.remove('is-busy'); btn.removeAttribute('aria-busy'); if (sp) sp.remove(); } }
+    finally { if (btn) { btn.classList.remove('is-busy'); btn.removeAttribute('aria-busy'); btn.disabled = false; if (sp) sp.remove(); } } // re-enabled to try again
   }
   /** Sign-in screens: while the server works, the arc runs around the squadron logo instead of a spinner on the button.
    *  The button still ignores taps (and Enter) until it finishes. */
@@ -2150,12 +2160,12 @@
     const logo = $('.login .brand-logo');
     if (!logo) return busy(btn, work);
     if (btn && btn.classList.contains('is-waiting')) return undefined;
-    if (btn) { btn.classList.add('is-waiting'); btn.setAttribute('aria-busy', 'true'); }
+    if (btn) { btn.classList.add('is-waiting'); btn.setAttribute('aria-busy', 'true'); btn.disabled = true; } // no double sign-ins
     logo.classList.add('logo-loading');
     try { return await work(); }
     finally {
       logo.classList.remove('logo-loading');
-      if (btn) { btn.classList.remove('is-waiting'); btn.removeAttribute('aria-busy'); }
+      if (btn) { btn.classList.remove('is-waiting'); btn.removeAttribute('aria-busy'); btn.disabled = false; } // failed: try again
     }
   }
   /** Call the server with a spinner on btn; returns null on failure (error is toasted). */
@@ -4091,23 +4101,44 @@
     const d = $('#notesDrawer'); if (d) d.innerHTML = notesListHtml();
     const m = $('#pmNotesCt'); if (m) m.textContent = S.unread ? S.unread + ' new' : '';
   }
-  /* ---------- Profile menu (the Profile tab): Notifications · Appearance · Settings · Sign out ---------- */
-  function openProfileMenu() {
+  /* ---------- Profile menu: a drop-up that opens out of the Profile tab (not a dialog) ----------
+     Who you are, then Notifications · Appearance (Light / Dark / System) · Settings · Sign out. Tapping outside, Esc or
+     any item (except Appearance) closes it. */
+  function closeProfileMenu() {
+    const m = document.getElementById('pmenu');
+    if (m) m.remove();
+    const b = $('.nav button[data-v="profile"]'); if (b) b.setAttribute('aria-expanded', 'false');
+  }
+  function toggleProfileMenu(btn) {
+    if (document.getElementById('pmenu')) { closeProfileMenu(); return; }
     const me = userOf(S.me);
-    const row = (act, ic, label, extra) => '<button type="button" class="pm-row" data-act="' + act + '">' + icon(ic, 20) + '<span class="pm-l">' + label + '</span>' + (extra || '') + '</button>';
-    const html = modalHead('Profile', 'user') + '<div class="modal-b pm-body">' +
-      '<div class="pm-head"><div class="avatar">' + esc(initials(me)) + '</div><div><div class="nm">' + esc((me.rank ? me.rank + ' ' : '') + me.name) + '</div>' +
+    const row = (act, ic, label, extra) => '<button type="button" class="pm-row" role="menuitem" data-act="' + act + '">' + icon(ic, 20) + '<span class="pm-l">' + label + '</span>' + (extra || '') + '</button>';
+    const el = document.createElement('div');
+    el.id = 'pmenu'; el.className = 'pm-pop'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'Profile');
+    el.innerHTML = '<div class="pm-head"><div class="avatar">' + esc(initials(me)) + '</div><div><div class="nm">' + esc((me.rank ? me.rank + ' ' : '') + me.name) + '</div>' +
         '<div class="meta">' + esc((ROLE_NAME[me.role] || me.role) + ' · ' + me.unit) + (S.isAdmin ? ' · Admin mode' : '') + '</div></div></div>' +
-      row('openNotes', 'bell', 'Notifications', '<b class="pm-ct" id="pmNotesCt">' + (S.unread ? S.unread + ' new' : '') + '</b>' + icon('right', 18)) +
+      row('openNotes', 'bell', 'Notifications', '<b class="pm-ct" id="pmNotesCt">' + (S.unread ? S.unread + ' new' : '') + '</b>') +
       '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full" role="group" aria-label="Appearance">' +
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
           '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '">' + icon(t[2], 15) + t[1] + '</button>').join('') + '</div></div>' +
-      row('openSettings', 'sliders', 'Settings', icon('right', 18)) +
-      row('signOut', 'logout', 'Sign out') +
-      '</div>';
-    openModal('menu', html);
-    $('#modal .modal').classList.add('pm-sheet');
+      row('openSettings', 'sliders', 'Settings') +
+      row('signOut', 'logout', 'Sign out');
+    document.body.appendChild(el);
+    // Open upward out of the Profile tab, right-aligned with it and kept on screen.
+    const r = btn.getBoundingClientRect(), w = el.offsetWidth;
+    el.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w)) + 'px';
+    el.style.bottom = (window.innerHeight - r.top + 6) + 'px';
+    btn.setAttribute('aria-expanded', 'true');
+    const first = el.querySelector('.pm-row'); if (first) first.focus({ preventScroll: true });
   }
+  document.addEventListener('click', ev => {
+    const m = document.getElementById('pmenu');
+    if (!m) return;
+    if (ev.target.closest('.nav button[data-v="profile"]')) return; // the tab itself toggles it
+    const item = ev.target.closest('#pmenu [data-act]');
+    if (!m.contains(ev.target) || (item && item.dataset.act !== 'theme')) closeProfileMenu();
+  }, true);
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && document.getElementById('pmenu')) closeProfileMenu(); });
   /** Notifications drawer: the list, with Mark all read / Clear all and a ✕ on each. */
   function openNotesDrawer() {
     S.notesAll = false;
@@ -4820,7 +4851,7 @@
     notesClear() { if (confirm('Delete all your notifications?')) dropNotes('all'); },
     nav(el) {
       const v = el.dataset.v;
-      if (v === 'profile') { openProfileMenu(); return; } // Profile is a menu: Notifications · Appearance · Settings · Sign out
+      if (v === 'profile') { toggleProfileMenu(el); return; } // Profile is a drop-up menu: Notifications · Appearance · Settings · Sign out
       if (v === 'calendar') S.cal = 'month'; // the Calendar tab always returns to Month view
       if (v === 'mine') S.mineMode = 'list'; // My Requests always opens on its list; Cal is one tap away
       S.view = v; S.sel = null; hideToast(); render();
