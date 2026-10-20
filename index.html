@@ -12,17 +12,18 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792489968"></script>
+    <script src="config.js?v=1792491120"></script>
     <style>
   :root {
-    --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
+    /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
+    --navy: #12284B; --navy-2: #1b3d7a; --gold: #FFC52F; --gold-2: #e8ab12;
     /* Neutral greys: near-white calendar on a light grey canvas. */
     --bg: #e4e4e7; --card: #fafafa; --card-2: #f0f0f2; --ink: #18181b; --muted: #52525b;
-    --line: #d0d0d6; --hatch: rgba(0, 0, 0, .08); --navy-3: #2c4f95; --gold-3: #f2c65a; --navy-edge: #7f9ee0;
+    --line: #d0d0d6; --hatch: rgba(0, 0, 0, .08); --navy-3: #2c4f95; --gold-3: #ffd970; --navy-edge: #7f9ee0;
     --wknd: #f4f4f5; --out-bg: #ebebee; --denied-bg: #d4d4d8; --denied-2: #b8b8bf; --denied-ink: #27272a; --focus: #b4410c; --accent: var(--navy); --on-accent: #fff;
     --ok: #166534; --ok-bg: #dcfce7; --warn: #854d0e; --warn-bg: #fef3c7;
     --bad: #b42318; --bad-bg: #fee4e2; --pend: #1e40af; --pend-bg: #dbeafe;
-    --leave: #1d4ed8; --leave-2: #1e3a8a; --leave-ink: #ffffff; --leave-tint: #dbeafe; --leave-tint-ink: #172554; --leave-pend: #a8c3fb; --leave-pend-ink: #0b1f4d; --pass-pend: #fde7a3;
+    --leave: #12284B; --leave-2: #2b4a7e; --leave-ink: #ffffff; --leave-tint: #dde3ee; --leave-tint-ink: #12284B; --leave-pend: #b9c6dd; --leave-pend-ink: #12284B; --pass-pend: #ffe7a8;
     --line-strong: #c4c4cc;
     --thumb: #ffffff; --gold-mark: #ca8a04; --dot-ok: #15803d; --dot-pend: #b45309; --dot-bad: #dc2626;
     /* Brewers interface accents: navy outlines in light mode, gold in dark; Add Request is a gold tonal button. */
@@ -49,6 +50,7 @@
     --go: var(--gold); --go-tint: rgba(253, 184, 39, .12); --req-bg: rgba(253, 184, 39, .18); --req-bg-h: rgba(253, 184, 39, .28); --req-ink: var(--gold);
     --nav-bg: #26262b; --nav-line: #36363d; --nav-ink: #b4b4be; --nav-hover: #313137;
     --nav-tone: rgba(253, 184, 39, .16); --nav-on: #fcd34d;
+    --leave-tint: #23314d; --leave-tint-ink: #dde6f7; --leave-pend: #3a4d70; --leave-pend-ink: #ffffff;
     color-scheme: dark;
   }
 
@@ -100,26 +102,7 @@
     background: #b42318; color: #fff; font-size: 12px; line-height: 16px; font-weight: 800; }
 
   /* ---------- Controls ---------- */
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); background: var(--card);
-    color: var(--ink); font-weight: 600; font-size: 15px; padding: 7px 12px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
-  .btn:hover { border-color: var(--muted); }
-  .btn:disabled { opacity: .45; cursor: not-allowed; }
-  .btn.sm { min-height: 34px; padding: 5px 10px; font-size: 14.5px; border-radius: 8px; }
-  .btn.primary { background: var(--navy); border-color: var(--navy); color: #fff; }
-  :root[data-theme="dark"] .btn.primary { background: var(--gold); border-color: var(--gold); color: var(--navy); }
-  .btn.gold { background: var(--gold); border-color: var(--gold); color: var(--navy); }
-  .btn.ok { background: var(--ok-bg); border-color: transparent; color: var(--ok); }
-  .btn.bad { background: var(--bad-bg); border-color: transparent; color: var(--bad); }
-  .btn.ghost { background: transparent; border-color: transparent; }
-  .btn.block { width: 100%; }
-  .icon-btn { width: 36px; height: 36px; padding: 0; border-radius: 8px; }
-
-  .seg { display: inline-flex; background: transparent; border: 1px solid var(--line-strong); border-radius: 12px; padding: 3px; gap: 2px; }
-  .seg button { min-height: 32px; border-radius: 9px; border: 0; background: none; color: var(--muted); font-size: 14.5px; font-weight: 700; line-height: 1.2; padding: 5px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
-  .seg button.on { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--ink); font-weight: 800; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent); }
-  .seg button:not(.on):hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
-  .fchips button.on::before { content: '✓'; margin-right: 5px; font-weight: 900; }
-  .seg.full { display: flex; } .seg.full button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 8px; }
+  /* Buttons, segmented buttons and filter controls live in one place: "Controls (Material 3)" further down. */
 
   .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; padding: 4px 9px; border-radius: 999px;
     background: var(--card-2); border: 1px solid var(--line); color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -171,17 +154,10 @@
   .datenav .dn-arrow:last-child { border-left: 1px solid var(--line-strong); }
   .datenav .lbl-date { gap: 6px; padding: 0 18px !important; border-radius: 0 !important; font-size: 17px; font-weight: 700; letter-spacing: -.01em; min-width: 0; }
   .datenav .lbl-date .ic { color: var(--muted); }
-  /* Today: outlined in the Brewers accent */
-  .btn.today-btn { height: 40px; padding: 0 18px; border-radius: 12px; border: 1.5px solid var(--go); background: transparent; color: var(--ink); font-size: 15px; font-weight: 700; }
-  .btn.today-btn:hover { background: var(--go-tint); border-color: var(--go); }
-  /* Add Request: filled-tonal Brewers gold */
-  .btn.req-btn { height: 40px; padding: 0 16px; gap: 6px; border-radius: 12px; border: 1px solid transparent; background: var(--req-bg); color: var(--ink); font-size: 15px; font-weight: 800; }
-  .btn.req-btn:hover { background: var(--req-bg-h); border-color: transparent; }
   .req-bar { display: none; flex: none; padding: 8px; background: var(--card); border-top: 1px solid var(--line); }
-  .req-bar .req-btn { width: 100%; height: 46px; font-size: 16px; border-radius: 14px; }
+  .req-bar .req-btn { width: 100%; }
   @media (max-width: 700px) {
     .datenav { height: 38px; flex: 1 1 auto; min-width: 0; } .datenav .dn-arrow { width: 38px; } .datenav .lbl-date { padding: 0 10px !important; font-size: 15.5px; }
-    .btn.today-btn { height: 38px; padding: 0 12px; }
     .calbar .req-btn { display: none; }
     .req-bar { display: block; }
   }
@@ -200,14 +176,12 @@
   /* Days outside the month: hatched and dimmed, but the date stays legible. */
   .cell.out { background-color: var(--out-bg); background-image: repeating-linear-gradient(135deg, var(--hatch) 0 2px, transparent 2px 8px); }
   .cell.out .dnum { color: var(--muted); font-weight: 600; }
-  .cell.today { box-shadow: inset 0 0 0 3px var(--gold); background-color: color-mix(in srgb, var(--gold) 10%, var(--card)); }
   .cell.sel { background-color: color-mix(in srgb, var(--gold) 26%, var(--card)); }
   .cell.sel-a { box-shadow: inset 0 0 0 3px var(--navy); }
   :root[data-theme="dark"] .cell.sel-a { box-shadow: inset 0 0 0 3px var(--gold); }
   .cell-head { height: var(--head-h); display: flex; align-items: center; gap: 4px; padding: 0 4px; min-width: 0; }
   .dnum { border: 0; background: none; cursor: pointer; font-size: 15px; font-weight: 800; min-width: 28px; height: 26px; padding: 0 7px; border-radius: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
   .dnum:hover { background: var(--card-2); }
-  .cell.today .dnum { background: var(--gold); color: var(--navy); }
   /* Daily P/B markers in each day header. */
   .qday { margin-left: auto; display: inline-flex; gap: 3px; }
   .qc-day { height: 22px; padding: 0 6px; border-radius: 4px; border: 1px solid var(--line); background: var(--card-2); color: var(--ink);
@@ -356,8 +330,6 @@
   .qd.wknd { background: var(--wknd); }
   .qd.blank { background: var(--out-bg); background-image: repeating-linear-gradient(135deg, var(--hatch) 0 2px, transparent 2px 8px); cursor: default; }
   .qd:not(.blank):hover { background: color-mix(in srgb, var(--gold) 10%, var(--card)); }
-  .qd.today { box-shadow: inset 0 0 0 2px var(--gold); }
-  .qd.today .qn { background: var(--gold); color: var(--navy); }
   .qd.sel { background: color-mix(in srgb, var(--gold) 26%, var(--card)); }
   .qd.over::after { content: ""; position: absolute; top: 0; right: 0; border-style: solid; border-width: 0 10px 10px 0; border-color: transparent #b42318 transparent transparent; }
   .qn { align-self: flex-start; margin-left: 3px; border: 0; background: none; padding: 0 5px; min-width: 24px; height: 22px; border-radius: 9px; font-size: 14px; font-weight: 700;
@@ -404,10 +376,8 @@
   .month.compact .cell.cc:first-child { border-left: 0; }
   .month.compact .cell.cc.out { background-color: var(--out-bg); background-image: repeating-linear-gradient(135deg, var(--hatch) 0 2px, transparent 2px 8px); }
   .month.compact .cell.cc.out .cc-n { color: var(--muted); }
-  .month.compact .cell.cc.today { box-shadow: inset 0 0 0 3px var(--gold); }
   .month.compact .cell.cc.unused::after { content: ""; position: absolute; top: 0; right: 0; border-style: solid; border-width: 0 12px 12px 0; border-color: transparent #b42318 transparent transparent; }
   .cc-n { font-size: 15px; font-weight: 800; padding-left: 2px; }
-  .cell.cc.today .cc-n { color: var(--navy); background: var(--gold); border-radius: 10px; padding: 0 6px; align-self: flex-start; }
   .day-groups { max-width: 900px; }
 
   .cf-state { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 12px; border-radius: 10px; font-weight: 700; }
@@ -450,7 +420,6 @@
   .wk-dow { font-size: 13px; font-weight: 800; letter-spacing: .12em; color: var(--muted); }
   .wk-num { font-size: 22px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
   .wk-date { font-size: 13px; color: var(--muted); }
-  .wk-day.today .wk-num { display: inline-block; background: var(--gold); color: var(--navy); border-radius: 8px; padding: 0 7px; }
   .wk-q { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 6px; font-size: 13px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; margin-top: 2px; }
   .wk-q .over { color: #fff; background: #b42318; border-radius: 4px; padding: 0 4px; }
   .bands { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -466,7 +435,6 @@
   .slot:first-child { border-left: 0; }
   .slot:hover { background-color: color-mix(in srgb, var(--gold) 8%, transparent); }
   .slot.sel { background-color: color-mix(in srgb, var(--gold) 24%, transparent); }
-  .slot.today { background-color: color-mix(in srgb, var(--gold) 9%, transparent); }
   .band-pucks { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-flow: row dense; gap: 4px 0; padding: 6px 0; pointer-events: none; }
   .wpuck { pointer-events: auto; min-width: 0; margin: 0 4px; padding: 4px 8px; border-radius: 9px; cursor: pointer; line-height: 1.25; box-shadow: var(--shadow-sm); }
   .wpuck.leave { background: var(--leave); color: var(--leave-ink); }
@@ -640,25 +608,9 @@
   .dl-meta { font-size: 14.5px; color: var(--muted); }
   .dl-none { padding: 8px 4px; color: var(--muted); font-size: 15px; }
 
-  /* ---------- Approval conflict calendar ---------- */
+  /* ---------- Request details: conflict summary and tapped-day detail ---------- */
   .cc-sum { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; margin: 2px 0 10px; }
   .cc-sum.bad { color: var(--bad); } .cc-sum.ok { color: var(--ok); }
-  .cc-wrap { display: flex; flex-wrap: wrap; gap: 14px; }
-  .cc-m { flex: 0 1 260px; }
-  .cc-t { font-weight: 800; font-size: 14px; margin-bottom: 4px; }
-  .cc-g { display: grid; grid-template-columns: repeat(7, 34px); gap: 3px; }
-  .cc-dw { font-size: 12px; font-weight: 800; color: var(--muted); text-align: center; }
-  .cc-d { height: 32px; display: grid; place-items: center; border-radius: 6px; font-size: 14px; font-weight: 600; color: var(--muted); border: 0; background: none; padding: 0; font-variant-numeric: tabular-nums; }
-  .cc-d.blank { visibility: hidden; }
-  .cc-d.today { box-shadow: inset 0 0 0 2px var(--gold); }
-  button.cc-d { cursor: pointer; font-weight: 800; }
-  .cc-d.green { background: #dcfce7; color: #14532d; box-shadow: inset 0 0 0 1px #16a34a; }
-  .cc-d.red { background: #b42318; color: #fff; }
-  .cc-d.sel { outline: 3px solid var(--focus); outline-offset: 1px; }
-  .cc-key { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--muted); }
-  .cc-key span { display: inline-flex; align-items: center; gap: 6px; }
-  .cc-sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
-  .cc-sw.green { background: #dcfce7; box-shadow: inset 0 0 0 1px #16a34a; } .cc-sw.red { background: #b42318; }
   .cc-detail:empty { display: none; }
   .cc-detail { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
   .cc-dh { font-weight: 800; font-size: 15px; margin-bottom: 4px; }
@@ -687,7 +639,6 @@
   .mini-g button { border: 0; background: none; height: 38px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .mini-g button:hover { background: var(--card-2); }
   .mini-g button.out { color: var(--muted); font-weight: 500; }
-  .mini-g button.today { box-shadow: inset 0 0 0 2px var(--gold); }
   .dur { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; margin-bottom: 8px; }
   .msgs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
   .msg { display: flex; gap: 8px; align-items: flex-start; font-size: 14.5px; font-weight: 600; padding: 8px 10px; border-radius: 10px; }
@@ -768,6 +719,10 @@
     --line: var(--outline-variant); --line-strong: var(--outline); --accent: var(--primary); --on-accent: var(--on-primary);
     --nav-bg: var(--surface-low); --nav-line: var(--outline-variant); --nav-ink: var(--on-surface-variant);
     --focus: #1b4fd1;
+    /* Selected state: a pale Brewers-navy tonal fill (a solid navy fill means Leave). Selected (open) day ring = Brewers yellow. */
+    --sel-bg: #d3dcec; --sel-ink: #12284B; --sel-ring: #FFC52F;
+    /* Filled go / stop (Add Request, Approve, Deny, conflict). All text pairs ≥ 4.5:1. */
+    --go-bg: #1e6b35; --go-ink: #ffffff; --no-bg: #b3261e; --no-ink: #ffffff;
   }
   :root[data-theme="dark"] {
     --primary: #b4c5ff; --on-primary: #0f2a63; --primary-container: #2a3f70; --on-primary-container: #dbe2ff;
@@ -777,11 +732,13 @@
     --surface: #17181d; --surface-low: #1d1e24; --surface-mid: #111216; --surface-high: #292a31;
     --on-surface: #e4e3ea; --on-surface-variant: #c5c6d0; --outline: #8f909a; --outline-variant: #44464f;
     --nav-bg: #1d1e24; --focus: #ffd37a;
+    --sel-bg: #d3dcef; --sel-ink: #12284B; --sel-ring: #FFC52F;
+    --go-bg: #86d99a; --go-ink: #17181d; --no-bg: #ffb4ab; --no-ink: #17181d;
   }
 
   /* ---- Buttons ---- */
   .btn { position: relative; overflow: hidden; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    height: 40px; min-height: 40px; padding: 0 24px; border-radius: 20px; border: 1px solid var(--outline); background: transparent; color: var(--primary);
+    height: 40px; min-height: 40px; padding: 0 24px; border-radius: 20px; border: 1px solid var(--outline); background: transparent; color: var(--on-surface);
     font-size: 15px; font-weight: 600; letter-spacing: .01em; line-height: 1; white-space: nowrap; cursor: pointer; transition: box-shadow .15s ease; }
   .btn:has(> .ic:first-child) { padding-left: 16px; }
   .btn .ic { width: 18px; height: 18px; }
@@ -796,19 +753,23 @@
   .btn.sm:has(> .ic:first-child) { padding-left: 10px; }
   .btn.sm .ic { width: 16px; height: 16px; }
   .btn.block { width: 100%; }
-  .btn.icon-btn { width: 40px; padding: 0; border-radius: 20px; }
+  /* Icon button (Material 3 "standard icon button"): 40×40 circle, no outline, centred 20px icon. */
+  .btn.icon-btn, .btn.icon-btn:has(> .ic:first-child) { width: 40px; min-width: 40px; height: 40px; padding: 0; gap: 0; justify-content: center;
+    border-color: transparent; background: transparent; border-radius: 50%; color: var(--on-surface-variant); }
+  .btn.icon-btn .ic { width: 20px; height: 20px; margin: 0; }
+  .btn.icon-btn:hover { border-color: transparent; }
   /* filled */
   .btn.primary, :root[data-theme="dark"] .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
   .btn.primary:hover { box-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
-  .btn.req-btn, .req-bar .req-btn { height: 40px; padding: 0 24px 0 16px; border-radius: 20px; background: var(--success); border-color: var(--success); color: var(--on-success); font-size: 15px; font-weight: 600; }
-  .btn.req-btn:hover { background: var(--success); box-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
-  /* tonal */
-  .btn.gold { background: var(--secondary-container); border-color: transparent; color: var(--on-secondary-container); }
-  .btn.ok { background: var(--success-container); border-color: transparent; color: var(--on-success-container); }
-  .btn.bad { background: var(--error-container); border-color: transparent; color: var(--on-error-container); }
+  .btn.req-btn, .req-bar .req-btn { height: 40px; padding: 0 24px 0 16px; gap: 6px; border-radius: 20px; background: var(--go-bg); border-color: var(--go-bg); color: var(--go-ink); font-size: 15px; font-weight: 600; }
+  .btn.req-btn:hover { box-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
+  /* filled approve / deny */
+  .btn.ok { background: var(--go-bg); border-color: var(--go-bg); color: var(--go-ink); }
+  .btn.bad { background: var(--no-bg); border-color: var(--no-bg); color: var(--no-ink); }
   /* outlined (default) */
-  .btn.today-btn { height: 40px; padding: 0 24px; border-radius: 20px; border: 1px solid var(--outline); background: transparent; color: var(--primary); font-size: 15px; font-weight: 600; }
-  .btn.today-btn:hover { background: transparent; border-color: var(--outline); }
+  .btn.today-btn { padding: 0 24px; }
+  /* Today is "selected" whenever the view includes today. */
+  .btn.today-btn.on { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink); font-weight: 800; }
   /* text */
   .btn.ghost { border-color: transparent; background: transparent; color: var(--primary); }
   .btn.del { border-color: transparent; color: var(--error); }
@@ -817,19 +778,21 @@
 
   /* ---- Segmented buttons (view switch, filter chips) & date navigator: 40px, fully rounded, outline ---- */
   .seg, .calbar .seg { height: 40px; padding: 0; gap: 0; border: 1px solid var(--outline); border-radius: 20px; background: transparent; overflow: hidden; }
-  .seg button { position: relative; height: 100%; min-height: 0; padding: 0 16px; border-radius: 0; color: var(--on-surface); font-size: 14.5px; font-weight: 600; }
+  .seg { display: inline-flex; }
+  .seg button { position: relative; height: 100%; min-height: 0; padding: 0 16px; border: 0; border-radius: 0; background: none; color: var(--on-surface);
+    font-size: 14.5px; font-weight: 600; line-height: 1.2; cursor: pointer; white-space: nowrap; }
   .seg button + button { border-left: 1px solid var(--outline); }
-  .seg button.on { background: var(--secondary-container); color: var(--on-secondary-container); box-shadow: none; font-weight: 700; }
+  /* Selected segment: tonal fill + bold text, no checkmark (widths never change). */
+  .seg button.on { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink); font-weight: 800; }
+  .seg button.on + button.on { border-left-color: color-mix(in srgb, var(--sel-ink) 30%, transparent); }
   .seg button:not(.on):hover { background: color-mix(in srgb, var(--on-surface) 8%, transparent); color: var(--on-surface); }
-  .seg button.on::before, .fchips button.on::before { content: ""; display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px;
-    background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat; }
-  .seg.full button { flex: 1; }
+  .seg.full { display: flex; }
+  .seg.full button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 8px; }
   .datenav { height: 40px; border: 1px solid var(--outline); border-radius: 20px; }
   .datenav .dn-arrow:first-child { border-right-color: var(--outline); } .datenav .dn-arrow:last-child { border-left-color: var(--outline); }
   .datenav > button { color: var(--on-surface); }
   .fsel, .fdrop-btn { height: 40px; min-height: 40px; border: 1px solid var(--outline); border-radius: 20px; background-color: transparent; color: var(--on-surface); font-weight: 600; padding: 0 14px 0 16px; }
-  .fsel.on, .fdrop-btn.on { background-color: var(--secondary-container); border-color: transparent; color: var(--on-secondary-container); }
+  .fsel.on, .fdrop-btn.on { background-color: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink); font-weight: 800; }
   .fdrop-pop, .modal, .keypop { background: var(--surface); }
   .fchk input { accent-color: var(--primary); }
 
@@ -839,16 +802,11 @@
   .nav button .nav-ic { width: 64px; height: 32px; border-radius: 16px; transition: background-color .2s ease; }
   .nav button:hover .nav-ic { background: color-mix(in srgb, var(--on-surface) 8%, transparent); }
   .nav button.on { color: var(--on-surface); font-weight: 800; }
-  .nav button.on .nav-ic { background: var(--secondary-container); color: var(--on-secondary-container); }
+  .nav button.on .nav-ic { background: var(--sel-bg); color: var(--sel-ink); }
   .nav button:focus-visible { outline: none; } .nav button:focus-visible .nav-ic { outline: 3px solid var(--focus); outline-offset: 1px; }
 
-  /* ---- Today: filled primary circle on the date number + a light tint (no heavy cell border) ---- */
-  .cell.today, .month.compact .cell.cc.today, .qd.today { box-shadow: none; background-color: color-mix(in srgb, var(--primary) 6%, var(--surface)); }
-  .cell.today .dnum, .cell.cc.today .cc-n, .qd.today .qn { background: var(--primary); color: var(--on-primary); border-radius: 12px; min-width: 24px; height: 24px; padding: 0 7px; display: inline-flex; align-items: center; justify-content: center; }
-  .cell.cc.today .cc-n { align-self: flex-start; }
-  .wk-day.today .wk-num { background: var(--primary); color: var(--on-primary); }
-  .mini-g button.today, .cc-d.today { box-shadow: inset 0 0 0 1px var(--primary); }
-  .slot.today { background-color: color-mix(in srgb, var(--primary) 5%, transparent); }
+  /* ---- Today: the ring + date pill is the "Day marker" block at the end of this file. Small date grids only get an outline. ---- */
+  .mini-g button.today { box-shadow: inset 0 0 0 1px var(--primary); }
   .cell.sel-a, :root[data-theme="dark"] .cell.sel-a { box-shadow: inset 0 0 0 2px var(--primary); }
 
   /* Shared middle-day bar (2+ people): diagonal slash pattern in the type colour; badges stay solid on top. */
@@ -869,19 +827,6 @@
   .tchip-leave.on { background: var(--leave); border-color: var(--leave); color: #ffffff; }
   .tchip-pass.on { background: var(--gold); border-color: var(--gold); color: var(--navy); }
 
-  /* ---------- Filled states: text = the surface colour the control sits on ----------
-     Dark mode: bright fills (gold / green / red) with near-black text (the bar's own background).
-     Light mode: deep fills (navy / green / red) with white text (the bar's own background).
-     No more same-hue text on same-hue containers. All pairs ≥ 4.5:1 (checked). */
-  :root { --sel-bg: #12284B; --sel-ink: #ffffff; --sel-ring: #12284B; --go-bg: #1e6b35; --go-ink: #ffffff; --no-bg: #b3261e; --no-ink: #ffffff; }
-  :root[data-theme="dark"] { --sel-bg: #2c4f8f; --sel-ink: #ffffff; --sel-ring: #9db8ec; --go-bg: #86d99a; --go-ink: #17181d; --no-bg: #ffb4ab; --no-ink: #17181d; }
-  .seg button.on, .fsel.on, .fdrop-btn.on, .btn.gold { background: var(--sel-bg); color: var(--sel-ink); border-color: var(--sel-bg); }
-  .seg button.on:hover { background: var(--sel-bg); color: var(--sel-ink); }
-  .btn.req-btn, .req-bar .req-btn, .btn.req-btn:hover { background: var(--go-bg); border-color: var(--go-bg); color: var(--go-ink); }
-  .btn.ok { background: var(--go-bg); border-color: var(--go-bg); color: var(--go-ink); }
-  .btn.bad { background: var(--no-bg); border-color: var(--no-bg); color: var(--no-ink); }
-  .btn.today-btn, .btn.today-btn:hover { color: var(--on-surface); }
-  :root[data-theme="dark"] .nav button.on .nav-ic { background: var(--sel-bg); color: var(--sel-ink); }
 
   /* ---------- Calendar bar layout ----------
      Wide screens: [view · Today · Add Request]   [ ‹ date › ] centred   [status · position · Leave|Pass] */
@@ -909,8 +854,6 @@
     .calbar .today-btn { order: 4; }
     .calbar .filters > * { order: 5; }
   }
-  /* No checkmarks on selected toggles — selection is shown by the fill, so widths never change. */
-  .seg button.on::before, .fchips button.on::before { content: none; display: none; }
   /* Leave / Pass button group: joined like the other groups; each side fills with its bar colour when on. */
   .seg.tgroup .tchip { height: 100%; border: 0; border-radius: 0; padding: 0 18px; }
   .seg.tgroup .tchip + .tchip { border-left: 1px solid var(--outline); }
@@ -949,8 +892,6 @@
   .ds-dots i { width: 6px; height: 6px; border-radius: 50%; }
   .ds-dots .lv { background: var(--leave); } .ds-dots .ps { background: var(--gold); } .ds-dots .ov { background: var(--bad); }
   .ds-d.today .ds-n, .ds-d.today .ds-w { color: var(--primary); }
-  .ds-d.on { background: var(--sel-bg); }
-  .ds-d.on .ds-w, .ds-d.on .ds-n { color: var(--sel-ink); }
   .dsum { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
   .dsum-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--primary); }
   .dsum-h .muted { font-weight: 600; letter-spacing: .02em; text-transform: none; font-size: 14px; color: var(--muted); }
@@ -977,9 +918,6 @@
     .calbar .back-month { display: none; }
   }
 
-  /* Outlined buttons (the default .btn) all use the on-surface label colour — see DESIGN.md §Buttons.
-     Primary-coloured labels are reserved for text buttons (.ghost) and links. */
-  .btn:not(.primary):not(.req-btn):not(.gold):not(.ok):not(.bad):not(.ghost):not(.del):not(.on) { color: var(--on-surface); }
 
   /* ---------- Person filter: dropdown-style button + picker sheet ---------- */
   .fp { display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -1033,6 +971,18 @@
     .modal-f:has(.btn.act) { gap: 10px; }
     /* In the dialog footer they are icon-only pills that share the width equally. */
     .modal-f .btn.act, .modal-f .btn.act:has(> .ic:first-child) { flex: 1 1 0; width: auto; border-radius: 20px; }
+  }
+  /* Phone dialog footers: Delete / Deny / Approve are 40px icon circles; Cancel and Edit (.act-lbl) keep their words as pills sharing the rest.
+     If the footer is too tight (admin: five buttons), Edit drops to a circle too — Cancel never does. */
+  @media (max-width: 700px) {
+    .modal-f .btn.act:not(.act-lbl), .modal-f .btn.act:not(.act-lbl):has(> .ic:first-child) { flex: none; width: 40px; padding: 0; border-radius: 50%; }
+    .modal-f .btn.act.act-lbl .bl { display: inline; }
+    .modal-f .btn.act.act-lbl, .modal-f .btn.act.act-lbl:has(> .ic:first-child) { gap: 6px; padding: 0 14px; }
+    .modal-f .btn.act.act-lbl .ic { width: 18px; height: 18px; }
+  }
+  @container (max-width: 340px) {
+    .modal-f .btn.act.act-edit, .modal-f .btn.act.act-edit:has(> .ic:first-child) { flex: none; width: 40px; padding: 0; gap: 0; border-radius: 50%; }
+    .modal-f .btn.act.act-edit .bl { display: none; }
   }
 
   /* Dialog footer actions: labels come back as soon as every pill has room for its word (Approve is the longest, ~110px each). */
@@ -1198,8 +1148,6 @@
   .fs-sect .seg button, .fs-sect .tgroup .tchip { flex: 1 1 0; min-width: 0; padding: 0 8px; }
   .fs-sect .fp.in-sheet { width: 100%; } .fs-sect .fp.in-sheet .fperson { display: flex; max-width: none; height: 44px; } .fs-sect .fp-clear { width: 44px; height: 44px; border-radius: 22px; }
   .fs-sheet .modal-f .btn { flex: 1; }
-  /* Adjacent selected segments keep a visible divider. */
-  .seg button.on + button.on { border-left-color: color-mix(in srgb, var(--sel-ink) 30%, transparent); }
 
   /* Swipe cue: a round ‹ / › chip that fades in at the edge you swiped toward, then out (≈0.6s). */
   .swipe-cue { position: fixed; top: 50%; z-index: 60; width: 52px; height: 52px; margin-top: -26px; display: grid; place-items: center; border-radius: 50%;
@@ -1215,8 +1163,6 @@
   .ro-show .seg { display: flex; width: 100%; max-width: 420px; }
   .ro-show .seg button { flex: 1 1 0; min-width: 0; padding: 0 8px; }
   @media (max-width: 700px) { .roster-page .cfg-tools .btn.primary { padding: 0 16px 0 12px; } }
-  /* Today button is "selected" whenever the view includes today. */
-  .btn.today-btn.on, .btn.today-btn.on:hover { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink); }
   /* New-badge fields: same 44px inputs as the unit name rows. */
   .cfg-unit .field input { flex: none; width: 100%; height: 44px; padding: 0 12px; }
   .cfg-unit-h { align-items: flex-end; }
@@ -1297,9 +1243,8 @@
   .blocker-s { font-size: 14px; color: var(--muted); }
   @media (prefers-reduced-motion: reduce) { .blocker-spin { animation-duration: 2.4s; } }
 
-  /* Today: a soft tinted cell with a 2px soft-primary outline (visible but not harsh), in every calendar view. */
-  /* Today and the open day are rounded rings drawn just inside the cell (like the pucks), not square cell borders. */
-  .slot.today { background-color: color-mix(in srgb, var(--primary) 8%, transparent) !important; box-shadow: none !important; }
+  /* Week view: today's column gets a light tint behind the bars. */
+  .slot.today { background-color: color-mix(in srgb, var(--primary) 8%, transparent); }
 
   /* ---------- Desktop day panel (≥900px): slides in from the left; the calendar narrows beside it ---------- */
   .cal-split { flex: 1; min-height: 0; display: flex; }
@@ -1316,7 +1261,6 @@
   .dp-d { font-size: 18px; font-weight: 800; color: var(--on-surface); }
   .dp-x { margin-left: 4px; }
   .dayv-panel .day-groups .dl-who { flex-basis: 100%; }
-  /* Open day in the calendar: a solid selection-colour outline (stronger than Today's). */
 
   /* ---------- Week view: clearer position bands ---------- */
   .band { border-bottom: 0; }
@@ -1365,12 +1309,6 @@
   .cf-row .cf-acts { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
   @media (max-width: 700px) { .cf-row .cf-acts { width: 100%; justify-content: flex-start; } }
 
-  /* Icon buttons (Material 3 "standard icon button"): 40×40 circle, no outline, centred 20px icon, 8% hover layer.
-     Fixes every icon-only button being pushed off-centre by the leading-icon padding rule. */
-  .btn.icon-btn, .btn.icon-btn:has(> .ic:first-child) { width: 40px; min-width: 40px; height: 40px; padding: 0; gap: 0; justify-content: center;
-    border-color: transparent; background: transparent; border-radius: 50%; color: var(--on-surface-variant); }
-  .btn.icon-btn .ic { width: 20px; height: 20px; margin: 0; }
-  .btn.icon-btn:hover { border-color: transparent; }
   .fp .fp-clear.icon-btn { border-radius: 0 20px 20px 0; color: var(--sel-ink) !important; }
 
   /* ---------- Request tables (All / Mine): Leave / Pass bands, status icons, approved tint ---------- */
@@ -1436,9 +1374,6 @@
   /* Narrow month cells (e.g. calendar squeezed by the day panel): keep only the counters that are full or over the max. */
   .month:not(.compact) .cell { container-type: inline-size; }
   @container (max-width: 185px) { .qc-day:not(.over):not(.full) { display: none; } .qc-day { padding: 0 4px; font-size: 11.5px; } }
-  /* Selected = Brewers navy #12284B (Leave is the brighter royal blue; gold = Pass). Bold text marks it too. */
-  .seg button.on, .fsel.on, .fdrop-btn.on, .btn.today-btn.on { font-weight: 800; }
-  .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: var(--sel-bg); color: var(--sel-ink); }
   /* Out now: requests in progress today. Neutral high-contrast ring + live green dot. */
   :root { --now: #111318; --now-dot: #00a35c; }
   :root[data-theme="dark"] { --now: #ffffff; --now-dot: #00C805; }
@@ -1455,53 +1390,53 @@
   /* On calendar bars the dot is static: an animated dot made Chromium paint today's cell over the bars. */
   .idb-n .now-dot, .mn .now-dot { width: 7px; height: 7px; margin-right: 4px; vertical-align: 1px; animation: none; box-shadow: 0 0 0 1.5px #fff; }
   .rtable tr.now > td:first-child { box-shadow: inset 4px 0 0 var(--now-dot); }
-  :root { --today-ring: color-mix(in srgb, var(--primary) 72%, var(--surface)); }
-  /* Month cells: no isolation (Chromium hid bars under an isolated today cell). The ring sits above the cell background but below the bars (.mo z 2). */
-  .cell { isolation: auto; }
-  /* Today's ring sits ABOVE the bars (like the open-day ring) so Chromium can't paint it over them; the 12% tint lets bars show through.
-     The date row sits above the ring so the pill keeps the exact ring colour. */
-  .cell .cell-head, .month.compact .cell.cc > .cc-n { position: relative; z-index: 4; }
-  /* ---------- Brewers brand: Leave = Brewers navy #12284B, Pass = Brewers yellow #FFC52F (teamcolorcodes.com) ---------- */
-  :root, :root[data-theme="dark"] {
-    --navy: #12284B; --gold: #FFC52F; --gold-2: #e8ab12; --gold-3: #ffd970; --pass-pend: #ffe7a8;
-    --leave: #12284B; --leave-2: #2b4a7e; --leave-ink: #ffffff; --leave-tint: #dde3ee; --leave-tint-ink: #12284B; --leave-pend: #b9c6dd; --leave-pend-ink: #12284B; }
-  :root[data-theme="dark"] { --leave-tint: #23314d; --leave-tint-ink: #dde6f7; --leave-pend: #3a4d70; --leave-pend-ink: #ffffff; }
   /* Dark mode: navy sits close to the background, so leave fills get a light navy edge. */
   :root[data-theme="dark"] .evs.leave, :root[data-theme="dark"] .wpuck.leave, :root[data-theme="dark"] .badge.t-leave, :root[data-theme="dark"] .tchip-leave.on,
   :root[data-theme="dark"] .mseg.leave, :root[data-theme="dark"] .qbar.leave, :root[data-theme="dark"] .cs-bar.leave, :root[data-theme="dark"] .dl-h.leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
-  /* Selection can't be a solid navy fill (that means Leave): a pale Brewers-navy tonal fill that follows the button's own shape, bold navy text. No inset outlines. */
-  :root { --sel-bg: #d3dcec; --sel-ink: #12284B; --sel-ring: #12284B; }
-  :root[data-theme="dark"] { --sel-bg: #d3dcef; --sel-ink: #12284B; --sel-ring: #d3dcef; }
-  /* ---------- Day marker: ONE implementation for Month (desktop + phone), Stats, Week and Qtr ----------
+  /* ---------- Day marker: ONE implementation for Month (desktop + phone), Stats, Week, Qtr and the day strip ----------
      ::before = rounded ring, ::after = the date pill joined to its top-left corner. Both use --mark, so they always match.
      Today uses --today-ring; the open day (desktop day panel) uses --sel-ring, and so does today when it is the open day.
-     The pill shows data-d (set by markOpenDay); the original number stays in place, invisible but clickable. */
-  html body :is(.cell, .wk-day, .qd) { position: relative; isolation: auto; --mk-h: 24px; --mk-fs: 15px; }
-  html body .qd { --mk-h: 18px; --mk-fs: 11px; }
-  html body :is(.cell, .wk-day, .qd).today { --mark: var(--today-ring); box-shadow: none !important; }
-  html body :is(.cell, .wk-day, .qd).is-open { --mark: var(--sel-ring); box-shadow: none !important; }
-  html body :is(.cell, .wk-day, .qd):is(.today, .is-open)::before {
+     The pill shows data-d (set by markOpenDay); the original number stays in place, invisible but clickable.
+     The ring is drawn above the bars (z 3, 12% tint) so bars always show through. */
+  :root { --today-ring: color-mix(in srgb, var(--primary) 72%, var(--surface)); }
+  :is(.cell, .wk-day, .qd) { position: relative; isolation: auto; --mk-h: 24px; --mk-fs: 15px; }
+  .qd { --mk-h: 18px; --mk-fs: 11px; }
+  :is(.cell, .wk-day, .qd, .ds-d).today { --mark: var(--today-ring); }
+  :is(.cell, .wk-day, .qd).is-open, .ds-d.on { --mark: var(--sel-ring); }
+  :is(.cell, .wk-day, .qd):is(.today, .is-open)::before, .ds-d:is(.today, .on)::before {
     content: ""; position: absolute; inset: 1px; z-index: 3; pointer-events: none; border-radius: 12px;
     border: 2px solid var(--mark); background: color-mix(in srgb, var(--mark) 12%, transparent); }
-  html body .qd:is(.today, .is-open)::before { background: none; }
-  html body :is(.cell, .wk-day, .qd).is-open::after { content: none; border: 0; }
-  html body :is(.cell, .wk-day, .qd).today::after {
+  .qd:is(.today, .is-open)::before { background: none; }
+  :is(.cell, .wk-day, .qd).today::after {
     content: attr(data-d); position: absolute; inset: 1px auto auto 1px; z-index: 5; pointer-events: none;
-    height: var(--mk-h); min-width: calc(var(--mk-h) + 4px); padding: 0 7px; box-sizing: border-box; border: 0;
+    height: var(--mk-h); min-width: calc(var(--mk-h) + 4px); padding: 0 7px;
     display: inline-flex; align-items: center; justify-content: center; border-radius: 12px 0 12px 0;
     background: var(--mark); color: var(--on-primary); font-size: var(--mk-fs); font-weight: 800; font-variant-numeric: tabular-nums; }
-  :root[data-theme="dark"] :is(.cell, .wk-day, .qd).is-open.today::after { color: #12284B; }
-  html body :is(.cell.today .dnum, .cell.cc.today .cc-n, .wk-day.today .wk-num, .qd.today .qn) { opacity: 0; background: none; box-shadow: none; }
-  /* Counters and date sit inside the day marker ring (ring = 1px inset + 2px border), with a little room on every cell. */
+  /* Today's pill on the yellow selected-day ring: navy text. */
+  :is(.cell, .wk-day, .qd).is-open.today::after { color: var(--navy); }
+  :is(.cell.today .dnum, .cell.cc.today .cc-n, .wk-day.today .wk-num, .qd.today .qn) { opacity: 0; }
+  .cell .cell-head, .month.compact .cell.cc > .cc-n { position: relative; z-index: 4; }
+  /* Counters and the date sit inside the ring (1px inset + 2px border), with a little room on every cell. */
   .month:not(.compact) .cell-head { padding: 0 6px; }
-  /* Day strip (day view / day panel): the same day marker ring — today = --today-ring, selected day = --sel-ring. No separate fill colour. */
-  html body .ds-d { position: relative; }
-  html body .ds-d.today { --mark: var(--today-ring); }
-  html body .ds-d.on { --mark: var(--sel-ring); background: none; }
-  html body .ds-d:is(.today, .on)::before { content: ""; position: absolute; inset: 1px; pointer-events: none; border-radius: 12px;
-    border: 2px solid var(--mark); background: color-mix(in srgb, var(--mark) 12%, transparent); }
-  html body .ds-d.on .ds-w, html body .ds-d.on .ds-n { color: var(--on-surface); }
-  html body .ds-d.on .ds-n { font-weight: 800; }
+  /* Day strip: the selected day shows only the ring (no fill), with bold on-surface text. */
+  .ds-d { position: relative; }
+  .ds-d.on { background: none; }
+  .ds-d.on .ds-w, .ds-d.on .ds-n { color: var(--on-surface); }
+  .ds-d.on .ds-n { font-weight: 800; }
+  /* Request details: the request form's layout, read-only. */
+  .req-view .sect:first-child { border-top: 0; padding-top: 4px; }
+  .req-who { display: flex; align-items: center; gap: 10px; min-height: 32px; }
+  .req-who .idb { margin: 0; flex: none; }
+  .req-who .req-name { flex: 1 1 auto; min-width: 0; font-size: 16px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .req-who .badge { flex: none; }
+  .seg-ro button { pointer-events: none; }
+  .req-view .cc-sum { margin: 12px 0 2px; }
+  .mini-g > span { height: 38px; display: grid; place-items: center; border-radius: 8px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mini-g > span.today { box-shadow: inset 0 0 0 1px var(--primary); }
+  .mini-g button.sel { box-shadow: inset 0 0 0 2px var(--on-surface); }
+  .ro-val { min-height: 44px; display: flex; align-items: center; padding: 0 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--card-2); font-size: 16px; color: var(--ink); }
+  .ro-note { align-items: flex-start; min-height: 70px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .ro-days { margin: -2px 0 10px; font-size: 14px; font-weight: 700; color: var(--muted); }
 </style>
 
   </head>
@@ -1675,7 +1610,6 @@
     const un = unitsList().find(x => x.code === code);
     return '<span class="ub ub-' + (un ? un.style : 'slate') + '" title="' + esc(un ? un.name : code) + '">' + esc(code) + '</span>';
   }
-  const shortName = u => lastName(u) + ' (' + u.unit + ')';
   const fullName = u => (u.rank ? u.rank + ' ' : '') + u.name + ' (' + u.unit + ')';
   const initials = u => u.name.split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
   function quota(role) {
@@ -1785,7 +1719,7 @@
   function save(mutate, fn) {
     const args = Array.prototype.slice.call(arguments, 1);
     if (mutate) { mutate(); reindex(); }
-    S.pending = (S.pending || 0) + 1; S.syncErr = false; syncUI();
+    S.pending = (S.pending || 0) + 1; S.syncErr = false; saveGen++; syncUI();
     const done = saveChain.then(() => call.apply(null, args)).then(
       data => { lastSaved = data; return data; },
       e => { resync = true; toast(e.message, 'error', 6000); return null; });
@@ -1833,9 +1767,22 @@
   const findReq = id => S.requests.find(r => r.id === id);
   const nowIso = () => new Date().toISOString();
 
+  /* Trust boundary: the Sheet can be edited by hand, so enumerated fields are forced to known values before any of them
+     reach HTML (they are used in class names and labels). Free text (names, notes, rank) always goes through esc(). */
+  const REQ_STATUS = ['Pending', 'Approved', 'Denied', 'Cancelled'], REQ_TYPE = ['Leave', 'Pass'];
+  const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+  function cleanReq(r) {
+    return Object.assign({}, r, {
+      id: String(r.id), userId: String(r.userId),
+      status: REQ_STATUS.includes(r.status) ? r.status : 'Pending',
+      type: REQ_TYPE.includes(r.type) ? r.type : 'Leave',
+      start: DAY_RE.test(r.start) ? r.start : '1970-01-01', end: DAY_RE.test(r.end) ? r.end : '1970-01-01'
+    });
+  }
+  function cleanUser(u) { return Object.assign({}, u, { id: String(u.id), role: ROLES.includes(u.role) ? u.role : 'Other' }); }
   function apply(data) {
     if (!data) return;
-    S.me = data.me; S.isAdmin = !!data.isAdmin; S.users = data.users || []; S.requests = data.requests || [];
+    S.me = data.me; S.isAdmin = !!data.isAdmin; S.users = (data.users || []).map(cleanUser); S.requests = (data.requests || []).map(cleanReq);
     S.settings = Object.assign(S.settings, data.settings || {}); S.sheetUrl = data.sheetUrl || '';
     S.today = localToday();
     if (!S.isAdmin && (S.view === 'admin' || S.view === 'people' || S.view === 'roster')) S.view = 'calendar';
@@ -2089,7 +2036,7 @@
   function seg(options, current, act, extra) {
     return '<div class="seg" role="group">' + options.map(o => {
       const v = Array.isArray(o) ? o[0] : o, l = Array.isArray(o) ? o[1] : o;
-      return '<button type="button" class="' + (v === current ? 'on' : '') + '" data-act="' + act + '" data-v="' + esc(v) + '"' + (extra || '') + '>' + l + '</button>';
+      return '<button type="button" class="' + (v === current ? 'on' : '') + '" aria-pressed="' + (v === current) + '" data-act="' + act + '" data-v="' + esc(v) + '"' + (extra || '') + '>' + l + '</button>';
     }).join('') + '</div>';
   }
 
@@ -2264,8 +2211,6 @@
     pick('type', FILTERS[2].opts);
     return parts;
   }
-  /** Conflicts-only toggle (calendar + All share it). */
-  const confToggle = () => '<button type="button" class="btn conf-only' + (S.f.conf ? ' on' : '') + '" data-act="confToggle" aria-pressed="' + !!S.f.conf + '" title="Show only requests over the daily leave max">' +
     icon('alert', 18) + '<span class="bl">Conflicts</span></button>';
   /** Conflict mode banner: red bar with the count and an ✕ to leave the mode. */
   function confBanner(n) {
@@ -2330,7 +2275,9 @@
   const stackRank = r => r.id === S.focus ? -2 : r.userId === S.me ? -1 : STACK.indexOf(r.status === 'Denied' ? 'Denied' : r.type);
   const byLast = (a, b) => lastName(userOf(a.userId)).localeCompare(lastName(userOf(b.userId)));
 
-  function monthSegments(ws, reqs) {
+  /** split = true: every request that starts this week is its own continuous bar. Requests carried over from the
+   *  previous week are always merged into one shared middle bar per type (Leave / Pass) at the start of the row. */
+  function monthSegments(ws, reqs, split) {
     const we = D.add(ws, 6);
     const days = Array.from({ length: 7 }, (_, i) => D.add(ws, i));
     const evs = reqs.filter(r => r.start <= we && r.end >= ws);
@@ -2343,15 +2290,15 @@
         if (r.end <= we) segs.push({ kind: 'end', cat, type: r.type, a: D.diff(ws, r.end), b: D.diff(ws, r.end), people: [r] });
       }
     });
-    // Pinned requests get their own middle segment instead of joining a shared bar.
-    evs.filter(r => isPinned(r) && D.days(r.start, r.end) > 2).forEach(r => {
+    // Pinned requests (or every request, when split) get their own middle segment instead of joining a shared bar.
+    evs.filter(r => ((split && r.start >= ws) || isPinned(r)) && D.days(r.start, r.end) > 2).forEach(r => {
       const a = D.max(D.add(r.start, 1), ws), b = D.min(D.add(r.end, -1), we);
       if (a <= b) segs.push({ kind: 'mid', cat: stackCat(r), type: r.type, a: D.diff(ws, a), b: D.diff(ws, b), people: [r] });
     });
     STACK.forEach(t => {
       let cur = null;
       days.forEach((d, i) => {
-        const set = evs.filter(r => stackCat(r) === t && r.start < d && r.end > d).sort(byLast);
+        const set = evs.filter(r => stackCat(r) === t && r.start < d && r.end > d && (!split || r.start < ws)).sort(byLast);
         const key = set.map(r => r.id).join('|');
         if (cur && key && key === cur.key) { cur.b = i; return; }
         cur = key ? { kind: 'mid', cat: t, type: set[0].type, a: i, b: i, people: set, key } : null;
@@ -2426,7 +2373,7 @@
       }).join('') + hidden.map((n, i) => n ? '<span class="cs-more" style="grid-row:' + MAXL + ';grid-column:' + (i + 1) + '" data-act="pickDay" data-date="' + days[i] + '">+' + n + '</span>' : '').join('');
       html += '<div class="week-row">';
       days.forEach(d => {
-        const c = filteredRoleCounts(d, live);
+        const c = filteredRoleCounts(d);
         const over = roles.filter(role => quota(role) && c[role] > quota(role));
         const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' +
           roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : '');
@@ -2451,7 +2398,7 @@
       html += '<div class="week-row">';
       for (let i = 0; i < 7; i++) {
         const d = D.add(gs, w * 7 + i);
-        const c = filteredRoleCounts(d, reqs);
+        const c = filteredRoleCounts(d);
         const over = roles.filter(role => quota(role) && c[role] > quota(role));
         const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' +
           roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : '');
@@ -2463,41 +2410,49 @@
     return html + '</div></div>';
   }
 
-  function renderMonthWeek(ws, month, reqs) {
-    const days = Array.from({ length: 7 }, (_, i) => D.add(ws, i));
-    const m = monthMetrics();
-    const segs = monthSegments(ws, reqs).sort((x, y) =>
-      x.a - y.a || cont(y) - cont(x) || hasMe(y) - hasMe(x) || (y.b - y.a) - (x.b - x.a) || byLast(x.people[0], y.people[0]));
-
-    // Lane packing, stacked Leave → Pass → Denied, continuing each person's bar
-    // in the lane it was already in.
-    const lanes = [];            // lanes[l] = last column used
+  /** Lane packing, stacked Leave → Pass → Denied, continuing each person's bar in the lane it was already in.
+   *  Returns the sorted segments (each with .lane) and lanes[l] = last column used. */
+  function packMonthWeek(segs) {
+    segs.sort((x, y) => x.a - y.a || cont(y) - cont(x) || hasMe(y) - hasMe(x) || (y.b - y.a) - (x.b - x.a) || byLast(x.people[0], y.people[0]));
+    const lanes = [];
     const laneOf = new Map();    // request id -> lane of its most recent segment
     const ends = new Map();      // request id -> column its most recent segment ended
     let base = 0;
-    stackOrder().forEach(cat => {
-      segs.filter(sg => sg.cat === cat).forEach(sg => place(sg));
-      base = lanes.length;
-    });
-    function place(sg) {
+    const place = sg => {
       const free = l => lanes[l] === undefined || lanes[l] < sg.a;
       let l = -1;
       for (const r of sg.people) {
         const pl = laneOf.get(r.id);
         if (pl !== undefined && ends.get(r.id) === sg.a - 1 && free(pl)) { l = pl; break; }
       }
-      // Float up: if a higher lane is free here, take it (the bar steps up once and stays there for the week)
-      // rather than leaving an empty lane above it.
-      let top = base; while (!free(top)) top++;
-      if (l < 0 || top < l) l = top;
+      // A bar that continues from the previous day keeps its lane, so each person reads as one straight line.
+      // Only new bars take the highest free lane.
+      if (l < 0) { l = base; while (!free(l)) l++; }
       lanes[l] = sg.b;
       sg.lane = l;
       sg.people.forEach(r => { laneOf.set(r.id, l); ends.set(r.id, sg.b); });
-    }
+    };
+    stackOrder().forEach(cat => {
+      segs.filter(sg => sg.cat === cat).forEach(place);
+      base = lanes.length;
+    });
+    return { segs, lanes };
+  }
 
-    // Fit to the measured row height.
+  function renderMonthWeek(ws, month, reqs) {
+    const days = Array.from({ length: 7 }, (_, i) => D.add(ws, i));
+    const m = monthMetrics();
     const lineH = m.barH + 2, moreH = 16;
     const avail = m.rowH - m.headH - 2;
+    // Prefer one unbroken bar per person. Only when those don't all fit in the row are middle days
+    // merged into shared (hatched) bars per type.
+    let { segs, lanes } = packMonthWeek(monthSegments(ws, reqs, true));
+    if (lanes.length * lineH > avail) ({ segs, lanes } = packMonthWeek(monthSegments(ws, reqs, false)));
+    // A one-person middle bar whose start puck is in this row doesn't repeat the name.
+    const startIds = new Set(segs.filter(sg => sg.kind === 'start').map(sg => sg.people[0].id));
+    segs.forEach(sg => { sg.quiet = sg.kind === 'mid' && sg.people.length === 1 && startIds.has(sg.people[0].id); });
+
+    // Fit to the measured row height.
     let ln = lanes.length;
     if (ln * lineH > avail) while (ln > 0 && ln * lineH + moreH > avail) ln--;
 
@@ -2626,8 +2581,6 @@
   }
   const changedBadge = r => isChanged(r) ? '<span class="badge chg" title="' + esc(changeText(r)) + '">' + icon('alert', 12) + 'Dates changed by admin</span>' : '';
   const dupBadge = r => dupsOf(r).length ? '<span class="badge dup" title="Overlaps ' + esc(dupText(r)) + '">' + icon('alert', 12) + 'Overlap</span>' : '';
-  // P / B / O tag for Pilot, Boom, Other. Decorative: the parent's aria-label names the position.
-  const roleTagHtml = L => '<span class="idb" aria-hidden="true"><span class="idb-r idb-' + L.toLowerCase() + '">' + L + '</span></span>';
   /* Combined ID badge: [P|MKE] — position square on the left, unit section on the right, one button-like chip.
      Decorative: the parent's aria-label / title spells out position and unit. */
   function idBadge(u) {
@@ -2667,12 +2620,13 @@
     const r0 = sg.people[0];
     const base = 'evs ' + (sg.cat === 'Denied' ? 'denied' : sg.type.toLowerCase()) + ' ' + sg.kind;
     if (sg.kind === 'mid') {
-      const pucks = ROLES.map(role => {
+      const pucks = sg.quiet ? '' : ROLES.map(role => {
         const list = sg.people.filter(r => userOf(r.userId).role === role);
         return list.length ? rolePuck(role, list) : '';
       }).join('');
       // More than one person on this stretch (any positions): hatched "shared" bar.
-      return '<div class="' + base + (sg.people.length > 1 ? ' shared' : '') + (sg.people.length === 1 && r0.id === S.focus ? ' focus' : '') + (sg.cat === 'Denied' ? ' st-denied' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"><span class="evs-t">' + pucks + '</span></div>';
+      return '<div class="' + base + (sg.people.length > 1 ? ' shared' : '') + (sg.people.length === 1 && r0.id === S.focus ? ' focus' : '') + (sg.cat === 'Denied' ? ' st-denied' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"' +
+        (sg.people.length === 1 ? ' role="button" tabindex="0" data-act="openReq" data-id="' + esc(r0.id) + '" aria-label="' + esc(describe(r0)) + '"' : '') + '><span class="evs-t">' + pucks + '</span></div>';
     }
     // First / last / single day: the shaped event bar holding the person's [P|MKE|Name] badge.
     const cls = base + ' st-' + r0.status.toLowerCase() + (r0.id === S.focus ? ' focus' : '') + (r0.userId === S.me ? ' mine' : '') + (dupsOf(r0).length ? ' dup' : '') + (isNow(r0) ? ' now' : '');
@@ -2746,7 +2700,7 @@
     const bar = (r, d) => {
       const first = d === r.start, last = d === r.end, lbl = first || D.dow(d) === 0 || d.slice(8) === '01';
       const cls = ['qbar', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : ''].join(' ');
-      return '<span class="' + cls + '" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '">' + (lbl ? '<span>' + (r.type === 'Leave' ? 'Leave' : 'Pass') + '</span>' : '') + '</span>';
+      return '<span class="' + cls + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' + (lbl ? '<span>' + (r.type === 'Leave' ? 'Leave' : 'Pass') + '</span>' : '') + '</span>';
     };
     return key + '<div class="quad' + (person ? ' q-person' : '') + '">' + months.map(m0 => {
       const gs = D.weekStart(m0), mon = m0.slice(0, 7);
@@ -2762,7 +2716,7 @@
           body = mine.map(r => bar(r, d)).join('');
           label = dayLabel + ': ' + (mine.length ? mine.map(r => r.type + ' (' + r.status + ')').join(', ') : 'not out');
         } else {
-          const c = filteredRoleCounts(d, live);
+          const c = filteredRoleCounts(d);
           body = roles.map(role => roleMeter(role, c[role])).join('');
           label = dayLabel + ': ' + roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ');
         }
@@ -2786,7 +2740,7 @@
     const reqs = calRequests().filter(r => r.start <= we && r.end >= ws);
     const head = days.map(d => {
       const p = countOn(d, 'Pilot'), b = countOn(d, 'Boom'), qp = quota('Pilot'), qb = quota('Boom');
-      return '<div class="wk-day' + (d === S.today ? ' today' : '') + '" data-act="gotoDay" data-date="' + d + '">' +
+      return '<div class="wk-day' + (d === S.today ? ' today' : '') + '" role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
         '<div class="wk-dow">' + DOW[D.dow(d)] + '</div><div class="wk-num">' + Number(d.slice(8)) + '</div>' +
         '<div class="wk-date">' + D.f(d, { month: 'short' }) + '</div>' +
         '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">P: ' + p + (qp ? '/' + qp : '') + '</span>' +
@@ -2826,14 +2780,14 @@
     const ws = D.weekStart(d);
     const strip = Array.from({ length: 7 }, (_, i) => D.add(ws, i)).map(x => {
       const on = live.filter(r => r.start <= x && r.end >= x);
-      const c = filteredRoleCounts(x, on);
+      const c = filteredRoleCounts(x);
       const over = roles.some(role => quota(role) && c[role] > quota(role));
       const dots = (on.some(r => r.type === 'Leave') ? '<i class="lv"></i>' : '') + (on.some(r => r.type === 'Pass') ? '<i class="ps"></i>' : '') + (over ? '<i class="ov"></i>' : '');
       return '<button class="ds-d' + (x === d ? ' on' : '') + (x === S.today ? ' today' : '') + '" data-act="gotoDay" data-date="' + x + '"' + (x === d ? ' aria-current="date"' : '') +
         ' aria-label="' + esc(D.f(x, { weekday: 'long', month: 'long', day: 'numeric' })) + '">' +
         '<span class="ds-w">' + DOW[D.dow(x)][0] + '</span><span class="ds-n">' + Number(x.slice(8)) + '</span><span class="ds-dots">' + dots + '</span></button>';
     }).join('');
-    const rc = filteredRoleCounts(d, live);
+    const rc = filteredRoleCounts(d);
     const meters = ROLES.map(role => roleMeter(role, rc[role], 'lg')).join('');
     const weekStrip = '<div class="dstrip"><button class="ds-arrow" data-act="dayShift" data-v="-7" aria-label="Previous week">' + icon('left', 20) + '</button>' +
         '<div class="ds-days">' + strip + '</div>' +
@@ -2902,37 +2856,9 @@
   /* ================================================================ */
   /* Request pucks & lists                                              */
   /* ================================================================ */
-  function puck(r, opts) {
-    opts = opts || {};
-    const u = userOf(r.userId), n = D.days(r.start, r.end);
-    const cd = conflictDays(r), caution = isCaution(r);
-    const t = IDX.ytd.get(r.userId) || { Leave: 0, Pass: 0 };
-    const st = r.status.toLowerCase();
-    let acts = '';
-    if (S.isAdmin && r.status !== 'Cancelled') {
-      acts += '<button class="btn ok sm act" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' disabled' : '') + ' aria-label="Approve" title="Approve">' + icon('check', 14) + '<span class="bl">Approve</span></button>' +
-        '<button class="btn bad sm act" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' disabled' : '') + ' aria-label="Deny" title="Deny">' + icon('ban', 14) + '<span class="bl">Deny</span></button>';
-    }
-    if (opts.cancel && canEdit(r)) acts += '<button class="btn sm act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 14) + '<span class="bl">Edit</span></button>';
-    if (opts.cancel && canCancel(r)) acts += '<button class="btn sm act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Cancel" title="Cancel">' + icon('trash', 14) + '<span class="bl">Cancel</span></button>';
-    return '<article class="puck t-' + r.type.toLowerCase() + ' st-' + st + '" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
-      '<div class="r1"><span class="who">' + esc(fullName(u)) + '</span>' +
-        '<span class="badge">' + esc(u.role) + '</span>' +
-        '<span class="badge t-' + r.type.toLowerCase() + '">' + r.type + '</span>' +
-        (cd.length ? '<span class="badge conflict" title="Role quota exceeded on ' + cd.map(D.short).join(', ') + '">' + icon('alert', 12) + ' Quota conflict · ' + plural(cd.length, 'day') + '</span>' : '') +
-        (caution ? '<span class="badge caution">' + icon('alert', 12) + ' Caution: ' + esc(cautionText(r)) + '</span>' : '') +
-      '</div>' +
-      '<div class="r2"><span class="dates">' + D.short(r.start) + ' → ' + D.short(r.end) + ' · ' + plural(n, 'day') + '</span><span class="sep"></span>' +
-        '<span class="meta">Taken YTD: Leave ' + t.Leave + 'd · Pass ' + t.Pass + 'd</span><span class="sep"></span>' +
-        '<span class="meta">Submitted ' + fmtTs(r.submittedAt) + '</span>' +
-        '<span class="badge s-' + st + '">' + r.status + '</span>' +
-        (acts ? '<span class="acts">' + acts + '</span>' : '') +
-      '</div></article>';
-  }
   // Members edit their own requests until approved; after that only admins can.
   const isTmp = r => String(r.id).indexOf('tmp_') === 0; // shown before the server has saved it
   const canEdit = r => !isTmp(r) && r.status !== 'Cancelled' && (S.isAdmin || (r.userId === S.me && r.status !== 'Approved'));
-  const canCancel = r => !isTmp(r) && (r.userId === S.me || S.isAdmin) && (r.status === 'Pending' || (r.status === 'Approved' && r.end >= S.today));
 
   function filteredList() {
     const L = S.list, F = S.f, q = L.q.trim().toLowerCase();
@@ -3284,12 +3210,17 @@
   /* ================================================================ */
   /* Modals                                                             */
   /* ================================================================ */
+  let modalOpener = null;
   function openModal(kind, html, wide) {
     // Going from one dialog straight to another (e.g. Filters → Person) reuses the open overlay, so nothing re-animates or flashes.
     const box = S.modal && $('#modal .overlay > .modal');
     S.modal = kind;
     if (box) { box.className = 'modal' + (wide ? ' modal-wide' : ''); box.innerHTML = html; box.scrollTop = 0; }
-    else $('#modal').innerHTML = '<div class="overlay" data-overlay="1"><div class="modal' + (wide ? ' modal-wide' : '') + '" role="dialog" aria-modal="true">' + html + '</div></div>';
+    else {
+      // Remember what opened the dialog so focus can go back there when it closes.
+      modalOpener = document.activeElement;
+      $('#modal').innerHTML = '<div class="overlay" data-overlay="1"><div class="modal' + (wide ? ' modal-wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="modalTitle">' + html + '</div></div>';
+    }
     const first = $('#modal [autofocus]');
     if (first) first.focus();
   }
@@ -3299,9 +3230,11 @@
     if (S.modal === 'person' && S.ppFromSheet) { S.ppFromSheet = false; openFilterSheet(S.ppScope); return; }
     if (S.modal === 'wizard' && S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; S.wiz = null; openConflict(cd, S.cfRole); return; }
     hideTip(); S.modal = null; S.wiz = null; $('#modal').innerHTML = '';
+    if (modalOpener && document.contains(modalOpener) && modalOpener.focus) modalOpener.focus({ preventScroll: true });
+    modalOpener = null;
   }
   function modalHead(title, ic) {
-    return '<div class="modal-h">' + (ic ? icon(ic, 18) : '') + '<h2>' + title + '</h2><button class="btn ghost icon-btn" data-act="closeModal" aria-label="Close">' + icon('x', 18) + '</button></div>';
+    return '<div class="modal-h">' + (ic ? icon(ic, 18) : '') + '<h2 id="modalTitle">' + title + '</h2><button class="btn ghost icon-btn" data-act="closeModal" aria-label="Close">' + icon('x', 18) + '</button></div>';
   }
 
   /* ---------- Day list: everyone out on a date, by category ---------- */
@@ -3404,30 +3337,27 @@
     if (c.dups.length) parts.push('duplicate of own ' + c.dups.map(x => x.type.toLowerCase() + ' ' + D.short(x.start) + '–' + D.short(x.end)).join(', '));
     return day + ': conflicts — ' + parts.join('. ') + '.';
   }
-  function conflictCalendar(r) {
+  /** Request details calendar: the same month grid as the request form, with the request's range coloured
+   *  green (no conflict) or red (conflict). Every day in the range is tappable to see who else is out. */
+  function reqCalendar(r) {
     const cf = reqConflicts(r);
-    let months = [], m = D.monthStart(r.start);
-    while (m <= r.end && months.length < 3) { months.push(m); m = D.addMonths(m, 1); }
-    const bad = [...cf.values()].filter(c => c.bad).length;
-    const cal = months.map(m0 => {
+    const months = [];
+    for (let m = D.monthStart(r.start); m <= r.end && months.length < 3; m = D.addMonths(m, 1)) months.push(m);
+    return months.map(m0 => {
       const gs = D.weekStart(m0), mon = m0.slice(0, 7);
-      let cells = DOW.map(x => '<span class="cc-dw">' + x[0] + '</span>').join('');
+      let cells = DOW.map(x => '<div class="dw">' + x[0] + '</div>').join('');
       for (let i = 0; i < 42; i++) {
         const d = D.add(gs, i);
         if (i === 35 && d.slice(0, 7) !== mon) break;
-        if (d.slice(0, 7) !== mon) { cells += '<span class="cc-d blank"></span>'; continue; }
-        const c = cf.get(d);
-        if (!c) { cells += '<span class="cc-d' + (d === S.today ? ' today' : '') + '">' + Number(d.slice(8)) + '</span>'; continue; }
+        if (d.slice(0, 7) !== mon) { cells += '<span class="blank"></span>'; continue; }
+        const today = d === S.today ? ' today' : '', c = cf.get(d);
+        if (!c) { cells += '<span class="' + today.trim() + '">' + Number(d.slice(8)) + '</span>'; continue; }
         const txt = conflictText(d, c);
-        cells += '<button class="cc-d ' + (c.bad ? 'red' : 'green') + (d === S.today ? ' today' : '') + '" data-act="confDay" data-date="' + d + '" data-id="' + esc(r.id) + '" data-tip="' + esc(txt) + '" aria-label="' + esc(txt) + '">' + Number(d.slice(8)) + '</button>';
+        cells += '<button type="button" class="in ' + (c.bad ? 'rg-full' : 'rg-ok') + (d === r.start ? ' r-s' : '') + (d === r.end ? ' r-e' : '') + today + '"' +
+          ' data-act="confDay" data-date="' + d + '" data-id="' + esc(r.id) + '" aria-label="' + esc(txt) + '" title="' + esc(txt) + '">' + Number(d.slice(8)) + '</button>';
       }
-      return '<div class="cc-m"><div class="cc-t">' + D.f(m0, { month: 'long', year: 'numeric' }) + '</div><div class="cc-g">' + cells + '</div></div>';
+      return '<div class="mini"><div class="mini-h"><span>' + D.f(m0, { month: 'long', year: 'numeric' }) + '</span></div><div class="mini-g">' + cells + '</div></div>';
     }).join('');
-    return '<div class="rv"><span class="lbl">Conflict check</span>' +
-      '<div class="cc-sum ' + (bad ? 'bad' : 'ok') + '">' + icon(bad ? 'alert' : 'check', 15) + (bad ? plural(bad, 'day') + ' conflict — tap a red day to see with whom' : 'No conflicts on any requested day') + '</div>' +
-      '<div class="cc-wrap">' + cal + '</div>' +
-      '<div class="cc-key"><span><i class="cc-sw green"></i>No conflict</span><span><i class="cc-sw red"></i>Over daily max or duplicate</span></div>' +
-      '<div id="ccDetail" class="cc-detail" aria-live="polite"></div></div>';
   }
 
   function openRequest(id) {
@@ -3441,22 +3371,34 @@
       acts += '<button class="btn bad act" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' disabled' : '') + ' aria-label="Deny" title="Deny">' + icon('ban', 15) + '<span class="bl">Deny</span></button>' +
         '<button class="btn ok act" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' disabled' : '') + ' aria-label="Approve" title="Approve">' + icon('check', 15) + '<span class="bl">Approve</span></button>';
     }
-    if (canEdit(r)) acts += '<button class="btn act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>';
+    if (canEdit(r)) acts += '<button class="btn act act-lbl act-edit" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>';
     const del = canDelete(r) ? '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' : '';
-    const foot = del || acts ? del + '<button class="btn act" data-act="closeModal" aria-label="Cancel" title="Cancel">' + icon('x', 15) + '<span class="bl">Cancel</span></button>' + acts : '';
+    const foot = del || acts ? del + '<button class="btn act act-lbl" data-act="closeModal" aria-label="Cancel" title="Cancel">' + icon('x', 15) + '<span class="bl">Cancel</span></button>' + acts : '';
+    const bad = [...reqConflicts(r).values()].filter(c => c.bad).length;
+    const longDate = d => D.f(d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    // Same layout as the request form (DESIGN.md §Request details): who, type, calendar, dates, notes — read-only.
     const html = modalHead(esc(r.type === 'Leave' ? 'Ordinary Leave' : 'Special Pass'), r.type === 'Leave' ? 'calendar' : 'clipboard') +
-      '<div class="modal-b"><div class="review">' +
-      '<div class="rv"><span class="lbl">Member</span><div class="big">' + esc(fullName(u)) + '</div>' +
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="badge">' + esc(u.role) + '</span><span class="badge t-' + r.type.toLowerCase() + '">' + r.type + '</span><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span>' +
-        (isCaution(r) ? '<span class="badge caution">' + icon('alert', 12) + ' ' + esc(cautionText(r)) + '</span>' : '') + '</div></div>' +
-      '<div class="rv"><span class="lbl">Travel &amp; absence dates</span><div class="big">' + D.f(r.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(r.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
-        '<div class="meta" style="margin-top:2px">' + plural(n, 'day') + '</div></div>' +
+      '<div class="modal-b req-view">' +
+      '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request for</div>' +
+        '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(lastName(u) + ', ' + firstName(u) + ' · ' + u.rank) + '</span>' +
+        '<span class="badge s-' + esc(r.status.toLowerCase()) + '">' + esc(r.status) + '</span></div></div>' +
+      '<div class="sect"><div class="lbl">Type</div><div class="wiz-type"><div class="seg seg-ro" role="group" aria-label="Type">' +
+        ['Leave', 'Pass'].map(t => '<button type="button" tabindex="-1" aria-disabled="true" class="' + (t === r.type ? 'on' : '') + '">' + t + '</button>').join('') + '</div></div></div>' +
+      (isCaution(r) ? '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(cautionText(r)) + '</span></div>' : '') +
       (isChanged(r) ? '<div class="msg w chg-msg">' + icon('alert', 15) + '<span>' + esc(changeText(r)) +
         (r.userId === S.me ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('check', 13) + ' Got it</button>' : ' The member has not acknowledged this yet.') + '</span></div>' : '') +
       (dupsOf(r).length ? '<div class="msg e">' + icon('alert', 15) + '<span>Overlap: this member also has ' + esc(dupText(r)) + '. A member can’t be on leave and a pass (or two requests) at the same time.</span></div>' : '') +
-      (r.status !== 'Cancelled' && D.days(r.start, r.end) <= 92 ? conflictCalendar(r) : '') +
-      '<div class="rv"><span class="lbl">Trip reason &amp; notes</span><div class="note">' + (r.note ? esc(r.note) : '<span class="muted">No note provided.</span>') + '</div></div>' +
-      '</div></div>' + (foot ? '<div class="modal-f">' + foot + '</div>' : '');
+      (r.status !== 'Cancelled' && n <= 92
+        ? '<div class="cc-sum ' + (bad ? 'bad' : 'ok') + '">' + icon(bad ? 'alert' : 'check', 15) + (bad ? plural(bad, 'day') + ' in conflict — tap a red day to see with whom' : 'No conflicts on any requested day') + '</div>' +
+          reqCalendar(r) +
+          '<div class="mini-key"><span class="mk-i"><span class="mk mk-ok"></span>No conflict</span><span class="mk-i"><span class="mk mk-full"></span>Conflict</span></div>' +
+          '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>'
+        : '') +
+      '<div class="wiz-dates"><div class="field"><span class="lbl">Departure</span><div class="ro-val">' + longDate(r.start) + '</div></div>' +
+        '<div class="field"><span class="lbl">Return</span><div class="ro-val">' + longDate(r.end) + '</div></div></div>' +
+      '<div class="ro-days">' + plural(n, 'day') + '</div>' +
+      '<div class="field"><span class="lbl">Trip reason &amp; notes</span><div class="ro-val ro-note">' + (r.note ? esc(r.note) : '<span class="muted">No note provided.</span>') + '</div></div>' +
+      '</div>' + (foot ? '<div class="modal-f">' + foot + '</div>' : '');
     openModal('req', html);
   }
 
@@ -3469,7 +3411,7 @@
     openModal('user', html);
   }
   function userFields(p, u, pinRequired) {
-    const sel = (name, opts, cur) => '<select id="' + p + name + '">' + opts.map(o => '<option' + (o === cur ? ' selected' : '') + '>' + o + '</option>').join('') + '</select>';
+    const sel = (name, opts, cur) => '<select id="' + p + name + '">' + opts.map(o => '<option' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
     // First / middle / last. Admins can adjust these so members who share a last name read clearly on the calendar.
     const t = String(u.name || '').trim().split(/\s+/).filter(Boolean);
     const nf = t.length ? t[0] : '', nl = t.length > 1 ? t[t.length - 1] : '', nm = t.slice(1, -1).join(' ');
@@ -3697,7 +3639,6 @@
       S.view = v; S.sel = null; hideToast(); render();
     },
     calPrev() { moveCursor(-1); },
-    panelDay(el) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); render(); },
     closeDayPanel() { S.dayPanel = null; store.set('dpClosed', true); render(); },
     dayShift(el) {
       if (S.dayPanel && $('.dpanel')) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); return render(); } S.cursor = D.add(S.cursor, Number(el.dataset.v)); S.sel = null; render(); },
@@ -3718,7 +3659,6 @@
       } else S.cursor = m;
       closeModal(); render();
     },
-    calFilter() { render(); },
     calMode(el) {
       S.cal = el.dataset.v;
       // With a day open in the side panel, switching views centres on that day.
@@ -3827,7 +3767,7 @@
       const r = S.requests.find(x => x.id === el.dataset.id), d = el.dataset.date;
       if (!r) return;
       const c = reqConflicts(r).get(d), box = $('#ccDetail');
-      $$('.cc-d.sel').forEach(x => x.classList.remove('sel'));
+      $$('[data-act="confDay"].sel').forEach(x => x.classList.remove('sel'));
       el.classList.add('sel');
       const head = '<div class="cc-dh">' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '</div>';
       if (!c.bad) { box.innerHTML = head + '<p class="muted">No conflict' + (c.peers.length ? ' — also out: ' + esc(c.peers.map(x => fullName(userOf(x.userId))).join(', ')) : '') + '.</p>'; return; }
@@ -3856,18 +3796,8 @@
       toast(quotaMsg(d, role), 'hint', 4000);
     },
     /* First click lifts the request to the top as one unbroken bar; a second click opens it. */
-    focusReq(el) {
-      const id = el.dataset.id;
-      if (S.focus === id) return openRequest(id);
-      S.focus = id;
-      const body = $('#calBody');
-      if (body && S.cal === 'month') { body.innerHTML = renderMonth(); paintSel(); }
-      const r = S.requests.find(x => x.id === id);
-      toast((r ? fullName(userOf(r.userId)) + ' — ' : '') + 'click the bar again for details · Esc to clear', 'hint', 3500);
-    },
     editReq(el) { openEditWizard(el.dataset.id); },
 
-    listStatus(el) { S.list.status = el.dataset.v; store.set('list', S.list); render(); },
     sortBy(el) {
       const st = el.dataset.table === 'mine' ? S.mine : S.list, k = el.dataset.v;
       pushSort(st, k, (k === 'start' || k === 'end' || k === 'days' || k === 'submitted') ? 'desc' : 'asc');
@@ -3881,7 +3811,6 @@
       render();
     },
     listRefresh() { store.set('list', S.list); const b = $('#listBody'); if (b) b.innerHTML = renderListBody(); },
-    mineStatus(el) { S.mine.status = el.dataset.v; render(); },
     mineRefresh() { const b = $('#mineBody'); if (!b) return; const at = document.activeElement; render(); const i = $('[data-model="mine.q"]'); if (i && at && at.dataset && at.dataset.model === 'mine.q') { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } },
 
     async setStatus(el) {
@@ -4031,10 +3960,8 @@
     },
 
     /* Wizard */
-    wizType(el) { S.wiz.type = el.dataset.v; A.wizNext(); },
     wizCreate() { S.ppMode = 'filter'; S.wiz.creating = true; S.wiz.error = ''; renderWizard(); },
     wizExisting() { S.wiz.creating = false; S.wiz.error = ''; renderWizard(); },
-    wizBack() { S.wiz.step = 1; S.wiz.error = ''; renderWizard(); },
     wizEdit() { S.wiz.step = 'form'; S.wiz.error = ''; renderWizard(); },
     /** One-page form → Review: check the new member (if any) and the dates first. */
     wizReview() {
@@ -4053,30 +3980,6 @@
       S.wiz.type = el.dataset.v;
       $$('#modal [data-act="wizEditType"]').forEach(b => b.classList.toggle('on', b.dataset.v === S.wiz.type));
       refreshWizDates();
-    },
-    wizEditSave() {
-      const c = wizCheck();
-      if (c.errs.length) { toast(c.errs[0], 'error'); return; }
-      S.wiz.step = 3; renderWizard();
-    },
-    wizNext() {
-      const w = S.wiz;
-      w.error = '';
-      if (w.step === 1) {
-        if (w.creating) {
-          w.nu = readUserFields('nu');
-          if (!w.nu.first || !w.nu.last) { $('#wizErr').textContent = 'Enter the new member’s first and last name.'; return; }
-          const dup = S.users.find(u => u.name.toLowerCase() === w.nu.name.toLowerCase() && u.unit === w.nu.unit);
-          if (dup) { $('#wizErr').textContent = w.nu.name + ' (' + w.nu.unit + ') is already on the roster — choose them from the list.'; return; }
-        }
-        if (D.valid(w.start)) w.mini = D.monthStart(w.start);
-        w.step = 2;
-      } else if (w.step === 2) {
-        const c = wizCheck();
-        if (c.errs.length) { toast(c.errs[0], 'error'); return; }
-        w.step = 3;
-      }
-      renderWizard();
     },
     wizDates() {
       const w = S.wiz;
@@ -4165,7 +4068,7 @@
   });
   document.addEventListener('keydown', ev => {
     // Non-button event elements (bars, chips, pucks) act like buttons for keyboard users.
-    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('[role="button"][data-act], article[data-act]')) {
+    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('[role="button"][data-act], article[data-act], tr[data-act][tabindex]')) {
       ev.preventDefault();
       ev.target.click();
       return;
@@ -4207,13 +4110,17 @@
      Refreshes every 60s while visible, when the tab regains focus, and when the request form or a person picker opens.
      The page behind an open dialog re-renders; an open person picker is rebuilt in place with the new list. */
   let refreshing = false;
+  let saveGen = 0;   // bumped by every save(); lets a background refresh detect it raced a save
   async function refreshData() {
     if (!S.token || !S.me || S.busy || S.sel || S.pending || refreshing) return;
     const a = document.activeElement;
     if (!S.modal && a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
     refreshing = true;
+    const gen = saveGen;
     try {
       const data = await call('apiBootstrap', S.token);
+      // A save started while this was in flight: its result is newer than this snapshot, so drop the snapshot.
+      if (S.pending || gen !== saveGen) return;
       apply(data);
       if (!S.modal) render();
       else if (S.modal === 'person') {
@@ -4222,7 +4129,7 @@
         const box = $('#modal .pp-search input'); if (q && box) { box.value = q; S.ppq = q; A.ppFilter(); }
       }
     } catch (e) { /* transient; the next refresh retries */ }
-    refreshing = false;
+    finally { refreshing = false; }
   }
   setInterval(() => { if (!document.hidden) refreshData(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshData(); });
