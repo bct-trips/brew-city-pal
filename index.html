@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792489274"></script>
+    <script src="config.js?v=1792489632"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1299,12 +1299,6 @@
 
   /* Today: a soft tinted cell with a 2px soft-primary outline (visible but not harsh), in every calendar view. */
   /* Today and the open day are rounded rings drawn just inside the cell (like the pucks), not square cell borders. */
-  .cell.today, .month.compact .cell.cc.today, .wk-day.today, .qd.today { box-shadow: none !important; }
-  .cell, .wk-day, .qd { position: relative; isolation: isolate; }
-  .cell.today::before, .month.compact .cell.cc.today::before, .wk-day.today::before, .qd.today::before {
-    content: ""; position: absolute; inset: 3px; z-index: -1; pointer-events: none; border-radius: 12px;
-    border: 2px solid color-mix(in srgb, var(--primary) 60%, transparent); background: color-mix(in srgb, var(--primary) 12%, transparent); }
-  .qd.today::before { background: none; } /* Qtr keeps its availability colour */
   .slot.today { background-color: color-mix(in srgb, var(--primary) 8%, transparent) !important; box-shadow: none !important; }
 
   /* ---------- Desktop day panel (≥900px): slides in from the left; the calendar narrows beside it ---------- */
@@ -1323,9 +1317,6 @@
   .dp-x { margin-left: 4px; }
   .dayv-panel .day-groups .dl-who { flex-basis: 100%; }
   /* Open day in the calendar: a solid selection-colour outline (stronger than Today's). */
-  .cell.is-open, .wk-day.is-open, .qd.is-open { box-shadow: none !important; }
-  .cell.is-open::after, .wk-day.is-open::after, .qd.is-open::after {
-    content: ""; position: absolute; inset: 2px; z-index: 4; pointer-events: none; border-radius: 12px; border: 3px solid var(--sel-ring, var(--sel-bg)); }
 
   /* ---------- Week view: clearer position bands ---------- */
   .band { border-bottom: 0; }
@@ -1447,7 +1438,6 @@
   @container (max-width: 150px) { .qc-day:not(.over):not(.full) { display: none; } .qc-day { padding: 0 4px; font-size: 11.5px; } }
   /* Selected = Brewers navy #12284B (Leave is the brighter royal blue; gold = Pass). Bold text marks it too. */
   .seg button.on, .fsel.on, .fdrop-btn.on, .btn.today-btn.on { font-weight: 800; }
-  :root[data-theme="dark"] .seg button.on, :root[data-theme="dark"] .fdrop-btn.on, :root[data-theme="dark"] .fsel.on { box-shadow: inset 0 0 0 1px #9db8ec; }
   .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: var(--sel-bg); color: var(--sel-ink); }
   /* Out now: requests in progress today. Neutral high-contrast ring + live green dot. */
   :root { --now: #111318; --now-dot: #00a35c; }
@@ -1465,18 +1455,11 @@
   /* On calendar bars the dot is static: an animated dot made Chromium paint today's cell over the bars. */
   .idb-n .now-dot, .mn .now-dot { width: 7px; height: 7px; margin-right: 4px; vertical-align: 1px; animation: none; box-shadow: 0 0 0 1.5px #fff; }
   .rtable tr.now > td:first-child { box-shadow: inset 4px 0 0 var(--now-dot); }
-  /* Today: the date pill is joined to the ring's top-left corner (rounded TL + BR, square TR + BL), same colour as the ring. */
   :root { --today-ring: color-mix(in srgb, var(--primary) 72%, var(--surface)); }
-  .cell.today::before, .month.compact .cell.cc.today::before, .wk-day.today::before, .qd.today::before { border-color: var(--today-ring); }
-  .cell.today .cell-head { padding-left: 3px; align-items: flex-start; }
-  .cell.today .dnum, .cell.cc.today .cc-n { background: var(--today-ring); color: var(--on-primary); height: 24px; border-radius: 12px 0 12px 0; display: inline-flex; align-items: center; justify-content: center; }
-  .cell.today .dnum { margin-top: 3px; }
-  .cell.cc.today .cc-n { margin: -1px 0 0 0; }
   /* Month cells: no isolation (Chromium hid bars under an isolated today cell). The ring sits above the cell background but below the bars (.mo z 2). */
   .cell { isolation: auto; }
   /* Today's ring sits ABOVE the bars (like the open-day ring) so Chromium can't paint it over them; the 12% tint lets bars show through.
      The date row sits above the ring so the pill keeps the exact ring colour. */
-  .cell.today::before, .month.compact .cell.cc.today::before { z-index: 3; }
   .cell .cell-head, .month.compact .cell.cc > .cc-n { position: relative; z-index: 4; }
   /* ---------- Brewers brand: Leave = Brewers navy #12284B, Pass = Brewers yellow #FFC52F (teamcolorcodes.com) ---------- */
   :root, :root[data-theme="dark"] {
@@ -1486,11 +1469,29 @@
   /* Dark mode: navy sits close to the background, so leave fills get a light navy edge. */
   :root[data-theme="dark"] .evs.leave, :root[data-theme="dark"] .wpuck.leave, :root[data-theme="dark"] .badge.t-leave, :root[data-theme="dark"] .tchip-leave.on,
   :root[data-theme="dark"] .mseg.leave, :root[data-theme="dark"] .qbar.leave, :root[data-theme="dark"] .cs-bar.leave, :root[data-theme="dark"] .dl-h.leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
-  /* Selection can't be a solid navy fill any more (that means Leave): Brewers navy outline on a pale navy tint, bold navy text. */
-  :root { --sel-bg: #dde3ee; --sel-ink: #12284B; --sel-ring: #12284B; }
+  /* Selection can't be a solid navy fill (that means Leave): a pale Brewers-navy tonal fill that follows the button's own shape, bold navy text. No inset outlines. */
+  :root { --sel-bg: #d3dcec; --sel-ink: #12284B; --sel-ring: #12284B; }
   :root[data-theme="dark"] { --sel-bg: #d3dcef; --sel-ink: #12284B; --sel-ring: #d3dcef; }
-  .seg button.on, .fdrop-btn.on, .fsel.on, .btn.today-btn.on { box-shadow: inset 0 0 0 1.5px var(--navy); }
-  :root[data-theme="dark"] .seg button.on, :root[data-theme="dark"] .fdrop-btn.on, :root[data-theme="dark"] .fsel.on { box-shadow: inset 0 0 0 1.5px #ffffff; }
+  /* ---------- Day marker: ONE implementation for Month (desktop + phone), Stats, Week and Qtr ----------
+     ::before = rounded ring, ::after = the date pill joined to its top-left corner. Both use --mark, so they always match.
+     Today uses --today-ring; the open day (desktop day panel) uses --sel-ring, and so does today when it is the open day.
+     The pill shows data-d (set by markOpenDay); the original number stays in place, invisible but clickable. */
+  html body :is(.cell, .wk-day, .qd) { position: relative; isolation: auto; --mk-h: 24px; --mk-fs: 15px; }
+  html body .qd { --mk-h: 18px; --mk-fs: 11px; }
+  html body :is(.cell, .wk-day, .qd).today { --mark: var(--today-ring); box-shadow: none !important; }
+  html body :is(.cell, .wk-day, .qd).is-open { --mark: var(--sel-ring); box-shadow: none !important; }
+  html body :is(.cell, .wk-day, .qd):is(.today, .is-open)::before {
+    content: ""; position: absolute; inset: 3px; z-index: 3; pointer-events: none; border-radius: 12px;
+    border: 2px solid var(--mark); background: color-mix(in srgb, var(--mark) 12%, transparent); }
+  html body .qd:is(.today, .is-open)::before { background: none; }
+  html body :is(.cell, .wk-day, .qd).is-open::after { content: none; border: 0; }
+  html body :is(.cell, .wk-day, .qd).today::after {
+    content: attr(data-d); position: absolute; top: 3px; left: 3px; right: auto; bottom: auto; inset: 3px auto auto 3px; z-index: 5; pointer-events: none;
+    height: var(--mk-h); min-width: calc(var(--mk-h) + 4px); padding: 0 7px; box-sizing: border-box; border: 0;
+    display: inline-flex; align-items: center; justify-content: center; border-radius: 12px 0 12px 0;
+    background: var(--mark); color: var(--on-primary); font-size: var(--mk-fs); font-weight: 800; font-variant-numeric: tabular-nums; }
+  :root[data-theme="dark"] :is(.cell, .wk-day, .qd).is-open.today::after { color: #12284B; }
+  html body :is(.cell.today .dnum, .cell.cc.today .cc-n, .wk-day.today .wk-num, .qd.today .qn) { opacity: 0; background: none; box-shadow: none; }
 </style>
 
   </head>
@@ -2042,6 +2043,8 @@
     });
   }
   function markOpenDay() {
+    // Today's date pill is drawn by CSS (::after) from data-d, so the ring and pill are one piece in every view.
+    $$('#calBody .today').forEach(e => { if (e.matches('.cell, .wk-day, .qd')) e.dataset.d = Number(S.today.slice(8)); });
     $$('#calBody .is-open').forEach(e => e.classList.remove('is-open'));
     if (!S.dayPanel || !$('.dpanel')) return;
     $$('#calBody [data-date="' + S.dayPanel + '"]').forEach(e => { const c = e.closest('.cell, .wk-day, .qd') || e; if (c.matches('.cell, .wk-day, .qd')) c.classList.add('is-open'); });
