@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792529937"></script>
+    <script src="config.js?v=1792530193"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1901,6 +1901,12 @@
     border-width: 3px; border-color: transparent; border-top-color: var(--brick); border-right-color: var(--brick); }
   #modal #passkey::placeholder { letter-spacing: normal; font-size: 16px; }
   .splash .splash-t { font-size: 24px; font-weight: 800; letter-spacing: .02em; color: #ffffff; } /* big and bold so it's obvious the app is loading */
+  /* Requests table: status mark and name sit close together (no wide padding between them or after the marks). */
+  .rtable th.st-ic-h, .rtable td.st-ic-c { width: 28px; padding: 0 0 0 10px; }
+  .rtable td.stk { padding-left: 8px; padding-right: 10px; }
+  .rtable th.stk { padding: 0; } .rtable th.stk .th-sort { padding-left: 8px; padding-right: 10px; } /* the header doesn't widen the column */
+  .rtable td.stk .stk-in { gap: 8px; }
+  .tbl-wrap.scrolled tr.t-leave td.stk, .tbl-wrap.scrolled tr.t-pass td.stk { padding-left: 12px; }
 </style>
 
   </head>
@@ -2656,8 +2662,8 @@
     return renderCalendar();
   }
   const navOn = v => S.view === v || (v === 'people' && S.view === 'roster'); // Manage roster lives under the Roster tab
-  // Profile opens a drop-up menu: a small caret after its label shows that (it flips while open).
-  const caret = v => v === 'profile' ? '<i class="nav-caret" aria-hidden="true">' + icon('down', 14) + '</i>' : '';
+  // (No caret on Profile: the tab lights up and the menu's notch points at it while it's open.)
+  const caret = () => '';
   function renderNav() {
     const pending = IDX.live.filter(r => r.status === 'Pending').length;
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
@@ -3682,8 +3688,9 @@
   const ROLE_NAME = { Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' };
   const milDate = d => Number(d.slice(8)) + ' ' + D.f(d, { month: 'short' }) + ' ' + d.slice(0, 4);
   const COLS = [
-    // The pinned Last Name comes right after the status mark; Unit scrolls with the other columns.
-    ['st', ''], ['last', 'Last Name'], ['unit', 'Unit'], ['first', 'First Name'], ['rank', 'Rank'], ['role', 'Position'],
+    // The pinned Name (last name) comes right after the status mark; Unit scrolls with the other columns.
+    // Short headers, so the column is only as wide as the names in it.
+    ['st', ''], ['last', 'Name'], ['unit', 'Unit'], ['first', 'First'], ['rank', 'Rank'], ['role', 'Position'],
     ['start', 'Start'], ['end', 'End'], ['days', 'Days'], ['note', 'Notes'], ['status', 'Status']
   ];
   const SORT_KEYS = {
