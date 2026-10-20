@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792513660"></script>
+    <script src="config.js?v=1792525995"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1568,17 +1568,17 @@
   .y-pend { background: var(--rg-over); color: var(--rg-over-ink); }
   .y-den { background: var(--no-bg); color: var(--no-ink); }
   :root[data-theme="dark"] .y-ap-leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
-  /* Nav bar: Brewers navy for everyone, Brewers brick (#7C2529, PMS 1815 C) in admin mode. Light labels, yellow selection pill.
+  /* Nav bar: Brewers navy for everyone (dark in dark mode), Brewers metallic gold (#85714D) in admin mode. Light labels, yellow selection pill.
      --nav-bg is set on the bar itself so the badge rings and the home-indicator strip match its colour. */
   :root { --brick: #7C2529; }
   .nav { --nav-bg: var(--navy); background: var(--nav-bg); border-top: 1px solid var(--nav-bg); }
-  .nav.nav-admin { --nav-bg: var(--brick); }
+  .nav.nav-admin { --nav-bg: #85714D; } /* admin mode: Brewers metallic gold */
   :root[data-theme="dark"] .nav { border-top-color: rgba(255, 255, 255, .14); }
-  /* Dark mode: the regular nav bar is dark (not navy); admin mode stays brick so it's still obvious. */
+  /* Dark mode: the regular nav bar is dark (not navy); admin mode stays metallic gold so it's still obvious. */
   :root[data-theme="dark"] .nav:not(.nav-admin) { --nav-bg: #1d1e24; }
   :root[data-theme="dark"] .nav:not(.nav-admin) button:not(.on) { color: #c5c6d0; }
   .nav button { color: #c9d3e8; }
-  .nav.nav-admin button { color: #f1d6d3; }
+  .nav.nav-admin button { color: #f6efe2; }
   .nav button.on, .nav.nav-admin button.on { color: #ffffff; }
   .nav button:hover .nav-ic { background: rgba(255, 255, 255, .10); }
   .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: var(--gold); color: var(--navy); }
@@ -1776,6 +1776,29 @@
   .note-x:hover { background: color-mix(in srgb, var(--on-surface) 8%, transparent); color: var(--ink); }
   .notes-lh { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px 4px; border-top: 1px solid var(--line);
     font-size: 12.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  /* Profile menu (the Profile tab): who you are, then Notifications · Appearance · Settings · Sign out. Bottom sheet on phones. */
+  .pm-sheet { max-width: 440px; }
+  .pm-body { padding: 0 0 8px; }
+  .pm-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .pm-head .nm { font-weight: 800; font-size: 17px; }
+  .pm-row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 0 16px; border: 0; border-bottom: 1px solid var(--line);
+    background: none; color: var(--ink); font: inherit; font-size: 16px; font-weight: 700; text-align: left; cursor: pointer; }
+  .pm-row:hover { background: color-mix(in srgb, var(--on-surface) 6%, transparent); }
+  .pm-row:last-child { border-bottom: 0; }
+  .pm-row .pm-l { flex: 1; min-width: 0; }
+  .pm-row > .ic:last-child { color: var(--muted); }
+  .pm-ct { font-size: 13px; font-weight: 800; color: var(--navy); background: var(--gold); border-radius: 999px; padding: 2px 8px; }
+  .pm-ct:empty { display: none; }
+  .pm-theme { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .pm-tl { display: flex; align-items: center; gap: 14px; font-weight: 700; }
+  .pm-theme .seg { height: 40px; }
+  .pm-theme .seg button { flex: 1 1 0; }
+  /* Notifications drawer: a tall sheet holding just the list. */
+  .notes-sheet { max-width: 520px; height: min(680px, calc(100dvh - 32px)); }
+  .notes-drawer { padding: 0; }
+  .notes-drawer .notes-lh { border-top: 0; text-transform: none; letter-spacing: 0; padding: 8px 10px; }
+  .notes-drawer .note-item:last-child .note-row { border-radius: 0; }
+  .notes-drawer .notes-empty { padding: 24px 16px; }
 </style>
 
   </head>
@@ -2218,6 +2241,7 @@
     // conflicts as counts. Everyone else's names and requests aren't on this device at all.
     S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
     S.notePrefs = data.notePrefs || S.notePrefs || { approved: true, denied: true, edited: true };
+    S.nameNeed = data.nameNeed || ''; // shares a last name: must add a first / middle initial before using the app
     if (S.priv) { S.f.role = ROLES.slice(); S.f.person = ''; S.f.conf = false; S.mineMode = 'list'; if (S.view === 'all') S.view = 'mine'; }
     S.today = localToday();
     if (!S.isAdmin && (S.view === 'admin' || S.view === 'people' || S.view === 'roster')) S.view = 'calendar';
@@ -2390,6 +2414,35 @@
       });
     });
   }
+  /** Someone else with your last name uses PAL: add your first initial (and your middle initial when your first
+   *  initials match) so everyone can be told apart. Shown before the app until it's done. */
+  function showNameNeed() {
+    const need = S.nameNeed, me = userOf(S.me);
+    if ($('#nameForm') && $('#nameForm').dataset.need === need) return; // already showing (don't wipe what they're typing)
+    const mid = need === 'middle';
+    authShell('<form id="nameForm" data-need="' + need + '"><h2 class="auth-h">Help us tell you apart</h2>' +
+      '<p class="auth-note">' + (mid
+        ? 'Another member named <b>' + esc(lastName(me)) + '</b> has the same first initial. Add your <b>middle initial</b>.'
+        : 'Another member named <b>' + esc(lastName(me)) + '</b> uses PAL now. Add your <b>first initial</b>.') +
+      ' It shows next to your name on the schedule.</p>' +
+      '<div class="field"><label for="nmIn">' + (mid ? 'Middle initial' : 'First initial') + '</label><input id="nmIn" class="init-in" maxlength="1" autocapitalize="characters" autocomplete="off"></div>' +
+      '<div class="err" id="nmErr"></div>' +
+      '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('arrow', 16) + ' Continue</button></form>' +
+      '<div class="auth-alt"><button class="linkbtn" id="nmOut">Sign out</button></div>');
+    $('#nmOut').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); A.signOut(ev.currentTarget); });
+    $('#nameForm').addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const v = $('#nmIn').value.trim();
+      if (!/^[a-z]$/i.test(v)) { $('#nmErr').textContent = 'Enter a single letter.'; return; }
+      $('#nmErr').textContent = '';
+      await authBusy(ev.target.querySelector('button[type=submit]'), async () => {
+        try {
+          apply(await call('apiSetMyInitials', S.token, mid ? '' : v, mid ? v : ''));
+          if (S.nameNeed) showNameNeed(); else { render(); toast('Thanks — saved'); }
+        } catch (e) { $('#nmErr').textContent = e.message; }
+      });
+    });
+  }
   /** Shown after first sign-in, an admin reset, or a shared PIN: the member must choose their own PIN. */
   function showSetPin(me) {
     authShell('<form id="setPinForm"><h2 class="auth-h">Set your own PIN</h2>' +
@@ -2419,6 +2472,7 @@
   /* ================================================================ */
   function render() {
     if (!S.me) return;
+    if (S.nameNeed) { showNameNeed(); return; }
     const keep = {};
     $$('.scroll, .dayv, .tbl-wrap').forEach(el => { if (el.id) keep[el.id] = [el.scrollTop, el.scrollLeft]; });
     $('#app').innerHTML = '<main class="main" id="main">' + renderView() + '</main>' + renderNav();
@@ -3983,7 +4037,7 @@
   function openLink(url) {
     const h = String(url || '').split('#')[1] || '';
     if (/^req=/.test(h)) { const id = decodeURIComponent(h.slice(4)); if (S.requests.some(r => r.id === id)) openRequest(id); else toast('That request no longer exists'); }
-    else if (h === 'notes') { S.view = 'profile'; render(); }
+    else if (h === 'notes') { render(); openNotesDrawer(); }
     if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   }
   /** Notifications to show: a deleted request takes its notifications with it (only the "deleted" notice stays). */
@@ -4010,7 +4064,35 @@
     S.notesLoading = false; redrawNotes(); renderNavOnly();
   }
   function renderNavOnly() { const n = $('.nav'); if (n) n.outerHTML = renderNav().replace(/^<span id="syncStatus"[^>]*>[^<]*<\/span>/, ''); }
-  function redrawNotes() { const p = $('#notesPanel'); if (p) p.innerHTML = notesPanelHtml(); }
+  function redrawNotes() {
+    const p = $('#notesPanel'); if (p) p.innerHTML = notesPanelHtml();
+    const d = $('#notesDrawer'); if (d) d.innerHTML = notesListHtml();
+    const m = $('#pmNotesCt'); if (m) m.textContent = S.unread ? S.unread + ' new' : '';
+  }
+  /* ---------- Profile menu (the Profile tab): Notifications · Appearance · Settings · Sign out ---------- */
+  function openProfileMenu() {
+    const me = userOf(S.me);
+    const row = (act, ic, label, extra) => '<button type="button" class="pm-row" data-act="' + act + '">' + icon(ic, 20) + '<span class="pm-l">' + label + '</span>' + (extra || '') + '</button>';
+    const html = modalHead('Profile', 'user') + '<div class="modal-b pm-body">' +
+      '<div class="pm-head"><div class="avatar">' + esc(initials(me)) + '</div><div><div class="nm">' + esc((me.rank ? me.rank + ' ' : '') + me.name) + '</div>' +
+        '<div class="meta">' + esc((ROLE_NAME[me.role] || me.role) + ' · ' + me.unit) + (S.isAdmin ? ' · Admin mode' : '') + '</div></div></div>' +
+      row('openNotes', 'bell', 'Notifications', '<b class="pm-ct" id="pmNotesCt">' + (S.unread ? S.unread + ' new' : '') + '</b>' + icon('right', 18)) +
+      '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full" role="group" aria-label="Appearance">' +
+        [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
+          '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '">' + icon(t[2], 15) + t[1] + '</button>').join('') + '</div></div>' +
+      row('openSettings', 'sliders', 'Settings', icon('right', 18)) +
+      row('signOut', 'logout', 'Sign out') +
+      '</div>';
+    openModal('menu', html);
+    $('#modal .modal').classList.add('pm-sheet');
+  }
+  /** Notifications drawer: the list, with Mark all read / Clear all and a ✕ on each. */
+  function openNotesDrawer() {
+    const html = modalHead('Notifications', 'bell') + '<div class="modal-b notes-drawer" id="notesDrawer">' + notesListHtml() + '</div>' +
+      '<div class="modal-f"><button class="btn" data-act="openSettings">' + icon('sliders', 16) + 'Notification settings</button><button class="btn primary" data-act="closeModal">Close</button></div>';
+    openModal('notes', html);
+    $('#modal .modal').classList.add('notes-sheet');
+  }
   const NOTE_IC = { approved: ['check', 'ok'], denied: ['ban', 'no'], edited: ['pencil', 'warn'], deleted: ['trash', 'no'], new: ['plus', 'info'], created: ['plus', 'info'], signup: ['userPlus', 'info'], account: ['check', 'ok'] };
   function ago(ts) {
     const s = (Date.now() - new Date(ts).getTime()) / 1000;
@@ -4020,11 +4102,10 @@
     return D.f(String(ts).slice(0, 10), { month: 'short', day: 'numeric' });
   }
   function notesPanelHtml() {
-    if (S.notes == null) setTimeout(loadNotes, 0);
     const pst = S.pushState || 'unsupported';
     const pushMsg = {
-      google: 'Push notifications work in the GitHub Pages version of the app (add it to your Home Screen). Everything still shows up here.',
-      unsupported: 'This browser can’t receive push notifications. Everything still shows up here.',
+      google: 'Push notifications work in the GitHub Pages version of the app (add it to your Home Screen). Everything still shows up under Profile → Notifications.',
+      unsupported: 'This browser can’t receive push notifications. Everything still shows up under Profile → Notifications.',
       denied: 'Notifications are blocked for PAL on this device. Allow them in your phone’s Settings → Notifications → PAL (or the browser’s site settings), then come back.',
       off: 'Get a notification on this device when your requests are approved, denied, edited or deleted.',
       busy: 'Setting up notifications…',
@@ -4035,6 +4116,20 @@
       : pst === 'off' ? '<button class="btn primary" data-act="pushOn">' + icon('bell', 18) + 'Turn on notifications</button>'
       : pst === 'on' ? '<button class="btn" data-act="pushOff">Turn off</button><button class="btn" data-act="pushTest">Send test</button>'
       : pst === 'busy' ? '<button class="btn primary is-busy" aria-busy="true" tabindex="-1"><span class="btn-spin" aria-hidden="true"></span>Turning on…</button>' : '';
+    return '<div class="notes-h"><h3>' + icon('bell', 16) + ' Notification settings</h3></div>' +
+      (pushMsg ? '<div class="push-row push-' + pst + '"><p>' + (pst === 'on' ? icon('check', 16) : '') + esc(pushMsg) + '</p>' + (pushBtns ? '<div class="push-btns">' + pushBtns + '</div>' : '') + '</div>' : '') +
+      '<div class="push-row note-prefs"><p><b>Notify me when my request is</b></p><div class="push-btns">' +
+        [['approved', 'Approved'], ['denied', 'Denied'], ['edited', 'Changed']].map(k => {
+          const on = S.notePrefs[k[0]] !== false;
+          return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="notePref" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>';
+        }).join('') + '</div></div>' +
+      (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin alerts</b> — new requests, member edits and deletions, new accounts.</p><div class="push-btns">' +
+        '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' : '') +
+      '';
+  }
+  /** The notifications themselves (the drawer from Profile → Notifications): Mark all read, Clear all, and a ✕ on each. */
+  function notesListHtml() {
+    if (S.notes == null) setTimeout(loadNotes, 0);
     const notes = visibleNotes();
     const list = S.notes == null ? '<div class="notes-empty">Loading…</div>'
       : !notes.length ? '<div class="notes-empty">No notifications yet. Approvals, denials and changes to your requests will show up here.</div>'
@@ -4046,24 +4141,15 @@
           '<span class="note-time">' + esc(ago(n.ts)) + (n.read ? '' : '<i class="note-dot" aria-label="Unread"></i>') + '</span></button>' +
           '<button type="button" class="note-x" data-act="noteDel" data-id="' + esc(n.id) + '" aria-label="Delete notification: ' + esc(n.title) + '" title="Delete">' + icon('x', 16) + '</button></div>';
       }).join('') + '</div>';
-    return '<div class="notes-h"><h3>' + icon('bell', 16) + ' Notifications' + (S.unread ? '<span class="ct">' + S.unread + ' new</span>' : '') + '</h3>' +
-        (S.unread ? '<button class="btn ghost sm" data-act="notesAllRead">Mark all read</button>' : '') + '</div>' +
-      (pushMsg ? '<div class="push-row push-' + pst + '"><p>' + (pst === 'on' ? icon('check', 16) : '') + esc(pushMsg) + '</p>' + (pushBtns ? '<div class="push-btns">' + pushBtns + '</div>' : '') + '</div>' : '') +
-      '<div class="push-row note-prefs"><p><b>Notify me when my request is</b></p><div class="push-btns">' +
-        [['approved', 'Approved'], ['denied', 'Denied'], ['edited', 'Changed']].map(k => {
-          const on = S.notePrefs[k[0]] !== false;
-          return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="notePref" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>';
-        }).join('') + '</div></div>' +
-      (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin alerts</b> — new requests, member edits and deletions, new accounts.</p><div class="push-btns">' +
-        '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' : '') +
-      (notes.length ? '<div class="notes-lh"><span>Recent</span><button class="btn ghost sm" data-act="notesClear">' + icon('trash', 14) + 'Clear all</button></div>' : '') +
-      list;
+    return (notes.length ? '<div class="notes-lh">' + (S.unread ? '<button class="btn ghost sm" data-act="notesAllRead">' + icon('check', 14) + 'Mark all read</button>' : '<span></span>') +
+        '<button class="btn ghost sm" data-act="notesClear">' + icon('trash', 14) + 'Clear all</button></div>' : '') + list;
   }
+
   const b64ToU8 = b => { const s = atob(b.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((b.length + 3) % 4)); return Uint8Array.from(s, c => c.charCodeAt(0)); };
 
   function renderProfile() {
     const me = userOf(S.me);
-    return '<section class="page profile-page"><div class="toolbar"><span class="title">Profile</span>' +
+    return '<section class="page profile-page"><div class="toolbar"><span class="title">Settings</span>' +
       (S.isAdmin ? '<span class="unlocked">' + icon('unlock', 13) + ' Admin unlocked</span>' : '') + '</div>' +
       '<div class="scroll" id="profileScroll">' +
 
@@ -4692,9 +4778,12 @@
     },
     // Delete one notification, or all of them: gone at once, then removed on the server.
     noteDel(el) { dropNotes([el.dataset.id]); },
+    openNotes() { openNotesDrawer(); },
+    openSettings() { closeModal(); S.view = 'profile'; S.sel = null; render(); const sc = $('#profileScroll'); if (sc) sc.scrollTop = 0; },
     notesClear() { if (confirm('Delete all your notifications?')) dropNotes('all'); },
     nav(el) {
       const v = el.dataset.v;
+      if (v === 'profile') { openProfileMenu(); return; } // Profile is a menu: Notifications · Appearance · Settings · Sign out
       if (v === 'calendar') S.cal = 'month'; // the Calendar tab always returns to Month view
       if (v === 'mine') S.mineMode = 'list'; // My Requests always opens on its list; Cal is one tap away
       S.view = v; S.sel = null; hideToast(); render();
