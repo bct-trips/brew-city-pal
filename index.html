@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792529921"></script>
+    <script src="config.js?v=1792529937"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -4326,7 +4326,7 @@
   /** Admin Mode (from the Profile menu): ask for the admin PIN. The box ignores password-manager autofill (it's
    *  read-only until tapped) so your sign-in PIN never lands in it. */
   function openAdminPin() {
-    const html = modalHead('Admin Mode', 'shield') + '<div class="modal-b"><p class="auth-note">Enter the admin PIN to switch to admin mode. You stay signed in as yourself.</p>' +
+    const html = modalHead('Admin Mode', 'shield') + '<div class="modal-b">' +
       '<input id="passkey" name="pal-admin-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Admin PIN" aria-label="Admin PIN" autocomplete="off" readonly data-lpignore="true" data-1p-ignore data-bwignore>' +
       '<div class="err" id="admErr"></div></div>' +
       '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="unlockAdmin" id="admGo">' + icon('unlock', 18) + 'Unlock</button></div>';
