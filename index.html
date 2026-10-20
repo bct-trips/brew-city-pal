@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792529817"></script>
+    <script src="config.js?v=1792529897"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1820,7 +1820,7 @@
   .badge-builder .bb-prev .ub { font-size: 16px; padding: 4px 12px; }
   .badge-builder .cfg-code { flex: 0 0 110px; }
   .cfg-new-btn { justify-content: flex-start; border-top: 0; }
-  #modal #passkey { display: block; width: 100%; box-sizing: border-box; height: 48px; font-size: 20px; letter-spacing: .2em; }
+  #modal #passkey { display: block; width: 9.5em; max-width: 100%; box-sizing: border-box; height: 48px; margin: 0 auto; font-size: 20px; letter-spacing: .3em; text-align: center; } /* digits only: a short box */
   /* Profile menu header: one big [P|MKE|Name] badge filling the top of the menu — position square, unit, last name —
      in the same colours and dividers as the small badges; the menu's rounded top corners clip it. */
   .pm-bh { display: flex; align-items: stretch; height: 42px; font-size: 18px; /* one text size across the badge */ border-bottom: 1.5px solid #0b1730; }
@@ -1895,6 +1895,11 @@
   .nav.nav-admin button.on:hover::before, .nav.nav-admin button[aria-expanded="true"]:hover::before { background: var(--navy-2); }
   .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover { color: #ffffff; }
   .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover::before { background: rgba(255, 255, 255, .22); }
+  /* Saving ring on the Profile tab: the same brick arc as the logo loading ring, circling the patch icon. */
+  .nav button[data-v="profile"] .nav-ic.syncing::after, .nav button[data-v="profile"].on .nav-ic.syncing::after,
+  .nav button[data-v="profile"][aria-expanded="true"] .nav-ic.syncing::after {
+    border-width: 3px; border-color: transparent; border-top-color: var(--brick); border-right-color: var(--brick); }
+  #modal #passkey::placeholder { letter-spacing: normal; font-size: 16px; }
 </style>
 
   </head>
