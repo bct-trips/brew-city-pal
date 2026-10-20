@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792492416"></script>
+    <script src="config.js?v=1792492558"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1489,6 +1489,8 @@
     .filters > .fall.on + .fall-clear { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink); border-left-color: color-mix(in srgb, var(--sel-ink) 30%, transparent); }
     .filters > .fall.fp-active + .fall-clear { background: var(--gold); border-color: var(--gold); color: var(--navy); border-left-color: color-mix(in srgb, var(--navy) 30%, transparent); }
   }
+  /* Collapsible band headers: the whole row toggles. */
+  .rtable tr.grp-h, .rtable tr.grp-h th { cursor: pointer; user-select: none; }
 </style>
 
   </head>
@@ -3029,12 +3031,13 @@
     };
     // Grouped like the Week view bands: Leave on top, Pass below, each with a header bar.
     // Headers stick under the column titles and collapse / expand their band (remembered per table this session).
+    // The whole header row is the tap target; the button inside keeps keyboard access and aria-expanded.
     const key = table || 'queue', col = (S.grpCol = S.grpCol || {})[key] || {};
     // Current (ending today or later) leave and passes in their own bands; finished ones go to a Past band, collapsed by default.
     const group = (type, list) => {
       const closed = type === 'Past' ? col.Past !== false : !!col[type], n = COLS.length + 1;
       const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : type === 'Now' ? '<span class="badge t-now"><i class="now-dot" aria-hidden="true"></i>Active Leave / Pass</span>' : '<span class="badge t-' + type.toLowerCase() + '">' + type + '</span>';
-      return '<tbody class="grp grp-' + type.toLowerCase() + (closed ? ' closed' : '') + '"><tr class="grp-h"><th colspan="' + n + '" scope="rowgroup">' +
+      return '<tbody class="grp grp-' + type.toLowerCase() + (closed ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
         '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + !closed + '">' +
         icon(closed ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button></th></tr>' +
         (closed ? '' : list.length ? list.map(r => rowHtml(r, type === 'Past' || type === 'Now')).join('')
