@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792502401"></script>
+    <script src="config.js?v=1792502536"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1573,6 +1573,11 @@
   .filters > .mine-mode .seg button { padding: 0 14px; }
   .fs-sect .fs-conf { width: 100%; height: 44px; }
   .fs-help { margin: 6px 2px 0; font-size: 13.5px; color: var(--muted); }
+  /* Year view: a divider before each January, spanning the whole grid. */
+  .y-year { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; margin: 4px 0 -2px; color: var(--muted); font-size: 13px; font-weight: 800; letter-spacing: .08em; }
+  .y-year::before, .y-year::after { content: ""; flex: 1; height: 2px; background: var(--line); }
+  .y-body .y-grid { margin-top: 0; }
+  @media (max-width: 700px) { .y-grid { grid-template-columns: 1fr; } .y-d { height: 34px; font-size: 14px; } }
 </style>
 
   </head>
@@ -2139,7 +2144,15 @@
   }
   // Re-fit after any re-render (full or partial) and on resize; batched to one pass per frame.
   let fitQueued = false;
-  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); markScrolled(); markOpenDay(); fitTables(); }); };
+  /** Nav labels: "Calendar" becomes "Cal" when it doesn't fit its tab (e.g. five tabs on a phone in admin mode). */
+  function fitNav() {
+    $$('.nav .narrow[data-short]').forEach(l => {
+      if (!l.dataset.full) l.dataset.full = l.textContent;
+      l.textContent = l.dataset.full;
+      if (l.scrollWidth > l.clientWidth + 1) l.textContent = l.dataset.short;
+    });
+  }
+  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); fitNav(); markScrolled(); markOpenDay(); fitTables(); }); };
   /** Outline the day that's open in the desktop day panel, in whichever calendar view is showing. */
   /** Request tables: band headers stick just under the column titles; on first show, start both bands collapsed
    *  when the rows don't fit on screen. */
@@ -2184,7 +2197,7 @@
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
       '<nav class="nav' + (S.isAdmin ? ' nav-admin' : '') + '" aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '">' + items.map(i =>
       '<button data-act="nav" data-v="' + i[0] + '" class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
-      '<span class="nav-ic' + (i[0] === 'profile' && S.pending ? ' syncing' : i[0] === 'profile' && S.syncErr ? ' sync-err' : '') + '">' + icon(i[2], 20) + '</span><span class="wide">' + i[1] + '</span><span class="narrow" aria-hidden="true">' + i[3] + '</span>' +
+      '<span class="nav-ic' + (i[0] === 'profile' && S.pending ? ' syncing' : i[0] === 'profile' && S.syncErr ? ' sync-err' : '') + '">' + icon(i[2], 20) + '</span><span class="wide">' + i[1] + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + '</span>' +
       (i[0] === 'all' && S.isAdmin && pending ? '<b class="dot">' + pending + '</b>' : '') +
       (i[0] === 'mine' && myChanged ? '<b class="dot warn" title="Dates changed by an admin">' + myChanged + '</b>' : '') +
       (i[0] === 'profile' && S.unread ? '<b class="dot" title="Unread notifications">' + S.unread + '</b>' : '') + '</button>').join('') + '</nav>';
@@ -3729,8 +3742,6 @@
     const RANK = { Approved: 0, Pending: 1, Denied: 2 };
     // One request per day: approved beats pending beats denied (overlaps are rare and flagged elsewhere).
     const dayReq = d => reqs.filter(r => r.start <= d && r.end >= d).sort((a, b) => RANK[a.status] - RANK[b.status])[0];
-    const tot = { Leave: { Approved: 0, Pending: 0, Denied: 0 }, Pass: { Approved: 0, Pending: 0, Denied: 0 } };
-    reqs.forEach(r => { const a = D.max(r.start, from), b = D.min(r.end, to); if (a <= b) tot[r.type][r.status] += D.days(a, b); });
     const cls = r => r.status === 'Approved' ? 'y-ap-' + r.type.toLowerCase() : r.status === 'Pending' ? 'y-pend' : 'y-den';
     const blocks = months.map(m0 => {
       const gs = D.weekStart(m0), mon = m0.slice(0, 7);
@@ -3744,18 +3755,16 @@
           ? '<button type="button" class="y-d ' + cls(r) + today + '" data-act="yearDay" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(D.f(d, { month: 'long', day: 'numeric' }) + ': ' + r.type + ', ' + r.status) + '">' + Number(d.slice(8)) + '</button>'
           : '<span class="y-d' + today + '">' + Number(d.slice(8)) + '</span>';
       }
-      return '<div class="y-m' + (mon === S.today.slice(0, 7) ? ' y-now' : '') + '"><div class="y-t">' + D.f(m0, { month: 'long', year: 'numeric' }) + '</div><div class="y-g">' + cells + '</div></div>';
+      const divider = m0.slice(5, 7) === '01' && m0 !== first ? '<div class="y-year" role="separator"><span>' + m0.slice(0, 4) + '</span></div>' : '';
+      return divider + '<div class="y-m' + (mon === S.today.slice(0, 7) ? ' y-now' : '') + '"><div class="y-t">' + D.f(m0, { month: 'long', year: 'numeric' }) + '</div><div class="y-g">' + cells + '</div></div>';
     }).join('');
-    const sum = '<div class="y-sum"><span><b>' + tot.Leave.Approved + '</b> leave days approved</span><span><b>' + tot.Leave.Pending + '</b> pending</span><span><b>' + tot.Leave.Denied + '</b> denied</span>' +
-      '<span><b>' + tot.Pass.Approved + '</b> pass days approved</span></div>';
-    const key = '<div class="mini-key"><span class="mk-i"><span class="mk y-ap-leave"></span>Approved leave</span><span class="mk-i"><span class="mk y-ap-pass"></span>Approved pass</span>' +
-      '<span class="mk-i"><span class="mk y-pend"></span>Pending</span><span class="mk-i"><span class="mk y-den"></span>Denied</span></div>';
-    const html = modalHead(esc(nameText(u, true)), 'calendar') + '<div class="modal-b">' +
-      '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(nameText(u)) + '</span><span class="badge">' + esc(ROLE_NAME[u.role] || u.role) + '</span></div>' +
-      '<p class="meta" style="margin:8px 0 10px;white-space:normal">' + esc(D.f(from, { month: 'short', year: 'numeric' }) + ' – ' + D.f(to, { month: 'short', year: 'numeric' })) + ' · tap a coloured day to open that request</p>' +
-      sum + key + '<div class="y-grid">' + blocks + '</div></div>' +
-      '<div class="modal-f"><button class="btn" data-act="closeModal">Close</button><button class="btn primary" data-act="personRequests" data-id="' + esc(u.id) + '">' + icon('list', 18) + 'All requests</button></div>';
+    // Only the calendars: month blocks with a year divider before each January; Close is the only action.
+    const html = modalHead(esc(nameText(u, true)), 'calendar') + '<div class="modal-b y-body"><div class="y-grid">' + blocks + '</div></div>' +
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Close</button></div>';
     openModal('year', html, true);
+    // Open on the current month (phones: a scrolling list of months, so earlier months are a scroll up).
+    const now = $('#modal .y-now'), body = $('#modal .y-body');
+    if (now && body && isCompact()) body.scrollTop = now.offsetTop - body.offsetTop - 8;
   }
 
   /* ---------- Admin: user editor ---------- */
