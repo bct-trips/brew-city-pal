@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792486117"></script>
+    <script src="config.js?v=1792486211"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1340,6 +1340,9 @@
     background: var(--sel-bg); color: var(--sel-ink) !important; }
   .fp .fp-clear .ic { margin: 0; }
   .fs-sect .fp .fp-clear, .fs-sect .fp .fp-clear:has(> .ic:first-child) { width: 52px; min-width: 52px; border-radius: 0 22px 22px 0; }
+  .mini-key { gap: 6px 16px; }
+  .mk-i { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .mk-i .mk { margin-left: 0; }
 </style>
 
   </head>
@@ -3341,8 +3344,8 @@
       html += '<button type="button" data-act="miniPick" data-date="' + d + '" class="' + [d.slice(0, 7) !== ms.slice(0, 7) ? 'out' : '', d === S.today ? 'today' : '', inR ? 'in rg-' + st : '', first ? 'r-s' : '', last ? 'r-e' : '', !inR && st !== 'ok' ? 'dot-' + st : ''].join(' ') + '"' +
         (st !== 'ok' ? ' title="' + esc(role + (st === 'full' ? ' leave slots already full' : ' leave would go over the daily max')) + '"' : '') + '>' + Number(d.slice(8)) + '</button>';
     }
-    return html + '</div><div class="mini-key">' + (w.picking ? 'Now tap the return day.' : 'Tap departure, then return.') +
-      (q ? ' <span class="mk mk-ok"></span>Open <span class="mk mk-over"></span>Overbooks <span class="mk mk-full"></span>Full' : '') + '</div></div>';
+    // Colour key only (leave with a daily max); each swatch stays with its label when wrapping.
+    return html + '</div>' + (q ? '<div class="mini-key"><span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-over"></span>Overbooks</span><span class="mk-i"><span class="mk mk-full"></span>Full</span></div>' : '') + '</div>';
   }
   function renderWizStatus() {
     const c = wizCheck();
