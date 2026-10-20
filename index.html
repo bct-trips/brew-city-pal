@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792491770"></script>
+    <script src="config.js?v=1792491954"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1397,7 +1397,7 @@
      ::before = rounded ring, ::after = the date pill joined to its top-left corner. Both use --mark, so they always match.
      Today uses --today-ring; the open day (desktop day panel) uses --sel-ring, and so does today when it is the open day.
      The pill shows data-d (set by markOpenDay); the original number stays in place, invisible but clickable.
-     The ring is drawn above the bars (z 3, 12% tint) so bars always show through. */
+     Layers: cell background < ring (z 3) < event bars (z 4: .mo, .cs-lanes, .qbar) < date pill (z 5). The marker is always the bottom layer under bars. */
   :root { --today-ring: color-mix(in srgb, var(--primary) 72%, var(--surface)); }
   :is(.cell, .wk-day, .qd) { position: relative; isolation: auto; --mk-h: 24px; --mk-fs: 15px; }
   .qd { --mk-h: 18px; --mk-fs: 11px; }
@@ -1416,6 +1416,8 @@
   :is(.cell, .wk-day, .qd).is-open.today::after { color: var(--navy); }
   :is(.cell.today .dnum, .cell.cc.today .cc-n, .wk-day.today .wk-num, .qd.today .qn) { opacity: 0; }
   .cell .cell-head, .month.compact .cell.cc > .cc-n { position: relative; z-index: 4; }
+  .mo, .cs-lanes { z-index: 4; }
+  .qd .qbar { position: relative; z-index: 4; }
   /* Counters and the date sit inside the ring (1px inset + 2px border), with a little room on every cell. */
   .month:not(.compact) .cell-head { padding: 0 6px; }
   /* Day strip: the selected day shows only the ring (no fill), with bold on-surface text. */
@@ -3454,8 +3456,9 @@
     S.wiz = {
       step: 1, assigneeId: S.me, creating: false,
       nu: { name: '', rank: 'Capt', role: 'Pilot', unit: 'MKE', pin: '' },
-      type: 'Leave', start: start || '', end: end || start || '', note: '',
-      mini: D.monthStart(start || S.today), picking: false, error: ''
+      // Never guess the return date: opening the form from a day fills Departure only; the next tap picks Return.
+      type: 'Leave', start: start || '', end: end || '', note: '',
+      mini: D.monthStart(start || S.today), picking: !!start && !end, error: ''
     };
     renderWizard();
   }
@@ -3577,10 +3580,11 @@
     for (let i = 0; i < 42; i++) {
       const d = D.add(gs, i);
       if (i === 35 && d.slice(0, 7) !== ms.slice(0, 7)) break;
-      const inR = D.valid(w.start) && D.valid(w.end) && d >= w.start && d <= w.end;
+      // While only Departure is picked, that day alone is highlighted.
+      const inR = D.valid(w.start) && (D.valid(w.end) ? d >= w.start && d <= w.end : d === w.start);
       const edge = d === w.start || d === w.end;
       const st = q ? wizDayState(d) : 'ok';
-      const first = d === w.start, last = d === w.end;
+      const first = d === w.start, last = d === w.end || (!D.valid(w.end) && d === w.start);
       html += '<button type="button" data-act="miniPick" data-date="' + d + '" class="' + [d.slice(0, 7) !== ms.slice(0, 7) ? 'out' : '', d === S.today ? 'today' : '', inR ? 'in rg-' + st : '', first ? 'r-s' : '', last ? 'r-e' : '', !inR && st !== 'ok' ? 'dot-' + st : ''].join(' ') + '"' +
         (st !== 'ok' ? ' title="' + esc(role + (st === 'full' ? ' leave slots already full' : ' leave would go over the daily max')) + '"' : '') + '>' + Number(d.slice(8)) + '</button>';
     }
@@ -3750,7 +3754,7 @@
       render();
     },
 
-    newReqOn(el) { openWizard(el.dataset.date, el.dataset.date); refreshData(); },
+    newReqOn(el) { openWizard(el.dataset.date); refreshData(); },
     newReq() { openWizard('', ''); refreshData(); },
     openReq(el) { openRequest(el.dataset.id); },
     openConflict(el) { openConflict(el.dataset.date, el.dataset.role || null); },
@@ -3989,7 +3993,8 @@
         if (!w.nu.first || !w.nu.last) return err('Enter the new member’s first and last name.');
         if (S.users.find(u => u.name.toLowerCase() === w.nu.name.toLowerCase() && u.unit === w.nu.unit)) return err(w.nu.name + ' (' + w.nu.unit + ') is already on the roster — choose them from the list.');
       }
-      if (!D.valid(w.start) || !D.valid(w.end)) return err('Pick departure and return dates on the calendar.');
+      if (!D.valid(w.start)) return err('Pick your departure date on the calendar.');
+      if (!D.valid(w.end)) return err('Now pick your return date — tap the same day again for a one-day request.');
       const c = wizCheck();
       if (c.errs.length) return err(c.errs[0]);
       w.error = ''; w.step = 3; renderWizard();
@@ -4001,15 +4006,17 @@
     },
     wizDates() {
       const w = S.wiz;
-      if (D.valid(w.start) && (!D.valid(w.end) || w.end < w.start)) w.end = w.start;
+      // A return date before the departure is cleared, never replaced with a guess.
+      if (D.valid(w.start) && D.valid(w.end) && w.end < w.start) w.end = '';
       if (D.valid(w.start)) w.mini = D.monthStart(w.start);
-      w.picking = false;
+      w.picking = D.valid(w.start) && !D.valid(w.end);
       refreshWizDates();
     },
     miniNav(el) { S.wiz.mini = D.addMonths(S.wiz.mini, Number(el.dataset.v)); refreshWizDates(); },
     miniPick(el) {
       const w = S.wiz, d = el.dataset.date;
-      if (!w.picking) { w.start = d; w.end = d; w.picking = true; }
+      // First tap = Departure (Return stays empty); second tap = Return. Tap the same day twice for a one-day request.
+      if (!w.picking) { w.start = d; w.end = ''; w.picking = true; }
       else { const a = D.min(w.start, d), b = D.max(w.start, d); w.start = a; w.end = b; w.picking = false; }
       refreshWizDates();
     },
