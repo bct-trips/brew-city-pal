@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792527401"></script>
+    <script src="config.js?v=1792527955"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1403,10 +1403,7 @@
   /* On calendar bars the dot is static: an animated dot made Chromium paint today's cell over the bars. */
   .idb-n .now-dot, .mn .now-dot { width: 7px; height: 7px; margin-right: 4px; vertical-align: 1px; animation: none; box-shadow: 0 0 0 1.5px #fff; }
   .rtable tr.now > td:first-child { box-shadow: inset 4px 0 0 var(--now-dot); }
-  /* Dark mode: navy sits close to the background, so leave fills get a light navy edge.
-     Never on segments inside a group (.seg): they are square and the group clips them, so an inset edge shows as a square box. */
-  :root[data-theme="dark"] .evs.leave, :root[data-theme="dark"] .wpuck.leave, :root[data-theme="dark"] .badge.t-leave,
-  :root[data-theme="dark"] .mseg.leave, :root[data-theme="dark"] .qbar.leave, :root[data-theme="dark"] .cs-bar.leave, :root[data-theme="dark"] .dl-h.leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
+  /* Leave has no border in either theme (same as Pass): no light navy edge on bars, badges or the "On leave" header. */
   /* ---------- Day marker: ONE implementation for Month (desktop + phone), Stats, Week, Qtr and the day strip ----------
      ::before = rounded ring, ::after = the date pill joined to its top-left corner. Both use --mark, so they always match.
      Today uses --today-ring; the open day (desktop day panel) uses --sel-ring, and so does today when it is the open day.
@@ -1567,7 +1564,6 @@
   .y-ap-pass { background: var(--gold); color: var(--navy); }
   .y-pend { background: var(--rg-over); color: var(--rg-over-ink); }
   .y-den { background: var(--no-bg); color: var(--no-ink); }
-  :root[data-theme="dark"] .y-ap-leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
   /* Nav bar: Brewers navy for everyone (dark in dark mode), Brewers metallic gold (#85714D) in admin mode. Light labels, yellow selection pill.
      --nav-bg is set on the bar itself so the badge rings and the home-indicator strip match its colour. */
   :root { --brick: #7C2529; }
@@ -1579,15 +1575,15 @@
   :root[data-theme="dark"] .nav:not(.nav-admin) button:not(.on) { color: #c5c6d0; }
   .nav button { color: #c9d3e8; }
   .nav.nav-admin button { color: #f6efe2; }
-  .nav button.on, .nav.nav-admin button.on { color: #ffffff; }
-  .nav button:hover .nav-ic { background: rgba(255, 255, 255, .10); }
-  .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: var(--gold); color: var(--navy); }
+  .nav button.on { color: var(--navy); }
+  .nav.nav-admin button.on { color: #ffffff; }
+  .nav button:hover .nav-ic, .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: transparent; color: inherit; }
   .nav .dot { background: var(--gold); color: var(--navy); }
   .nav .dot.warn { background: #ffffff; color: #c2410c; }
   .nav .nav-ic.syncing::after { border-color: rgba(255, 255, 255, .25); border-top-color: #ffffff; }
   .nav button.on .nav-ic.syncing::after { border-color: color-mix(in srgb, var(--navy) 25%, transparent); border-top-color: var(--navy); }
   /* Admin mode (metallic gold bar): the open page's pill is Brewers navy with a white icon, so it contrasts with the bar. */
-  .nav.nav-admin button.on .nav-ic, :root[data-theme="dark"] .nav.nav-admin button.on .nav-ic { background: var(--navy); color: #ffffff; }
+  .nav.nav-admin button.on .nav-ic, :root[data-theme="dark"] .nav.nav-admin button.on .nav-ic { background: transparent; color: inherit; }
   .nav.nav-admin button.on .nav-ic.syncing::after { border-color: rgba(255, 255, 255, .25); border-top-color: #ffffff; }
   .modal.modal-wide:has(.y-grid) { max-width: 1100px; }
   @media (min-width: 900px) { .y-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -1832,6 +1828,36 @@
     border-left: 1.5px solid #0b1730; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* Dark mode: the name section is a soft grey instead of bright white, so the header isn't a harsh white block. */
   :root[data-theme="dark"] .pm-bh .bh-n { background: #c9cdd6; }
+  /* Same-dates bar: one solid bar (never hatched) holding each person's badge, separated by "/". */
+  .evs.grp .evs-t, .cs-bar.grp, .wpuck.grp .n { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; }
+  .evs.grp { background-image: none !important; }
+  .gb { display: inline-flex; min-width: 0; flex: 0 1 auto; cursor: pointer; }
+  .gsl { flex: none; font-weight: 900; opacity: .85; }
+  .evs.leave .gsl, .cs-bar.leave .gsl, .wpuck.leave .gsl { color: #ffffff; }
+  .evs.pass .gsl, .cs-bar.pass .gsl, .wpuck.pass .gsl { color: var(--navy); }
+
+  /* Nav bar selection (Material 3 style, adapted): the active indicator is one rounded pill that holds BOTH the icon and
+     its label, drawn as a layer behind the item (::before) so the item's own background rules don't fight it.
+     Brewers yellow with navy text; navy with white text on the metallic admin bar. Hover / press is a faint light layer.
+     The Profile tab also lights up while its drop-up menu is open. */
+  .nav button::before { content: ""; position: absolute; inset: 0 1px; border-radius: 16px; background: transparent; transition: background-color .18s ease; }
+  .nav button > * { position: relative; }
+  .nav button:hover::before { background: rgba(255, 255, 255, .10); }
+  .nav button.on::before, .nav button[aria-expanded="true"]::before { background: var(--gold); }
+  .nav button[aria-expanded="true"] { color: var(--navy); }
+  .nav.nav-admin button.on::before, .nav.nav-admin button[aria-expanded="true"]::before { background: var(--navy); }
+  .nav.nav-admin button[aria-expanded="true"] { color: #ffffff; }
+  .nav button.on .nav-ic.syncing::after, .nav button[aria-expanded="true"] .nav-ic.syncing::after { border-color: color-mix(in srgb, currentColor 25%, transparent); border-top-color: currentColor; }
+  /* Profile tab: a small caret after the label says it opens a menu upward; it flips while the menu is open. */
+  .nav-caret { display: inline-flex; vertical-align: -1px; margin-left: 2px; transition: transform .18s ease; }
+  .nav-caret .ic { transform: rotate(180deg); }
+  .nav button[aria-expanded="true"] .nav-caret { transform: rotate(180deg); }
+  /* Drop-up: a notch on the menu points down at the Profile tab it came from. */
+  .pm-pop { overflow: visible; }
+  .pm-pop .pm-bh { border-radius: 16px 16px 0 0; overflow: hidden; }
+  .pm-pop .pm-row:last-child { border-radius: 0 0 16px 16px; }
+  .pm-pop::after { content: ""; position: absolute; bottom: -7px; left: calc(var(--notch, 85%) - 7px); width: 14px; height: 14px; background: var(--card);
+    border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: rotate(45deg); box-shadow: 4px 4px 8px rgba(0, 0, 0, .18); }
 </style>
 
   </head>
@@ -2037,6 +2063,21 @@
     return apprOn(d, role) >= q ? 'av-full' : countOn(d, role) >= q ? 'av-over' : 'av-open';
   }
   const myRole = () => (IDX.users.get(S.me) || {}).role;
+  /* Day availability on every calendar. Approved leave still uses a slot, so a day stays Full (red) or Overbooked
+     (orange) after approvals — that's what stops more leave being booked there. Members see their own position;
+     admins (or anyone whose position is filtered out) see the worst of the positions shown. */
+  const AV_RANK = { 'av-open': 0, 'av-over': 1, 'av-full': 2 };
+  function availRoles() {
+    const mine = myRole();
+    if (S.priv) return [mine];
+    if (!S.isAdmin && S.f.role.includes(mine)) return [mine];
+    return S.f.role.filter(r => quota(r));
+  }
+  function dayAvail(d) {
+    return availRoles().map(r => availClass(d, r)).filter(Boolean).sort((x, y) => AV_RANK[y] - AV_RANK[x])[0] || '';
+  }
+  /** Month / Week / phone: tint only the days that need a warning (overbooked or full); Qtr also shows Open. */
+  const dayWarn = d => S.priv ? availClass(d, myRole()) : (dayAvail(d) === 'av-open' ? '' : dayAvail(d));
   /* ---------- Blackout dates (Admin → Blackout dates) ---------- */
   const blackouts = () => (S.settings && S.settings.blackouts) || [];
   /** Blackouts covering day d (optionally only those that apply to a request type). */
@@ -2573,6 +2614,8 @@
     return renderCalendar();
   }
   const navOn = v => S.view === v || (v === 'people' && S.view === 'roster'); // Manage roster lives under the Roster tab
+  // Profile opens a drop-up menu: a small caret after its label shows that (it flips while open).
+  const caret = v => v === 'profile' ? '<i class="nav-caret" aria-hidden="true">' + icon('down', 12) + '</i>' : '';
   function renderNav() {
     const pending = IDX.live.filter(r => r.status === 'Pending').length;
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
@@ -2582,8 +2625,8 @@
       : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
       '<nav class="nav' + (S.isAdmin ? ' nav-admin' : '') + '" aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '">' + items.map(i =>
-      '<button data-act="nav" data-v="' + i[0] + '" class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
-      '<span class="nav-ic' + (i[0] === syncTab() && S.pending ? ' syncing' : i[0] === syncTab() && S.syncErr ? ' sync-err' : '') + '">' + icon(i[2], 20) + '</span><span class="wide">' + i[1] + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + '</span>' +
+      '<button data-act="nav" data-v="' + i[0] + '"' + (i[0] === 'profile' ? ' aria-haspopup="menu" aria-expanded="false"' : '') + ' class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
+      '<span class="nav-ic' + (i[0] === syncTab() && S.pending ? ' syncing' : i[0] === syncTab() && S.syncErr ? ' sync-err' : '') + '">' + icon(i[2], 20) + '</span><span class="wide">' + i[1] + caret(i[0]) + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + caret(i[0]) + '</span>' +
       (i[0] === 'all' && S.isAdmin && pending ? '<b class="dot">' + pending + '</b>' : '') +
       (i[0] === 'mine' && myChanged ? '<b class="dot warn" title="Dates changed by an admin">' + myChanged + '</b>' : '') +
       (i[0] === 'profile' && S.unread ? '<b class="dot" title="Unread notifications">' + S.unread + '</b>' : '') + '</button>').join('') + '</nav>';
@@ -2875,13 +2918,39 @@
   const stackRank = r => r.id === S.focus ? -2 : r.userId === S.me ? -1 : STACK.indexOf(r.status === 'Denied' ? 'Denied' : r.type);
   const byLast = (a, b) => lastName(userOf(a.userId)).localeCompare(lastName(userOf(b.userId)));
 
+  /** Requests with the same dates and type (not denied, not the focused one) share one bar: "[P|MKE|Smith] / [B|PIT|Jones]".
+   *  Returns { groups: [[r, r, …], …] (2+ people each), solo: [r, …] }. */
+  function sameDateGroups(reqs) {
+    const by = new Map();
+    reqs.forEach(r => {
+      if (r.status === 'Denied' || isPinned(r)) return;
+      const k = r.type + '|' + r.start + '|' + r.end;
+      if (!by.has(k)) by.set(k, []);
+      by.get(k).push(r);
+    });
+    const groups = [...by.values()].filter(g => g.length > 1).map(g => g.slice().sort(byLast));
+    const inGroup = new Set(groups.flat().map(r => r.id));
+    return { groups, solo: reqs.filter(r => !inGroup.has(r.id)) };
+  }
+  /** One shared bar's label: each person's badge (tap to open their request), separated by "/". */
+  function groupBadges(list, withStatus) {
+    return list.map(r => '<span class="gb" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
+      personBadge(r, withStatus) + '</span>').join('<span class="gsl" aria-hidden="true">/</span>');
+  }
   /** split = true: every request that starts this week is its own continuous bar. Requests carried over from the
    *  previous week are always merged into one shared middle bar per type (Leave / Pass) at the start of the row. */
   function monthSegments(ws, reqs, split) {
     const we = D.add(ws, 6);
     const days = Array.from({ length: 7 }, (_, i) => D.add(ws, i));
-    const evs = reqs.filter(r => r.start <= we && r.end >= ws);
+    const all = reqs.filter(r => r.start <= we && r.end >= ws);
     const segs = [];
+    // Same dates and type: one bar for the whole stretch this week, labelled with everyone on it.
+    const { groups, solo: evs } = sameDateGroups(all);
+    groups.forEach(g => {
+      const r0 = g[0], first = r0.start >= ws, last = r0.end <= we;
+      segs.push({ kind: first && last ? 'single' : first ? 'start' : last ? 'end' : 'mid', group: true, cat: stackCat(r0), type: r0.type,
+        a: D.diff(ws, D.max(r0.start, ws)), b: D.diff(ws, D.min(r0.end, we)), people: g });
+    });
     evs.forEach(r => {
       const cat = stackCat(r);
       if (r.start === r.end) segs.push({ kind: 'single', cat, type: r.type, a: D.diff(ws, r.start), b: D.diff(ws, r.start), people: [r] });
@@ -2948,8 +3017,10 @@
     for (let w = 0; w < weeks; w++) {
       const ws = D.add(gs, w * 7), we = D.add(ws, 6);
       const days = Array.from({ length: 7 }, (_, i) => D.add(ws, i));
-      const evs = all.filter(r => r.start <= we && r.end >= ws)
-        .sort((x, y) => stackRank(x) - stackRank(y) || (x.start < y.start ? -1 : x.start > y.start ? 1 : D.diff(y.start, y.end) - D.diff(x.start, x.end)) || byLast(x, y));
+      // Same dates and type share one bar (its first person stands in for sorting); everyone else gets their own.
+      const sg = sameDateGroups(all.filter(r => r.start <= we && r.end >= ws));
+      const evs = sg.solo.map(r => ({ r })).concat(sg.groups.map(g => ({ r: g[0], g })))
+        .sort((x, y) => stackRank(x.r) - stackRank(y.r) || (x.r.start < y.r.start ? -1 : x.r.start > y.r.start ? 1 : D.diff(y.r.start, y.r.end) - D.diff(x.r.start, x.r.end)) || byLast(x.r, y.r));
       // Lane packing: each bar takes the first lane free across all its days. Blackouts go first (top lanes).
       const lanes = [], placed = [];
       blackouts().filter(b => b.start <= we && b.end >= ws).forEach(b => {
@@ -2960,22 +3031,27 @@
         for (let i = a; i <= z; i++) lanes[l][i] = true;
         placed.push({ bo: b, a, z, l });
       });
-      evs.forEach(r => {
+      evs.forEach(({ r, g }) => {
         const a = D.diff(ws, D.max(r.start, ws)), z = D.diff(ws, D.min(r.end, we));
         let l = 0;
         while ((lanes[l] || []).slice(a, z + 1).some(Boolean)) l++;
         lanes[l] = lanes[l] || [];
         for (let i = a; i <= z; i++) lanes[l][i] = true;
-        placed.push({ r, a, z, l });
+        placed.push({ r, g, a, z, l });
       });
       // Lanes above the last are always shown. The last lane shows a bar only if none of its days overflow;
       // on days that do, that slot holds "+N" for everyone not shown.
       const over = days.map((_, i) => placed.filter(p => p.l >= MAXL && p.a <= i && p.z >= i).length > 0);
       const shown = p => p.l < MAXL - 1 || (p.l === MAXL - 1 && !over.slice(p.a, p.z + 1).some(Boolean));
-      const hidden = days.map((_, i) => placed.filter(p => !p.bo && !shown(p) && p.a <= i && p.z >= i).length);
+      const hidden = days.map((_, i) => placed.filter(p => !p.bo && !shown(p) && p.a <= i && p.z >= i).reduce((n, p) => n + (p.g ? p.g.length : 1), 0));
       const bars = placed.filter(shown).map(p => {
         if (p.bo) return boBar(p.bo, 'cs-bo' + (p.bo.start >= ws ? ' b-s' : '') + (p.bo.end <= we ? ' b-e' : ''), 'grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2));
         const r = p.r, u = userOf(r.userId), first = r.start >= ws, last = r.end <= we;
+        if (p.g) {
+          const same = p.g.every(x => x.status === r.status);
+          return '<span class="' + ['cs-bar grp', r.type === 'Leave' ? 'leave' : 'pass', same ? 'st-' + r.status.toLowerCase() : '', first ? 'b-s' : '', last ? 'b-e' : '', p.g.some(x => x.userId === S.me) ? 'mine' : ''].join(' ') +
+            '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '">' + groupBadges(p.g, true) + '</span>';
+        }
         const cls = ['cs-bar', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : '', r.userId === S.me ? 'mine' : ''].join(' ');
         return '<span class="' + cls + '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
           personBadge(r, true) + '</span>';
@@ -2984,7 +3060,7 @@
       days.forEach(d => {
         const c = filteredRoleCounts(d);
         const over = roles.filter(role => quota(role) && c[role] > quota(role));
-        const av = S.priv ? availClass(d, myRole()) : '';
+        const av = dayWarn(d);
         const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' + (S.priv
           ? ({ 'av-open': 'slots open', 'av-over': 'slots overbooked', 'av-full': 'slots full' })[av] || ''
           : roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : ''));
@@ -3089,7 +3165,7 @@
     days.forEach((d, i) => {
       const over = ROLES.filter(role => quota(role) && countOn(d, role) > quota(role));
       // Hide user schedules: the day is tinted by my position's availability instead of showing P / B / O counts.
-      const cls = ['cell', d.slice(0, 7) !== month ? 'out' : '', d === S.today ? 'today' : '', (i === 0 || i === 6) ? 'wknd' : '', S.priv ? availClass(d, myRole()) : '', boCls(d).trim()].join(' ');
+      const cls = ['cell', d.slice(0, 7) !== month ? 'out' : '', d === S.today ? 'today' : '', (i === 0 || i === 6) ? 'wknd' : '', dayWarn(d), boCls(d).trim()].join(' ');
       html += '<div class="' + cls + '" data-act="pickDay" data-date="' + d + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + '>' +
         '<div class="cell-head"><button class="dnum" data-act="gotoDay" data-date="' + d + '" aria-label="Open day view for ' + D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + '">' + Number(d.slice(8)) + '</button>' +
         (S.priv ? '' : '<span class="qday">' + qChip(d, 'Pilot') + qChip(d, 'Boom') + qChip(d, 'Other') + '</span>') +
@@ -3258,6 +3334,12 @@
     const pos = 'grid-row:' + (sg.lane + 1) + ';grid-column:' + (sg.a + 1) + '/' + (sg.b + 2);
     const r0 = sg.people[0];
     const base = 'evs ' + (sg.cat === 'Denied' ? 'denied' : sg.type.toLowerCase()) + ' ' + sg.kind;
+    if (sg.group) {
+      // Same-dates bar: one solid bar for everyone on it; each badge opens that person's request.
+      const same = sg.people.every(r => r.status === r0.status);
+      return '<div class="' + base + ' grp' + (same ? ' st-' + r0.status.toLowerCase() : '') + (sg.people.some(r => r.userId === S.me) ? ' mine' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"' +
+        ' title="' + esc(sg.people.map(describe).join('\n')) + '"><span class="evs-t">' + groupBadges(sg.people, sg.kind !== 'end') + '</span></div>';
+    }
     if (sg.kind === 'mid') {
       const pucks = sg.quiet ? '' : ROLES.map(role => {
         const list = sg.people.filter(r => userOf(r.userId).role === role);
@@ -3320,12 +3402,11 @@
     // Availability tint for one position: mine if it is selected, else the first selected one.
     // Full (red) = approved fill every slot; Overbooked (orange) = requests (approved + pending) fill or exceed the slots
     // but approvals don't; Open (green) = requests still leave a slot free. Counts ignore the status/type filters (they are facts about the day).
-    const mine = myRole();
-    const aRole = S.priv ? mine : roles.includes(mine) ? mine : roles[0];
-    const aq = aRole ? quota(aRole) : 0;
-    const avail = d => aq ? availClass(d, aRole) : '';
+    const aRoles = availRoles();
+    const avail = d => dayAvail(d);
     const ROLE_PL = { Pilot: 'Pilot', Boom: 'Boom', Other: 'Other' };
-    const key = aq ? '<div class="qkey"><span class="qk-t">' + ROLE_PL[aRole] + ' slots</span>' +
+    const slotsName = aRoles.length === 1 ? ROLE_PL[aRoles[0]] + ' slots' : 'Leave slots (' + aRoles.map(r => r[0]).join(', ') + ')';
+    const key = aRoles.length ? '<div class="qkey"><span class="qk-t">' + slotsName + '</span>' +
       '<span class="qk av-open"><i></i>Open</span><span class="qk av-over"><i></i>Overbooked</span><span class="qk av-full"><i></i>Full</span></div>' : '';
     const bar = (r, d) => {
       const first = d === r.start, last = d === r.end, lbl = first || D.dow(d) === 0 || d.slice(8) === '01';
@@ -3351,7 +3432,7 @@
           label = dayLabel + ': ' + roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ');
         }
         const av = avail(d);
-        if (av) label += '. ' + ROLE_PL[aRole] + ' slots ' + ({ 'av-open': 'open', 'av-over': 'overbooked', 'av-full': 'full' })[av];
+        if (av) label += '. ' + slotsName + ' ' + ({ 'av-open': 'open', 'av-over': 'overbooked', 'av-full': 'full' })[av];
         cells += '<div class="qd ' + av + (d === S.today ? ' today' : '') + boCls(d) + (D.dow(d) === 0 || D.dow(d) === 6 ? ' wknd' : '') + '"' +
           ' data-act="pickDay" data-date="' + d + '" title="' + esc(label) + '">' +
           '<button class="qn" data-act="gotoDay" data-date="' + d + '" aria-label="' + esc(label) + '">' + Number(d.slice(8)) + '</button>' +
@@ -3370,7 +3451,7 @@
     const reqs = calRequests().filter(r => r.start <= we && r.end >= ws);
     const head = days.map(d => {
       const p = countOn(d, 'Pilot'), b = countOn(d, 'Boom'), qp = quota('Pilot'), qb = quota('Boom');
-      return '<div class="wk-day' + (d === S.today ? ' today' : '') + (S.priv ? ' ' + availClass(d, myRole()) : '') + boCls(d) + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + ' role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
+      return '<div class="wk-day' + (d === S.today ? ' today' : '') + ' ' + dayWarn(d) + boCls(d) + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + ' role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
         '<div class="wk-dow">' + DOW[D.dow(d)] + '</div><div class="wk-num">' + Number(d.slice(8)) + '</div>' +
         '<div class="wk-date">' + D.f(d, { month: 'short' }) + '</div>' +
         (S.priv ? '' : '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">P: ' + p + (qp ? '/' + qp : '') + '</span>' +
@@ -3379,14 +3460,19 @@
     const bands = [['Pilot', 'PILOTS ACTIVE SCHEDULE'], ['Boom', 'BOOM OPERATORS ACTIVE SCHEDULE'], ['Other', 'OTHER SQUADRON PERSONNEL']]
       .filter(b => S.f.role.includes(b[0]))
       .map(b => {
-        const evs = reqs.filter(r => userOf(r.userId).role === b[0])
-          .sort((x, y) => stackRank(x) - stackRank(y) || (x.start < y.start ? -1 : x.start > y.start ? 1 : D.diff(y.start, y.end) - D.diff(x.start, x.end)));
-        const pucks = evs.map(r => {
-          const u = userOf(r.userId);
+        const evs = reqs.filter(r => userOf(r.userId).role === b[0]);
+        // Same dates and type share one strip: "[P|MKE|Smith] / [P|MKE|Jones]" (tap a badge for that request).
+        const wg = sameDateGroups(evs);
+        const items = wg.solo.map(r => ({ r })).concat(wg.groups.map(g => ({ r: g[0], g })))
+          .sort((x, y) => stackRank(x.r) - stackRank(y.r) || (x.r.start < y.r.start ? -1 : x.r.start > y.r.start ? 1 : D.diff(y.r.start, y.r.end) - D.diff(x.r.start, x.r.end)));
+        const pucks = items.map(({ r, g }) => {
           const a = D.diff(ws, D.max(r.start, ws)) + 1, z = D.diff(ws, D.min(r.end, we)) + 2;
-          const cls = ['wpuck', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : '', isNow(r) ? 'now' : ''].join(' ');
+          const same = !g || g.every(x => x.status === r.status);
+          const cls = ['wpuck', g ? 'grp' : '', r.type === 'Leave' ? 'leave' : 'pass', same ? 'st-' + r.status.toLowerCase() : '', r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : '', (g || [r]).some(isNow) ? 'now' : ''].join(' ');
+          const sub = '<span class="s">' + r.type + (same ? ' · ' + r.status : '') + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span>';
+          if (g) return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '"><span class="n">' + groupBadges(g, false) + '</span>' + sub + '</div>';
           return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-            '<span class="n">' + personBadge(r) + '</span><span class="s">' + r.type + ' · ' + r.status + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span></div>';
+            '<span class="n">' + personBadge(r) + '</span>' + sub + '</div>';
         }).join('');
         const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
         return '<div class="band band-' + b[0][0].toLowerCase() + '"><div class="band-title"><span class="band-tag">' + b[0][0] + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></div>' +
@@ -4143,7 +4229,8 @@
     // Open upward out of the Profile tab, right-aligned with it and kept on screen.
     const r = btn.getBoundingClientRect(), w = el.offsetWidth;
     el.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w)) + 'px';
-    el.style.bottom = (window.innerHeight - r.top + 6) + 'px';
+    el.style.bottom = (window.innerHeight - r.top + 10) + 'px';
+    el.style.setProperty('--notch', (r.left + r.width / 2 - el.getBoundingClientRect().left) + 'px'); // notch points at the tab
     btn.setAttribute('aria-expanded', 'true');
     const first = el.querySelector('.pm-row'); if (first) first.focus({ preventScroll: true });
   }
