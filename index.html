@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792492369"></script>
+    <script src="config.js?v=1792492416"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1390,8 +1390,9 @@
   /* On calendar bars the dot is static: an animated dot made Chromium paint today's cell over the bars. */
   .idb-n .now-dot, .mn .now-dot { width: 7px; height: 7px; margin-right: 4px; vertical-align: 1px; animation: none; box-shadow: 0 0 0 1.5px #fff; }
   .rtable tr.now > td:first-child { box-shadow: inset 4px 0 0 var(--now-dot); }
-  /* Dark mode: navy sits close to the background, so leave fills get a light navy edge. */
-  :root[data-theme="dark"] .evs.leave, :root[data-theme="dark"] .wpuck.leave, :root[data-theme="dark"] .badge.t-leave, :root[data-theme="dark"] .tchip-leave.on,
+  /* Dark mode: navy sits close to the background, so leave fills get a light navy edge.
+     Never on segments inside a group (.seg): they are square and the group clips them, so an inset edge shows as a square box. */
+  :root[data-theme="dark"] .evs.leave, :root[data-theme="dark"] .wpuck.leave, :root[data-theme="dark"] .badge.t-leave,
   :root[data-theme="dark"] .mseg.leave, :root[data-theme="dark"] .qbar.leave, :root[data-theme="dark"] .cs-bar.leave, :root[data-theme="dark"] .dl-h.leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
   /* ---------- Day marker: ONE implementation for Month (desktop + phone), Stats, Week, Qtr and the day strip ----------
      ::before = rounded ring, ::after = the date pill joined to its top-left corner. Both use --mark, so they always match.
