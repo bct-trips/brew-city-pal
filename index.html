@@ -3,7 +3,7 @@
   <head>
         <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0A2351">
+    <meta name="theme-color" content="#18181b">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792493495"></script>
+    <script src="config.js?v=1792495555"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -64,7 +64,9 @@
   .narrow { display: none; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-  #app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  /* The app fills the whole screen with position: fixed (not 100vh / 100dvh): on iPhone home-screen apps those units
+     leave a gap at the bottom. Safe areas are padded inside: status bar on top, home indicator in the nav. */
+  #app { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
   .main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
   /* ---------- Splash / login ---------- */
@@ -1213,8 +1215,12 @@
   .cfl:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
   .st-cell { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 0; }
   .cfl-count { display: inline-flex; align-items: center; gap: 4px; color: var(--bad); font-weight: 800; }
-  /* Home-screen (standalone) app on iPhone: keep the top bar clear of the status bar / notch. 0 everywhere else. */
+  /* Home-screen (standalone) app on iPhone: keep the top bar clear of the status bar / notch (0 everywhere else).
+     The status-bar strip is painted in the top bar's colour, so iOS's edge fade there blends into a solid colour
+     instead of fading the controls; the bottom (home indicator) area is the nav's own colour. */
   #app { padding-top: env(safe-area-inset-top, 0px); box-sizing: border-box; }
+  #app::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--card); z-index: 50; pointer-events: none; }
+  html, body { background: var(--nav-bg); }
 
   /* Request form, date step: calendar first, compact date fields under it. */
   .wiz-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 2px 0 8px; }
@@ -1889,6 +1895,9 @@
   function applyTheme() {
     const t = S.theme === 'system' ? (mql && mql.matches ? 'dark' : 'light') : S.theme;
     document.documentElement.setAttribute('data-theme', t);
+    // Browser / home-screen chrome follows the theme: the status-bar area uses the top bar's colour.
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#ffffff');
   }
   if (mql) {
     const onScheme = () => { if (S.theme === 'system') applyTheme(); };
