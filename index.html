@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792507119"></script>
+    <script src="config.js?v=1792507402"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1635,6 +1635,9 @@
   .login-card .linkbtn, .auth-alt .linkbtn { color: var(--brick); font-weight: 700; }
   :root[data-theme="dark"] .login-card .linkbtn, :root[data-theme="dark"] .auth-alt .linkbtn { color: var(--gold); }
   @media (max-height: 640px) { .login .brand-logo { width: 104px; height: 104px; } }
+  /* Submitting cover: the squadron logo spins while the request saves. */
+  .blocker-logo { width: 96px; height: 96px; animation: spin 1.6s linear infinite; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .3)); }
+  @media (prefers-reduced-motion: reduce) { .blocker-logo { animation-duration: 4s; } }
 </style>
 
   </head>
@@ -2011,7 +2014,7 @@
     hideBlocker();
     const el = document.createElement('div');
     el.id = 'blocker'; el.className = 'blocker'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-live', 'assertive'); el.setAttribute('aria-busy', 'true');
-    el.innerHTML = '<div class="blocker-box"><span class="blocker-spin" aria-hidden="true"></span><div class="blocker-t">' + esc(label) + '</div><div class="blocker-s">Keep the app open until this finishes.</div></div>';
+    el.innerHTML = '<div class="blocker-box"><span class="brand-logo blocker-logo" aria-hidden="true"></span><div class="blocker-t">' + esc(label) + '</div><div class="blocker-s">Keep the app open until this finishes.</div></div>';
     document.body.appendChild(el);
   }
   function hideBlocker() { const el = document.getElementById('blocker'); if (el) el.remove(); }
@@ -3733,7 +3736,6 @@
     const pst = S.pushState || 'unsupported';
     const pushMsg = {
       google: 'Push notifications work in the GitHub Pages version of the app (add it to your Home Screen). Everything still shows up here.',
-      install: 'On iPhone, notifications work in the Home Screen app: open this page in Safari, tap Share → Add to Home Screen, open PAL from your Home Screen, then turn them on here.',
       unsupported: 'This browser can’t receive push notifications. Everything still shows up here.',
       denied: 'Notifications are blocked for PAL on this device. Allow them in your phone’s Settings → Notifications → PAL (or the browser’s site settings), then come back.',
       off: 'Get a notification on this device when your requests are approved, denied, edited or deleted.',
@@ -3753,7 +3755,7 @@
       }).join('') + '</div>';
     return '<div class="notes-h"><h3>' + icon('bell', 16) + ' Notifications' + (S.unread ? '<span class="ct">' + S.unread + ' new</span>' : '') + '</h3>' +
         (S.unread ? '<button class="btn ghost sm" data-act="notesAllRead">Mark all read</button>' : '') + '</div>' +
-      '<div class="push-row push-' + pst + '"><p>' + (pst === 'on' ? icon('check', 16) : '') + esc(pushMsg) + '</p>' + (pushBtns ? '<div class="push-btns">' + pushBtns + '</div>' : '') + '</div>' +
+      (pushMsg ? '<div class="push-row push-' + pst + '"><p>' + (pst === 'on' ? icon('check', 16) : '') + esc(pushMsg) + '</p>' + (pushBtns ? '<div class="push-btns">' + pushBtns + '</div>' : '') + '</div>' : '') +
       '<div class="push-row note-prefs"><p><b>Notify me when my request is</b></p><div class="push-btns">' +
         [['approved', 'Approved'], ['denied', 'Denied'], ['edited', 'Changed']].map(k => {
           const on = S.notePrefs[k[0]] !== false;
