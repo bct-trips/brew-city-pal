@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792502536"></script>
+    <script src="config.js?v=1792504679"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1578,6 +1578,16 @@
   .y-year::before, .y-year::after { content: ""; flex: 1; height: 2px; background: var(--line); }
   .y-body .y-grid { margin-top: 0; }
   @media (max-width: 700px) { .y-grid { grid-template-columns: 1fr; } .y-d { height: 34px; font-size: 14px; } }
+  /* Hide user schedules: days tinted by the member's position availability (same colours as Qtr). */
+  .month:not(.compact) .cell.av-open, .month.compact .cell.cc.av-open, .wk-day.av-open { background-color: var(--av-open); }
+  .month:not(.compact) .cell.av-over, .month.compact .cell.cc.av-over, .wk-day.av-over { background-color: var(--av-over); }
+  .month:not(.compact) .cell.av-full, .month.compact .cell.cc.av-full, .wk-day.av-full { background-color: var(--av-full); }
+  .cell.out.av-open, .cell.out.av-over, .cell.out.av-full { opacity: .75; }
+  .day-avail { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; padding: 2px 0; }
+  .day-avail i { width: 14px; height: 14px; border-radius: 4px; }
+  .day-avail.av-open i { background: var(--av-open-dot, #22c55e); } .day-avail.av-over i { background: var(--av-over-dot, #f59e0b); } .day-avail.av-full i { background: var(--av-full-dot, #ef4444); }
+  .cfg-row-tog { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .cfg-row-tog .chip-tog { flex: none; }
 </style>
 
   </head>
@@ -1701,7 +1711,7 @@
   [S.list, S.mine, S.people].forEach(st => { if (!Array.isArray(st.sorts)) st.sorts = [{ k: st.sort, dir: st.dir }]; });
   if (S.view === 'admin' || S.view === 'people' || S.view === 'roster') S.view = 'calendar';
 
-  let IDX = { users: new Map(), live: [], counts: new Map(), ytd: new Map(), disp: new Map() };
+  let IDX = { users: new Map(), live: [], counts: new Map(), appr: new Map(), ytd: new Map(), disp: new Map() };
   function reindex() {
     const users = new Map(S.users.map(u => [u.id, u]));
     const live = S.requests.filter(r => r.status !== 'Cancelled' && users.has(r.userId) && D.valid(r.start) && D.valid(r.end));
@@ -1712,6 +1722,17 @@
       const role = users.get(r.userId).role;
       for (let d = r.start; d <= r.end; d = D.add(d, 1)) counts.set(d + '|' + role, (counts.get(d + '|' + role) || 0) + 1);
     });
+    // Approved leave per day and position (availability: Full when approvals fill every slot).
+    const appr = new Map();
+    live.forEach(r => {
+      if (r.status !== 'Approved' || r.type !== 'Leave') return;
+      const role = users.get(r.userId).role;
+      for (let d = r.start; d <= r.end; d = D.add(d, 1)) appr.set(d + '|' + role, (appr.get(d + '|' + role) || 0) + 1);
+    });
+    if (S.priv && S.avail) { // counts come from the server's anonymous day totals instead
+      counts.clear(); appr.clear();
+      Object.keys(S.avail.days || {}).forEach(d => { const v = S.avail.days[d]; appr.set(d + '|' + S.avail.role, v[0]); counts.set(d + '|' + S.avail.role, v[1]); });
+    }
     const yr = S.today.slice(0, 4), ytd = new Map();
     live.forEach(r => {
       if (r.status !== 'Approved') return;
@@ -1739,7 +1760,7 @@
       const sameF = same.filter(x => parts(x).f === p.f);
       disp.set(u.id, p.l + ', ' + p.f + (sameF.length && p.m ? p.m : ''));
     });
-    IDX = { users, live, counts, ytd, dups, disp };
+    IDX = { users, live, counts, appr, ytd, dups, disp };
   }
   const userOf = id => IDX.users.get(id) || { id, rank: '', name: 'Unknown', role: 'Other', unit: '—' };
   const lastName = u => u.name.trim().split(/\s+/).pop();
@@ -1759,6 +1780,15 @@
     return Number(q) || 0; // 0 = unlimited
   }
   const countOn = (d, role) => IDX.counts.get(d + '|' + role) || 0;
+  const apprOn = (d, role) => IDX.appr.get(d + '|' + role) || 0;
+  /** Slot availability for a position on a day (Qtr colours): full = approvals fill every slot; over = requests fill or
+   *  exceed the slots; open = a slot is still free. '' when the position has no daily max. */
+  function availClass(d, role) {
+    const q = quota(role);
+    if (!q) return '';
+    return apprOn(d, role) >= q ? 'av-full' : countOn(d, role) >= q ? 'av-over' : 'av-open';
+  }
+  const myRole = () => (IDX.users.get(S.me) || {}).role;
   function conflictDays(r) {
     const u = userOf(r.userId), q = quota(u.role);
     if (!q || r.type !== 'Leave' || r.status === 'Denied' || r.status === 'Cancelled') return [];
@@ -1787,9 +1817,9 @@
     return mine.concat(others);
   }
   /** Conflict mode: a leave request on a day where its position is over the daily max. */
-  const inConflict = r => conflictDays(r).length > 0;
+  const inConflict = r => S.priv ? !!S.myConf[r.id] : conflictDays(r).length > 0;
   /** Over the daily max on some day and not yet resolved (not every request in that conflict is approved). */
-  const openConflictOf = r => r.status !== 'Denied' && conflictDays(r).some(d => conflictState(d, userOf(r.userId).role) === 'bad');
+  const openConflictOf = r => r.status !== 'Denied' && (S.priv ? !!(S.myConf[r.id] && !S.myConf[r.id].ok) : conflictDays(r).some(d => conflictState(d, userOf(r.userId).role) === 'bad'));
   /** Marks before a name on calendar bars: green dot = out today, red triangle = unresolved conflict. */
   const barMarks = r => (isNow(r) ? '<i class="now-dot" title="Active now"></i>' : '') +
     (openConflictOf(r) ? '<span class="cf-tri" title="Unresolved conflict" aria-label="Unresolved conflict">' + icon('alert', 12) + '</span>' : '');
@@ -1934,6 +1964,10 @@
     // Notifications: unread count (Profile badge + home-screen badge), push key, admin alert preference.
     if (typeof data.unread === 'number') { if (data.unread !== S.unread) S.notes = null; S.unread = data.unread; setBadge(); }
     S.vapid = data.vapidPublicKey || S.vapid || ''; S.adminAlerts = !!data.adminAlerts;
+    // Hide user schedules (members only): the server sent just my requests, day availability for my position, and my
+    // conflicts as counts. Everyone else's names and requests aren't on this device at all.
+    S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
+    if (S.priv) { S.f.role = ROLES.slice(); S.f.person = ''; S.f.conf = false; if (S.view === 'all') S.view = 'mine'; }
     S.today = localToday();
     if (!S.isAdmin && (S.view === 'admin' || S.view === 'people' || S.view === 'roster')) S.view = 'calendar';
     if (S.isAdmin && S.view === 'mine') S.view = 'all'; // My Requests isn't in the admin nav
@@ -2178,7 +2212,7 @@
   new MutationObserver(queueFit).observe(document.getElementById('app'), { childList: true, subtree: true });
   window.addEventListener('resize', queueFit);
   function renderView() {
-    if (S.view === 'all') return renderAll();
+    if (S.view === 'all') return S.priv ? renderMine() : renderAll(); // no All Requests when schedules are hidden
     if (S.view === 'mine') return renderMine();
     if (S.view === 'admin' && S.isAdmin) return renderAdmin();
     if (S.view === 'roster' && S.isAdmin) return renderRoster();
@@ -2191,7 +2225,7 @@
     const pending = IDX.live.filter(r => r.status === 'Pending').length;
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
     // Admin mode swaps My Requests for Roster and Admin; Profile is always the last item.
-    const items = [['calendar', 'Calendar', 'calendar', 'Calendar'], ['all', 'All Requests', 'list', 'All']].concat(S.isAdmin
+    const items = [['calendar', 'Calendar', 'calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'All Requests', 'list', 'All']], S.isAdmin
       ? [['people', 'Roster', 'users', 'Roster'], ['admin', 'Admin', 'shield', 'Admin']]
       : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
@@ -2260,7 +2294,7 @@
           ? FILTERS.filter(F => F.g !== 'role').map(F => filterGroup(F, 'mine')).join('') + filterButton('mine')
           : FILTERS.map(F => filterGroup(F, 'cal')).join('') + filterButton('cal')) +
           // Phone Month: switch between name strips and P / B / O stats, next to the Filters button.
-          (S.view === 'mine' ? mineSwitch() : S.cal === 'month' ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
+          (S.view === 'mine' ? mineSwitch() : S.cal === 'month' && !S.priv ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
       '</div>' +
       (confOn ? confBanner(calRequests().length) : '') +
       '<div class="cal-split"><div class="cal-body" id="calBody">' + body + '</div>' + (showPanel
@@ -2380,7 +2414,7 @@
     const pick = (g, opts) => { const sel = st[g]; if (sel && sel.length !== opts.length) parts.push(sel.length ? opts.filter(o => sel.includes(o[0])).map(o => o[1]).join(', ') : 'No ' + g); };
     if (st.conf || (st === S.mf && S.mineConf && S.mineMode === 'cal')) parts.push('Conflicts');
     if (st.person) parts.push(calName(userOf(st.person)));
-    else if (st.role) pick('role', FILTERS[1].opts);
+    else if (st.role && !S.priv) pick('role', FILTERS[1].opts);
     pick('status', FILTERS[0].opts);
     if (!wideFilters()) pick('type', FILTERS[2].opts);
     return parts;
@@ -2399,14 +2433,14 @@
   function setDefaultFilters(st) {
     if (st === S.mf) S.mineConf = false;
     st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
-    if (st.role) st.role = DEFAULT_ROLES.slice();
+    if (st.role) st.role = S.priv ? ROLES.slice() : DEFAULT_ROLES.slice();
     if ('person' in st) st.person = '';
     if ('conf' in st) st.conf = false;
   }
   function isDefaultFilters(st) {
     const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
     return same(st.status, FILTERS[0].opts.map(o => o[0])) && same(st.type, ['Leave', 'Pass']) &&
-      (!st.role || same(st.role, DEFAULT_ROLES)) && !st.person && !st.conf && !(st === S.mf && S.mineConf && S.mineMode === 'cal');
+      (!st.role || S.priv || same(st.role, DEFAULT_ROLES)) && !st.person && !st.conf && !(st === S.mf && S.mineConf && S.mineMode === 'cal');
   }
   function filterButton(sc) {
     const parts = filterSummary(sc);
@@ -2422,7 +2456,7 @@
   function openFilterSheet(sc, inPlace) {
     S.openDrop = null; S.fsScope = sc || 'cal';
     // Wide screens keep the Leave | Pass toggle in the bar, so the sheet leaves it out there.
-    const st = fState(sc), groups = FILTERS.filter(f => !(sc === 'mine' && f.g === 'role') && !(f.g === 'type' && wideFilters()));
+    const st = fState(sc), groups = FILTERS.filter(f => !((sc === 'mine' || S.priv) && f.g === 'role') && !(f.g === 'type' && wideFilters()));
     const sect = (title, inner) => '<div class="fs-sect"><div class="fs-h">' + title + '</div>' + inner + '</div>';
     const chips = F => '<div class="seg full" role="group" aria-label="' + F.name + '">' + F.opts.map(o =>
       '<button type="button" class="' + (st[F.g].includes(o[0]) ? 'on' : '') + '" aria-pressed="' + st[F.g].includes(o[0]) + '" data-act="fToggle" data-g="' + F.g + '" data-v="' + o[0] + '"' + scAttr(sc) + '>' + o[1] + '</button>').join('') + '</div>';
@@ -2534,7 +2568,7 @@
      person puck [P|MKE|Lastname ✓] at the start of the bar in each row. Up to 3 lanes per row; extra people on a day show "+N".
      Tap a day (or "+N") for Day view; tap a bar to open the request. */
   function renderMonthCompact() {
-    if (S.monthMode === 'stats') return renderMonthStats();
+    if (S.monthMode === 'stats' && !S.priv) return renderMonthStats(); // no P / B / O stats when schedules are hidden
     const ms = D.monthStart(S.cursor), month = ms.slice(0, 7), gs = D.weekStart(ms);
     const weeks = Math.ceil((D.dow(ms) + D.diff(ms, D.addMonths(ms, 1))) / 7);
     const all = calRequests();
@@ -2574,9 +2608,11 @@
       days.forEach(d => {
         const c = filteredRoleCounts(d);
         const over = roles.filter(role => quota(role) && c[role] > quota(role));
-        const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' +
-          roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : '');
-        html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + (over.length ? ' over' : '') + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
+        const av = S.priv ? availClass(d, myRole()) : '';
+        const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' + (S.priv
+          ? ({ 'av-open': 'slots open', 'av-over': 'slots overbooked', 'av-full': 'slots full' })[av] || ''
+          : roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : ''));
+        html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + (over.length && !S.priv ? ' over' : '') + (av ? ' ' + av : '') + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
           '<span class="cc-n">' + Number(d.slice(8)) + '</span></button>';
       });
       html += '<div class="cs-lanes">' + bars + '</div></div>';
@@ -2670,10 +2706,11 @@
     let html = '<div class="week-row">';
     days.forEach((d, i) => {
       const over = ROLES.filter(role => quota(role) && countOn(d, role) > quota(role));
-      const cls = ['cell', d.slice(0, 7) !== month ? 'out' : '', d === S.today ? 'today' : '', (i === 0 || i === 6) ? 'wknd' : ''].join(' ');
+      // Hide user schedules: the day is tinted by my position's availability instead of showing P / B / O counts.
+      const cls = ['cell', d.slice(0, 7) !== month ? 'out' : '', d === S.today ? 'today' : '', (i === 0 || i === 6) ? 'wknd' : '', S.priv ? availClass(d, myRole()) : ''].join(' ');
       html += '<div class="' + cls + '" data-act="pickDay" data-date="' + d + '">' +
         '<div class="cell-head"><button class="dnum" data-act="gotoDay" data-date="' + d + '" aria-label="Open day view for ' + D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + '">' + Number(d.slice(8)) + '</button>' +
-        '<span class="qday">' + qChip(d, 'Pilot') + qChip(d, 'Boom') + qChip(d, 'Other') + '</span>' +
+        (S.priv ? '' : '<span class="qday">' + qChip(d, 'Pilot') + qChip(d, 'Boom') + qChip(d, 'Other') + '</span>') +
         '</div>' +
         (hidden[i] ? '<button class="more" data-act="dayList" data-date="' + d + '" aria-label="Show all ' + (hidden[i]) + ' more on ' + D.short(d) + '">+' + hidden[i] + '<span class="wide"> more</span></button>' : '') +
         '</div>';
@@ -2712,6 +2749,13 @@
    *  Red while any request in the conflict is pending; grey "Over max · approved" once all are approved.
    *  Opens the conflict resolver for that day. */
   function conflictBadge(r, compact) {
+    if (S.priv) { // Hide user schedules: how many other requests, never who
+      const c = S.myConf[r.id];
+      if (!c) return '';
+      const tip = 'Conflicts with ' + plural(c.n, 'other leave request') + (c.ok ? ' (all approved).' : '. An admin will decide.');
+      return '<button type="button" class="cfl ' + (c.ok ? 'cfl-ok' : 'cfl-bad') + (compact ? ' cfl-sm' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
+        icon('alert', compact ? 13 : 14) + (compact ? '' : '<span>' + (c.ok ? 'Over max' : 'Conflict') + '</span>') + '</button>';
+    }
     const cd = conflictDays(r);
     if (!cd.length) return '';
     const role = userOf(r.userId).role, q = quota(role);
@@ -2884,19 +2928,10 @@
     // Availability tint for one position: mine if it is selected, else the first selected one.
     // Full (red) = approved fill every slot; Overbooked (orange) = requests (approved + pending) fill or exceed the slots
     // but approvals don't; Open (green) = requests still leave a slot free. Counts ignore the status/type filters (they are facts about the day).
-    const myRole = (IDX.users.get(S.me) || {}).role;
-    const aRole = roles.includes(myRole) ? myRole : roles[0];
+    const mine = myRole();
+    const aRole = S.priv ? mine : roles.includes(mine) ? mine : roles[0];
     const aq = aRole ? quota(aRole) : 0;
-    const appr = new Map();
-    if (aq) IDX.live.forEach(r => {
-      if (r.status !== 'Approved' || r.type !== 'Leave' || userOf(r.userId).role !== aRole) return;
-      for (let d = r.start; d <= r.end; d = D.add(d, 1)) appr.set(d, (appr.get(d) || 0) + 1);
-    });
-    const avail = d => {
-      if (!aq) return '';
-      const a = appr.get(d) || 0, all = countOn(d, aRole);
-      return a >= aq ? 'av-full' : all >= aq ? 'av-over' : 'av-open';
-    };
+    const avail = d => aq ? availClass(d, aRole) : '';
     const ROLE_PL = { Pilot: 'Pilot', Boom: 'Boom', Other: 'Other' };
     const key = aq ? '<div class="qkey"><span class="qk-t">' + ROLE_PL[aRole] + ' slots</span>' +
       '<span class="qk av-open"><i></i>Open</span><span class="qk av-over"><i></i>Overbooked</span><span class="qk av-full"><i></i>Full</span></div>' : '';
@@ -2943,11 +2978,11 @@
     const reqs = calRequests().filter(r => r.start <= we && r.end >= ws);
     const head = days.map(d => {
       const p = countOn(d, 'Pilot'), b = countOn(d, 'Boom'), qp = quota('Pilot'), qb = quota('Boom');
-      return '<div class="wk-day' + (d === S.today ? ' today' : '') + '" role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
+      return '<div class="wk-day' + (d === S.today ? ' today' : '') + (S.priv ? ' ' + availClass(d, myRole()) : '') + '" role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
         '<div class="wk-dow">' + DOW[D.dow(d)] + '</div><div class="wk-num">' + Number(d.slice(8)) + '</div>' +
         '<div class="wk-date">' + D.f(d, { month: 'short' }) + '</div>' +
-        '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">P: ' + p + (qp ? '/' + qp : '') + '</span>' +
-        '<span class="' + (qb && b > qb ? 'over' : '') + '">B: ' + b + (qb ? '/' + qb : '') + '</span></div></div>';
+        (S.priv ? '' : '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">P: ' + p + (qp ? '/' + qp : '') + '</span>' +
+        '<span class="' + (qb && b > qb ? 'over' : '') + '">B: ' + b + (qb ? '/' + qb : '') + '</span></div>') + '</div>';
     }).join('');
     const bands = [['Pilot', 'PILOTS ACTIVE SCHEDULE'], ['Boom', 'BOOM OPERATORS ACTIVE SCHEDULE'], ['Other', 'OTHER SQUADRON PERSONNEL']]
       .filter(b => S.f.role.includes(b[0]))
@@ -2991,7 +3026,11 @@
         '<span class="ds-w">' + DOW[D.dow(x)][0] + '</span><span class="ds-n">' + Number(x.slice(8)) + '</span><span class="ds-dots">' + dots + '</span></button>';
     }).join('');
     const rc = filteredRoleCounts(d);
-    const meters = ROLES.map(role => roleMeter(role, rc[role], 'lg')).join('');
+    // Hide user schedules: one availability line for my position instead of P / B / O counts.
+    const av = S.priv ? availClass(d, myRole()) : '';
+    const meters = S.priv
+      ? (av ? '<div class="day-avail ' + av + '"><i></i>' + esc(({ Pilot: 'Pilot', Boom: 'Boom', Other: 'Other' })[myRole()]) + ' slots ' + ({ 'av-open': 'open', 'av-over': 'overbooked', 'av-full': 'full' })[av] + '</div>' : '')
+      : ROLES.map(role => roleMeter(role, rc[role], 'lg')).join('');
     const weekStrip = '<div class="dstrip"><button class="ds-arrow" data-act="dayShift" data-v="-7" aria-label="Previous week">' + icon('left', 20) + '</button>' +
         '<div class="ds-days">' + strip + '</div>' +
         '<button class="ds-arrow" data-act="dayShift" data-v="7" aria-label="Next week">' + icon('right', 20) + '</button></div>';
@@ -3007,7 +3046,7 @@
     // Position filter for the day (shares the calendar's filter, so the calendar narrows too). Not on My Requests.
     // The day's own Pilots | Booms | Other filter — independent of the calendar's position filter.
     const dr = S.dayRoles || (S.dayRoles = ROLES.slice());
-    const roleBar = S.view === 'mine' ? '' : '<div class="day-roles"><div class="seg" role="group" aria-label="Positions for this day">' + FILTERS[1].opts.map(o =>
+    const roleBar = S.view === 'mine' || S.priv ? '' : '<div class="day-roles"><div class="seg" role="group" aria-label="Positions for this day">' + FILTERS[1].opts.map(o =>
       '<button type="button" class="' + (dr.includes(o[0]) ? 'on' : '') + '" aria-pressed="' + dr.includes(o[0]) + '" data-act="dayRole" data-v="' + o[0] + '">' + o[1] + '</button>').join('') + '</div></div>';
     return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top.replace('<div class="dsum">', roleBar + '<div class="dsum">') +
         meters + '</div></div>' +
@@ -3403,6 +3442,11 @@
       '<button class="btn act" data-act="lockAdmin" aria-label="Lock admin" title="Lock admin">' + icon('lock', 18) + '<span class="bl">Lock</span></button></div></div>' +
       '<div class="scroll" id="adminScroll">' +
 
+      // Privacy: members see only their own schedule plus day availability. Admins always see everything.
+      '<div class="panel"><div class="cfg-row-tog"><div><h3>' + icon('lock', 16) + ' Hide user schedules</h3>' +
+        '<p class="cfg-help">Members see only their own requests. Other days show just green, orange or red availability for their position, conflicts show how many other leave requests are involved but never who, and All Requests is hidden. Admin mode always shows everything.</p></div>' +
+        '<button type="button" class="btn chip-tog' + (st.hideSchedules ? ' on' : '') + '" aria-pressed="' + !!st.hideSchedules + '" data-act="hideSchedules">' + (st.hideSchedules ? icon('check', 18) + 'On' : 'Off') + '</button></div></div>' +
+
       // Roster: summary + link to its own page
       '<div class="panel"><h3>' + icon('users', 16) + ' Squadron roster</h3>' +
         '<p class="cfg-help">' + (S.users.some(u => u.pending) ? '<b class="cfg-wait">' + S.users.filter(u => u.pending).length + ' awaiting approval</b> · ' : '') +
@@ -3650,18 +3694,21 @@
       const others = IDX.live.filter(x => x.id !== r.id && x.status !== 'Denied' && x.start <= d && x.end >= d);
       // Only leave uses a slot: a pass is never over the max, and only other members' leave counts against it.
       const peers = r.type === 'Leave' ? others.filter(x => x.type === 'Leave' && x.userId !== r.userId && userOf(x.userId).role === u.role).sort(byLast) : [];
+      // Hide user schedules: other people's leave is only a count (server day totals minus this request).
+      const self = r.type === 'Leave' && r.status !== 'Denied' ? 1 : 0;
+      const n = S.priv ? (r.type === 'Leave' ? Math.max(0, countOn(d, u.role) - self) : 0) : peers.length;
       const dups = others.filter(x => x.userId === r.userId);
-      const over = r.type === 'Leave' && !!q && peers.length + 1 > q;
-      out.set(d, { peers, dups, over, bad: over || dups.length > 0, q, role: u.role });
+      const over = r.type === 'Leave' && !!q && n + 1 > q;
+      out.set(d, { peers, n, dups, over, bad: over || dups.length > 0, q, role: u.role });
     }
     return out;
   }
   function conflictText(d, c) {
     const day = D.f(d, { weekday: 'short', month: 'short', day: 'numeric' });
-    if (!c.bad) return day + ': no conflict' + (c.peers.length ? ' (' + (c.peers.length + 1) + (c.q ? ' of ' + c.q : '') + ' ' + ROLE_PLURAL[c.role] + ' out)' : '') + '.';
+    if (!c.bad) return day + ': no conflict' + (c.n ? ' (' + (c.n + 1) + (c.q ? ' of ' + c.q : '') + ' ' + ROLE_PLURAL[c.role] + ' out)' : '') + '.';
     const parts = [];
-    if (c.over) parts.push('over the ' + ROLE_PLURAL[c.role] + ' max (' + (c.peers.length + 1) + ' of ' + c.q + ') with ' +
-      c.peers.map(x => fullName(userOf(x.userId)) + ' – ' + x.type.toLowerCase() + ', ' + x.status.toLowerCase()).join('; '));
+    if (c.over) parts.push('over the ' + ROLE_PLURAL[c.role] + ' max (' + (c.n + 1) + ' of ' + c.q + ') with ' + (S.priv ? plural(c.n, 'other leave request')
+      : c.peers.map(x => fullName(userOf(x.userId)) + ' – ' + x.type.toLowerCase() + ', ' + x.status.toLowerCase()).join('; ')));
     if (c.dups.length) parts.push('duplicate of own ' + c.dups.map(x => x.type.toLowerCase() + ' ' + D.short(x.start) + '–' + D.short(x.end)).join(', '));
     return day + ': conflicts — ' + parts.join('. ') + '.';
   }
@@ -3913,7 +3960,7 @@
     if (!q) return 'ok';
     const self = w.editId ? S.requests.find(r => r.id === w.editId) : null;
     const own = self && self.type === 'Leave' && self.status !== 'Denied' && d >= self.start && d <= self.end;
-    const appr = IDX.live.filter(r => r.type === 'Leave' && r.status === 'Approved' && r.start <= d && r.end >= d && userOf(r.userId).role === role && r.id !== (self && self.id)).length;
+    const appr = apprOn(d, role) - (own && self.status === 'Approved' ? 1 : 0);
     const total = countOn(d, role) - (own ? 1 : 0) + 1;
     return appr >= q ? 'full' : total > q ? 'over' : 'ok';
   }
@@ -4025,6 +4072,10 @@
     },
     async pushTest() {
       try { const r = await call('apiPushTest', S.token); toast('Test sent to ' + plural(r.sent, 'device')); }
+      catch (e) { toast(e.message, 'error'); }
+    },
+    async hideSchedules() {
+      try { apply(await call('apiSetHideSchedules', S.token, !S.settings.hideSchedules)); render(); toast('Hide user schedules ' + (S.settings.hideSchedules ? 'on' : 'off')); }
       catch (e) { toast(e.message, 'error'); }
     },
     async adminAlerts() {
@@ -4176,6 +4227,11 @@
       el.classList.add('sel');
       const head = '<div class="cc-dh">' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '</div>';
       if (!c.bad) { box.innerHTML = head + '<p class="muted">No conflict' + (c.peers.length ? ' — also out: ' + esc(c.peers.map(x => fullName(userOf(x.userId))).join(', ')) : '') + '.</p>'; return; }
+      if (S.priv) { // count only, never names
+        box.innerHTML = head + (c.over ? '<p class="cc-why">' + (c.n + 1) + ' ' + ROLE_PLURAL[c.role] + ' requested leave — the max is ' + c.q + '. This conflicts with ' + plural(c.n, 'other leave request') + '; an admin will decide.</p>' : '') +
+          (c.dups.length ? '<p class="cc-why">Overlap — you already have a request on this day.</p>' : '');
+        return;
+      }
       const li = x => '<li><button class="dl-row" data-act="openReq" data-id="' + esc(x.id) + '"><span class="dl-who">' + idBadge(userOf(x.userId)) + nameHtml(userOf(x.userId)) + '</span>' +
         '<span class="dl-meta">' + x.type + ' · ' + D.short(x.start) + ' → ' + D.short(x.end) + '</span><span class="badge s-' + x.status.toLowerCase() + '">' + x.status + '</span></button></li>';
       box.innerHTML = head +
