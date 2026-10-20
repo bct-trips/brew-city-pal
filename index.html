@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792532458"></script>
+    <script src="config.js?v=1792532860"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1959,6 +1959,13 @@
   .srv-help[hidden] { display: none; }
   /* A shared bar carried over from last week starts exactly where other carried-over bars do (badges line up). */
   .evs.grp.end, .evs.grp.mid { padding-left: 11px !important; }
+  /* Request review: the type is a big coloured banner (Leave navy, Pass yellow), not a small badge. */
+  .rv-type { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 14px; }
+  .rv-type.rv-leave { background: var(--leave); color: #ffffff; }
+  .rv-type.rv-pass { background: var(--gold); color: var(--navy); }
+  :root[data-theme="dark"] .rv-type.rv-leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
+  .rv-tt { display: inline-flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+  .rv-for { font-size: 15px; font-weight: 600; opacity: .9; overflow-wrap: anywhere; }
 </style>
 
   </head>
@@ -4901,8 +4908,9 @@
         (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '') +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
       else body = '<div class="review">' +
-        '<div class="rv"><span class="lbl">Requested absence type</span><div class="big"><span class="badge t-' + w.type.toLowerCase() + '" style="font-size:12px">' + w.type + '</span></div>' +
-          '<div class="meta" style="margin-top:4px;white-space:normal">For ' + esc(who) + (w.creating ? ' · new member' : wizIds().length > 1 ? ' · one request each' : '') + '</div></div>' +
+        // A big Leave (navy) / Pass (yellow) banner at the top so the type can't be missed, with who it's for under it.
+        '<div class="rv-type rv-' + w.type.toLowerCase() + '"><span class="rv-tt">' + icon(w.type === 'Leave' ? 'calendar' : 'clock', 22) + w.type + '</span>' +
+          '<span class="rv-for">For ' + esc(who) + (w.creating ? ' · new member' : wizIds().length > 1 ? ' · one request each' : '') + '</span></div>' +
         '<div class="rv"><span class="lbl">Travel &amp; absence dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
           '<div style="margin-top:4px;font-weight:700">' + plural(c.n, 'day') + '</div></div>' +
         '<div class="rv"><span class="lbl">Trip reason &amp; notes</span><div class="note">' + (w.note.trim() ? esc(w.note.trim()) : '<span class="muted">No note provided.</span>') + '</div></div>' +
