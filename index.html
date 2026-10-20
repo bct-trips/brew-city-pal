@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792491954"></script>
+    <script src="config.js?v=1792492031"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1448,6 +1448,12 @@
   .panel:is(.panel-warn, .panel-danger) { background: color-mix(in srgb, var(--tone) 9%, var(--card)); border-color: color-mix(in srgb, var(--tone) 60%, transparent); }
   .panel:is(.panel-warn, .panel-danger) h3 .ic { color: var(--tone); }
   .panel:is(.panel-warn, .panel-danger) input { background: var(--card); }
+  /* Leave-days counter under request calendars: fiscal-year approved + pending + this selection = total. */
+  .lv-tally { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 10px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card-2); font-size: 14px; color: var(--muted); }
+  .lt-h { flex-basis: 100%; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+  .lt-n b { color: var(--ink); font-size: 16px; font-variant-numeric: tabular-nums; }
+  .lt-sel b { color: var(--ink); }
+  .lt-total { margin-left: auto; font-size: 16px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
 </style>
 
   </head>
@@ -3054,6 +3060,37 @@
   /* ================================================================ */
   /* Stats (admin): per-person request metrics                          */
   /* ================================================================ */
+  /** Fiscal year (1 Oct – 30 Sep) containing day d: [start, end, 'FY27']. */
+  function fyOf(d) {
+    const y = Number(d.slice(0, 4)), fy = Number(d.slice(5, 7)) >= 10 ? y + 1 : y;
+    return [(fy - 1) + '-10-01', fy + '-09-30', 'FY' + String(fy).slice(2)];
+  }
+  /**
+   * Leave-days counter shown under every request calendar (request form and request details).
+   * Counts the member's Ordinary Leave days in the fiscal year of the selection: approved + pending (other requests),
+   * plus the days of the current selection when it is Leave. excludeId = the request being edited / viewed,
+   * so it is counted once, as the selection.
+   */
+  function leaveTally(userId, type, start, end, excludeId) {
+    if (!userId) return '';
+    const anchor = D.valid(start) ? start : S.today, [fs, fe, label] = fyOf(anchor);
+    const inFy = (a, b) => { const x = D.max(a, fs), y = D.min(b, fe); return x <= y ? D.days(x, y) : 0; };
+    let appr = 0, pend = 0;
+    IDX.live.forEach(r => {
+      if (r.userId !== userId || r.type !== 'Leave' || r.id === excludeId) return;
+      if (r.status === 'Approved') appr += inFy(r.start, r.end);
+      else if (r.status === 'Pending') pend += inFy(r.start, r.end);
+    });
+    const hasSel = D.valid(start) && D.valid(end) && end >= start;
+    const sel = hasSel && type === 'Leave' ? inFy(start, end) : 0;
+    const who = userId === S.me ? 'Your' : esc(lastName(userOf(userId))) + '’s';
+    return '<div class="lv-tally" aria-live="polite"><div class="lt-h">' + who + ' leave days · ' + label + '</div>' +
+      '<span class="lt-n"><b>' + appr + '</b> approved</span><span class="lt-n"><b>' + pend + '</b> pending</span>' +
+      (type === 'Leave'
+        ? '<span class="lt-n lt-sel"><b>+' + sel + '</b> ' + (hasSel ? 'this request' : 'pick dates') + '</span>'
+        : '<span class="lt-n lt-sel">Passes don’t use leave days</span>') +
+      '<span class="lt-total">' + plural(appr + pend + sel, 'day') + '</span></div>';
+  }
   function periodRange(p) {
     const y = Number(S.today.slice(0, 4)), m = Number(S.today.slice(5, 7));
     if (p === 'fy') { const fy = m >= 10 ? y + 1 : y; return [(fy - 1) + '-10-01', fy + '-09-30', 'FY' + String(fy).slice(2) + ' (1 Oct ' + (fy - 1) + ' – 30 Sep ' + fy + ')']; }
@@ -3412,6 +3449,7 @@
         ? '<div class="cc-sum ' + (bad ? 'bad' : 'ok') + '">' + icon(bad ? 'alert' : 'check', 15) + (bad ? plural(bad, 'day') + ' in conflict — tap a red day to see with whom' : 'No conflicts on any requested day') + '</div>' +
           reqCalendar(r) +
           '<div class="mini-key"><span class="mk-i"><span class="mk mk-ok"></span>No conflict</span><span class="mk-i"><span class="mk mk-full"></span>Conflict</span></div>' +
+          leaveTally(r.userId, r.type, r.start, r.end, r.id) +
           '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>'
         : '') +
       '<div class="wiz-dates"><div class="field"><span class="lbl">Departure</span><div class="ro-val">' + longDate(r.start) + '</div></div>' +
@@ -3589,7 +3627,8 @@
         (st !== 'ok' ? ' title="' + esc(role + (st === 'full' ? ' leave slots already full' : ' leave would go over the daily max')) + '"' : '') + '>' + Number(d.slice(8)) + '</button>';
     }
     // Colour key only (leave with a daily max); each swatch stays with its label when wrapping.
-    return html + '</div>' + (q ? '<div class="mini-key"><span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-over"></span>Overbooks</span><span class="mk-i"><span class="mk mk-full"></span>Full</span></div>' : '') + '</div>';
+    return html + '</div>' + (q ? '<div class="mini-key"><span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-over"></span>Overbooks</span><span class="mk-i"><span class="mk mk-full"></span>Full</span></div>' : '') + '</div>' +
+      (w.creating ? '' : leaveTally(w.assigneeId, w.type, w.start, w.end, w.editId));
   }
   function renderWizStatus() {
     const c = wizCheck();
