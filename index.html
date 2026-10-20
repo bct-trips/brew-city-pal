@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792502240"></script>
+    <script src="config.js?v=1792502401"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1294,12 +1294,6 @@
   .mk-i { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
   .mk-i .mk { margin-left: 0; }
 
-  /* My Requests: List | Calendar switch and the Show conflicts toggle. */
-  .mine-head { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--card); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-  .mine-head .seg { display: flex; } .mine-head .seg button { padding: 0 18px; }
-  .conf-tog { margin-left: auto; }
-  .conf-tog.on, .conf-tog.on:hover { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink) !important; }
-  @media (max-width: 700px) { .mine-head .seg { flex: 1 1 auto; } .mine-head .seg button { flex: 1 1 0; } .conf-tog { flex: 1 1 auto; margin-left: 0; } }
 
   /* Status cell: badges stacked and left-aligned, same height. */
   .st-cell { flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -1573,6 +1567,12 @@
   :root[data-theme="dark"] .nav.nav-admin { border-top: 1px solid var(--navy-edge); }
   .modal.modal-wide:has(.y-grid) { max-width: 1100px; }
   @media (min-width: 900px) { .y-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  /* My Requests: List | Calendar ("Cal" on phones) in the filter row, at every width. */
+  .filters > .mine-mode { display: flex; flex: none; order: 3; }
+  .filters > .mine-mode .seg { display: flex; }
+  .filters > .mine-mode .seg button { padding: 0 14px; }
+  .fs-sect .fs-conf { width: 100%; height: 44px; }
+  .fs-help { margin: 6px 2px 0; font-size: 13.5px; color: var(--muted); }
 </style>
 
   </head>
@@ -2228,7 +2228,7 @@
     S.dpShown = showPanel;
     const body = S.cal === 'month' ? renderMonth() : S.cal === 'quad' ? renderQuad() : S.cal === 'week' ? renderWeek() : renderDay();
     const confOn = S.f.conf && S.view !== 'mine';
-    return '<section class="cal' + (confOn ? ' conf-mode' : '') + '">' + (S.view === 'mine' ? mineHead() : '') +
+    return '<section class="cal' + (confOn ? ' conf-mode' : '') + '">' +
       '<div class="calbar">' +
         // Left: view switch, Today, Add Request
         '<div class="cb-left">' +
@@ -2247,7 +2247,7 @@
           ? FILTERS.filter(F => F.g !== 'role').map(F => filterGroup(F, 'mine')).join('') + filterButton('mine')
           : FILTERS.map(F => filterGroup(F, 'cal')).join('') + filterButton('cal')) +
           // Phone Month: switch between name strips and P / B / O stats, next to the Filters button.
-          (S.cal === 'month' ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
+          (S.view === 'mine' ? mineSwitch() : S.cal === 'month' ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
       '</div>' +
       (confOn ? confBanner(calRequests().length) : '') +
       '<div class="cal-split"><div class="cal-body" id="calBody">' + body + '</div>' + (showPanel
@@ -2365,7 +2365,7 @@
   function filterSummary(sc) {
     const st = fState(sc), parts = [];
     const pick = (g, opts) => { const sel = st[g]; if (sel && sel.length !== opts.length) parts.push(sel.length ? opts.filter(o => sel.includes(o[0])).map(o => o[1]).join(', ') : 'No ' + g); };
-    if (st.conf) parts.push('Conflicts');
+    if (st.conf || (st === S.mf && S.mineConf && S.mineMode === 'cal')) parts.push('Conflicts');
     if (st.person) parts.push(calName(userOf(st.person)));
     else if (st.role) pick('role', FILTERS[1].opts);
     pick('status', FILTERS[0].opts);
@@ -2384,6 +2384,7 @@
      Clear filters returns to exactly this, and only shows when the filters differ from it. */
   const DEFAULT_ROLES = ['Pilot', 'Boom'];
   function setDefaultFilters(st) {
+    if (st === S.mf) S.mineConf = false;
     st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
     if (st.role) st.role = DEFAULT_ROLES.slice();
     if ('person' in st) st.person = '';
@@ -2392,7 +2393,7 @@
   function isDefaultFilters(st) {
     const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
     return same(st.status, FILTERS[0].opts.map(o => o[0])) && same(st.type, ['Leave', 'Pass']) &&
-      (!st.role || same(st.role, DEFAULT_ROLES)) && !st.person && !st.conf;
+      (!st.role || same(st.role, DEFAULT_ROLES)) && !st.person && !st.conf && !(st === S.mf && S.mineConf && S.mineMode === 'cal');
   }
   function filterButton(sc) {
     const parts = filterSummary(sc);
@@ -2416,6 +2417,9 @@
       (wideFilters() ? '' : sect('Show', typeToggle(sc))) +
       sect('Status', chips(groups[0])) +
       (groups.some(f => f.g === 'role') ? sect('Position', chips(FILTERS[1])) + sect('Person', personSelect('in-sheet', sc)) : '') +
+      // My Requests calendar: also show other members' leave / passes (same position) that overlap mine.
+      (sc === 'mine' && S.mineMode === 'cal' ? sect('Conflicts', '<button type="button" class="btn chip-tog fs-conf' + (S.mineConf ? ' on' : '') + '" data-act="mineConf" aria-pressed="' + !!S.mineConf + '">' +
+        (S.mineConf ? icon('check', 18) : '') + 'Show conflicts</button><p class="fs-help">Adds other members’ leave and passes in your position that overlap yours.</p>') : '') +
       '</div><div class="modal-f"><button class="btn" data-act="resetFilters"' + scAttr(sc) + '>Reset</button><button class="btn primary" data-act="closeModal">Done</button></div>';
     // When a toggle changes, swap the sheet's contents in place so it doesn't replay its open animation (no flash).
     const box = inPlace && S.modal === 'filters' && $('#modal .modal');
@@ -3182,7 +3186,7 @@
   function listBar(search, filters, sc) {
     return '<div class="lbar">' +
       '<div class="lsearch">' + icon('search', 16) + search + '</div>' +
-      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + '</div>' +
+      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'mine' ? mineSwitch() : '') + '</div>' +
       '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
   }
   const reqBar = () => '<div class="req-bar"><button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
@@ -3194,12 +3198,11 @@
       '<div class="tbl-page" id="listBody">' + renderListBody() + '</div>' + reqBar() + '</section>';
   }
 
-  /** My Requests header: List | Calendar, and (calendar) Show conflicts. */
-  function mineHead() {
-    const cal = S.mineMode === 'cal';
-    return '<div class="mine-head">' + seg([['list', 'List'], ['cal', 'Calendar']], cal ? 'cal' : 'list', 'mineMode') +
-      (cal ? '<button type="button" class="btn conf-tog' + (S.mineConf ? ' on' : '') + '" data-act="mineConf" aria-pressed="' + !!S.mineConf + '" title="Show other members’ ' +
-        'leave or passes in your position that overlap yours">' + icon(S.mineConf ? 'check' : 'users', 18) + 'Show conflicts</button>' : '') + '</div>';
+  /** My Requests: List | Calendar switch, in the filter row (where the calendar's Events | Stats switch is elsewhere).
+   *  Phones show "Cal". Show conflicts lives in the filter sheet. */
+  function mineSwitch() {
+    return '<div class="mine-mode">' + seg([['list', 'List'], ['cal', '<span class="wide">Calendar</span><span class="narrow">Cal</span>']], S.mineMode === 'cal' ? 'cal' : 'list', 'mineMode')
+      .replace('role="group"', 'role="group" aria-label="My Requests view"') + '</div>';
   }
   function renderMine() {
     if (S.mineMode === 'cal') return renderCalendar();
@@ -3209,7 +3212,7 @@
     const shown = sortRows(mine.filter(r => F.status.includes(r.status) && F.type.includes(r.type) &&
       (!q || (r.type + ' ' + r.status + ' ' + r.note).toLowerCase().indexOf(q) >= 0)), S.mine);
     const changedMine = mine.filter(isChanged);
-    return '<section class="page list-page">' + mineHead() +
+    return '<section class="page list-page">' +
       listBar('<input type="search" placeholder="Search notes…" value="' + esc(S.mine.q || '') + '" data-model="mine.q" data-live="mineRefresh" aria-label="Search my requests">', FILTERS.filter(f => f.g !== 'role'), 'mine') +
       (changedMine.length ? '<div class="chg-note" role="alert">' + icon('alert', 18) + '<div><b>' + plural(changedMine.length, 'request') + ' changed by an admin.</b> ' +
         changedMine.map(r => '<button class="linkbtn" data-act="openReq" data-id="' + esc(r.id) + '">' + r.type + ' ' + D.short(r.start) + ' → ' + D.short(r.end) + '</button>').join(' · ') +
@@ -4085,7 +4088,7 @@
       else if (S.modal === 'filters') openFilterSheet(S.fsScope, true);
     },
     confOff() { S.f.conf = false; render(); },
-    mineConf() { S.mineConf = !S.mineConf; render(); },
+    mineConf() { S.mineConf = !S.mineConf; render(); if (S.modal === 'filters') openFilterSheet('mine', true); },
     monthMode(el) { S.monthMode = el.dataset.v; try { localStorage.setItem('pal.monthMode', S.monthMode); } catch (e) {} render(); },
     pickAssignee() { openPersonPicker('cal', 'assign'); refreshData(); },
     clearPerson(el) { fState(el.dataset.scope).person = ''; S.openDrop = null; render(); if (S.modal === 'filters') openFilterSheet(el.dataset.scope, true); },
