@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792528506"></script>
+    <script src="config.js?v=1792528649"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1872,6 +1872,13 @@
   /* While the Profile drop-up is open, the page you're on keeps a muted pill (so Profile is the strong one). */
   .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"])::before { background: rgba(255, 255, 255, .16); }
   .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]) { color: #ffffff; }
+  /* Profile drop-up: a clearly raised surface — a visible outline, a stronger shadow, and in dark mode a lighter
+     surface than the page so it doesn't melt into it. The notch matches. */
+  .pm-pop { --pm-bg: var(--card); --pm-edge: var(--outline); background: var(--pm-bg); border: 1.5px solid var(--pm-edge);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .06), 0 -10px 40px rgba(0, 0, 0, .35); }
+  :root[data-theme="dark"] .pm-pop { --pm-bg: #2a2c34; --pm-edge: rgba(255, 255, 255, .32); box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), 0 -12px 44px rgba(0, 0, 0, .7); }
+  .pm-pop .pm-row, .pm-pop .pm-theme { border-bottom-color: color-mix(in srgb, var(--pm-edge) 60%, transparent); }
+  .pm-pop::after { background: var(--pm-bg); border-right: 1.5px solid var(--pm-edge); border-bottom: 1.5px solid var(--pm-edge); bottom: -8px; }
 </style>
 
   </head>
