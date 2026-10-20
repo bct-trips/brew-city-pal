@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792529241"></script>
+    <script src="config.js?v=1792529446"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1829,7 +1829,7 @@
   /* Dark mode: the name section is a soft grey instead of bright white, so the header isn't a harsh white block. */
   :root[data-theme="dark"] .pm-bh .bh-n { background: #c9cdd6; }
   /* Same-dates bar: one solid bar (never hatched) holding each person's badge, separated by "/". */
-  .evs.grp .evs-t, .cs-bar.grp, .wpuck.grp .n { display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; padding: 3px; margin: -3px; } /* room for the badge outline so it isn't clipped */
+  .evs.grp .evs-t, .cs-bar.grp, .wpuck.grp .n { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; padding-left: 3px; } /* room for the badge outline on the left */
   .evs.grp { background-image: none !important; }
   .gb { display: inline-flex; min-width: 0; flex: 0 1 auto; cursor: pointer; }
   .gsl { flex: none; font-weight: 900; opacity: .85; }
@@ -1879,6 +1879,8 @@
   :root[data-theme="dark"] .pm-pop { --pm-bg: #2a2c34; --pm-edge: rgba(255, 255, 255, .32); box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), 0 -12px 44px rgba(0, 0, 0, .7); }
   .pm-pop .pm-row, .pm-pop .pm-theme { border-bottom-color: color-mix(in srgb, var(--pm-edge) 60%, transparent); }
   .pm-pop::after { background: var(--pm-bg); border-right: 1.5px solid var(--pm-edge); border-bottom: 1.5px solid var(--pm-edge); bottom: -8px; }
+  /* Names inside a shared badge: a clear gap around the "·" separator. */
+  .gbb .rp-dot { margin: 0 8px; }
 </style>
 
   </head>
@@ -2915,7 +2917,9 @@
     const reqs = calRequests();
     let html = '<div class="month"><div class="dow-row">' + DOW.map(d => '<div>' + d + '</div>').join('') + '</div>' +
       '<div class="month-grid" id="monthGrid" style="--weeks:' + weeks + '">';
+    weekCarry = new Map(); // request id -> lane in the week above, so bars that carry over keep their order
     for (let w = 0; w < weeks; w++) html += renderMonthWeek(D.add(gs, w * 7), month, reqs);
+    weekCarry = null;
     return html + '</div></div>';
   }
 
@@ -3139,12 +3143,17 @@
 
   /** Lane packing, stacked Leave → Pass → Denied, continuing each person's bar in the lane it was already in.
    *  Returns the sorted segments (each with .lane) and lanes[l] = last column used. */
+  let weekCarry = null;
+  /** Lane a segment's bar had in the week above (lowest of its people), or Infinity if it didn't carry over. */
+  const carryLane = sg => weekCarry ? Math.min.apply(null, sg.people.map(r => weekCarry.has(r.id) ? weekCarry.get(r.id) : Infinity)) : Infinity;
   function packMonthWeek(segs) {
     // Same start column: continuing pieces first; among those, the one whose request runs longest claims the shared lane,
     // so the longest bar stays unbroken on top and a bar that is about to end drops down instead.
     const lastEnd = sg => sg.people.reduce((m, r) => r.end > m ? r.end : m, '');
     const byRun = (x, y) => cont(x) && cont(y) ? (lastEnd(y) > lastEnd(x) ? 1 : lastEnd(y) < lastEnd(x) ? -1 : 0) : 0;
-    segs.sort((x, y) => x.a - y.a || cont(y) - cont(x) || byRun(x, y) || hasMe(y) - hasMe(x) || (y.b - y.a) - (x.b - x.a) || byLast(x.people[0], y.people[0]));
+    // Bars carried over from the week above keep the order they had there (Ilich above Matthews stays that way).
+    const byCarry = (x, y) => { const a = carryLane(x), b = carryLane(y); return a === b ? 0 : a < b ? -1 : 1; };
+    segs.sort((x, y) => x.a - y.a || cont(y) - cont(x) || byCarry(x, y) || byRun(x, y) || hasMe(y) - hasMe(x) || (y.b - y.a) - (x.b - x.a) || byLast(x.people[0], y.people[0]));
     const lanes = [];
     const laneOf = new Map();    // request id -> lane of its most recent segment
     const ends = new Map();      // request id -> column its most recent segment ended
@@ -3179,6 +3188,7 @@
     // merged into shared (hatched) bars per type.
     let { segs, lanes } = packMonthWeek(monthSegments(ws, reqs, true));
     if (lanes.length * lineH > avail) ({ segs, lanes } = packMonthWeek(monthSegments(ws, reqs, false)));
+    if (weekCarry) { weekCarry.clear(); segs.forEach(sg => sg.people.forEach(r => { const l = weekCarry.get(r.id); if (l === undefined || sg.lane < l) weekCarry.set(r.id, sg.lane); })); }
     // A one-person middle bar whose start puck is in this row doesn't repeat the name.
     const startIds = new Set(segs.filter(sg => sg.kind === 'start').map(sg => sg.people[0].id));
     segs.forEach(sg => { sg.quiet = sg.kind === 'mid' && sg.people.length === 1 && startIds.has(sg.people[0].id); });
