@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792531738"></script>
+    <script src="config.js?v=1792531895"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1950,6 +1950,13 @@
   .mc-pin input { height: 40px; }
   .mc-sec .field { margin-bottom: 8px; }
   .mc-actions { margin-top: 4px; align-items: center; }
+  /* Settings → About: server status pill. */
+  .srv-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-weight: 700; }
+  .srv-st { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; border: 0; font: inherit; font-size: 14px; font-weight: 800; color: #ffffff; }
+  .srv-ok { background: #15803d; }
+  .srv-bad { background: #b42318; cursor: pointer; }
+  .srv-help { flex-basis: 100%; margin: 8px 0 0; font-size: 14px; font-weight: 500; color: var(--ink); }
+  .srv-help[hidden] { display: none; }
 </style>
 
   </head>
@@ -4505,7 +4512,7 @@
         '<div class="field"><label for="np2">Confirm new PIN</label><input id="np2" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div></div>' +
         '<div class="err" id="pinErr"></div><div class="row" style="margin-top:4px"><button class="btn primary" data-act="savePin">Save PIN</button><button class="btn" data-act="clearPin">Cancel</button></div></div>' +
 
-      '<div class="panel about"><h3>' + icon('sheet', 16) + ' About</h3><div id="srvInfo" class="meta">Checking the server…</div></div>' +
+      '<div class="panel about"><h3>' + icon('sheet', 16) + ' About</h3><div class="srv-row"><span>Server</span><span id="srvInfo" class="meta">Checking…</span></div></div>' +
       '</div></section>';
   }
   /** Settings → About: is the deployed Apps Script running the Code.gs this page expects? */
@@ -4514,10 +4521,11 @@
     let b = '';
     try { b = (await call('apiServerInfo')).build; } catch (e) { b = ''; }
     const el = $('#srvInfo'); if (!el) return;
+    // Just a status: green "Up to date" or red "Out of date". Tapping "Out of date" shows how to fix it.
     el.innerHTML = b === EXPECTED_SERVER
-      ? icon('check', 14) + ' Server code is up to date (' + esc(b) + ').'
-      : '<span class="bad-t">' + icon('alert', 14) + ' The server is running an older version' + (b ? ' (' + esc(b) + ')' : '') + '. This page needs ' + EXPECTED_SERVER + '.</span> ' +
-        'In Apps Script: paste the latest Code.gs, then <b>Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy</b>. Use “Manage deployments”, not “New deployment” (that makes a new link).';
+      ? '<span class="srv-st srv-ok" title="Server ' + esc(b) + '">' + icon('check', 14) + 'Up to date</span>'
+      : '<button type="button" class="srv-st srv-bad" data-act="srvHelp" title="Server ' + esc(b || 'unknown') + ', needs ' + EXPECTED_SERVER + '">' + icon('alert', 14) + 'Out of date</button>' +
+        '<p class="srv-help" id="srvHelp" hidden>In Apps Script, paste the latest Code.gs, then <b>Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy</b>.</p>';
   }
 
   /* ---------- Request detail ---------- */
@@ -5317,6 +5325,7 @@
     peoplePeriod(el) { S.people.period = el.dataset.v; render(); },
     personYear(el) { openPersonYear(el.dataset.id); },
     memberCard(el) { openMemberCard(el.dataset.id); },
+    srvHelp() { const h = $('#srvHelp'); if (h) h.hidden = !h.hidden; },
     mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; $('#mcPin1').focus(); } },
     async revokeAdmin(el) {
       const u = userOf(el.dataset.id);
