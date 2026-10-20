@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792533122"></script>
+    <script src="config.js?v=1792533188"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1387,9 +1387,7 @@
   /* Out now: requests in progress today. Neutral high-contrast ring + live green dot. */
   :root { --now: #111318; --now-dot: #00a35c; }
   :root[data-theme="dark"] { --now: #ffffff; --now-dot: #00C805; }
-  /* Thin stripes inside the bar's shape (a ring or z-index would be clipped by the bar shape and made Chromium hide bars under today). */
-  .evs.now, .wpuck.now { background-image: linear-gradient(var(--now), var(--now)), linear-gradient(var(--now), var(--now));
-    background-size: 100% 2px; background-position: top, bottom; background-repeat: no-repeat; }
+  /* No "on now" stripes on bars: the green dot after the name marks who's out today. */
   .now-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--now-dot); animation: nowPulse 1.8s ease-out infinite; flex: none; }
   @keyframes nowPulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--now-dot) 70%, transparent); } 70%, 100% { box-shadow: 0 0 0 6px transparent; } }
   @media (prefers-reduced-motion: reduce) { .now-dot { animation: none; } }
