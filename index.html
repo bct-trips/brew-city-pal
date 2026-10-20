@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792505094"></script>
+    <script src="config.js?v=1792505592"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1600,6 +1600,8 @@
   .manage-ct { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--gold); color: var(--navy); font-size: 12px; display: inline-grid; place-items: center; }
   @media (max-width: 700px) { .stats-bar .manage-btn { padding: 0 14px 0 10px; } }
   .cfg-note { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; color: var(--warn); }
+  /* Nav hover on the dark bars: labels stay light (white), the icon gets a faint light pill. */
+  .nav button:hover, .nav.nav-admin button:hover { color: #ffffff; }
 </style>
 
   </head>
@@ -1912,6 +1914,8 @@
   function save(mutate, fn) {
     const args = Array.prototype.slice.call(arguments, 1);
     if (mutate) { mutate(); reindex(); }
+    if (!S.pending) S.syncTab = S.nextSyncTab || 'profile';
+    S.nextSyncTab = null;
     S.pending = (S.pending || 0) + 1; S.syncErr = false; saveGen++; syncUI();
     const done = saveChain.then(() => call.apply(null, args)).then(
       data => { lastSaved = data; return data; },
@@ -1938,8 +1942,11 @@
     if (S.modal === 'req' && S.reqOpen) openRequest(S.reqOpen);
   }
   /** Profile icon spins while saving; a red dot appears if the last save failed. */
+  /** Which nav icon carries the saving ring: Admin for admin settings, otherwise Profile. */
+  const syncTab = () => (S.syncTab === 'admin' && S.isAdmin ? 'admin' : 'profile');
   function syncUI() {
-    const ic = $('.nav button[data-v="profile"] .nav-ic');
+    $$('.nav .nav-ic').forEach(e => e.classList.remove('syncing', 'sync-err'));
+    const ic = $('.nav button[data-v="' + syncTab() + '"] .nav-ic');
     if (ic) { ic.classList.toggle('syncing', !!S.pending); ic.classList.toggle('sync-err', !S.pending && !!S.syncErr); }
     const live = $('#syncStatus');
     if (live) live.textContent = S.pending ? 'Saving changes…' : S.syncErr ? 'Some changes were not saved.' : '';
@@ -2247,7 +2254,7 @@
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
       '<nav class="nav' + (S.isAdmin ? ' nav-admin' : '') + '" aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '">' + items.map(i =>
       '<button data-act="nav" data-v="' + i[0] + '" class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
-      '<span class="nav-ic' + (i[0] === 'profile' && S.pending ? ' syncing' : i[0] === 'profile' && S.syncErr ? ' sync-err' : '') + '">' + icon(i[2], 20) + '</span><span class="wide">' + i[1] + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + '</span>' +
+      '<span class="nav-ic' + (i[0] === syncTab() && S.pending ? ' syncing' : i[0] === syncTab() && S.syncErr ? ' sync-err' : '') + '">' + icon(i[2], 20) + '</span><span class="wide">' + i[1] + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + '</span>' +
       (i[0] === 'all' && S.isAdmin && pending ? '<b class="dot">' + pending + '</b>' : '') +
       (i[0] === 'mine' && myChanged ? '<b class="dot warn" title="Dates changed by an admin">' + myChanged + '</b>' : '') +
       (i[0] === 'profile' && S.unread ? '<b class="dot" title="Unread notifications">' + S.unread + '</b>' : '') + '</button>').join('') + '</nav>';
@@ -4088,9 +4095,12 @@
       try { const r = await call('apiPushTest', S.token); toast('Test sent to ' + plural(r.sent, 'device')); }
       catch (e) { toast(e.message, 'error'); }
     },
-    async hideSchedules() {
-      try { apply(await call('apiSetHideSchedules', S.token, !S.settings.hideSchedules)); render(); toast('Hide user schedules ' + (S.settings.hideSchedules ? 'on' : 'off')); }
-      catch (e) { toast(e.message, 'error'); }
+    // Optimistic: flips at once; the ring spins on the Admin icon until the server has saved it.
+    hideSchedules() {
+      const on = !S.settings.hideSchedules;
+      S.nextSyncTab = 'admin';
+      save(() => { S.settings.hideSchedules = on; }, 'apiSetHideSchedules', S.token, on);
+      render();
     },
     async adminAlerts() {
       try { apply(await call('apiSetAdminAlerts', S.token, !S.adminAlerts)); redrawNotes(); toast('Admin alerts ' + (S.adminAlerts ? 'on' : 'off')); }
