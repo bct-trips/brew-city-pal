@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792485086"></script>
+    <script src="config.js?v=1792485327"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1297,6 +1297,12 @@
   .blocker-t { font-size: 20px; font-weight: 800; color: var(--on-surface); }
   .blocker-s { font-size: 14px; color: var(--muted); }
   @media (prefers-reduced-motion: reduce) { .blocker-spin { animation-duration: 2.4s; } }
+
+  /* Today: a soft tinted cell with a 2px soft-primary outline (visible but not harsh), in every calendar view. */
+  .cell.today, .month.compact .cell.cc.today, .wk-day.today, .slot.today {
+    background-color: color-mix(in srgb, var(--primary) 11%, var(--surface)) !important;
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 55%, transparent) !important; }
+  .qd.today { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 70%, transparent) !important; } /* keeps its availability colour */
 </style>
 
   </head>
@@ -2194,7 +2200,10 @@
         const pl = laneOf.get(r.id);
         if (pl !== undefined && ends.get(r.id) === sg.a - 1 && free(pl)) { l = pl; break; }
       }
-      if (l < 0) { l = base; while (!free(l)) l++; }
+      // Float up: if a higher lane is free here, take it (the bar steps up once and stays there for the week)
+      // rather than leaving an empty lane above it.
+      let top = base; while (!free(top)) top++;
+      if (l < 0 || top < l) l = top;
       lanes[l] = sg.b;
       sg.lane = l;
       sg.people.forEach(r => { laneOf.set(r.id, l); ends.set(r.id, sg.b); });
