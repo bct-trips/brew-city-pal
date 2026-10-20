@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792510910"></script>
+    <script src="config.js?v=1792510983"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1738,6 +1738,9 @@
   .mc-pin input { flex: 1 1 0; min-width: 0; height: 44px; }
   .mc-pin .btn { flex: none; }
   .mc-actions { display: flex; gap: 8px; justify-content: space-between; margin-top: 6px; }
+  /* Long server messages (URLs, scope names) wrap inside the toast instead of running off the screen. */
+  #toast { width: max-content; max-width: calc(100vw - 32px); }
+  #toast > div > span { min-width: 0; overflow-wrap: anywhere; }
 </style>
 
   </head>
