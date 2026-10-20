@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792485327"></script>
+    <script src="config.js?v=1792485584"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1303,6 +1303,33 @@
     background-color: color-mix(in srgb, var(--primary) 11%, var(--surface)) !important;
     box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 55%, transparent) !important; }
   .qd.today { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 70%, transparent) !important; } /* keeps its availability colour */
+
+  /* ---------- Desktop day panel (≥900px): slides in from the left; the calendar narrows beside it ---------- */
+  .cal-split { flex: 1; min-height: 0; display: flex; }
+  .cal-split > .cal-body { flex: 1 1 auto; min-width: 0; }
+  .dpanel { flex: 0 0 380px; min-width: 0; display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--outline-variant);
+    box-shadow: 6px 0 18px -10px rgba(0, 0, 0, .45); animation: dpIn .18s ease-out; z-index: 2; }
+  @keyframes dpIn { from { transform: translateX(-24px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .dpanel { animation: none; } }
+  .dayv-panel { flex: 1; min-height: 0; overflow-y: auto; border-top: 0; box-shadow: none; }
+  .dp-h { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 6px; padding: 10px 10px 10px 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .dp-t { flex: 1; min-width: 0; text-align: center; }
+  .dp-w { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--primary); }
+  .dp-d { font-size: 18px; font-weight: 800; color: var(--on-surface); }
+  .dp-x { margin-left: 4px; }
+  .dayv-panel .day-groups .dl-who { flex-basis: 100%; }
+  /* Open day in the calendar: a solid selection-colour outline (stronger than Today's). */
+  .cell.is-open, .wk-day.is-open, .qd.is-open { box-shadow: inset 0 0 0 3px var(--sel-bg) !important; position: relative; z-index: 1; }
+
+  /* ---------- Week view: clearer position bands ---------- */
+  .band { border-bottom: 0; }
+  .band-title { background: var(--surface-high); color: var(--on-surface); border-top: 2px solid var(--outline); border-bottom: 1px solid var(--outline);
+    padding: 6px 10px; font-size: 13.5px; box-shadow: inset 4px 0 0 var(--rm); }
+  .band:first-child .band-title { border-top: 0; }
+  .band-p { --rm: #0d9488; } .band-b { --rm: #7c3aed; } .band-o { --rm: #64748b; }
+  :root[data-theme="dark"] .band-p { --rm: #2dd4bf; } :root[data-theme="dark"] .band-b { --rm: #a78bfa; } :root[data-theme="dark"] .band-o { --rm: #94a3b8; }
+  .band-tag { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 4px; background: var(--rm); color: #0b1730; font-size: 12px; font-weight: 900; letter-spacing: 0; }
+  .band-title .ct { background: var(--surface); border-color: var(--outline-variant); color: var(--on-surface); }
 </style>
 
   </head>
@@ -1786,6 +1813,7 @@
     Object.keys(keep).forEach(id => { const el = document.getElementById(id); if (el) { el.scrollTop = keep[id][0]; el.scrollLeft = keep[id][1]; } });
     if (S.view === 'calendar' && S.cal === 'month') fitMonth();
     paintSel();
+    markOpenDay();
     store.set('view', S.view); store.set('cal', S.cal);
   }
   /* Person pucks: when the name would be cut off, drop the unit so it reads [P|Name] (DESIGN.md §Pills). */
@@ -1799,7 +1827,13 @@
   }
   // Re-fit after any re-render (full or partial) and on resize; batched to one pass per frame.
   let fitQueued = false;
-  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); markScrolled(); }); };
+  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); markScrolled(); markOpenDay(); }); };
+  /** Outline the day that's open in the desktop day panel, in whichever calendar view is showing. */
+  function markOpenDay() {
+    $$('#calBody .is-open').forEach(e => e.classList.remove('is-open'));
+    if (!S.dayPanel || !$('.dpanel')) return;
+    $$('#calBody [data-date="' + S.dayPanel + '"]').forEach(e => { const c = e.closest('.cell, .wk-day, .qd') || e; if (c.matches('.cell, .wk-day, .qd')) c.classList.add('is-open'); });
+  }
   /* Tables scrolled sideways get .scrolled, which shows the Leave / Pass colour bar on the pinned Last Name cell. */
   function markScrolled(el) { (el ? [el] : $$('.tbl-wrap')).forEach(w => w.classList.toggle('scrolled', w.scrollLeft > 4)); }
   document.addEventListener('scroll', ev => { if (ev.target.classList && ev.target.classList.contains('tbl-wrap')) markScrolled(ev.target); }, true);
@@ -1879,7 +1913,9 @@
           // Phone Month: switch between name strips and P / B / O stats, next to the Filters button.
           (S.cal === 'month' ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
       '</div>' +
-      '<div class="cal-body" id="calBody">' + body + '</div>' +
+      '<div class="cal-split">' + (S.dayPanel && S.cal !== 'day' && useDayPanel()
+        ? '<aside class="dpanel" aria-label="Day details">' + renderDay(S.dayPanel, true) + '</aside>' : '') +
+      '<div class="cal-body" id="calBody">' + body + '</div></div>' +
       // Phones: a full-width Add Request bar under the calendar (the calendar shrinks to make room).
       '<div class="req-bar">' + (S.cal === 'day' ? '<button class="btn back-btn" data-act="dayBack">' + icon('left', 18) + 'Back</button>' : '') +
         '<button class="btn req-btn" data-act="' + (S.cal === 'day' ? 'newReqOn' : 'newReq') + '" data-date="' + S.cursor + '">' + icon('plus', 18) + 'Add Request</button></div></section>';
@@ -2510,14 +2546,16 @@
             '<span class="n">' + personBadge(r) + '</span><span class="s">' + (r.type === 'Leave' ? 'Leave' : 'Pass') + ' · ' + r.status + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span></div>';
         }).join('');
         const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
-        return '<div class="band"><div class="band-title">' + b[1] + ' <span class="ct">' + evs.length + '</span></div>' +
+        return '<div class="band band-' + b[0][0].toLowerCase() + '"><div class="band-title"><span class="band-tag">' + b[0][0] + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></div>' +
           '<div class="band-body"><div class="band-inner"><div class="band-slots g7">' + slots + '</div><div class="band-pucks">' + pucks + '</div></div></div></div>';
       }).join('');
     return '<div class="week"><div class="wk-head g7">' + head + '</div><div class="bands">' + bands + '</div></div>';
   }
 
-  function renderDay() {
-    const d = S.cursor;
+  /** Desktop (≥900px): tapping a day opens it in a panel on the left, beside the calendar, instead of switching views. */
+  const useDayPanel = () => window.matchMedia('(min-width: 900px)').matches;
+  function renderDay(day, panel) {
+    const d = day || S.cursor;
     const reqs = calRequests().filter(r => r.start <= d && r.end >= d)
       .sort((a, b) => stackRank(a) - stackRank(b) || ROLES.indexOf(userOf(a.userId).role) - ROLES.indexOf(userOf(b.userId).role) || lastName(userOf(a.userId)).localeCompare(lastName(userOf(b.userId))));
     const live = calRequests().filter(countable);
@@ -2535,12 +2573,20 @@
     }).join('');
     const rc = filteredRoleCounts(d, live);
     const meters = ROLES.map(role => roleMeter(role, rc[role], 'lg')).join('');
-    return '<div class="dayv" id="dayScroll">' +
-      '<div class="dstrip"><button class="ds-arrow" data-act="dayShift" data-v="-7" aria-label="Previous week">' + icon('left', 20) + '</button>' +
+    // Panel (desktop, beside the calendar): no week strip — the calendar shows the dates. Header has ‹ › and ✕.
+    const top = panel
+      ? '<div class="dp-h"><button class="btn icon-btn" data-act="panelDay" data-v="-1" aria-label="Previous day">' + icon('left', 18) + '</button>' +
+          '<div class="dp-t"><div class="dp-w">' + esc(D.f(d, { weekday: 'long' })) + (d === S.today ? ' · Today' : '') + '</div><div class="dp-d">' + esc(D.f(d, { month: 'long', day: 'numeric', year: 'numeric' })) + '</div></div>' +
+          '<button class="btn icon-btn" data-act="panelDay" data-v="1" aria-label="Next day">' + icon('right', 18) + '</button>' +
+          '<button class="btn icon-btn dp-x" data-act="closeDayPanel" aria-label="Close day" title="Close">' + icon('x', 18) + '</button></div>' +
+        '<div class="dsum"><div class="rm-grid">'
+      : '<div class="dstrip"><button class="ds-arrow" data-act="dayShift" data-v="-7" aria-label="Previous week">' + icon('left', 20) + '</button>' +
         '<div class="ds-days">' + strip + '</div>' +
         '<button class="ds-arrow" data-act="dayShift" data-v="7" aria-label="Next week">' + icon('right', 20) + '</button></div>' +
       '<div class="dsum"><div class="dsum-h"><span>' + esc(D.f(d, { weekday: 'long' })) + '</span><span class="muted">' + esc(D.f(d, { month: 'long', day: 'numeric' })) + (d === S.today ? ' · Today' : '') + '</span></div>' +
-        '<div class="rm-grid">' + meters + '</div></div>' +
+        '<div class="rm-grid">';
+    return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top +
+        meters + '</div></div>' +
       '<div class="dayv-in">' +
       // Overlap conflicts: one member with leave and a pass (or two requests) on this day.
       [...new Set(IDX.live.filter(r => r.status !== 'Denied' && r.start <= d && r.end >= d && dupsOf(r).length).map(r => r.userId))].map(uid => {
@@ -3358,6 +3404,8 @@
       S.view = v; S.sel = null; hideToast(); render();
     },
     calPrev() { moveCursor(-1); },
+    panelDay(el) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); render(); },
+    closeDayPanel() { S.dayPanel = null; render(); },
     dayShift(el) { S.cursor = D.add(S.cursor, Number(el.dataset.v)); S.sel = null; render(); },
     calNext() { moveCursor(1); },
     calToday() { S.today = localToday(); S.cursor = S.today; render(); },
@@ -3377,7 +3425,13 @@
       closeModal(); render();
     },
     calFilter() { render(); },
-    calMode(el) { S.cal = el.dataset.v; if (S.cal === 'quad') S.cursor = D.monthStart(S.cursor); render(); },
+    calMode(el) {
+      S.cal = el.dataset.v;
+      // With a day open in the side panel, switching views centres on that day.
+      if (S.dayPanel && $('.dpanel')) S.cursor = S.dayPanel;
+      if (S.cal === 'quad') S.cursor = D.monthStart(S.cursor);
+      render();
+    },
     openMonth(el) { S.cursor = el.dataset.date; S.cal = 'month'; render(); },
     /* Multi-select filters: chips on wide screens, checkbox dropdowns on narrow ones. */
     fToggle(el) { toggleFilter(el.dataset.g, el.dataset.v, el.dataset.scope); },
@@ -3412,11 +3466,14 @@
       $('#modal .pp-none').hidden = !!$('#modal .pp-row:not(.pp-add):not([hidden])');
     },
     fDrop(el) { const k = (el.dataset.scope || 'cal') + ':' + el.dataset.g; S.openDrop = S.openDrop === k ? null : k; render(); },
-    gotoDay(el) { if (S.cal !== 'day') S.prevCal = S.cal; S.cursor = el.dataset.date; S.cal = 'day'; S.sel = null; hideToast(); if (S.view !== 'calendar') S.view = 'calendar'; closeModal(); render(); },
+    gotoDay(el) {
+      if (S.view === 'calendar' && S.cal !== 'day' && useDayPanel() && !el.closest('#modal')) { S.dayPanel = el.dataset.date; S.sel = null; hideToast(); return render(); }
+      if (S.cal !== 'day') S.prevCal = S.cal; S.cursor = el.dataset.date; S.cal = 'day'; S.sel = null; hideToast(); if (S.view !== 'calendar') S.view = 'calendar'; closeModal(); render(); },
     /* Clicking a day lists who is out. While a range is being picked, the click sets the return day. */
     /* Tapping a day opens Day view. New requests start from the request buttons, not from tapping days. */
     pickDay(el) {
       if (S.focus) clearFocus();
+      if (S.view === 'calendar' && S.cal !== 'day' && useDayPanel()) { S.dayPanel = el.dataset.date; S.sel = null; hideToast(); return render(); }
       if (S.cal !== 'day') S.prevCal = S.cal; S.cursor = el.dataset.date; S.cal = 'day'; S.sel = null; hideToast();
       if (S.view !== 'calendar') S.view = 'calendar';
       render();
@@ -3781,6 +3838,7 @@
     }
     if (ev.key !== 'Escape') return;
     if (S.modal) { closeModal(); return; }
+    if (S.dayPanel && $('.dpanel')) { S.dayPanel = null; render(); return; }
     if (S.sel) { S.sel = null; paintSel(); hideToast(); }
     else if (S.focus) clearFocus();
   });
