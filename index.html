@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792491513"></script>
+    <script src="config.js?v=1792491713"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1437,6 +1437,9 @@
   .ro-val { min-height: 44px; display: flex; align-items: center; padding: 0 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--card-2); font-size: 16px; color: var(--ink); }
   .ro-note { align-items: flex-start; min-height: 70px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
   .ro-days { margin: -2px 0 10px; font-size: 14px; font-weight: 700; color: var(--muted); }
+  /* Unresolved conflict on a calendar bar: red warning triangle before the name (next to the active dot). Clears once every request in the conflict is approved. */
+  .cf-tri { display: inline-flex; vertical-align: -2px; margin-right: 3px; color: #d92d20; }
+  .cf-tri .ic { width: 12px; height: 12px; stroke-width: 2.8; }
 </style>
 
   </head>
@@ -1646,6 +1649,11 @@
   }
   /** Conflict mode: a leave request on a day where its position is over the daily max. */
   const inConflict = r => conflictDays(r).length > 0;
+  /** Over the daily max on some day and not yet resolved (not every request in that conflict is approved). */
+  const openConflictOf = r => r.status !== 'Denied' && conflictDays(r).some(d => conflictState(d, userOf(r.userId).role) === 'bad');
+  /** Marks before a name on calendar bars: green dot = out today, red triangle = unresolved conflict. */
+  const barMarks = r => (isNow(r) ? '<i class="now-dot" title="Active now"></i>' : '') +
+    (openConflictOf(r) ? '<span class="cf-tri" title="Unresolved conflict" aria-label="Unresolved conflict">' + icon('alert', 12) + '</span>' : '');
   /** Conflict mode with a person picked: their requests that are over the max, plus the other requests (same position,
    *  not denied) on those same over-max days — i.e. who they conflict with. */
   function conflictsWith(pid) {
@@ -2599,7 +2607,7 @@
     const un = unitsList().find(x => x.code === u.unit);
     return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r idb-' + L.toLowerCase() + '">' + L + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
-      '<span class="idb-n">' + (isNow(r) ? '<i class="now-dot" title="Active now"></i>' : '') + esc(calName(u)) + (withStatus ? statusIcon(r.status) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
+      '<span class="idb-n">' + barMarks(r) + esc(calName(u)) + (withStatus ? statusIcon(r.status) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
@@ -2614,7 +2622,7 @@
     const names = list.length > 3
       ? '<span class="rp-more">4+ ' + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[role] + '</span>'
       : list.map(r => '<span class="mn' + (dupsOf(r).length ? ' dup' : '') + (r.id === S.focus ? ' focus' : '') + (r.status === 'Denied' ? ' st-denied' : '') +
-          '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + (isNow(r) ? '<i class="now-dot" title="Active now"></i>' : '') + esc(calName(userOf(r.userId))) + '</span>')
+          '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + barMarks(r) + esc(calName(userOf(r.userId))) + '</span>')
           .join('<span class="rp-dot" aria-hidden="true">·</span>');
     return '<span class="idb pb rp" title="' + esc(title) + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
       '<span class="idb-n">' + names + '</span></span>';
