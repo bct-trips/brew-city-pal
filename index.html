@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792486211"></script>
+    <script src="config.js?v=1792486330"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -3256,42 +3256,30 @@
     }
     return { errs, warns, n };
   }
+  /* Request form: one page (who · type · calendar & dates · notes) → Review (summary, warnings, Submit). */
   function renderWizard() {
     const w = S.wiz;
-    const steps = [w.editId ? 'Type' : 'Type & Assignee', 'Dates', 'Review'];
+    if (w.step !== 3) w.step = 'form';
     const head = modalHead(w.editId ? 'Edit Request' : 'New Request', w.editId ? 'pencil' : 'plus');
-    const ind = w.step === 'edit' ? '' : '<div class="steps">' + steps.map((s, i) => '<div class="' + (i + 1 === w.step ? 'on' : i + 1 < w.step ? 'done' : '') + '">' + (i + 1) + '. ' + s + '</div>').join('') + '</div>';
     let body = '', foot = '';
-    if (w.step === 1) {
+    if (w.step === 'form') {
       if (w.editId) {
         body += '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request for</div><div style="font-weight:700">' + esc(fullName(userOf(w.assigneeId))) + '</div>' +
           (w.editStatus === 'Approved' ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>This request is already approved. Admin edits keep it approved.</span></div>' : '') +
           (w.editStatus === 'Denied' && !S.isAdmin ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>Saving changes resubmits this denied request as Pending.</span></div>' : '') + '</div>';
       } else if (S.isAdmin) {
-        const users = S.users.filter(u => u.active).sort((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role) || lastName(a).localeCompare(lastName(b)));
         body += '<div class="sect"><div class="lbl">' + icon('users', 14) + ' Assign request to</div>' +
           (w.creating
             ? '<div class="newuser">' + userFields('nu', w.nu, true) + '</div><button class="btn ghost sm" data-act="wizExisting" style="margin-top:6px">' + icon('left', 14) + ' Choose an existing member instead</button>'
             : '<div class="row"><button type="button" class="fsel fdrop-btn wiz-who" data-act="pickAssignee" aria-haspopup="dialog" aria-label="Assign to: ' + esc(fullName(userOf(w.assigneeId))) + '">' +
-                idBadge(userOf(w.assigneeId)) + '<span>' + esc(lastName(userOf(w.assigneeId)) + ', ' + firstName(userOf(w.assigneeId)) + ' · ' + userOf(w.assigneeId).rank) + '</span>' + icon('down', 14) + '</button>' +
-              '<button class="btn" data-act="wizCreate" style="flex:0 0 auto">' + icon('userPlus', 15) + ' Create New User</button></div>') +
+                idBadge(userOf(w.assigneeId)) + '<span>' + esc(lastName(userOf(w.assigneeId)) + ', ' + firstName(userOf(w.assigneeId)) + ' · ' + userOf(w.assigneeId).rank) + '</span>' + icon('down', 14) + '</button></div>') +
           '</div>';
       }
-      // Two plain choices; tapping one goes straight to dates.
-      body += '<div class="sect"><div class="choices">' +
-        '<button type="button" class="choice leave' + (w.editId && w.type === 'Leave' ? ' on' : '') + '" data-act="wizType" data-v="Leave">Leave</button>' +
-        '<button type="button" class="choice pass' + (w.editId && w.type === 'Pass' ? ' on' : '') + '" data-act="wizType" data-v="Pass">Pass</button>' +
-        '</div></div><div class="err" id="wizErr">' + esc(w.error) + '</div>';
-      foot = '<button class="btn" data-act="closeModal">Cancel</button>';
-    } else if (w.step === 'edit') {
-      // Edit from Review: type, dates and notes on one page; Save returns to Review.
-      body = '<div class="sect"><div class="lbl">Type</div><div class="wiz-type">' + seg([['Leave', 'Leave'], ['Pass', 'Pass']], w.type, 'wizEditType') + '</div></div>' +
+      body += '<div class="sect"><div class="lbl">Type</div><div class="wiz-type">' + seg([['Leave', 'Leave'], ['Pass', 'Pass']], w.type, 'wizEditType') + '</div></div>' +
         renderWizDates() +
-        '<div class="field"><label for="wzN">Trip reason &amp; notes (optional)</label><textarea id="wzN" maxlength="500" data-model="wiz.note" placeholder="Destination, reason, contact info…">' + esc(w.note) + '</textarea></div>';
-      foot = '<button class="btn primary" data-act="wizEditSave">' + icon('check', 18) + 'Save</button>';
-    } else if (w.step === 2) {
-      body = renderWizDates();
-      foot = '<button class="btn" data-act="wizBack">' + icon('left', 15) + ' Back</button><button class="btn primary" data-act="wizNext" id="wizNext2">Review ' + icon('right', 15) + '</button>';
+        '<div class="field"><label for="wzN">Trip reason &amp; notes (optional)</label><textarea id="wzN" maxlength="500" data-model="wiz.note" placeholder="Destination, reason, contact info…">' + esc(w.note) + '</textarea></div>' +
+        '<div class="err" id="wizErr">' + esc(w.error) + '</div>';
+      foot = '<button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="wizReview">Review ' + icon('right', 18) + '</button>';
     } else {
       const c = wizCheck();
       const who = w.creating ? (w.nu.rank + ' ' + w.nu.name + ' (' + w.nu.unit + ')') : fullName(userOf(w.assigneeId));
@@ -3300,14 +3288,14 @@
           '<div class="meta" style="margin-top:4px">For ' + esc(who) + (w.creating ? ' · new member' : '') + '</div></div>' +
         '<div class="rv"><span class="lbl">Travel &amp; absence dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
           '<div style="margin-top:4px;font-weight:700">' + plural(c.n, 'day') + '</div></div>' +
+        '<div class="rv"><span class="lbl">Trip reason &amp; notes</span><div class="note">' + (w.note.trim() ? esc(w.note.trim()) : '<span class="muted">No note provided.</span>') + '</div></div>' +
         (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>'
           : '<div class="msgs"><div class="msg i">' + icon('check', 15) + '<span>Dates look good — no conflicts.</span></div></div>') +
-        '<div class="field"><label for="wzN">Trip reason &amp; notes (optional)</label><textarea id="wzN" maxlength="500" data-model="wiz.note" placeholder="Destination, reason, contact info…">' + esc(w.note) + '</textarea></div>' +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
-      foot = '<button class="btn" data-act="closeModal">Cancel</button><button class="btn" data-act="wizEdit">' + icon('pencil', 15) + ' Edit</button>' +
+      foot = '<button class="btn" data-act="wizEdit">' + icon('pencil', 18) + 'Edit</button>' +
         '<button class="btn ok" data-act="wizSubmit">' + icon('check', 18) + (w.editId ? 'Save' : 'Submit') + '</button>';
     }
-    openModal('wizard', head + '<div class="modal-b">' + ind + body + '</div><div class="modal-f">' + foot + '</div>', true);
+    openModal('wizard', head + '<div class="modal-b">' + body + '</div><div class="modal-f">' + foot + '</div>', true);
   }
   /* Step 2: pick dates on the calendar (or type them in the fields below it). Only blocking problems show here;
      the summary, warnings and trip notes are on the Review step. */
@@ -3350,7 +3338,7 @@
   function renderWizStatus() {
     const c = wizCheck();
     // Date step: only blocking problems. The Review step shows the summary and warnings.
-    if (S.wiz.step === 2 || S.wiz.step === 'edit') return c.errs.length ? '<div class="msgs">' + c.errs.map(m => '<div class="msg e">' + icon('x', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '';
+    if (S.wiz.step !== 3) return c.errs.length ? '<div class="msgs">' + c.errs.map(m => '<div class="msg e">' + icon('x', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '';
     const dur = c.n ? '<div class="dur"><span class="badge t-' + S.wiz.type.toLowerCase() + '">' + S.wiz.type + '</span>' + D.short(S.wiz.start) + ' → ' + D.short(S.wiz.end) + ' · ' + plural(c.n, 'day') + '</div>' : '';
     const msgs = c.errs.map(m => '<div class="msg e">' + icon('x', 15) + '<span>' + esc(m) + '</span></div>')
       .concat(c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>'));
@@ -3728,7 +3716,20 @@
     wizCreate() { S.ppMode = 'filter'; S.wiz.creating = true; S.wiz.error = ''; renderWizard(); },
     wizExisting() { S.wiz.creating = false; S.wiz.error = ''; renderWizard(); },
     wizBack() { S.wiz.step = 1; S.wiz.error = ''; renderWizard(); },
-    wizEdit() { S.wiz.step = 'edit'; S.wiz.error = ''; renderWizard(); },
+    wizEdit() { S.wiz.step = 'form'; S.wiz.error = ''; renderWizard(); },
+    /** One-page form → Review: check the new member (if any) and the dates first. */
+    wizReview() {
+      const w = S.wiz, err = m => { const e = $('#wizErr'); if (e) e.textContent = m; toast(m, 'error'); };
+      if (w.creating) {
+        w.nu = readUserFields('nu');
+        if (!w.nu.first || !w.nu.last) return err('Enter the new member’s first and last name.');
+        if (S.users.find(u => u.name.toLowerCase() === w.nu.name.toLowerCase() && u.unit === w.nu.unit)) return err(w.nu.name + ' (' + w.nu.unit + ') is already on the roster — choose them from the list.');
+      }
+      if (!D.valid(w.start) || !D.valid(w.end)) return err('Pick departure and return dates on the calendar.');
+      const c = wizCheck();
+      if (c.errs.length) return err(c.errs[0]);
+      w.error = ''; w.step = 3; renderWizard();
+    },
     wizEditType(el) {
       S.wiz.type = el.dataset.v;
       $$('#modal [data-act="wizEditType"]').forEach(b => b.classList.toggle('on', b.dataset.v === S.wiz.type));
