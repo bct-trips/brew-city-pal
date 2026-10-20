@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792529743"></script>
+    <script src="config.js?v=1792529817"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1616,7 +1616,7 @@
   @media (max-width: 700px) { .stats-bar .manage-btn { padding: 0 14px 0 10px; } }
   .cfg-note { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; color: var(--warn); }
   /* Nav hover on the dark bars: labels stay light (white), the icon gets a faint light pill. */
-  .nav button:hover, .nav.nav-admin button:hover { color: #ffffff; }
+  .nav button:not(.on):not([aria-expanded="true"]):hover { color: #ffffff; } /* only unselected items brighten their text */
   /* ---------- Blackout dates: brick diagonal stripes on every calendar, brick chips ---------- */
   :root { --bo-stripe: color-mix(in srgb, var(--brick) 26%, transparent); }
   :root[data-theme="dark"] { --bo-stripe: color-mix(in srgb, #e0645f 34%, transparent); }
@@ -1888,6 +1888,13 @@
   .qc-day.over, .qc-day.over.ok { background: #b42318; border-color: #b42318; color: #ffffff; }
   .qc-day.full { background: #c2410c; border-color: #c2410c; color: #ffffff; }
   .qc-day.open { background: #15803d; border-color: #15803d; color: #ffffff; }
+  /* Hovering the selected item keeps its text colour; the pill just deepens a little. */
+  .nav button.on:hover, .nav button[aria-expanded="true"]:hover { color: var(--navy); }
+  .nav.nav-admin button.on:hover, .nav.nav-admin button[aria-expanded="true"]:hover { color: #ffffff; }
+  .nav button.on:hover::before, .nav button[aria-expanded="true"]:hover::before { background: var(--gold-2); }
+  .nav.nav-admin button.on:hover::before, .nav.nav-admin button[aria-expanded="true"]:hover::before { background: var(--navy-2); }
+  .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover { color: #ffffff; }
+  .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover::before { background: rgba(255, 255, 255, .22); }
 </style>
 
   </head>
