@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792487662"></script>
+    <script src="config.js?v=1792487812"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1409,6 +1409,16 @@
   .grp-empty-in { position: sticky; left: 14px; font-size: 13.5px; color: var(--muted); font-style: italic; }
   .cfg-wait { color: var(--warn); }
   .auth-done { text-align: center; } .auth-done > .ic { color: var(--ok); width: 40px; height: 40px; }
+
+  /* ---------- Conflict mode: only requests over the daily max; red frame + banner with ✕ ---------- */
+  .btn.conf-only.on, .btn.conf-only.on:hover { background: var(--no-bg); border-color: var(--no-bg); color: var(--no-ink) !important; }
+  @media (max-width: 700px) { .calbar .filters > .conf-only, .lbar .filters > .conf-only { display: none; } }
+  .fs-sect .conf-sheet { width: 100%; height: 44px; }
+  .conf-banner { flex: none; display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; background: var(--no-bg); color: var(--no-ink); font-size: 14.5px; }
+  .conf-banner > span { flex: 1; min-width: 0; }
+  .conf-banner .conf-x, .conf-banner .conf-x:has(> .ic:first-child) { color: var(--no-ink); }
+  .conf-banner .conf-x:hover::before { opacity: .14; }
+  .cal.conf-mode .cal-split, .list-page.conf-mode .tbl-page { box-shadow: inset 0 0 0 3px var(--no-bg); }
 </style>
 
   </head>
@@ -1617,9 +1627,12 @@
       active.some(m => m.type === r.type && m.start <= r.end && m.end >= r.start));
     return mine.concat(others);
   }
+  /** Conflict mode: a leave request on a day where its position is over the daily max. */
+  const inConflict = r => conflictDays(r).length > 0;
   function calRequests() {
     if (S.view === 'mine') return mineCalRequests();
-    return IDX.live.filter(r => S.f.status.includes(r.status) && S.f.role.includes(userOf(r.userId).role) && S.f.type.includes(r.type) && (!S.f.person || r.userId === S.f.person));
+    return IDX.live.filter(r => S.f.status.includes(r.status) && S.f.role.includes(userOf(r.userId).role) && S.f.type.includes(r.type) && (!S.f.person || r.userId === S.f.person) &&
+      (!S.f.conf || inConflict(r)));
   }
 
   /* ================================================================ */
@@ -2009,7 +2022,8 @@
     const showPanel = !!(S.dayPanel && S.cal !== 'day' && useDayPanel()), panelAnim = showPanel && !S.dpShown;
     S.dpShown = showPanel;
     const body = S.cal === 'month' ? renderMonth() : S.cal === 'quad' ? renderQuad() : S.cal === 'week' ? renderWeek() : renderDay();
-    return '<section class="cal">' + (S.view === 'mine' ? mineHead() : '') +
+    const confOn = S.f.conf && S.view !== 'mine';
+    return '<section class="cal' + (confOn ? ' conf-mode' : '') + '">' + (S.view === 'mine' ? mineHead() : '') +
       '<div class="calbar">' +
         // Left: view switch, Today, Add Request
         '<div class="cb-left">' +
@@ -2026,10 +2040,11 @@
         // Right: status, position, then Leave / Pass at the far right
         '<div class="cb-right filters">' + (S.view === 'mine'
           ? FILTERS.filter(F => F.g !== 'role').map(F => filterGroup(F, 'mine')).join('') + filterButton('mine')
-          : FILTERS.map(F => filterGroup(F, 'cal')).join('') + filterButton('cal')) +
+          : FILTERS.map(F => filterGroup(F, 'cal')).join('') + confToggle() + filterButton('cal')) +
           // Phone Month: switch between name strips and P / B / O stats, next to the Filters button.
           (S.cal === 'month' ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
       '</div>' +
+      (confOn ? confBanner(IDX.live.filter(r => inConflict(r) && S.f.status.includes(r.status) && S.f.role.includes(userOf(r.userId).role) && S.f.type.includes(r.type)).length) : '') +
       '<div class="cal-split"><div class="cal-body" id="calBody">' + body + '</div>' + (showPanel
         ? '<aside class="dpanel' + (panelAnim ? ' dp-anim' : '') + '" aria-label="Day details">' + renderDay(S.dayPanel, true) + '</aside>' : '') + '</div>' +
       // Phones: a full-width Add Request bar under the calendar (the calendar shrinks to make room).
@@ -2134,11 +2149,21 @@
   function filterSummary(sc) {
     const st = fState(sc), parts = [];
     const pick = (g, opts) => { const sel = st[g]; if (sel && sel.length !== opts.length) parts.push(sel.length ? opts.filter(o => sel.includes(o[0])).map(o => o[1]).join(', ') : 'No ' + g); };
+    if (st.conf) parts.push('Conflicts');
     if (st.person) parts.push(calName(userOf(st.person)));
     else if (st.role) pick('role', FILTERS[1].opts);
     pick('status', FILTERS[0].opts);
     pick('type', FILTERS[2].opts);
     return parts;
+  }
+  /** Conflicts-only toggle (calendar + All share it). */
+  const confToggle = () => '<button type="button" class="btn conf-only' + (S.f.conf ? ' on' : '') + '" data-act="confToggle" aria-pressed="' + !!S.f.conf + '" title="Show only requests over the daily leave max">' +
+    icon('alert', 18) + '<span class="bl">Conflicts</span></button>';
+  /** Conflict mode banner: red bar with the count and an ✕ to leave the mode. */
+  function confBanner(n) {
+    if (!S.f.conf) return '';
+    return '<div class="conf-banner" role="status">' + icon('alert', 18) + '<span><b>Conflict mode</b> · ' + plural(n, 'request') + ' over the daily max</span>' +
+      '<button type="button" class="btn icon-btn conf-x" data-act="confOff" aria-label="Leave conflict mode" title="Leave conflict mode">' + icon('x', 18) + '</button></div>';
   }
   function filterButton(sc) {
     const parts = filterSummary(sc);
@@ -2153,6 +2178,7 @@
       '<button type="button" class="' + (st[F.g].includes(o[0]) ? 'on' : '') + '" aria-pressed="' + st[F.g].includes(o[0]) + '" data-act="fToggle" data-g="' + F.g + '" data-v="' + o[0] + '"' + scAttr(sc) + '>' + o[1] + '</button>').join('') + '</div>';
     const html = modalHead('Filters', 'sliders') + '<div class="modal-b fs-body">' +
       sect('Show', typeToggle(sc)) +
+      (sc === 'mine' ? '' : sect('Conflicts', '<button type="button" class="btn conf-only conf-sheet' + (st.conf ? ' on' : '') + '" data-act="confToggle" aria-pressed="' + !!st.conf + '">' + icon('alert', 18) + (st.conf ? 'Showing conflicts only' : 'Show conflicts only') + '</button>')) +
       sect('Status', chips(groups[0])) +
       (groups.some(f => f.g === 'role') ? sect('Position', chips(FILTERS[1])) + sect('Person', personSelect('in-sheet', sc)) : '') +
       '</div><div class="modal-f"><button class="btn" data-act="resetFilters"' + scAttr(sc) + '>Reset</button><button class="btn primary" data-act="closeModal">Done</button></div>';
@@ -2678,7 +2704,10 @@
   const useDayPanel = () => window.matchMedia('(min-width: 900px)').matches;
   function renderDay(day, panel) {
     const d = day || S.cursor;
-    const reqs = calRequests().filter(r => r.start <= d && r.end >= d)
+    // Day list: the calendar's status / type / person / conflict filters, but the day's own position filter.
+    const dayPool = S.view === 'mine' ? calRequests() : IDX.live.filter(r => S.f.status.includes(r.status) && S.f.type.includes(r.type) &&
+      (!S.f.person || r.userId === S.f.person) && (!S.f.conf || inConflict(r)) && (S.dayRoles || ROLES).includes(userOf(r.userId).role));
+    const reqs = dayPool.filter(r => r.start <= d && r.end >= d)
       .sort((a, b) => stackRank(a) - stackRank(b) || ROLES.indexOf(userOf(a.userId).role) - ROLES.indexOf(userOf(b.userId).role) || lastName(userOf(a.userId)).localeCompare(lastName(userOf(b.userId))));
     const live = calRequests().filter(countable);
     const roles = ROLES.filter(r => S.f.role.includes(r));
@@ -2708,8 +2737,10 @@
       '<div class="dsum"><div class="dsum-h"><span>' + esc(D.f(d, { weekday: 'long' })) + '</span><span class="muted">' + esc(D.f(d, { month: 'long', day: 'numeric' })) + (d === S.today ? ' · Today' : '') + '</span></div>' +
         '<div class="rm-grid">';
     // Position filter for the day (shares the calendar's filter, so the calendar narrows too). Not on My Requests.
-    const roleBar = S.view === 'mine' ? '' : '<div class="day-roles"><div class="seg" role="group" aria-label="Positions">' + FILTERS[1].opts.map(o =>
-      '<button type="button" class="' + (S.f.role.includes(o[0]) ? 'on' : '') + '" aria-pressed="' + S.f.role.includes(o[0]) + '" data-act="fToggle" data-g="role" data-v="' + o[0] + '">' + o[1] + '</button>').join('') + '</div></div>';
+    // The day's own Pilots | Booms | Other filter — independent of the calendar's position filter.
+    const dr = S.dayRoles || (S.dayRoles = ROLES.slice());
+    const roleBar = S.view === 'mine' ? '' : '<div class="day-roles"><div class="seg" role="group" aria-label="Positions for this day">' + FILTERS[1].opts.map(o =>
+      '<button type="button" class="' + (dr.includes(o[0]) ? 'on' : '') + '" aria-pressed="' + dr.includes(o[0]) + '" data-act="dayRole" data-v="' + o[0] + '">' + o[1] + '</button>').join('') + '</div></div>';
     return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top.replace('<div class="dsum">', roleBar + '<div class="dsum">') +
         meters + '</div></div>' +
       '<div class="dayv-in">' +
@@ -2798,6 +2829,7 @@
       const u = userOf(r.userId);
       if (!F.status.includes(r.status) || !F.role.includes(u.role) || !F.type.includes(r.type)) return false;
       if (F.person && r.userId !== F.person) return false;
+      if (F.conf && !inConflict(r)) return false;
       if (q && (u.rank + ' ' + u.name + ' ' + u.unit + ' ' + u.role + ' ' + r.type + ' ' + r.note).toLowerCase().indexOf(q) < 0) return false;
       return true;
     });
@@ -2918,14 +2950,15 @@
   function listBar(search, filters, sc) {
     return '<div class="lbar">' +
       '<div class="lsearch">' + icon('search', 16) + search + '</div>' +
-      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + '</div>' +
+      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + (sc === 'list' ? confToggle() : '') + filterButton(sc) + '</div>' +
       '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
   }
   const reqBar = () => '<div class="req-bar"><button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
   function renderAll() {
     const L = S.list;
-    return '<section class="page list-page">' +
+    return '<section class="page list-page' + (S.f.conf ? ' conf-mode' : '') + '">' +
       listBar('<input id="q" type="search" placeholder="Search name, unit, note…" value="' + esc(L.q) + '" data-model="list.q" data-live="listRefresh" aria-label="Search requests">', FILTERS, 'list') +
+      confBanner(filteredList().length) +
       '<div class="tbl-page" id="listBody">' + renderListBody() + '</div>' + reqBar() + '</section>';
   }
 
@@ -3584,6 +3617,13 @@
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
       c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
     },
+    dayRole(el) {
+      const cur = S.dayRoles || ROLES.slice(), v = el.dataset.v;
+      S.dayRoles = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat([v]);
+      render();
+    },
+    confToggle() { S.f.conf = !S.f.conf; render(); if (S.modal === 'filters') openFilterSheet(S.fsScope, true); },
+    confOff() { S.f.conf = false; render(); },
     mineConf() { S.mineConf = !S.mineConf; render(); },
     monthMode(el) { S.monthMode = el.dataset.v; try { localStorage.setItem('pal.monthMode', S.monthMode); } catch (e) {} render(); },
     pickAssignee() { openPersonPicker('cal', 'assign'); refreshData(); },
@@ -3606,6 +3646,7 @@
       st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
       if (st.role) st.role = FILTERS[1].opts.map(o => o[0]);
       if ('person' in st) st.person = '';
+      if ('conf' in st) st.conf = false;
       render(); openFilterSheet(el.dataset.scope, true);
     },
     ppFilter() {
