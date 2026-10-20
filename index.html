@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792510759"></script>
+    <script src="config.js?v=1792510910"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1642,18 +1642,15 @@
   :root[data-theme="dark"] .login-card h1 { color: #ffffff; }
   .login-card .linkbtn, .auth-alt .linkbtn { color: var(--brick); font-weight: 700; }
   :root[data-theme="dark"] .login-card .linkbtn, :root[data-theme="dark"] .auth-alt .linkbtn { color: var(--gold); }
-  /* Submitting cover: the squadron logo spins while the request saves. */
-  /* The squadron logo NEVER spins. Anything that loads (the opening splash, the Submitting/Saving cover) spins a ring
-     around the still logo instead. */
-  .splash .splash-ring { position: relative; display: grid; place-items: center; padding: 14px; }
-  .splash .splash-ring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 4px solid rgba(255, 255, 255, .18);
-    border-top-color: var(--gold); animation: spin .9s linear infinite; }
-  @media (prefers-reduced-motion: reduce) { .splash .splash-ring::after { animation-duration: 2.4s; } }
-  .blocker-spin { position: relative; display: grid; place-items: center; width: 124px; height: 124px; }
-  .blocker-spin::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 4px solid color-mix(in srgb, var(--ink) 12%, transparent); border-top-color: var(--gold-2);
-    animation: spin .9s linear infinite; }
-  .blocker-logo { width: 96px; height: 96px; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .3)); }
-  @media (prefers-reduced-motion: reduce) { .blocker-spin::after { animation-duration: 2.4s; } }
+  /* Loading (.logo-loading): the squadron logo NEVER spins. A brick arc runs around the white rim of the patch's inner
+     circle (the disc with the bolt), measured from the logo image: centre 50% across / 44.7% down, rim from 39.8% to
+     42.1% of the logo's width. Used on the opening splash and the Submitting / Saving cover. */
+  .logo-loading { position: relative; container-type: inline-size; }
+  .logo-loading::after { content: ""; position: absolute; left: 7.9%; top: 2.6%; width: 84.2%; height: 84.2%; box-sizing: border-box;
+    border-radius: 50%; border: 2.4cqi solid transparent; border-top-color: var(--brick); border-right-color: var(--brick);
+    animation: spin 1.1s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .logo-loading::after { animation-duration: 3s; } }
+  .blocker-logo { display: block; width: 112px; height: 112px; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .3)); }
 
   /* Button spinner (busy() in App.html): a ring in the button's own text colour replaces its icon while it waits on the
      server. The button keeps its colours (it isn't greyed out) and ignores taps. */
@@ -1746,7 +1743,7 @@
   </head>
   <body>
     <div id="app">
-      <div class="splash"><div class="splash-ring"><div class="brand-logo" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div></div><div>Loading Brew City PAL…</div></div>
+      <div class="splash"><div class="brand-logo logo-loading" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div><div>Loading Brew City PAL…</div></div>
     </div>
     <div id="modal"></div>
     <div id="toast" role="status" aria-live="polite"></div>
@@ -2134,7 +2131,7 @@
     hideBlocker();
     const el = document.createElement('div');
     el.id = 'blocker'; el.className = 'blocker'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-live', 'assertive'); el.setAttribute('aria-busy', 'true');
-    el.innerHTML = '<div class="blocker-box"><span class="blocker-spin" aria-hidden="true"><span class="brand-logo blocker-logo"></span></span><div class="blocker-t">' + esc(label) + '</div><div class="blocker-s">Keep the app open until this finishes.</div></div>';
+    el.innerHTML = '<div class="blocker-box"><span class="brand-logo blocker-logo logo-loading" aria-hidden="true"></span><div class="blocker-t">' + esc(label) + '</div><div class="blocker-s">Keep the app open until this finishes.</div></div>';
     document.body.appendChild(el);
   }
   function hideBlocker() { const el = document.getElementById('blocker'); if (el) el.remove(); }
