@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792534059"></script>
+    <script src="config.js?v=1792534070"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1998,6 +1998,8 @@
   .fperson .who-n, .fall .who-n { flex: none; display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
     background: var(--navy); color: #fff; font-size: 12.5px; font-weight: 800; }
   .evs.mid .evs-t .gsl { flex: none; font-weight: 900; color: #ffffff; opacity: .85; } .evs.mid.pass .evs-t .gsl { color: var(--navy); }
+  /* Separator between badges on a shared bar: a dot (not a slash). */
+  .gsl { font-size: 20px; line-height: 1; margin: 0 1px; }
 </style>
 
   </head>
@@ -3151,7 +3153,7 @@
       return '<span class="idb pb gbb' + (same ? ' st-' + r0.status.toLowerCase() : '') + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
         '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(b.u.unit) + '</span>' +
         '<span class="idb-n">' + names + '</span></span>';
-    }).join('<span class="gsl" aria-hidden="true">/</span>');
+    }).join('<span class="gsl" aria-hidden="true">·</span>');
   }
   /** split = true: every request that starts this week is its own continuous bar. Requests carried over from the
    *  previous week are always merged into one shared middle bar per type (Leave / Pass) at the start of the row. */
@@ -3580,7 +3582,7 @@
         const list = sg.people.filter(r => userOf(r.userId).role === role);
         const units = [...new Set(list.map(r => userOf(r.userId).unit))];
         return units.map(un => rolePuck(role, list.filter(r => userOf(r.userId).unit === un), D.add(sg.ws, sg.a), D.add(sg.ws, sg.b), un));
-      }).flat().join('<span class="gsl" aria-hidden="true">/</span>');
+      }).flat().join('<span class="gsl" aria-hidden="true">·</span>');
       // More than one person on this stretch (any positions): hatched "shared" bar.
       return '<div class="' + base + (sg.people.length > 1 ? ' shared' : '') + (sg.people.length === 1 && r0.id === S.focus ? ' focus' : '') + (sg.cat === 'Denied' ? ' st-denied' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"' +
         (sg.people.length === 1 ? ' role="button" tabindex="0" data-act="openReq" data-id="' + esc(r0.id) + '" aria-label="' + esc(describe(r0)) + '"' : '') + '><span class="evs-t">' + pucks + '</span></div>';
