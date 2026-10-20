@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792525995"></script>
+    <script src="config.js?v=1792526256"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1586,6 +1586,9 @@
   .nav .dot.warn { background: #ffffff; color: #c2410c; }
   .nav .nav-ic.syncing::after { border-color: rgba(255, 255, 255, .25); border-top-color: #ffffff; }
   .nav button.on .nav-ic.syncing::after { border-color: color-mix(in srgb, var(--navy) 25%, transparent); border-top-color: var(--navy); }
+  /* Admin mode (metallic gold bar): the open page's pill is Brewers navy with a white icon, so it contrasts with the bar. */
+  .nav.nav-admin button.on .nav-ic, :root[data-theme="dark"] .nav.nav-admin button.on .nav-ic { background: var(--navy); color: #ffffff; }
+  .nav.nav-admin button.on .nav-ic.syncing::after { border-color: rgba(255, 255, 255, .25); border-top-color: #ffffff; }
   .modal.modal-wide:has(.y-grid) { max-width: 1100px; }
   @media (min-width: 900px) { .y-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   /* My Requests: List | Calendar ("Cal" on phones) in the filter row, at every width. */
@@ -1794,11 +1797,15 @@
   .pm-theme .seg { height: 40px; }
   .pm-theme .seg button { flex: 1 1 0; }
   /* Notifications drawer: a tall sheet holding just the list. */
-  .notes-sheet { max-width: 520px; height: min(680px, calc(100dvh - 32px)); }
+  .notes-sheet { max-width: 520px; max-height: min(680px, calc(100dvh - 32px)); }
   .notes-drawer { padding: 0; }
   .notes-drawer .notes-lh { border-top: 0; text-transform: none; letter-spacing: 0; padding: 8px 10px; }
   .notes-drawer .note-item:last-child .note-row { border-radius: 0; }
   .notes-drawer .notes-empty { padding: 24px 16px; }
+  .notes-n { font-weight: 700; color: var(--muted); font-size: 14px; padding-left: 6px; }
+  .notes-more { display: block; width: 100%; min-height: 48px; border: 0; border-top: 1px solid var(--line); background: none; cursor: pointer;
+    font: inherit; font-weight: 800; color: var(--primary); }
+  .notes-more:hover { background: color-mix(in srgb, var(--on-surface) 6%, transparent); }
 </style>
 
   </head>
@@ -3908,6 +3915,8 @@
   function closeModal() {
     // Closing the person picker returns to whatever opened it (the request form or the Filters sheet).
     if (S.modal === 'person' && S.ppMode === 'assign' && S.wiz) { ppAssignDone(); return; }
+    if ((S.modal === 'req' || S.modal === 'member') && S.backToNotes) { S.backToNotes = false; openNotesDrawer(); return; }
+    S.backToNotes = false;
     if (S.modal === 'year' && S.yearFrom) { const id = S.yearFrom; S.yearFrom = null; openMemberCard(id); return; }
     if (S.modal === 'person' && S.ppFromSheet) { S.ppFromSheet = false; openFilterSheet(S.ppScope); return; }
     if (S.modal === 'wizard' && S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; S.wiz = null; openConflict(cd, S.cfRole); return; }
@@ -4088,6 +4097,7 @@
   }
   /** Notifications drawer: the list, with Mark all read / Clear all and a ✕ on each. */
   function openNotesDrawer() {
+    S.notesAll = false;
     const html = modalHead('Notifications', 'bell') + '<div class="modal-b notes-drawer" id="notesDrawer">' + notesListHtml() + '</div>' +
       '<div class="modal-f"><button class="btn" data-act="openSettings">' + icon('sliders', 16) + 'Notification settings</button><button class="btn primary" data-act="closeModal">Close</button></div>';
     openModal('notes', html);
@@ -4127,13 +4137,14 @@
         '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' : '') +
       '';
   }
+  const NOTES_SHOWN = 5; // the drawer shows the newest few; "+N more" shows the rest
   /** The notifications themselves (the drawer from Profile → Notifications): Mark all read, Clear all, and a ✕ on each. */
   function notesListHtml() {
     if (S.notes == null) setTimeout(loadNotes, 0);
     const notes = visibleNotes();
     const list = S.notes == null ? '<div class="notes-empty">Loading…</div>'
       : !notes.length ? '<div class="notes-empty">No notifications yet. Approvals, denials and changes to your requests will show up here.</div>'
-      : '<div class="notes-list">' + notes.map(n => {
+      : '<div class="notes-list">' + notes.slice(0, S.notesAll ? notes.length : NOTES_SHOWN).map(n => {
         const k = NOTE_IC[n.kind] || ['bell', 'info'];
         return '<div class="note-item"><button type="button" class="note-row' + (n.read ? '' : ' unread') + '" data-act="noteOpen" data-id="' + esc(n.id) + '" data-req="' + esc(n.requestId || '') + '">' +
           '<span class="note-ic note-' + k[1] + '">' + icon(k[0], 16) + '</span>' +
@@ -4141,8 +4152,11 @@
           '<span class="note-time">' + esc(ago(n.ts)) + (n.read ? '' : '<i class="note-dot" aria-label="Unread"></i>') + '</span></button>' +
           '<button type="button" class="note-x" data-act="noteDel" data-id="' + esc(n.id) + '" aria-label="Delete notification: ' + esc(n.title) + '" title="Delete">' + icon('x', 16) + '</button></div>';
       }).join('') + '</div>';
-    return (notes.length ? '<div class="notes-lh">' + (S.unread ? '<button class="btn ghost sm" data-act="notesAllRead">' + icon('check', 14) + 'Mark all read</button>' : '<span></span>') +
-        '<button class="btn ghost sm" data-act="notesClear">' + icon('trash', 14) + 'Clear all</button></div>' : '') + list;
+    // More than fit: "+N more" opens the whole list (the drawer scrolls).
+    const more = !S.notesAll && notes.length > NOTES_SHOWN
+      ? '<button type="button" class="notes-more" data-act="notesMore">+' + (notes.length - NOTES_SHOWN) + ' more</button>' : '';
+    return (notes.length ? '<div class="notes-lh"><span class="notes-n">' + plural(notes.length, 'notification') + '</span>' +
+        '<button class="btn ghost sm" data-act="notesClear">' + icon('trash', 14) + 'Clear all</button></div>' : '') + list + more;
   }
 
   const b64ToU8 = b => { const s = atob(b.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((b.length + 3) % 4)); return Uint8Array.from(s, c => c.charCodeAt(0)); };
@@ -4770,8 +4784,18 @@
         n.read = true; S.unread = Math.max(0, (S.unread || 0) - 1); setBadge(); redrawNotes(); renderNavOnly();
         call('apiMarkNotesRead', S.token, [id]).catch(() => {});
       }
-      if (req) { if (S.requests.some(r => r.id === req)) openRequest(req); else toast('That request no longer exists'); }
+      // Open what it's about (its request — approval, denial, change or conflict — or, for a sign-up, the new member);
+      // closing that returns to the drawer.
+      const back = S.modal === 'notes';
+      if (req) {
+        if (S.requests.some(r => r.id === req && r.status !== 'Cancelled')) { S.backToNotes = back; openRequest(req); }
+        else toast('That request was deleted');
+      } else if (n && n.kind === 'signup' && S.isAdmin) {
+        const u = S.users.slice().sort((a, b) => b.name.length - a.name.length).find(x => x.name && n.body.indexOf(x.name) >= 0);
+        if (u) { S.backToNotes = back; openMemberCard(u.id); } else { closeModal(); S.view = 'people'; render(); }
+      }
     },
+    notesMore() { S.notesAll = true; redrawNotes(); },
     async notesAllRead() {
       (S.notes || []).forEach(n => { n.read = true; }); S.unread = 0; setBadge(); redrawNotes(); renderNavOnly();
       try { takeNotes(await call('apiMarkNotesRead', S.token, 'all')); redrawNotes(); } catch (e) { /* next refresh fixes it */ }
