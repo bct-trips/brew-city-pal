@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792486543"></script>
+    <script src="config.js?v=1792486668"></script>
     <style>
   :root {
     --navy: #0A2351; --navy-2: #1b3d7a; --gold: #FDB827; --gold-2: #e9a20c;
@@ -1307,13 +1307,14 @@
   /* ---------- Desktop day panel (≥900px): slides in from the left; the calendar narrows beside it ---------- */
   .cal-split { flex: 1; min-height: 0; display: flex; }
   .cal-split > .cal-body { flex: 1 1 auto; min-width: 0; }
-  .dpanel { flex: 0 0 380px; min-width: 0; display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--outline-variant);
-    box-shadow: 6px 0 18px -10px rgba(0, 0, 0, .45); animation: dpIn .18s ease-out; z-index: 2; }
-  @keyframes dpIn { from { transform: translateX(-24px); opacity: 0; } }
-  @media (prefers-reduced-motion: reduce) { .dpanel { animation: none; } }
+  .dpanel { flex: 0 0 400px; min-width: 0; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--outline-variant);
+    box-shadow: -6px 0 18px -10px rgba(0, 0, 0, .45); z-index: 2; }
+  .dpanel.dp-anim { animation: dpIn .18s ease-out; }
+  @keyframes dpIn { from { transform: translateX(24px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .dpanel.dp-anim { animation: none; } }
   .dayv-panel { flex: 1; min-height: 0; overflow-y: auto; border-top: 0; box-shadow: none; }
-  .dp-h { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 6px; padding: 10px 10px 10px 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
-  .dp-t { flex: 1; min-width: 0; text-align: center; }
+  .dp-h { display: flex; align-items: center; gap: 8px; padding: 12px 12px 8px 16px; background: var(--surface); }
+  .dp-t { flex: 1; min-width: 0; }
   .dp-w { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--primary); }
   .dp-d { font-size: 18px; font-weight: 800; color: var(--on-surface); }
   .dp-x { margin-left: 4px; }
@@ -1355,6 +1356,15 @@
   .st-cell { flex-direction: column; align-items: flex-start; gap: 4px; }
   .st-cell .cfl { margin-left: 0; height: 22px; }
   .st-cell .badge { height: 22px; display: inline-flex; align-items: center; }
+  .dayv-panel .dstrip { padding: 4px 4px 10px; gap: 2px; }
+  .dayv-panel .ds-arrow { width: 32px; height: 52px; }
+  .dayv-panel .ds-days { gap: 2px; }
+  .dayv-panel .ds-d { height: 56px; border-radius: 10px; }
+  .dayv-panel .ds-n { font-size: 18px; }
+  /* Day view / panel: Pilots | Booms | Other filter above the meters. */
+  .day-roles { padding: 4px 12px 10px; border-bottom: 1px solid var(--line); }
+  .day-roles .seg { display: flex; width: 100%; height: 40px; }
+  .day-roles .seg button { flex: 1 1 0; min-width: 0; padding: 0 6px; }
 </style>
 
   </head>
@@ -1932,6 +1942,9 @@
     return c.slice(0, 7) === t.slice(0, 7);
   }
   function renderCalendar() {
+    // Day panel: slides in only when it first opens; switching days just updates it.
+    const showPanel = !!(S.dayPanel && S.cal !== 'day' && useDayPanel()), panelAnim = showPanel && !S.dpShown;
+    S.dpShown = showPanel;
     const body = S.cal === 'month' ? renderMonth() : S.cal === 'quad' ? renderQuad() : S.cal === 'week' ? renderWeek() : renderDay();
     return '<section class="cal">' + (S.view === 'mine' ? mineHead() : '') +
       '<div class="calbar">' +
@@ -1954,9 +1967,8 @@
           // Phone Month: switch between name strips and P / B / O stats, next to the Filters button.
           (S.cal === 'month' ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
       '</div>' +
-      '<div class="cal-split">' + (S.dayPanel && S.cal !== 'day' && useDayPanel()
-        ? '<aside class="dpanel" aria-label="Day details">' + renderDay(S.dayPanel, true) + '</aside>' : '') +
-      '<div class="cal-body" id="calBody">' + body + '</div></div>' +
+      '<div class="cal-split"><div class="cal-body" id="calBody">' + body + '</div>' + (showPanel
+        ? '<aside class="dpanel' + (panelAnim ? ' dp-anim' : '') + '" aria-label="Day details">' + renderDay(S.dayPanel, true) + '</aside>' : '') + '</div>' +
       // Phones: a full-width Add Request bar under the calendar (the calendar shrinks to make room).
       '<div class="req-bar">' + (S.cal === 'day' ? '<button class="btn back-btn" data-act="dayBack">' + icon('left', 18) + 'Back</button>' : '') +
         '<button class="btn req-btn" data-act="' + (S.cal === 'day' ? 'newReqOn' : 'newReq') + '" data-date="' + S.cursor + '">' + icon('plus', 18) + 'Add Request</button></div></section>';
@@ -2619,19 +2631,22 @@
     }).join('');
     const rc = filteredRoleCounts(d, live);
     const meters = ROLES.map(role => roleMeter(role, rc[role], 'lg')).join('');
-    // Panel (desktop, beside the calendar): no week strip — the calendar shows the dates. Header has ‹ › and ✕.
-    const top = panel
-      ? '<div class="dp-h"><button class="btn icon-btn" data-act="panelDay" data-v="-1" aria-label="Previous day">' + icon('left', 18) + '</button>' +
-          '<div class="dp-t"><div class="dp-w">' + esc(D.f(d, { weekday: 'long' })) + (d === S.today ? ' · Today' : '') + '</div><div class="dp-d">' + esc(D.f(d, { month: 'long', day: 'numeric', year: 'numeric' })) + '</div></div>' +
-          '<button class="btn icon-btn" data-act="panelDay" data-v="1" aria-label="Next day">' + icon('right', 18) + '</button>' +
-          '<button class="btn icon-btn dp-x" data-act="closeDayPanel" aria-label="Close day" title="Close">' + icon('x', 18) + '</button></div>' +
-        '<div class="dsum"><div class="rm-grid">'
-      : '<div class="dstrip"><button class="ds-arrow" data-act="dayShift" data-v="-7" aria-label="Previous week">' + icon('left', 20) + '</button>' +
+    const weekStrip = '<div class="dstrip"><button class="ds-arrow" data-act="dayShift" data-v="-7" aria-label="Previous week">' + icon('left', 20) + '</button>' +
         '<div class="ds-days">' + strip + '</div>' +
-        '<button class="ds-arrow" data-act="dayShift" data-v="7" aria-label="Next week">' + icon('right', 20) + '</button></div>' +
+        '<button class="ds-arrow" data-act="dayShift" data-v="7" aria-label="Next week">' + icon('right', 20) + '</button></div>';
+    // Panel (desktop, right of the calendar): date title + ✕, then the week date strip.
+    const top = panel
+      ? '<div class="dp-h"><div class="dp-t"><div class="dp-w">' + esc(D.f(d, { weekday: 'long' })) + (d === S.today ? ' · Today' : '') + '</div>' +
+          '<div class="dp-d">' + esc(D.f(d, { month: 'long', day: 'numeric', year: 'numeric' })) + '</div></div>' +
+          '<button class="btn icon-btn dp-x" data-act="closeDayPanel" aria-label="Close day" title="Close">' + icon('x', 18) + '</button></div>' + weekStrip +
+        '<div class="dsum"><div class="rm-grid">'
+      : weekStrip +
       '<div class="dsum"><div class="dsum-h"><span>' + esc(D.f(d, { weekday: 'long' })) + '</span><span class="muted">' + esc(D.f(d, { month: 'long', day: 'numeric' })) + (d === S.today ? ' · Today' : '') + '</span></div>' +
         '<div class="rm-grid">';
-    return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top +
+    // Position filter for the day (shares the calendar's filter, so the calendar narrows too). Not on My Requests.
+    const roleBar = S.view === 'mine' ? '' : '<div class="day-roles"><div class="seg" role="group" aria-label="Positions">' + FILTERS[1].opts.map(o =>
+      '<button type="button" class="' + (S.f.role.includes(o[0]) ? 'on' : '') + '" aria-pressed="' + S.f.role.includes(o[0]) + '" data-act="fToggle" data-g="role" data-v="' + o[0] + '">' + o[1] + '</button>').join('') + '</div></div>';
+    return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top.replace('<div class="dsum">', roleBar + '<div class="dsum">') +
         meters + '</div></div>' +
       '<div class="dayv-in">' +
       // Overlap conflicts: one member with leave and a pass (or two requests) on this day.
@@ -3448,7 +3463,8 @@
     calPrev() { moveCursor(-1); },
     panelDay(el) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); render(); },
     closeDayPanel() { S.dayPanel = null; render(); },
-    dayShift(el) { S.cursor = D.add(S.cursor, Number(el.dataset.v)); S.sel = null; render(); },
+    dayShift(el) {
+      if (S.dayPanel && $('.dpanel')) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); return render(); } S.cursor = D.add(S.cursor, Number(el.dataset.v)); S.sel = null; render(); },
     calNext() { moveCursor(1); },
     calToday() { S.today = localToday(); S.cursor = S.today; render(); },
     dayList(el) { A.pickDay(el); },
