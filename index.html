@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792532860"></script>
+    <script src="config.js?v=1792533067"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2272,7 +2272,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-20.3'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-20.4'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -3809,7 +3809,10 @@
   /** Full-width requests table. table = 'list' | 'mine' (sortable state key) or '' for a fixed order. */
   function reqTable(rows, table) {
     const st = table === 'mine' ? S.mine : S.list;
-    const head = COLS.map(c => c[0] === 'st' ? '<th scope="col" class="st-ic-h"><span class="sr">Status</span></th>'
+    // Notes column: admins, and My Requests (your own notes). Members never see other people's notes.
+    const showNote = S.isAdmin || table === 'mine';
+    const cols = COLS.filter(c => c[0] !== 'note' || showNote);
+    const head = cols.map(c => c[0] === 'st' ? '<th scope="col" class="st-ic-h"><span class="sr">Status</span></th>'
       : table ? sortTh(st, c[0], c[1], 'sortBy', ' data-table="' + table + '"') : '<th scope="col"' + (c[0] === 'last' ? ' class="stk"' : '') + '>' + c[1] + '</th>').join('') +
       '<th scope="col" class="th-acts">Actions</th>';
     // Status mark; while the leave or pass is going on today it's the pulsing green dot instead.
@@ -3842,7 +3845,7 @@
         '<td class="num"><span class="days">' + n + '</span>' +
           (isCaution(r) ? '<span class="flag caution" title="' + esc(cautionText(r)) + '">' + icon('alert', 13) + '<span class="sr">Caution: ' + esc(cautionText(r)) + '</span></span>' : '') +
           '</td>' +
-        '<td class="note" title="' + esc(r.note || '') + '"><div class="clamp">' + (r.note ? esc(r.note) : '<span class="muted">—</span>') + '</div></td>' +
+        (showNote ? '<td class="note" title="' + esc(r.note || '') + '"><div class="clamp">' + (r.note ? esc(r.note) : '<span class="muted">—</span>') + '</div></td>' : '') +
         '<td><div class="st-cell"><span class="badge s-' + st2 + '">' + r.status + '</span>' + conflictBadge(r) + '</div></td>' +
         '<td class="acts-cell"><div class="row-acts">' + (acts || '<span class="muted">—</span>') + '</div></td></tr>';
     };
@@ -3852,7 +3855,7 @@
     const key = table || 'queue', col = (S.grpCol = S.grpCol || {})[key] || {};
     // Current (ending today or later) leave and passes in their own bands; finished ones go to a Past band, collapsed by default.
     const group = (type, list) => {
-      const closed = type === 'Past' ? col.Past !== false : !!col[type], n = COLS.length + 1;
+      const closed = type === 'Past' ? col.Past !== false : !!col[type], n = cols.length + 1;
       const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : type === 'Now' ? '<span class="badge t-now"><i class="now-dot" aria-hidden="true"></i>Active Leave / Pass</span>' : '<span class="badge t-' + type.toLowerCase() + '">' + type + '</span>';
       return '<tbody class="grp grp-' + type.toLowerCase() + (closed ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
         '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + !closed + '">' +
@@ -3866,7 +3869,7 @@
     const bos = table ? blackouts().filter(b => b.end >= S.today) : [];
     const boGroup = () => {
       if (!bos.length) return '';
-      const closed = !!col.Blackouts, n = COLS.length + 1;
+      const closed = !!col.Blackouts, n = cols.length + 1;
       return '<tbody class="grp grp-bo' + (closed ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="Blackouts"><th colspan="' + n + '" scope="rowgroup">' +
         '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="Blackouts" aria-expanded="' + !closed + '">' +
         icon(closed ? 'right' : 'down', 16) + '<span class="badge bo-badge">' + icon('ban', 12) + ' Blackouts</span><span class="ct">' + bos.length + '</span></button></th></tr>' +
@@ -4635,7 +4638,8 @@
       '<div class="wiz-dates"><div class="field"><span class="lbl">Departure</span><div class="ro-val">' + longDate(r.start) + '</div></div>' +
         '<div class="field"><span class="lbl">Return</span><div class="ro-val">' + longDate(r.end) + '</div></div></div>' +
       '<div class="ro-days">' + plural(n, 'day') + '</div>' +
-      '<div class="field"><span class="lbl">Trip reason &amp; notes</span><div class="ro-val ro-note">' + (r.note ? esc(r.note) : '<span class="muted">No note provided.</span>') + '</div></div>' +
+      // Notes are private to the member and admins (the server doesn't send other members' notes at all).
+      (S.isAdmin || r.userId === S.me ? '<div class="field"><span class="lbl">Trip reason &amp; notes</span><div class="ro-val ro-note">' + (r.note ? esc(r.note) : '<span class="muted">No note provided.</span>') + '</div></div>' : '') +
       '</div>' + (foot ? '<div class="modal-f modal-f-rows">' + foot + '</div>' : '');
     openModal('req', html);
   }
