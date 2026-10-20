@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792493015"></script>
+    <script src="config.js?v=1792493097"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1633,7 +1633,7 @@
     const users = new Map(S.users.map(u => [u.id, u]));
     const live = S.requests.filter(r => r.status !== 'Cancelled' && users.has(r.userId) && D.valid(r.start) && D.valid(r.end));
     const counts = new Map();
-    // Daily max counts Ordinary Leave only; Special Passes have no limit.
+    // Daily max counts Ordinary Leave only; Passes have no limit.
     live.forEach(r => {
       if (r.status === 'Denied' || r.type !== 'Leave') return;
       const role = users.get(r.userId).role;
@@ -2670,7 +2670,7 @@
   const isNow = r => r.status !== 'Denied' && r.start <= S.today && r.end >= S.today;
   function describe(r) {
     const u = userOf(r.userId);
-    return fullName(u) + ', ' + ({ Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' })[u.role] + ', ' + (r.type === 'Leave' ? 'Ordinary Leave' : 'Special Pass') + ', ' + r.status + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
+    return fullName(u) + ', ' + ({ Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' })[u.role] + ', ' + (r.type === 'Leave' ? 'Ordinary Leave' : 'Pass') + ', ' + r.status + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
       (dupsOf(r).length ? ', overlap' : '');
   }
   const dupsOf = r => (IDX.dups && IDX.dups.get(r.id)) || [];
@@ -3311,7 +3311,7 @@
 
       // Leave limits
       '<div class="panel"><h3>' + icon('sliders', 16) + ' Max on leave per day</h3>' +
-        '<p class="cfg-help">How many of each position may be on Ordinary Leave the same day (approved + pending). Special Passes have no limit. Use 0 for no limit.</p>' +
+        '<p class="cfg-help">How many of each position may be on Ordinary Leave the same day (approved + pending). Passes have no limit. Use 0 for no limit.</p>' +
         '<div class="cfg-grid3">' +
         '<div class="field"><label for="qP">Pilots</label><input id="qP" type="number" inputmode="numeric" min="0" max="99" value="' + st.pilotQuota + '"></div>' +
         '<div class="field"><label for="qB">Booms</label><input id="qB" type="number" inputmode="numeric" min="0" max="99" value="' + st.boomQuota + '"></div>' +
@@ -3517,7 +3517,7 @@
     const bad = [...reqConflicts(r).values()].filter(c => c.bad).length;
     const longDate = d => D.f(d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     // Same layout as the request form (DESIGN.md §Request details): who, type, calendar, dates, notes — read-only.
-    const html = modalHead(esc(r.type === 'Leave' ? 'Ordinary Leave' : 'Special Pass'), r.type === 'Leave' ? 'calendar' : 'clipboard') +
+    const html = modalHead(esc(r.type === 'Leave' ? 'Ordinary Leave' : 'Pass'), r.type === 'Leave' ? 'calendar' : 'clipboard') +
       '<div class="modal-b req-view">' +
       '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request for</div>' +
         '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(lastName(u) + ', ' + firstName(u) + ' · ' + u.rank) + '</span>' +
@@ -3660,7 +3660,7 @@
       const c = wizCheck();
       const who = w.creating ? (w.nu.rank + ' ' + w.nu.name + ' (' + w.nu.unit + ')') : fullName(userOf(w.assigneeId));
       body = '<div class="review">' +
-        '<div class="rv"><span class="lbl">Requested absence type</span><div class="big"><span class="badge t-' + w.type.toLowerCase() + '" style="font-size:12px">' + w.type + '</span>' + (w.type === 'Leave' ? 'Ordinary Leave' : 'Special Pass') + '</div>' +
+        '<div class="rv"><span class="lbl">Requested absence type</span><div class="big"><span class="badge t-' + w.type.toLowerCase() + '" style="font-size:12px">' + w.type + '</span>' + (w.type === 'Leave' ? 'Ordinary Leave' : 'Pass') + '</div>' +
           '<div class="meta" style="margin-top:4px">For ' + esc(who) + (w.creating ? ' · new member' : '') + '</div></div>' +
         '<div class="rv"><span class="lbl">Travel &amp; absence dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
           '<div style="margin-top:4px;font-weight:700">' + plural(c.n, 'day') + '</div></div>' +
