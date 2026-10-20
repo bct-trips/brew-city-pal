@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792499843"></script>
+    <script src="config.js?v=1792502240"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1547,6 +1547,32 @@
   .note-time { flex: none; display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .note-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sel-ink); }
   :root[data-theme="dark"] .note-dot { background: var(--sel-bg); }
+  /* Roster → one member's year: 12 month blocks, days filled by request status. */
+  .y-sum { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+  .y-sum b { color: var(--ink); font-size: 16px; font-variant-numeric: tabular-nums; }
+  .y-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-top: 12px; }
+  .y-m { border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+  .y-m.y-now { border-color: var(--today-ring); box-shadow: inset 0 0 0 1px var(--today-ring); }
+  .y-t { font-weight: 800; font-size: 14px; margin: 0 0 4px 2px; }
+  .y-g { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; }
+  .y-dw { font-size: 11px; font-weight: 800; color: var(--muted); }
+  .y-d { height: 26px; display: grid; place-items: center; border: 0; padding: 0; border-radius: 6px; background: none; color: var(--ink); font: inherit; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  button.y-d { cursor: pointer; font-weight: 800; }
+  .y-today { box-shadow: inset 0 0 0 2px var(--today-ring); }
+  .y-ap-leave { background: var(--leave); color: var(--leave-ink); }
+  .y-ap-pass { background: var(--gold); color: var(--navy); }
+  .y-pend { background: var(--rg-over); color: var(--rg-over-ink); }
+  .y-den { background: var(--no-bg); color: var(--no-ink); }
+  :root[data-theme="dark"] .y-ap-leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
+  /* Admin mode: the nav bar turns Brewers navy with a yellow selection pill, so it's obvious admin powers are unlocked. */
+  .nav.nav-admin { background: var(--navy); border-top-color: var(--navy); }
+  .nav.nav-admin button { color: #c9d3e8; }
+  .nav.nav-admin button.on { color: #ffffff; }
+  .nav.nav-admin button:hover .nav-ic { background: rgba(255, 255, 255, .10); }
+  .nav.nav-admin button.on .nav-ic { background: var(--gold); color: var(--navy); }
+  :root[data-theme="dark"] .nav.nav-admin { border-top: 1px solid var(--navy-edge); }
+  .modal.modal-wide:has(.y-grid) { max-width: 1100px; }
+  @media (min-width: 900px) { .y-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 </style>
 
   </head>
@@ -1905,6 +1931,7 @@
     S.vapid = data.vapidPublicKey || S.vapid || ''; S.adminAlerts = !!data.adminAlerts;
     S.today = localToday();
     if (!S.isAdmin && (S.view === 'admin' || S.view === 'people' || S.view === 'roster')) S.view = 'calendar';
+    if (S.isAdmin && S.view === 'mine') S.view = 'all'; // My Requests isn't in the admin nav
     reindex();
     // Default the position filters to the signed-in member's own position (once per sign-in / account switch).
     if (S.filtersFor !== S.me) {
@@ -2150,10 +2177,12 @@
   function renderNav() {
     const pending = IDX.live.filter(r => r.status === 'Pending').length;
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
-    const items = [['calendar', 'Calendar', 'calendar', 'Calendar'], ['all', 'All Requests', 'list', 'All'], ['mine', 'My Requests', 'clipboard', 'Mine'], ['profile', 'Profile', 'user', 'Profile']];
-    if (S.isAdmin) items.push(['people', 'Stats', 'chart', 'Stats'], ['admin', 'Admin', 'shield', 'Admin']);
+    // Admin mode swaps My Requests for Roster and Admin; Profile is always the last item.
+    const items = [['calendar', 'Calendar', 'calendar', 'Calendar'], ['all', 'All Requests', 'list', 'All']].concat(S.isAdmin
+      ? [['people', 'Roster', 'users', 'Roster'], ['admin', 'Admin', 'shield', 'Admin']]
+      : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
-      '<nav class="nav" aria-label="Primary">' + items.map(i =>
+      '<nav class="nav' + (S.isAdmin ? ' nav-admin' : '') + '" aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '">' + items.map(i =>
       '<button data-act="nav" data-v="' + i[0] + '" class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
       '<span class="nav-ic' + (i[0] === 'profile' && S.pending ? ' syncing' : i[0] === 'profile' && S.syncErr ? ' sync-err' : '') + '">' + icon(i[2], 20) + '</span><span class="wide">' + i[1] + '</span><span class="narrow" aria-hidden="true">' + i[3] + '</span>' +
       (i[0] === 'all' && S.isAdmin && pending ? '<b class="dot">' + pending + '</b>' : '') +
@@ -2275,7 +2304,7 @@
     return '<div class="fp ' + cls + (conf ? ' fp-conf' : '') + '"><button type="button" class="fsel fdrop-btn fperson' + (p || conf ? ' on' : '') + '" data-act="pickPerson"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Person filter: ' + esc(label) + (conf ? ', conflict mode' : '') + '">' +
       // A picked person shows exactly as in the picker: their [P|MKE] badge, then "Last, First".
       (conf ? icon('alert', 16) : '') +
-      (p && !conf ? idBadge(userOf(p)) + '<span><b>' + esc(lastName(userOf(p))) + ',</b> ' + esc(firstName(userOf(p))) + '</span>' : '<span>' + esc(label) + '</span>') +
+      (p && !conf ? idBadge(userOf(p)) + '<span>' + nameHtml(userOf(p), true) + '</span>' : '<span>' + esc(label) + '</span>') +
       icon('down', 14) + '</button>' +
       (p ? '<button type="button" class="btn icon-btn fp-clear" data-act="clearPerson"' + scAttr(sc) + ' aria-label="Show everyone" title="Show everyone">' + icon('x', 18) + '</button>' : '') + '</div>';
   }
@@ -2291,14 +2320,14 @@
     const row = (id, inner, label) => '<button type="button" class="pp-row' + (cur === id ? ' on' : '') + '" data-act="setPerson" data-id="' + esc(id) + '" data-q="' + esc(label.toLowerCase()) + '"' +
       (cur === id ? ' aria-current="true"' : '') + '>' + inner + '<span class="pp-ck">' + (cur === id ? icon('check', 18) : '') + '</span></button>';
     const meU = people.find(u => u.id === S.me);
-    const personRow = u => row(u.id, idBadge(u) + '<span class="pp-n"><b>' + esc(lastName(u)) + ',</b> ' + esc(firstName(u)) + ' <span class="muted">· ' + esc(u.rank) + '</span></span>',
+    const personRow = u => row(u.id, idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span>',
       lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit + ' me');
     // "Me" first, then everyone else by position.
     const groups = (meU ? '<div class="pp-g"><div class="pp-h">Me</div>' + personRow(meU) + '</div>' : '') + ROLES.map(role => {
       const list = people.filter(u => u.role === role && u.id !== S.me).sort((a, b) => lastName(a).localeCompare(lastName(b)));
       if (!list.length) return '';
       return '<div class="pp-g"><div class="pp-h">' + esc(({ Pilot: 'Pilots', Boom: 'Boom operators', Other: 'Other' })[role]) + '</div>' +
-        list.map(u => row(u.id, idBadge(u) + '<span class="pp-n"><b>' + esc(lastName(u)) + ',</b> ' + esc(firstName(u)) + ' <span class="muted">· ' + esc(u.rank) + '</span></span>',
+        list.map(u => row(u.id, idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span>',
           lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit)).join('') + '</div>';
     }).join('');
     const confRow = assign || sc === 'mine' ? '' : '<div class="pp-conf"><button type="button" class="btn conf-only' + (conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + conf + '">' +
@@ -2371,7 +2400,7 @@
     const st = fState(sc), person = !!st.person && !st.conf;
     return '<button type="button" class="fsel fdrop-btn fall' + (parts.length ? ' on' : '') + (person ? ' fp-active' : '') + '" data-act="openFilters"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Filters: ' + esc(parts.join(' · ') || 'showing everything') + '">' +
       // With a person picked, lead with their badge and "Last, First" (as in the picker) instead of the sliders icon.
-      (person ? idBadge(userOf(st.person)) + '<span><b>' + esc(lastName(userOf(st.person))) + ',</b> ' + esc([firstName(userOf(st.person))].concat(parts.slice(1)).join(' · ')) + '</span>'
+      (person ? idBadge(userOf(st.person)) + '<span>' + nameHtml(userOf(st.person), true) + (parts.length > 1 ? ' · ' + esc(parts.slice(1).join(' · ')) : '') + '</span>'
         : icon('sliders', 16) + '<span>' + esc(parts.length ? parts.join(' · ') : 'Filters') + '</span>') + icon('down', 14) + '</button>' +
       // Clear filters: back to the defaults (Pilots + Booms, everyone, all statuses, Leave and Pass). Only when filters differ from that.
       (!isDefaultFilters(st) ? '<button type="button" class="btn fall-clear" data-act="clearFilters"' + scAttr(sc) + ' aria-label="Clear filters and show everything" title="Clear filters">' + icon('x', 18) + '<span class="bl">Clear</span></button>' : '');
@@ -3030,6 +3059,9 @@
 
   /* ---------- Requests table ---------- */
   const firstName = u => u.name.trim().split(/\s+/).slice(0, -1).join(' ');
+  /** "Last, First · Rank" with the comma and rank left out when a member has no first name or rank on file. */
+  const nameText = (u, noRank) => lastName(u) + (firstName(u) ? ', ' + firstName(u) : '') + (u.rank && !noRank ? ' · ' + u.rank : '');
+  const nameHtml = (u, noRank) => '<b>' + esc(lastName(u)) + (firstName(u) ? ',</b> ' + esc(firstName(u)) : '</b>') + (u.rank && !noRank ? ' <span class="muted">· ' + esc(u.rank) + '</span>' : '');
   const ROLE_NAME = { Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' };
   const milDate = d => Number(d.slice(8)) + ' ' + D.f(d, { month: 'short' }) + ' ' + d.slice(0, 4);
   const COLS = [
@@ -3261,7 +3293,7 @@
     const tot = rows.reduce((t, m) => { ['count', 'req', 'appr', 'den', 'pend', 'leave', 'pass'].forEach(k => { t[k] += m[k]; }); return t; }, { count: 0, req: 0, appr: 0, den: 0, pend: 0, leave: 0, pass: 0 });
     const head = PEOPLE_COLS.map(c => sortTh(P, c[0], c[1], 'peopleSort', '', !!c[2])).join('');
     const cell = (v, cls) => '<td class="num' + (cls ? ' ' + cls : '') + '">' + (v ? v : '<span class="muted">0</span>') + '</td>';
-    const body = rows.length ? rows.map(m => '<tr data-act="personRequests" data-id="' + esc(m.u.id) + '" tabindex="0" class="' + (m.u.active ? '' : 'st-denied') + '" aria-label="' + esc(fullName(m.u) + ': ' + m.count + ' requests, ' + m.req + ' days requested, ' + m.appr + ' approved, ' + m.den + ' denied') + '">' +
+    const body = rows.length ? rows.map(m => '<tr data-act="personYear" data-id="' + esc(m.u.id) + '" tabindex="0" class="' + (m.u.active ? '' : 'st-denied') + '" aria-label="' + esc(fullName(m.u) + ': ' + m.count + ' requests, ' + m.req + ' days requested, ' + m.appr + ' approved, ' + m.den + ' denied') + '">' +
         '<td>' + unitBadge(m.u.unit) + '</td><td class="strong stk">' + esc(lastName(m.u)) + '</td><td>' + esc(firstName(m.u)) + '</td><td>' + esc(m.u.rank) + '</td>' +
         '<td>' + esc(ROLE_NAME[m.u.role] || m.u.role) + (m.u.active ? '' : ' <span class="badge">Inactive</span>') + '</td>' +
         cell(m.count) + cell(m.req, 'strong') + cell(m.appr, 'ok-t') + cell(m.den, 'bad-t') + cell(m.pend, 'pend-t') + cell(m.leave) + cell(m.pass) + '</tr>').join('')
@@ -3328,14 +3360,14 @@
     const n = { active: S.users.filter(u => u.active).length, inactive: S.users.filter(u => !u.active).length, all: S.users.length };
     return '<section class="page admin-page roster-page"><div class="toolbar">' +
       '<button class="btn act" data-act="backAdmin" aria-label="Back to Admin" title="Back to Admin">' + icon('left', 18) + '<span class="bl">Admin</span></button>' +
-      '<span class="title">Roster</span>' +
+      '<span class="title">Manage roster</span>' +
       '<div class="cfg-tools"><button class="btn primary" data-act="editUser" data-id="">' + icon('userPlus', 18) + ' Add member</button></div></div>' +
       '<div class="scroll" id="rosterScroll"><div class="panel">' +
         '<div class="search cfg-search">' + icon('search', 15) + '<input type="search" placeholder="Search name, rank, unit…" value="' + esc(S.adq || '') + '" data-model="adq" data-live="adFilter" aria-label="Search roster"></div>' +
         '<div class="ro-show">' + seg([['active', 'Active ' + n.active], ['inactive', 'Inactive ' + n.inactive], ['all', 'All ' + n.all]], show, 'rosterShow') + '</div>' +
         '<div class="cfg-roster">' + users.map(u => '<div class="cfg-row' + (u.active ? '' : ' off') + '" data-q="' + esc((u.rank + ' ' + u.name + ' ' + u.unit + ' ' + u.role).toLowerCase()) + '">' +
-          idBadge(u) + '<div class="cfg-who"><div class="cfg-nm"><b>' + esc(lastName(u)) + ',</b> ' + esc(firstName(u)) + '</div>' +
-          '<div class="cfg-sub">' + esc(u.rank) + ' · ' + esc(ROLE_NAME[u.role] || u.role) + '</div>' +
+          idBadge(u) + '<div class="cfg-who"><div class="cfg-nm">' + nameHtml(u, true) + '</div>' +
+          '<div class="cfg-sub">' + esc([u.rank, ROLE_NAME[u.role] || u.role].filter(Boolean).join(' · ')) + '</div>' +
           (u.active && !u.mustChange ? '' : '<div class="cfg-tags">' + (u.pending ? '<span class="badge caution">Awaiting approval</span>' : u.active ? '' : '<span class="badge">Inactive</span>') + (u.mustChange ? '<span class="badge caution">Must set PIN</span>' : '') + '</div>') + '</div>' +
           '<div class="cfg-acts">' + act('editUser', u.id, 'pencil', 'Edit', u.name) + act('resetPin', u.id, 'key', 'Reset PIN', 'for ' + u.name) +
             (u.id === S.me ? '' : u.active ? act('toggleUser', u.id, 'ban', 'Deactivate', u.name, 'del') : act('toggleUser', u.id, 'check', u.pending ? 'Approve' : 'Reactivate', u.name, u.pending ? 'ok' : '')) + '</div></div>').join('') +
@@ -3447,7 +3479,7 @@
         (rows.length ? '<ul class="dl-list">' + rows.map(r => {
           const u = userOf(r.userId);
           return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
-            '<span class="dl-who">' + idBadge(u) + '<b>' + esc(lastName(u)) + ',</b> ' + esc(firstName(u)) + ' <span class="muted">· ' + esc(u.rank) + '</span></span>' +
+            '<span class="dl-who">' + idBadge(u) + nameHtml(u) + '</span>' +
             '<span class="dl-meta">' + esc(ROLE_NAME[u.role] || u.role) + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + '</span>' +
             '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>';
         }).join('') + '</ul>' : '<div class="dl-none">No one</div>') + '</div>';
@@ -3661,7 +3693,7 @@
     const html = modalHead(esc(r.type), r.type === 'Leave' ? 'calendar' : 'clipboard') +
       '<div class="modal-b req-view">' +
       '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request for</div>' +
-        '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(lastName(u) + ', ' + firstName(u) + ' · ' + u.rank) + '</span>' +
+        '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(nameText(u)) + '</span>' +
         '<span class="badge s-' + esc(r.status.toLowerCase()) + '">' + esc(r.status) + '</span></div></div>' +
       '<div class="sect"><div class="lbl">Type</div><div class="wiz-type"><div class="seg seg-ro" role="group" aria-label="Type">' +
         ['Leave', 'Pass'].map(t => '<button type="button" tabindex="-1" aria-disabled="true" class="' + (t === r.type ? 'on' : '') + '">' + t + '</button>').join('') + '</div></div></div>' +
@@ -3682,6 +3714,45 @@
       '<div class="field"><span class="lbl">Trip reason &amp; notes</span><div class="ro-val ro-note">' + (r.note ? esc(r.note) : '<span class="muted">No note provided.</span>') + '</div></div>' +
       '</div>' + (foot ? '<div class="modal-f modal-f-rows">' + foot + '</div>' : '');
     openModal('req', html);
+  }
+
+  /* ---------- Roster: one member's year (6 months back, this month, 5 ahead) ---------- */
+  function openPersonYear(uid) {
+    const u = S.users.find(x => x.id === uid);
+    if (!u) return;
+    const first = D.addMonths(D.monthStart(S.today), -6), months = Array.from({ length: 12 }, (_, i) => D.addMonths(first, i));
+    const from = first, to = D.add(D.addMonths(first, 12), -1);
+    const reqs = IDX.live.filter(r => r.userId === uid && r.status !== 'Cancelled' && r.end >= from && r.start <= to);
+    const RANK = { Approved: 0, Pending: 1, Denied: 2 };
+    // One request per day: approved beats pending beats denied (overlaps are rare and flagged elsewhere).
+    const dayReq = d => reqs.filter(r => r.start <= d && r.end >= d).sort((a, b) => RANK[a.status] - RANK[b.status])[0];
+    const tot = { Leave: { Approved: 0, Pending: 0, Denied: 0 }, Pass: { Approved: 0, Pending: 0, Denied: 0 } };
+    reqs.forEach(r => { const a = D.max(r.start, from), b = D.min(r.end, to); if (a <= b) tot[r.type][r.status] += D.days(a, b); });
+    const cls = r => r.status === 'Approved' ? 'y-ap-' + r.type.toLowerCase() : r.status === 'Pending' ? 'y-pend' : 'y-den';
+    const blocks = months.map(m0 => {
+      const gs = D.weekStart(m0), mon = m0.slice(0, 7);
+      let cells = DOW.map(x => '<span class="y-dw">' + x[0] + '</span>').join('');
+      for (let i = 0; i < 42; i++) {
+        const d = D.add(gs, i);
+        if (i === 35 && d.slice(0, 7) !== mon) break;
+        if (d.slice(0, 7) !== mon) { cells += '<span class="y-d y-blank"></span>'; continue; }
+        const r = dayReq(d), today = d === S.today ? ' y-today' : '';
+        cells += r
+          ? '<button type="button" class="y-d ' + cls(r) + today + '" data-act="yearDay" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(D.f(d, { month: 'long', day: 'numeric' }) + ': ' + r.type + ', ' + r.status) + '">' + Number(d.slice(8)) + '</button>'
+          : '<span class="y-d' + today + '">' + Number(d.slice(8)) + '</span>';
+      }
+      return '<div class="y-m' + (mon === S.today.slice(0, 7) ? ' y-now' : '') + '"><div class="y-t">' + D.f(m0, { month: 'long', year: 'numeric' }) + '</div><div class="y-g">' + cells + '</div></div>';
+    }).join('');
+    const sum = '<div class="y-sum"><span><b>' + tot.Leave.Approved + '</b> leave days approved</span><span><b>' + tot.Leave.Pending + '</b> pending</span><span><b>' + tot.Leave.Denied + '</b> denied</span>' +
+      '<span><b>' + tot.Pass.Approved + '</b> pass days approved</span></div>';
+    const key = '<div class="mini-key"><span class="mk-i"><span class="mk y-ap-leave"></span>Approved leave</span><span class="mk-i"><span class="mk y-ap-pass"></span>Approved pass</span>' +
+      '<span class="mk-i"><span class="mk y-pend"></span>Pending</span><span class="mk-i"><span class="mk y-den"></span>Denied</span></div>';
+    const html = modalHead(esc(nameText(u, true)), 'calendar') + '<div class="modal-b">' +
+      '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(nameText(u)) + '</span><span class="badge">' + esc(ROLE_NAME[u.role] || u.role) + '</span></div>' +
+      '<p class="meta" style="margin:8px 0 10px;white-space:normal">' + esc(D.f(from, { month: 'short', year: 'numeric' }) + ' – ' + D.f(to, { month: 'short', year: 'numeric' })) + ' · tap a coloured day to open that request</p>' +
+      sum + key + '<div class="y-grid">' + blocks + '</div></div>' +
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Close</button><button class="btn primary" data-act="personRequests" data-id="' + esc(u.id) + '">' + icon('list', 18) + 'All requests</button></div>';
+    openModal('year', html, true);
   }
 
   /* ---------- Admin: user editor ---------- */
@@ -3789,7 +3860,7 @@
           (w.creating
             ? '<div class="newuser">' + userFields('nu', w.nu, true) + '</div><button class="btn ghost sm" data-act="wizExisting" style="margin-top:6px">' + icon('left', 14) + ' Choose an existing member instead</button>'
             : '<div class="row"><button type="button" class="fsel fdrop-btn wiz-who" data-act="pickAssignee" aria-haspopup="dialog" aria-label="Assign to: ' + esc(fullName(userOf(w.assigneeId))) + '">' +
-                idBadge(userOf(w.assigneeId)) + '<span>' + esc(lastName(userOf(w.assigneeId)) + ', ' + firstName(userOf(w.assigneeId)) + ' · ' + userOf(w.assigneeId).rank) + '</span>' + icon('down', 14) + '</button></div>') +
+                idBadge(userOf(w.assigneeId)) + '<span>' + esc(nameText(userOf(w.assigneeId))) + '</span>' + icon('down', 14) + '</button></div>') +
           '</div>';
       }
       body += '<div class="sect"><div class="lbl">Type</div><div class="wiz-type">' + seg([['Leave', 'Leave'], ['Pass', 'Pass']], w.type, 'wizEditType') + '</div></div>' +
@@ -4093,7 +4164,7 @@
       el.classList.add('sel');
       const head = '<div class="cc-dh">' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '</div>';
       if (!c.bad) { box.innerHTML = head + '<p class="muted">No conflict' + (c.peers.length ? ' — also out: ' + esc(c.peers.map(x => fullName(userOf(x.userId))).join(', ')) : '') + '.</p>'; return; }
-      const li = x => '<li><button class="dl-row" data-act="openReq" data-id="' + esc(x.id) + '"><span class="dl-who">' + idBadge(userOf(x.userId)) + '<b>' + esc(lastName(userOf(x.userId))) + ',</b> ' + esc(firstName(userOf(x.userId))) + ' <span class="muted">· ' + esc(userOf(x.userId).rank) + '</span></span>' +
+      const li = x => '<li><button class="dl-row" data-act="openReq" data-id="' + esc(x.id) + '"><span class="dl-who">' + idBadge(userOf(x.userId)) + nameHtml(userOf(x.userId)) + '</span>' +
         '<span class="dl-meta">' + x.type + ' · ' + D.short(x.start) + ' → ' + D.short(x.end) + '</span><span class="badge s-' + x.status.toLowerCase() + '">' + x.status + '</span></button></li>';
       box.innerHTML = head +
         (c.over ? '<p class="cc-why">' + (c.peers.length + 1) + ' ' + ROLE_PLURAL[c.role] + ' out — max is ' + c.q + '. Conflicts with:</p><ul class="dl-list">' + c.peers.map(li).join('') + '</ul>' : '') +
@@ -4107,7 +4178,10 @@
     peopleRefresh() { const b = $('#peopleBody'); if (b) b.innerHTML = renderPeopleBody(); },
     peopleInactive() { S.people.inactive = !S.people.inactive; render(); },
     peoplePeriod(el) { S.people.period = el.dataset.v; render(); },
+    personYear(el) { openPersonYear(el.dataset.id); },
+    yearDay(el) { closeModal(); openRequest(el.dataset.id); },
     personRequests(el) {
+      closeModal();
       const u = S.users.find(x => x.id === el.dataset.id);
       if (!u) return;
       S.list.q = ''; S.f = { status: ['Approved', 'Pending', 'Denied'], role: ['Pilot', 'Boom', 'Other'], type: ['Leave', 'Pass'], person: u.id };
