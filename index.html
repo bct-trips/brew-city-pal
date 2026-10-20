@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792529897"></script>
+    <script src="config.js?v=1792529921"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1900,12 +1900,13 @@
   .nav button[data-v="profile"][aria-expanded="true"] .nav-ic.syncing::after {
     border-width: 3px; border-color: transparent; border-top-color: var(--brick); border-right-color: var(--brick); }
   #modal #passkey::placeholder { letter-spacing: normal; font-size: 16px; }
+  .splash .splash-t { font-size: 24px; font-weight: 800; letter-spacing: .02em; color: #ffffff; } /* big and bold so it's obvious the app is loading */
 </style>
 
   </head>
   <body>
     <div id="app">
-      <div class="splash"><div class="brand-logo logo-loading" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div><div>Loading Brew City PAL…</div></div>
+      <div class="splash"><div class="brand-logo logo-loading" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div><div class="splash-t">Loading…</div></div>
     </div>
     <div id="modal"></div>
     <div id="toast" role="status" aria-live="polite"></div>
