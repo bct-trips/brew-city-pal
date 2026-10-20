@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792507867"></script>
+    <script src="config.js?v=1792508716"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3845,7 +3845,7 @@
       '<div class="panel"><h3>' + icon('shield', 16) + ' Admin mode</h3>' +
         (S.isAdmin
           ? '<div class="row"><button class="btn" data-act="lockAdmin">' + icon('lock', 18) + ' Lock admin mode</button></div>'
-          : '<div class="row"><input id="passkey" type="password" inputmode="numeric" maxlength="8" placeholder="Admin PIN" aria-label="Admin PIN"><button class="btn primary" data-act="unlockAdmin" style="flex:0 0 auto">' + icon('unlock', 18) + ' Unlock</button></div><div class="err" id="admErr"></div>') +
+          : '<div class="row"><input id="passkey" name="pal-admin-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Admin PIN" aria-label="Admin PIN" autocomplete="off" readonly data-lpignore="true" data-1p-ignore data-bwignore><button class="btn primary" data-act="unlockAdmin" style="flex:0 0 auto">' + icon('unlock', 18) + ' Unlock</button></div><div class="err" id="admErr"></div>') +
       '</div>' +
 
       '<div class="panel"><h3>' + icon('sun', 16) + ' Appearance</h3><div class="seg full" role="group">' +
@@ -4589,12 +4589,16 @@
       if (ok) { $('#np1').value = ''; $('#np2').value = ''; toast('PIN updated'); }
     },
     clearPin() { $('#np1').value = ''; $('#np2').value = ''; $('#pinErr').textContent = ''; },
+    // Admin mode is separate from sign-in: you always sign in as yourself, then unlock with the admin PIN here.
+    // Your own PIN and the admin PIN never interfere, even if they're the same digits.
     async unlockAdmin() {
-      const k = $('#passkey').value.trim();
-      if (!k) { $('#admErr').textContent = 'Enter the admin PIN.'; return; }
-      const data = await run('Unlocking…', 'apiUnlockAdmin', S.token, k);
-      if (!data) { $('#admErr').textContent = 'Passkey not accepted.'; return; }
-      apply(data); render(); toast('Admin mode unlocked');
+      const box = $('#passkey'), err = $('#admErr'), k = box.value.replace(/\D/g, '');
+      if (!k) { err.textContent = 'Enter the admin PIN.'; return; }
+      if (k.length > 8) { err.textContent = 'That’s more than 8 digits — clear the box and type the admin PIN once.'; box.value = ''; return; }
+      try {
+        const data = await call('apiUnlockAdmin', S.token, k);
+        apply(data); render(); toast('Admin mode unlocked');
+      } catch (e) { err.textContent = e.message; box.value = ''; box.focus(); } // show the real reason (wrong PIN, too many tries…)
     },
     async lockAdmin() {
       const data = await run('Locking…', 'apiLockAdmin', S.token);
@@ -4796,6 +4800,11 @@
   /* ================================================================ */
   /* Event wiring                                                       */
   /* ================================================================ */
+  // Admin PIN box: readonly until focused so password managers don't autofill the sign-in PIN into it.
+  // pointerdown runs before focus, so iPhone still opens the number pad on the first tap; focusin covers keyboard users.
+  const armPasskey = ev => { const t = ev.target; if (t && t.id === 'passkey' && t.readOnly) { t.readOnly = false; t.value = ''; } };
+  document.addEventListener('pointerdown', armPasskey, true);
+  document.addEventListener('focusin', armPasskey);
   document.addEventListener('click', ev => {
     // A click outside an open filter menu only closes the menu — it doesn't also open a day, request, etc.
     if (S.openDrop && !ev.target.closest('.fdrop')) {
