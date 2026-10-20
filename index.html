@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792492964"></script>
+    <script src="config.js?v=1792493015"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1501,6 +1501,11 @@
   .idb-n:has(> .idb-t) > .cf-tri { flex: none; vertical-align: 0; }
   .idb-n:has(> .idb-t) > .cf-tri .ic { display: block; }
   .idb.pb.no-status .idb-n > .sti { display: none; }
+  /* Person filter showing the picked person: badge + "Last, First", the name truncating with … */
+  .fperson .idb, .fall .idb { flex: none; margin: 0; }
+  .fperson > span:not(.idb), .fall > span:not(.idb) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fperson b, .fall b { font-weight: 800; }
+  .fp .fperson { max-width: 260px; }
 </style>
 
   </head>
@@ -2218,7 +2223,10 @@
     const st = fState(sc), p = st.person, conf = !!st.conf, label = p ? calName(userOf(p)) : conf ? 'All conflicts' : 'Everyone';
     // With a person picked, a ✕ next to it goes straight back to Everyone. In conflict mode the pill turns red with a ⚠.
     return '<div class="fp ' + cls + (conf ? ' fp-conf' : '') + '"><button type="button" class="fsel fdrop-btn fperson' + (p || conf ? ' on' : '') + '" data-act="pickPerson"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Person filter: ' + esc(label) + (conf ? ', conflict mode' : '') + '">' +
-      (conf ? icon('alert', 16) : '') + '<span>' + esc(label) + '</span>' + icon('down', 14) + '</button>' +
+      // A picked person shows exactly as in the picker: their [P|MKE] badge, then "Last, First".
+      (conf ? icon('alert', 16) : '') +
+      (p && !conf ? idBadge(userOf(p)) + '<span><b>' + esc(lastName(userOf(p))) + ',</b> ' + esc(firstName(userOf(p))) + '</span>' : '<span>' + esc(label) + '</span>') +
+      icon('down', 14) + '</button>' +
       (p ? '<button type="button" class="btn icon-btn fp-clear" data-act="clearPerson"' + scAttr(sc) + ' aria-label="Show everyone" title="Show everyone">' + icon('x', 18) + '</button>' : '') + '</div>';
   }
   /** Person picker: a sheet (bottom sheet on phones) with search, "Everyone", then members grouped by position. */
@@ -2310,7 +2318,9 @@
     // A person filter hides everyone else, so the button turns Brewers yellow (same as the person pill on desktop).
     const st = fState(sc), person = !!st.person && !st.conf;
     return '<button type="button" class="fsel fdrop-btn fall' + (parts.length ? ' on' : '') + (person ? ' fp-active' : '') + '" data-act="openFilters"' + scAttr(sc) + ' aria-haspopup="dialog" aria-label="Filters: ' + esc(parts.join(' · ') || 'showing everything') + '">' +
-      icon('sliders', 16) + '<span>' + esc(parts.length ? parts.join(' · ') : 'Filters') + '</span>' + icon('down', 14) + '</button>' +
+      // With a person picked, lead with their badge and "Last, First" (as in the picker) instead of the sliders icon.
+      (person ? idBadge(userOf(st.person)) + '<span><b>' + esc(lastName(userOf(st.person))) + ',</b> ' + esc([firstName(userOf(st.person))].concat(parts.slice(1)).join(' · ')) + '</span>'
+        : icon('sliders', 16) + '<span>' + esc(parts.length ? parts.join(' · ') : 'Filters') + '</span>') + icon('down', 14) + '</button>' +
       // Clear filters: back to the defaults (Pilots + Booms, everyone, all statuses, Leave and Pass). Only when filters differ from that.
       (!isDefaultFilters(st) ? '<button type="button" class="btn fall-clear" data-act="clearFilters"' + scAttr(sc) + ' aria-label="Clear filters and show everything" title="Clear filters">' + icon('x', 18) + '<span class="bl">Clear</span></button>' : '');
   }
