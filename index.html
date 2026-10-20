@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792493357"></script>
+    <script src="config.js?v=1792493495"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3861,14 +3861,8 @@
     },
     openFilters(el) { openFilterSheet(el.dataset.scope); },
     clearFilters(el) { setDefaultFilters(fState(el.dataset.scope)); render(); },
-    resetFilters(el) {
-      const st = fState(el.dataset.scope);
-      st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
-      if (st.role) st.role = FILTERS[1].opts.map(o => o[0]);
-      if ('person' in st) st.person = '';
-      if ('conf' in st) st.conf = false;
-      render(); openFilterSheet(el.dataset.scope, true);
-    },
+    // The sheet's Reset = Clear filters: back to the defaults (Pilots + Booms, everyone, all statuses, Leave and Pass).
+    resetFilters(el) { setDefaultFilters(fState(el.dataset.scope)); render(); openFilterSheet(el.dataset.scope, true); },
     ppFilter() {
       const q = (S.ppq || '').trim().toLowerCase();
       $$('#modal .pp-row:not(.pp-add)').forEach(r => { r.hidden = !!q && r.dataset.q.indexOf(q) < 0; });
