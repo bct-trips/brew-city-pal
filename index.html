@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792528125"></script>
+    <script src="config.js?v=1792528373"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2074,7 +2074,7 @@
     return apprOn(d, role) >= q ? 'av-full' : countOn(d, role) >= q ? 'av-over' : 'av-open';
   }
   const myRole = () => (IDX.users.get(S.me) || {}).role;
-  /* Day availability on every calendar. Approved leave still uses a slot, so a day stays Full (red) or Overbooked
+  /* Day availability (Qtr and the request form's calendar). Approved leave still uses a slot, so a day stays Full (red) or Overbooked
      (orange) after approvals — that's what stops more leave being booked there. Members see their own position;
      admins (or anyone whose position is filtered out) see the worst of the positions shown. */
   const AV_RANK = { 'av-open': 0, 'av-over': 1, 'av-full': 2 };
@@ -2087,8 +2087,8 @@
   function dayAvail(d) {
     return availRoles().map(r => availClass(d, r)).filter(Boolean).sort((x, y) => AV_RANK[y] - AV_RANK[x])[0] || '';
   }
-  /** Month / Week / phone: tint only the days that need a warning (overbooked or full); Qtr also shows Open. */
-  const dayWarn = d => S.priv ? availClass(d, myRole()) : (dayAvail(d) === 'av-open' ? '' : dayAvail(d));
+  /** Month / Week / phone: no availability tint (that's for Qtr and the request form), except with Hide user schedules on. */
+  const dayWarn = d => S.priv ? availClass(d, myRole()) : '';
   /* ---------- Blackout dates (Admin → Blackout dates) ---------- */
   const blackouts = () => (S.settings && S.settings.blackouts) || [];
   /** Blackouts covering day d (optionally only those that apply to a request type). */
