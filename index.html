@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792492031"></script>
+    <script src="config.js?v=1792492175"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1454,6 +1454,17 @@
   .lt-n b { color: var(--ink); font-size: 16px; font-variant-numeric: tabular-nums; }
   .lt-sel b { color: var(--ink); }
   .lt-total { margin-left: auto; font-size: 16px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+  /* Stats bar: search pill · period segmented control · Inactive toggle. Phones: search on its own row, then the controls. */
+  .stats-bar .seg { flex: none; }
+  .btn.chip-tog { padding: 0 20px; }
+  .btn.chip-tog:has(> .ic:first-child) { padding-left: 14px; }
+  .btn.chip-tog.on { background: var(--sel-bg); border-color: var(--sel-bg); color: var(--sel-ink); font-weight: 800; }
+  @media (max-width: 700px) {
+    .stats-bar .lsearch { flex: 1 1 100%; }
+    .stats-bar .seg { flex: 1 1 auto; display: flex; min-width: 0; }
+    .stats-bar .seg button { flex: 1 1 0; min-width: 0; padding: 0 6px; }
+    .stats-bar .chip-tog { flex: none; padding: 0 14px; }
+  }
 </style>
 
   </head>
@@ -1565,7 +1576,7 @@
     list: store.get('list', { q: '', status: 'All', role: 'All', type: 'All', sort: 'submitted', dir: 'desc' }),
     mine: { status: 'All', sort: 'start', dir: 'desc' },
     mf: { status: ['Approved', 'Pending', 'Denied'], type: ['Leave', 'Pass'] }, mineMode: store.get('mineMode', 'list'), mineConf: false,
-    people: { period: 'fy', q: '', sort: 'last', dir: 'asc', inactive: false },
+    people: { period: '12m', q: '', sort: 'last', dir: 'asc', inactive: false },
     sel: null,
     theme: store.get('theme', 'system'),
     modal: null, wiz: null, rowH: 0, busy: false, focus: null
@@ -3136,16 +3147,19 @@
       : '<tr class="empty-row"><td colspan="' + PEOPLE_COLS.length + '">No members match.</td></tr>';
     const foot = '<tfoot><tr><td colspan="5" class="strong">Squadron total · ' + plural(rows.length, 'member') + '</td>' +
       ['count', 'req', 'appr', 'den', 'pend', 'leave', 'pass'].map(k => '<td class="num strong">' + tot[k] + '</td>').join('') + '</tr></tfoot>';
-    return '<div class="tbl-count">' + esc(st.label) + ' · counts requests that start in this period · click a row to see that member’s requests' + sortNote(P, 'people') + '</div>' +
+    // Only the multi-sort note remains above the table (no period explanation).
+    const note = sortNote(P, 'people').replace(/^ · /, '');
+    return (note ? '<div class="tbl-count">' + note + '</div>' : '') +
       '<div class="tbl-wrap" id="tbl-people"><table class="rtable ptable"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody>' + foot + '</table></div>';
   }
   function renderPeople() {
     const P = S.people;
-    const opt = (v, l) => '<option value="' + v + '"' + (v === P.period ? ' selected' : '') + '>' + l + '</option>';
-    return '<section class="page"><div class="toolbar"><span class="title">Stats</span>' +
-      '<div class="search">' + icon('search', 15) + '<input type="search" placeholder="Search name, rank, unit…" value="' + esc(P.q) + '" data-model="people.q" data-live="peopleRefresh" aria-label="Search members"></div>' +
-      '<select data-model="people.period" data-change="peopleRefresh" aria-label="Period">' + opt('fy', 'Fiscal year') + opt('cy', 'Calendar year') + opt('12m', 'Past 12 months') + opt('all', 'All time') + '</select>' +
-      '<label class="chk"><input type="checkbox" data-act="peopleInactive"' + (P.inactive ? ' checked' : '') + '> Show inactive</label>' +
+    // Same bar as All Requests: search pill · period segmented control · "Inactive" filter toggle (all 40px, DESIGN.md §Buttons).
+    const fy = fyOf(S.today)[2], cy = S.today.slice(0, 4);
+    return '<section class="page"><div class="lbar stats-bar">' +
+      '<div class="lsearch">' + icon('search', 16) + '<input type="search" placeholder="Search name, rank, unit…" value="' + esc(P.q) + '" data-model="people.q" data-live="peopleRefresh" aria-label="Search members"></div>' +
+      seg([['12m', '12 mo'], ['fy', fy], ['cy', cy], ['all', 'All']], P.period, 'peoplePeriod').replace('role="group"', 'role="group" aria-label="Period"') +
+      '<button type="button" class="btn chip-tog' + (P.inactive ? ' on' : '') + '" aria-pressed="' + !!P.inactive + '" data-act="peopleInactive">' + (P.inactive ? icon('check', 18) : '') + 'Inactive</button>' +
       '</div><div class="tbl-page" id="peopleBody">' + renderPeopleBody() + '</div></section>';
   }
 
@@ -3844,7 +3858,8 @@
       A.peopleRefresh();
     },
     peopleRefresh() { const b = $('#peopleBody'); if (b) b.innerHTML = renderPeopleBody(); },
-    peopleInactive(el) { S.people.inactive = !S.people.inactive; el.checked = S.people.inactive; A.peopleRefresh(); },
+    peopleInactive() { S.people.inactive = !S.people.inactive; render(); },
+    peoplePeriod(el) { S.people.period = el.dataset.v; render(); },
     personRequests(el) {
       const u = S.users.find(x => x.id === el.dataset.id);
       if (!u) return;
