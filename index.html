@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792596689"></script>
+    <script src="config.js?v=1792596888"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792596689';
+      window.PAL_BUILD = '1792596888';
       (function () {
         function check(launch) {
           try {
@@ -5940,12 +5940,12 @@
 
       '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' +
 
+      // Admins (by status — admin mode doesn't need to be unlocked): my own daily email report, under notifications.
+      (S.myAdmin ? reportPanel() : '') +
+
       (S.priv ? '' : viewRolesPanel()) +
 
       startupPanel() +
-
-      // Admins (by status — admin mode doesn't need to be unlocked): my own daily email report.
-      (S.myAdmin ? reportPanel() : '') +
 
       '<div class="panel"><h3>' + icon('key', 16) + ' Change PIN</h3>' + PIN_HINT + '<div class="row">' +
         '<div class="field"><label for="np1">New PIN</label><input id="np1" ' + NEW_PIN + '></div>' +
