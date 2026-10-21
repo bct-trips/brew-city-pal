@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792619858"></script>
+    <script src="config.js?v=1792620189"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792619858';
+      window.PAL_BUILD = '1792620189';
       (function () {
         function check(launch) {
           try {
@@ -146,7 +146,7 @@
   input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
   ::placeholder { color: var(--muted); opacity: 1; }
   .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-  .field > label, .lbl { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .field > label, .field > .lbl-t, .lbl { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   .row { display: flex; gap: 8px; } .row > * { flex: 1; min-width: 0; }
   .err { color: var(--bad); font-size: 14.5px; font-weight: 600; min-height: 0; }
   .err:empty { display: none; }
@@ -2355,7 +2355,7 @@
     display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: .005em;
     font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--primary); margin: 14px 0 8px; }
   .sect > .lbl:first-child, .modal-b > .field:first-child > .lbl { margin-top: 2px; }
-  .field > label, .row .field > .lbl-sm, .wiz-dates .field > .lbl {
+  .field > label, .field > .lbl-t, .row .field > .lbl-sm, .wiz-dates .field > .lbl {
     text-transform: none; letter-spacing: .005em; font-size: 13.5px; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
   .pp-h, .who-h, .fdrop-sep { text-transform: none; letter-spacing: .005em; font-size: 14px; font-weight: 700; color: var(--primary); }
   .lbl-sm .cfg-tip, .lbl .cfg-tip { margin-left: 0; }
@@ -2436,13 +2436,17 @@
   /* Reset All Account Pins: a solid red button alone at the bottom of Admin; its dialog has a red warning box, the
      "I have read this warning" tick and a red OK that only turns on once ticked. */
   .ra-wrap { display: flex; justify-content: center; padding: 8px 0 24px; }
-  .btn.ra-btn, .btn.ra-go { background: #b42318; border-color: #b42318; color: #ffffff; }
-  .btn.ra-btn:hover, .btn.ra-go:not(:disabled):hover { background: #912018; border-color: #912018; }
+  .btn.ra-btn { background: var(--no-bg); border-color: var(--no-bg); color: var(--no-ink); } /* Reset All Account PINs: filled error, like Delete */
   .ra-warn { border: 1px solid var(--bad); border-left-width: 4px; border-radius: 12px; background: var(--bad-bg); padding: 10px 12px; margin-bottom: 12px; }
   .ra-warn > b { color: var(--bad); text-transform: uppercase; letter-spacing: .06em; font-size: 13px; }
   .ra-warn p { margin: 4px 0 0; }
-  .ra-chk { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--outline); border-radius: 12px; font-weight: 600; cursor: pointer; }
-  .ra-chk input { width: 20px; height: 20px; margin: 0; flex: none; accent-color: #b42318; }
+  /* "I have read this warning": an M3 checkbox list item (the app's .rsel check box, 48px row, 8% state layer). */
+  .ack { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 48px; margin: 4px 0 6px; padding: 0 12px; border: 0; border-radius: 12px;
+    background: transparent; color: var(--on-surface); font: inherit; font-size: 15px; font-weight: 600; text-align: left; cursor: pointer; }
+  .ack:hover { background: color-mix(in srgb, var(--on-surface) 8%, transparent); }
+  .ack:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .ack .rsel { flex: none; pointer-events: none; }
+  .cdlg .ack { margin: -8px 0 14px -12px; width: calc(100% + 12px); }
   /* Admin PIN panels: New PIN · Confirm · button on one line when there's room; on phones the two boxes share a line
      and the button wraps under them, right-aligned. */
   .pin-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0 10px; }
@@ -2715,6 +2719,7 @@
     </div>
     <div id="modal"></div>
     <div id="toast" role="status" aria-live="polite"></div>
+    
     <script>
 (function () {
   'use strict';
@@ -3204,7 +3209,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.32'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.33'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -6069,7 +6074,7 @@
     openModal('rosterImport', modalHead(first ? 'Setup Done · Import Your Roster' : 'Import Roster', 'userPlus') + '<div class="modal-b">' +
       (first ? '<p class="meta" style="white-space:normal;margin:0 0 10px">You’re signed in as an org admin. Add everyone else from a roster file now, or skip and add people later on the Roster page.</p>' : '') +
       '<p class="meta" style="white-space:normal;margin:0 0 10px">A CSV (save from Excel or Google Sheets) or JSON file with one member per row: <b>' + ROSTER_COLS.join(', ') + '</b>. Last, Position and Unit are required. Everyone signs in with the default PIN, then sets their own.</p>' +
-      '<div class="field"><label for="riFile">Roster File</label><input id="riFile" type="file" accept=".csv,.json,text/csv,application/json" data-change="rosterPick"></div>' +
+      '<div class="field"><span class="lbl-t">Roster File</span>' + fileField('riFile', 'Choose Roster File', '.csv,.json,text/csv,application/json', 'rosterPick') + '</div>' +
       '<div id="riSum" class="ri-sum"></div><div class="err" id="riErr"></div></div>' +
       '<div class="modal-f"><button class="btn" data-act="rosterTemplate">' + icon('download', 16) + 'Template</button><span class="grow"></span>' +
         '<button class="btn" data-act="closeModal">' + (first ? 'Skip' : 'Cancel') + '</button><button class="btn primary" id="riGo" data-act="rosterGo" disabled>' + icon('check', 16) + 'Import</button></div>');
@@ -6163,7 +6168,28 @@
   /* ---------- Confirm dialog (Material 3 basic dialog, replaces the browser's confirm box) ----------
      askConfirm(message) → Promise<boolean>. Its own layer above any open dialog, so the dialog underneath stays as it
      was. Headline from the action, the message as supporting text, Cancel (outlined) and the action (filled; red when
-     it deletes, denies, removes, deactivates or resets) on the right. Esc / tapping outside = Cancel, Enter = the action. */
+     it deletes, denies, removes, deactivates or resets) on the right. Esc / tapping outside = Cancel, Enter = the action.
+     opts: ok (label), danger, title, html (trusted supporting text, already escaped), ack (a checkbox line — "I have read
+     this warning" — that must be ticked before the action is enabled; for the irreversible ones). */
+  /** A file picker that matches the app: an outlined Choose File button (the real input is hidden) and the file's name
+   *  beside it, which updates when a file is picked. `change` = the data-change action that reads it. */
+  const fileField = (id, label, accept, change) => '<div class="su-file"><label class="btn" for="' + id + '">' + icon('upload', 18) + '<span>' + esc(label) + '</span></label>' +
+    '<input id="' + id + '" type="file" accept="' + accept + '" class="sr"' + (change ? ' data-change="' + change + '"' : '') + '><span class="su-fname">No file chosen</span></div>';
+  document.addEventListener('change', ev => {
+    const f = ev.target;
+    if (!f || f.type !== 'file' || !f.closest('.su-file')) return;
+    const box = f.closest('.su-file'), file = f.files && f.files[0];
+    box.querySelector('.su-fname').textContent = file ? file.name : 'No file chosen';
+    const t = box.querySelector('label > span'); if (t && file) t.textContent = 'Change File';
+  }, true);
+  /** "I have read this warning": an M3 checkbox row (the app's check box + label) that has to be ticked first. */
+  const ackBox = (id, label) => '<button type="button" class="ack" id="' + id + '" role="checkbox" aria-checked="false"><span class="rsel" aria-hidden="true"></span><span>' + esc(label) + '</span></button>';
+  function toggleAck(a) {
+    const on = a.getAttribute('aria-checked') !== 'true';
+    a.setAttribute('aria-checked', String(on));
+    const box = a.querySelector('.rsel'); box.classList.toggle('on', on); box.innerHTML = on ? icon('check', 14) : '';
+    return on;
+  }
   function askConfirm(message, opts) {
     opts = opts || {};
     const first = String(message).trim().split(/\s+/)[0].toLowerCase();
@@ -6176,27 +6202,37 @@
     const tc = t => t.split(' ').map((w, i) => i && small.test(w) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     const title = opts.title || (m ? tc(m[1]) : (ok === 'Continue' ? 'Are You Sure?' : ok + '?'));
     if (!opts.title && m) message = m[2];
+    const body = opts.html != null ? opts.html : esc(message);
     return new Promise(resolve => {
       const prev = document.activeElement;
       const wrap = document.createElement('div');
       wrap.className = 'cdlg-wrap';
       wrap.innerHTML = '<div class="cdlg" role="alertdialog" aria-modal="true" aria-labelledby="cdlgT" aria-describedby="cdlgM">' +
-        '<h2 id="cdlgT">' + esc(title) + '</h2>' + (message ? '<p id="cdlgM">' + esc(message) + '</p>' : '') +
+        '<h2 id="cdlgT">' + esc(title) + '</h2>' + (body ? '<p id="cdlgM">' + body + '</p>' : '') +
+        (opts.ack ? ackBox('cdlgAck', opts.ack) : '') +
         '<div class="cdlg-f"><button type="button" class="btn" data-c="0">Cancel</button>' +
-        '<button type="button" class="btn ' + (danger ? 'bad' : 'primary') + '" data-c="1">' + esc(ok) + '</button></div></div>';
+        '<button type="button" class="btn ' + (danger ? 'bad' : 'primary') + '" data-c="1"' + (opts.ack ? ' disabled' : '') + '>' + esc(ok) + '</button></div></div>';
       const done = v => { document.removeEventListener('keydown', key, true); wrap.remove(); try { if (prev && prev.focus) prev.focus(); } catch (e) { /* gone */ } resolve(v); };
       const key = ev => {
         if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); done(false); }
-        else if (ev.key === 'Enter') { ev.preventDefault(); ev.stopPropagation(); const f = document.activeElement; done(f && f.dataset && f.dataset.c ? f.dataset.c === '1' : true); }
+        else if (ev.key === 'Enter') {
+          ev.preventDefault(); ev.stopPropagation();
+          const f = document.activeElement, go = wrap.querySelector('[data-c="1"]');
+          if (f && f.classList && f.classList.contains('ack')) { f.click(); return; }
+          const yes = f && f.dataset && f.dataset.c ? f.dataset.c === '1' : true;
+          if (!yes || !go.disabled) done(yes);
+        }
       };
       wrap.addEventListener('click', ev => {
         ev.stopPropagation(); ev.preventDefault();
+        const a = ev.target.closest('.ack');
+        if (a) { toggleAck(a); wrap.querySelector('[data-c="1"]').disabled = a.getAttribute('aria-checked') !== 'true'; return; }
         const b = ev.target.closest('[data-c]');
-        if (b) done(b.dataset.c === '1'); else if (ev.target === wrap) done(false);
+        if (b) { if (!b.disabled) done(b.dataset.c === '1'); } else if (ev.target === wrap) done(false);
       });
       document.addEventListener('keydown', key, true);
       document.body.appendChild(wrap);
-      const go = wrap.querySelector('[data-c="1"]'); if (go) go.focus();
+      const first = wrap.querySelector(opts.ack ? '.ack' : '[data-c="1"]'); if (first) first.focus();
     });
   }
   function closeModal() {
@@ -7643,7 +7679,6 @@
     /* Multi-select filters: chips on wide screens, checkbox dropdowns on narrow ones. */
     fToggle(el) { toggleFilter(el.dataset.g, el.dataset.v, el.dataset.scope); },
     fCheck(el) { toggleFilter(el.dataset.g, el.dataset.v, el.dataset.scope); },
-    raCheck(el) { const b = $('#raGo'); if (b) b.disabled = !el.checked; },
     mineMode(el) { S.mineMode = el.dataset.v; S.dayPanel = null; if (S.cal === 'day') S.cal = 'month'; render(); },
     grpToggle(el) {
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
@@ -8151,11 +8186,11 @@
       S.bkFile = null;
       openModal('restore', modalHead('Restore From Backup', 'alert') + '<div class="modal-b">' +
         '<div class="ra-warn"><b>Warning</b><p>Restoring <b>replaces everything</b> in this copy of PAL — every member, request, notification, setting and PIN — with the backup. This can’t be undone. Everyone (you too) signs in again afterward with their PIN from the backup; the org admin PIN becomes the backup’s.</p></div>' +
-        '<div class="field"><label for="bkFile">Backup File</label><input id="bkFile" type="file" accept=".json,application/json" data-change="bkPick"></div>' +
+        '<div class="field"><span class="lbl-t">Backup File</span>' + fileField('bkFile', 'Choose Backup File', '.json,application/json', 'bkPick') + '</div>' +
         '<p class="meta" id="bkSum" style="white-space:normal"></p>' +
         '<div class="field"><label for="bkPin2">Org Admin PIN (this copy)</label><input id="bkPin2" ' + NEW_PIN + ' aria-label="Org admin PIN"></div>' +
-        '<label class="fchk ra-chk"><input type="checkbox" id="bkOk" data-change="bkCheck"> I have read this warning</label><div class="err" id="bkErr"></div></div>' +
-        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn ra-go" id="bkGo2" data-act="bkRestoreGo" disabled>Restore</button></div>');
+        ackBox('bkOk', 'I have read this warning') + '<div class="err" id="bkErr"></div></div>' +
+        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn bad" id="bkGo2" data-act="bkRestoreGo" disabled>Restore</button></div>');
     },
     bkPick(el) {
       const f = el.files && el.files[0], sum = $('#bkSum'), err = $('#bkErr');
@@ -8172,10 +8207,10 @@
       };
       rd.readAsText(f);
     },
-    bkCheck() { const b = $('#bkGo2'); if (b) b.disabled = !(S.bkFile && ($('#bkOk') || {}).checked); },
+    bkCheck() { const b = $('#bkGo2'), a = $('#bkOk'); if (b) b.disabled = !(S.bkFile && a && a.getAttribute('aria-checked') === 'true'); },
     async bkRestoreGo(el) {
       const pin = ($('#bkPin2') || {}).value || '', err = $('#bkErr');
-      if (!S.bkFile || !($('#bkOk') || {}).checked) return;
+      if (!S.bkFile || ($('#bkOk') || { getAttribute() {} }).getAttribute('aria-checked') !== 'true') return;
       if (!pin) { err.textContent = 'Enter the org admin PIN.'; return; }
       const res = await run(el, 'apiRestore', S.token, pin, S.bkFile);
       if (!res) return;
@@ -8183,19 +8218,14 @@
       signOutLocal();
       toast('Restored ' + plural(res.users, 'member') + ' and ' + plural(res.requests, 'request') + '. Sign in with your PIN from the backup.', 'ok', 6000);
     },
-    resetAllPins() {
+    // Every member's PIN back to the default: a confirm dialog whose Reset button stays off until the warning is ticked.
+    async resetAllPins(el) {
       const n = S.users.filter(u => u.id !== S.me).length;
-      openModal('resetAll', modalHead('Reset All Account PINs', 'alert') + '<div class="modal-b">' +
-        '<div class="ra-warn"><b>Warning</b><p>This resets <b>every single account (' + n + ' members)</b> to the default PIN. ' +
-          'All of them will have to set a new PIN the next time they sign in. This can’t be undone. Your own PIN doesn’t change.</p></div>' +
-        '<label class="fchk ra-chk"><input type="checkbox" id="raOk" data-change="raCheck"> I have read this warning</label></div>' +
-        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn ra-go" id="raGo" data-act="resetAllGo" disabled>OK</button></div>');
-    },
-    async resetAllGo(el) {
-      if (!($('#raOk') || {}).checked) return;
+      if (!await askConfirm('Reset every account’s PIN?', { ok: 'Reset All PINs', danger: true, ack: 'I have read this warning',
+        html: 'This resets <b>every single account (' + n + ' members)</b> to the default PIN. All of them will have to set a new PIN the next time they sign in. This can’t be undone. Your own PIN doesn’t change.' })) return;
       const d = await run(el, 'apiResetAllPins', S.token, 'RESET ALL');
       if (!d) return;
-      apply(d); closeModal(); render(); toast('Every member’s PIN was reset to the default', 'ok', 2600);
+      apply(d); render(); toast('Every member’s PIN was reset to the default', 'ok', 2600);
     },
     async saveDefaultPin(el) {
       const a = $('#dp1').value.trim(), b = $('#dp2').value.trim();
@@ -8373,39 +8403,26 @@
       if (!await askConfirm('Remove admin status from ' + plural(n, 'member') + '? Any admin mode they have open ends and their alerts stop.')) return;
       runBatch('unadmin', null, list => list.forEach(u => { if (u.id !== S.me) delete S.admins[u.id]; }), () => 'Admin status removed from ' + plural(n, 'member'));
     },
-    batchDelete() {
+    async batchDelete() {
       const ids = batchIds().filter(id => id !== S.me);
       if (!ids.length) return;
       const n = S.requests.filter(r => ids.includes(r.userId) && r.status !== 'Cancelled').length;
-      openModal('delUser', modalHead('Delete ' + plural(ids.length, 'Member'), 'trash') + '<div class="modal-b">' +
-        '<div class="ra-warn"><b>Warning</b><p>This permanently deletes <b>' + plural(ids.length, 'member') + '</b>, their <b>' + plural(n, 'request') + '</b> and their notifications. ' +
-          'It can’t be undone. To keep their history, use <b>Deactivate</b> instead.' + (batchIds().includes(S.me) ? ' Your own account is skipped.' : '') + '</p></div>' +
-        '<label class="fchk ra-chk"><input type="checkbox" id="raOk" data-change="raCheck"> I have read this warning</label></div>' +
-        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn ra-go" id="raGo" data-act="batchDeleteGo" disabled>OK</button></div>');
-    },
-    batchDeleteGo() {
-      if (!($('#raOk') || {}).checked) return;
+      if (!await askConfirm('Delete ' + plural(ids.length, 'member') + '?', { ok: 'Delete', danger: true, ack: 'I have read this warning',
+        html: 'This permanently deletes <b>' + plural(ids.length, 'member') + '</b>, their <b>' + plural(n, 'request') + '</b> and their notifications. It can’t be undone. To keep their history, use <b>Deactivate</b> instead.' + (batchIds().includes(S.me) ? ' Your own account is skipped.' : '') })) return;
       runBatch('delete', 'DELETE', list => { const gone = new Set(list.filter(u => u.id !== S.me).map(u => u.id)); S.users = S.users.filter(u => !gone.has(u.id)); S.requests = S.requests.filter(r => !gone.has(r.userId)); reindex(); },
-        n => plural(n - (batchIds().includes(S.me) ? 1 : 0), 'member') + ' deleted');
+        k => plural(k - (batchIds().includes(S.me) ? 1 : 0), 'member') + ' deleted');
     },
-    // Delete a member for good (two steps, like Reset All Account PINs: tick the warning, then OK).
-    deleteUser(el) {
+    // Delete a member for good: a confirm dialog with the warning to tick first. Optimistic: gone from the roster at once;
+    // the server catches up in the background (a failure re-syncs and says so).
+    async deleteUser(el) {
       const u = S.users.find(x => x.id === el.dataset.id);
       if (!u || u.id === S.me) return;
       const n = S.requests.filter(r => r.userId === u.id && r.status !== 'Cancelled').length;
-      S.delUserId = u.id;
-      openModal('delUser', modalHead('Delete ' + esc(fullName(u)), 'trash') + '<div class="modal-b">' +
-        '<div class="ra-warn"><b>Warning</b><p>This permanently deletes <b>' + esc(fullName(u)) + '</b>: their account and <b>' + plural(n, 'request') + '</b>, plus their notifications. ' +
-          'It can’t be undone. To keep their history, use <b>Deactivate</b> instead.</p></div>' +
-        '<label class="fchk ra-chk"><input type="checkbox" id="raOk" data-change="raCheck"> I have read this warning</label></div>' +
-        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn ra-go" id="raGo" data-act="deleteUserGo" disabled>OK</button></div>');
-    },
-    // Optimistic: gone from the roster at once; the server catches up in the background (a failure re-syncs and says so).
-    deleteUserGo() {
-      if (!($('#raOk') || {}).checked || !S.delUserId) return;
-      const id = S.delUserId, u = S.users.find(x => x.id === id), name = u ? fullName(u) : 'Member';
+      if (!await askConfirm('Delete ' + fullName(u) + '?', { ok: 'Delete', danger: true, ack: 'I have read this warning',
+        html: 'This permanently deletes <b>' + esc(fullName(u)) + '</b>: their account and <b>' + plural(n, 'request') + '</b>, plus their notifications. It can’t be undone. To keep their history, use <b>Deactivate</b> instead.' })) return;
+      const id = u.id, name = fullName(u);
       save(() => { S.users = S.users.filter(x => x.id !== id); S.requests = S.requests.filter(r => r.userId !== id); if (S.rosterSel) S.rosterSel.delete(id); reindex(); }, 'apiDeleteUser', S.token, id, 'DELETE');
-      S.delUserId = null; closeModal(); render(); toast(name + ' deleted', 'ok', 2500);
+      closeModal(); render(); toast(name + ' deleted', 'ok', 2500);
     },
     async toggleUser(el) {
       const u = S.users.find(x => x.id === el.dataset.id);
@@ -8600,6 +8617,9 @@
     }
     const ov = ev.target.closest('[data-overlay]');
     if (ov && ev.target === ov) { closeModal(); return; }
+    // "I have read this warning" check boxes inside a sheet (Restore From Backup).
+    const ack = ev.target.closest('#modal .ack');
+    if (ack) { ev.preventDefault(); toggleAck(ack); if (ack.id === 'bkOk') A.bkCheck(); return; }
     const el = ev.target.closest('[data-act]');
     if (!el || el.disabled) return;
     const fn = A[el.dataset.act];
@@ -8800,6 +8820,8 @@
   }, false));
   async function boot() {
     applyTheme();
+    // Google-hosted page built for a copy with nobody on it yet: straight to Setup (any old sign-in is meaningless).
+    if (window.PAL_SETUP) { S.setupNeeded = true; S.token = null; store.del('token'); dropSnap(); initPush(); syncWithServer(true); return showSetup(); }
     initPush();
     syncWithServer(true);
     if (S.token) {
