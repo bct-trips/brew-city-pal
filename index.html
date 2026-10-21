@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792609027"></script>
+    <script src="config.js?v=1792609489"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792609027';
+      window.PAL_BUILD = '1792609489';
       (function () {
         function check(launch) {
           try {
@@ -3170,21 +3170,31 @@
       if (/^Unknown action\.?$/.test(msg)) return reject(new Error(OUTDATED));
       reject(new Error(msg));
     };
+    // No answer within CALL_TIMEOUT (a slow connection, or Google stalling): stop waiting and say so — the button or
+    // screen that was waiting shows "try again". A garbled reply (Google sometimes sends an error page) says the same.
     return new Promise((resolve, reject) => {
+      let done = false;
+      const ok = v => { if (!done) { done = true; clearTimeout(timer); resolve(v); } };
+      const no = e => { if (!done) { done = true; clearTimeout(timer); fail(e, reject); } };
+      const ctl = window.AbortController ? new AbortController() : null;
+      const timer = setTimeout(() => { if (ctl) ctl.abort(); no(new Error(TIMED_OUT)); }, CALL_TIMEOUT);
       if (window.google && google.script && google.script.run) {
         // A server function the page expects but the deployed Code.gs doesn't have yet = old server code.
-        if (typeof google.script.run[fn] !== 'function') return reject(new Error(OUTDATED));
-        google.script.run.withSuccessHandler(resolve).withFailureHandler(err => fail(err, reject))[fn].apply(null, args);
+        if (typeof google.script.run[fn] !== 'function') { clearTimeout(timer); return reject(new Error(OUTDATED)); }
+        google.script.run.withSuccessHandler(ok).withFailureHandler(no)[fn].apply(null, args);
         return;
       }
       const url = window.PAL_API_URL;
-      if (!url || /PASTE/.test(url)) return reject(new Error('This copy of the app isn’t connected yet — set the web-app URL in config.js.'));
-      fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }), redirect: 'follow' })
-        .then(r => { if (!r.ok) throw new Error('The server could not be reached (' + r.status + '). Try again.'); return r.json(); })
-        .then(res => res && res.ok ? resolve(res.result) : fail(new Error((res && res.error) || 'Unknown server error.'), reject))
-        .catch(err => fail(/Failed to fetch|NetworkError|Load failed/i.test(err.message) ? new Error('No connection to the server. Check your signal and try again.') : err, reject));
+      if (!url || /PASTE/.test(url)) { clearTimeout(timer); return reject(new Error('This copy of the app isn’t connected yet — set the web-app URL in config.js.')); }
+      fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }), redirect: 'follow', signal: ctl ? ctl.signal : undefined })
+        .then(r => { if (!r.ok) throw new Error('The server could not be reached (' + r.status + '). Try again.'); return r.text(); })
+        .then(t => { let res = null; try { res = JSON.parse(t); } catch (e) { throw new Error('The server had a hiccup. Try again.'); } return res; })
+        .then(res => res && res.ok ? ok(res.result) : no(new Error((res && res.error) || 'Unknown server error.')))
+        .catch(err => no(err.name === 'AbortError' ? new Error(TIMED_OUT) : /Failed to fetch|NetworkError|Load failed/i.test(err.message) ? new Error('No connection to the server. Check your signal and try again.') : err));
     });
   }
+  const CALL_TIMEOUT = 25000;
+  const TIMED_OUT = 'The server didn’t answer in time. Check your connection and try again.';
   /* ---------- Button spinners ----------
      busy(btn, work): while a server call runs, the button that started it shows a spinner in place of its icon and
      ignores further taps (and Enter). Used for everything that waits on the server: sign-in, PINs, admin unlock,
