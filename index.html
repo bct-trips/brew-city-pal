@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792620189"></script>
+    <script src="config.js?v=1792620367"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792620189';
+      window.PAL_BUILD = '1792620367';
       (function () {
         function check(launch) {
           try {
@@ -2440,6 +2440,7 @@
   .ra-warn { border: 1px solid var(--bad); border-left-width: 4px; border-radius: 12px; background: var(--bad-bg); padding: 10px 12px; margin-bottom: 12px; }
   .ra-warn > b { color: var(--bad); text-transform: uppercase; letter-spacing: .06em; font-size: 13px; }
   .ra-warn p { margin: 4px 0 0; }
+  .ra-warn ul, .cdlg-l { margin: 6px 0 0; padding-left: 20px; } .ra-warn li, .cdlg-l li { margin: 3px 0; }
   /* "I have read this warning": an M3 checkbox list item (the app's .rsel check box, 48px row, 8% state layer). */
   .ack { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 48px; margin: 4px 0 6px; padding: 0 12px; border: 0; border-radius: 12px;
     background: transparent; color: var(--on-surface); font: inherit; font-size: 15px; font-weight: 600; text-align: left; cursor: pointer; }
@@ -2587,6 +2588,8 @@
   .cdlg h2 + .cdlg-f { margin-top: 22px; }
   .cdlg h2 { margin: 0 0 12px; font-size: 22px; font-weight: 700; line-height: 1.25; }
   .cdlg p { margin: 0 0 22px; font-size: 15px; line-height: 1.45; color: var(--on-surface-variant); white-space: pre-line; }
+  .cdlg #cdlgM { margin: 0 0 22px; font-size: 15px; line-height: 1.45; color: var(--on-surface-variant); }
+  .cdlg .cdlg-l { margin: 0; }
   .cdlg-f { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
   /* Offline: a yellow pill at the top while the app shows data saved on this device (the server can't be reached). */
   .offline-bar { flex: none; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 5px 12px;
@@ -6202,13 +6205,14 @@
     const tc = t => t.split(' ').map((w, i) => i && small.test(w) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     const title = opts.title || (m ? tc(m[1]) : (ok === 'Continue' ? 'Are You Sure?' : ok + '?'));
     if (!opts.title && m) message = m[2];
-    const body = opts.html != null ? opts.html : esc(message);
+    // list: short facts shown as bullets (preferred); html: trusted text; else the rest of the message.
+    const body = opts.list ? '<ul class="cdlg-l">' + opts.list.filter(Boolean).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : opts.html != null ? opts.html : esc(message);
     return new Promise(resolve => {
       const prev = document.activeElement;
       const wrap = document.createElement('div');
       wrap.className = 'cdlg-wrap';
       wrap.innerHTML = '<div class="cdlg" role="alertdialog" aria-modal="true" aria-labelledby="cdlgT" aria-describedby="cdlgM">' +
-        '<h2 id="cdlgT">' + esc(title) + '</h2>' + (body ? '<p id="cdlgM">' + body + '</p>' : '') +
+        '<h2 id="cdlgT">' + esc(title) + '</h2>' + (body ? (opts.list ? '<div id="cdlgM">' + body + '</div>' : '<p id="cdlgM">' + body + '</p>') : '') +
         (opts.ack ? ackBox('cdlgAck', opts.ack) : '') +
         '<div class="cdlg-f"><button type="button" class="btn" data-c="0">Cancel</button>' +
         '<button type="button" class="btn ' + (danger ? 'bad' : 'primary') + '" data-c="1"' + (opts.ack ? ' disabled' : '') + '>' + esc(ok) + '</button></div></div>';
@@ -7493,7 +7497,7 @@
     },
     async delBlackout(el) {
       const bo = blackouts().find(x => x.id === el.dataset.id); if (bo && !canEditBo(bo)) return;
-      if (!await askConfirm('Delete this blackout? Requests on those days stop showing a blackout conflict.')) return;
+      if (!await askConfirm('Delete this blackout?', { list: ['Blackout days removed', 'Blackout conflicts cleared'] })) return;
       const id = el.dataset.id;
       S.nextSyncTab = 'admin';
       save(() => { S.settings.blackouts = blackouts().filter(b => b.id !== id); }, 'apiDeleteBlackout', S.token, id);
@@ -7504,7 +7508,7 @@
     boResolveOpen(el) { const b = blackouts().find(x => x.id === el.dataset.id); if (b) openBoResolve(b); },
     async boDelete(el) {
       const r = findReq(el.dataset.id), b = S.boResolve; if (!r) return;
-      if (!await askConfirm('Delete ' + nameText(userOf(r.userId)) + '’s ' + r.type.toLowerCase() + ' (' + D.short(r.start) + ' – ' + D.short(r.end) + ')? It will be removed from the schedule.')) return;
+      if (!await askConfirm('Delete ' + nameText(userOf(r.userId)) + '’s ' + r.type.toLowerCase() + '?', { list: [D.short(r.start) + ' → ' + D.short(r.end), 'Removed from the schedule'] })) return;
       save(() => { r.status = 'Cancelled'; }, 'apiCancelRequest', S.token, r.id);
       render(); openBoResolve(b); toast(nameText(userOf(r.userId)) + '’s ' + r.type.toLowerCase() + ' deleted', 'ok', 1500);
     },
@@ -7629,7 +7633,7 @@
     noteDel(el) { dropNotes([el.dataset.id]); },
     openNotes() { openNotesDrawer(); },
     openSettings() { closeModal(); S.view = 'profile'; S.sel = null; render(); const sc = $('#profileScroll'); if (sc) sc.scrollTop = 0; checkServer(); },
-    async notesClear() { if (await askConfirm('Delete all your notifications?')) dropNotes('all'); },
+    async notesClear() { if (await askConfirm('Delete all notifications?', { list: ['Can’t be undone'] })) dropNotes('all'); },
     nav(el) {
       const v = el.dataset.v;
       if (v === 'profile') { toggleProfileMenu(el); return; } // Profile is a drop-up menu: Notifications · Appearance · Settings · Sign out
@@ -7794,14 +7798,14 @@
     cfEdit(el) { S.cfReturn = el.dataset.date; openEditWizard(el.dataset.id); },
     async cfDelete(el) {
       const r = findReq(el.dataset.id); if (!r) return;
-      if (!await askConfirm('Delete ' + fullName(userOf(r.userId)) + '’s ' + r.type.toLowerCase() + ' (' + D.short(r.start) + ' → ' + D.short(r.end) + ')?')) return;
+      if (!await askConfirm('Delete ' + fullName(userOf(r.userId)) + '’s ' + r.type.toLowerCase() + '?', { list: [D.short(r.start) + ' → ' + D.short(r.end), 'Removed from the schedule'] })) return;
       save(() => { r.status = 'Cancelled'; }, 'apiCancelRequest', S.token, r.id);
       render(); openConflict(el.dataset.date, S.cfRole); toast('Request deleted', 'ok', 1500);
     },
     async cfApproveAll(el) {
       const d = el.dataset.date;
       const ids = [].concat(...dayConflicts(d, el.dataset.role || null).map(c => c.list.filter(r => r.status === 'Pending').map(r => r.id)));
-      if (!ids.length || !await askConfirm('Approve all ' + plural(ids.length, 'pending request') + ' in this conflict? The marker will turn green.', { ok: 'Approve All' })) return;
+      if (!ids.length || !await askConfirm('Approve ' + plural(ids.length, 'pending request') + '?', { ok: 'Approve All', list: ['All pending in this conflict', 'Conflict marker turns green'] })) return;
       // One call for all of them (apiSetStatuses), not one per request.
       save(() => ids.forEach(id => { const r = findReq(id); if (r) Object.assign(r, { status: 'Approved', decidedBy: S.me, decidedAt: nowIso() }); }), 'apiSetStatuses', S.token, ids, 'Approved');
       render(); openConflict(d, el.dataset.role || null); toast('All approved · marker turned green', 'ok', 2000);
@@ -7897,7 +7901,7 @@
     // Optimistic, like every Roster action: the card updates now and the server catches up in the background.
     async revokeAdmin(el) {
       const id = el.dataset.id, u = userOf(id);
-      if (!await askConfirm('Remove admin status from ' + nameText(u) + '? Their admin alerts stop and any admin mode they have open ends.')) return;
+      if (!await askConfirm('Remove ' + nameText(u) + '’s admin status?', { list: ['Open admin mode ends', 'Admin alerts stop'] })) return;
       save(() => { delete S.admins[id]; S.alertIds = (S.alertIds || []).filter(x => x !== id); }, 'apiSetAdminStatus', S.token, id, '', null);
       render(); if (S.modal === 'member') openMemberCard(id);
       toast('Admin status removed', 'ok', 1800);
@@ -7912,7 +7916,7 @@
         return;
       }
       S.admDraft = null; if (S.admRows) delete S.admRows[id];
-      if (!v && a && !await askConfirm('Remove admin status from ' + nameText(userOf(id)) + '? Any admin mode they have open ends and their alerts stop.')) { openMemberCard(id); return; }
+      if (!v && a && !await askConfirm('Remove ' + nameText(userOf(id)) + '’s admin status?', { list: ['Open admin mode ends', 'Admin alerts stop'] })) { openMemberCard(id); return; }
       save(() => { if (v) S.admins[id] = { level: v, scope: null }; else delete S.admins[id]; }, 'apiSetAdminStatus', S.token, id, v, null);
       render(); openMemberCard(id);
     },
@@ -7985,7 +7989,7 @@
       toast(v === 'Pending' ? 'Back to pending' : 'Request ' + v.toLowerCase(), 'ok', 1500);
     },
     async cancelReq(el) {
-      if (!await askConfirm('Delete this request? It will be removed from the schedule.')) return;
+      if (!await askConfirm('Delete this request?', { list: ['Removed from the schedule'] })) return;
       const id = el.dataset.id;
       save(() => {
         const r = findReq(id); if (r) r.status = 'Cancelled';
@@ -8120,14 +8124,14 @@
       closeModal(); render(); toast(code + (editing ? ' badge saved' : ' badge added'), 'ok', 1500);
     },
     async deleteUnit(el) {
-      if (!await askConfirm('Delete the ' + el.dataset.code + ' badge?')) return;
+      if (!await askConfirm('Delete the ' + el.dataset.code + ' team?', { list: ['No members use it'] })) return;
       const code = el.dataset.code;
       save(() => { S.settings.units = unitsList().filter(x => x.code !== code); }, 'apiDeleteUnit', S.token, code);
       render(); toast(code + ' badge deleted', 'ok', 1500);
     },
     async resetPin(el) {
       const u = S.users.find(x => x.id === el.dataset.id);
-      if (!u || !await askConfirm('Reset ' + u.name + '’s PIN to the current default PIN? They will have to choose a new PIN at their next sign-in.')) return;
+      if (!u || !await askConfirm('Reset ' + u.name + '’s PIN?', { list: ['Set to the default PIN', 'New PIN required at next sign-in'] })) return;
       save(() => { u.mustChange = true; }, 'apiResetPin', S.token, u.id);
       render(); if (S.modal === 'member') openMemberCard(u.id);
       toast(u.name + '’s PIN reset to the default', 'ok', 2000);
@@ -8167,7 +8171,7 @@
     // Backup: type the org admin PIN, then the file downloads (brew-city-pal-backup-YYYY-MM-DD.json).
     bkDownload() {
       openModal('backup', modalHead('Download Backup', 'download') + '<div class="modal-b">' +
-        '<p class="meta" style="white-space:normal;margin:0 0 10px">One file with every member, request, notification, setting and PIN. Keep it private.</p>' +
+        '<p class="meta" style="white-space:normal;margin:0 0 10px">All members, requests, settings and PIN data. Keep it private.</p>' +
         '<div class="field"><label for="bkPin">Org Admin PIN</label><input id="bkPin" ' + NEW_PIN + ' aria-label="Org admin PIN"></div><div class="err" id="bkErr"></div></div>' +
         '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="bkGo">' + icon('download', 18) + 'Download</button></div>');
     },
@@ -8185,7 +8189,7 @@
     bkRestore() {
       S.bkFile = null;
       openModal('restore', modalHead('Restore From Backup', 'alert') + '<div class="modal-b">' +
-        '<div class="ra-warn"><b>Warning</b><p>Restoring <b>replaces everything</b> in this copy of PAL — every member, request, notification, setting and PIN — with the backup. This can’t be undone. Everyone (you too) signs in again afterward with their PIN from the backup; the org admin PIN becomes the backup’s.</p></div>' +
+        '<div class="ra-warn"><b>Warning</b><ul><li>Replaces all members, requests, notifications, settings and PINs</li><li>Everyone signs in again with their backup PIN</li><li>Org admin PIN becomes the backup’s</li><li>Can’t be undone</li></ul></div>' +
         '<div class="field"><span class="lbl-t">Backup File</span>' + fileField('bkFile', 'Choose Backup File', '.json,application/json', 'bkPick') + '</div>' +
         '<p class="meta" id="bkSum" style="white-space:normal"></p>' +
         '<div class="field"><label for="bkPin2">Org Admin PIN (this copy)</label><input id="bkPin2" ' + NEW_PIN + ' aria-label="Org admin PIN"></div>' +
@@ -8221,8 +8225,8 @@
     // Every member's PIN back to the default: a confirm dialog whose Reset button stays off until the warning is ticked.
     async resetAllPins(el) {
       const n = S.users.filter(u => u.id !== S.me).length;
-      if (!await askConfirm('Reset every account’s PIN?', { ok: 'Reset All PINs', danger: true, ack: 'I have read this warning',
-        html: 'This resets <b>every single account (' + n + ' members)</b> to the default PIN. All of them will have to set a new PIN the next time they sign in. This can’t be undone. Your own PIN doesn’t change.' })) return;
+      if (!await askConfirm('Reset all PINs?', { ok: 'Reset All PINs', danger: true, ack: 'I have read this warning',
+        list: [n + ' accounts set to the default PIN', 'New PIN required at next sign-in', 'Your PIN unchanged', 'Can’t be undone'] })) return;
       const d = await run(el, 'apiResetAllPins', S.token, 'RESET ALL');
       if (!d) return;
       apply(d); render(); toast('Every member’s PIN was reset to the default', 'ok', 2600);
@@ -8252,7 +8256,7 @@
     // Can see: Everyone, or tap positions on / off. With none picked, members see only their own requests.
     groupList(el) { openGroupList(String(el.dataset.ids || '').split(',').filter(Boolean)); },
     async forceReload(el) {
-      if (!await askConfirm('Make every signed-in device reload to the newest version the next time it opens or syncs?')) return;
+      if (!await askConfirm('Update all devices?', { ok: 'Update All', list: ['Every device reloads to the newest version', 'On next open or sync'] })) return;
       // Admins' own device is marked as seen so it doesn't reload itself mid-session.
       run(el, 'apiForceReload', S.token).then(d => { if (!d) return; try { localStorage.setItem('pal.reloadSeen', String(d.reloadAt || Date.now())); } catch (e) { /* ignore */ } apply(d); render(); toast('Every device will update on its next open or sync', 'ok', 2500); });
     },
@@ -8312,7 +8316,7 @@
     },
     async deleteType(el) {
       const name = el.dataset.name;
-      if (!await askConfirm('Delete the ' + name + ' event type?')) return;
+      if (!await askConfirm('Delete the ' + name + ' event type?', { list: ['Can’t be undone'] })) return;
       save(() => { S.settings.types = TYPE_LIST.filter(x => x.name !== name); setTypes(S.settings.types); }, 'apiDeleteType', S.token, name);
       render(); toast(name + ' deleted', 'ok', 1500);
     },
@@ -8345,7 +8349,7 @@
     },
     async deleteRole(el) {
       const name = el.dataset.name;
-      if (!await askConfirm('Delete the ' + name + ' position?')) return;
+      if (!await askConfirm('Delete the ' + name + ' position?', { list: ['Can’t be undone'] })) return;
       save(() => { S.settings.roles = ROLES.filter(n => n !== name).map(roleInfo); setRoles(S.settings.roles); }, 'apiDeleteRole', S.token, name);
       S.roleView = null;
       render(); toast(name + ' deleted', 'ok', 1500);
@@ -8393,14 +8397,14 @@
     rosterSelClear() { S.rosterSel = new Set(); renderPeopleOnly(); },
     batchUnit(el) { const v = el.value; if (!v) return; runBatch('unit', v, list => list.forEach(u => { u.unit = v; }), n => plural(n, 'member') + ' moved to ' + v); },
     batchRole(el) { const v = el.value; if (!v) return; runBatch('role', v, list => list.forEach(u => { u.role = v; }), n => plural(n, 'member') + ' changed to ' + roleName(v)); },
-    async batchResetPin() { const n = batchIds().length; if (!n || !await askConfirm('Reset ' + plural(n, 'member') + '’s PIN to the default PIN? They’ll set their own at next sign-in.')) return; runBatch('resetPin', null, list => list.forEach(u => { u.mustChange = true; }), k => plural(k, 'PIN') + ' reset to the default'); },
-    async batchDeactivate() { const n = batchIds().filter(id => id !== S.me).length; if (!n || !await askConfirm('Deactivate ' + plural(n, 'member') + '? They can’t sign in until reactivated. Their history is kept.')) return; runBatch('deactivate', null, list => list.forEach(u => { if (u.id !== S.me) u.active = false; }), () => plural(n, 'member') + ' deactivated'); },
+    async batchResetPin() { const n = batchIds().length; if (!n || !await askConfirm('Reset ' + plural(n, 'PIN') + '?', { list: [plural(n, 'member') + ' set to the default PIN', 'New PIN required at next sign-in'] })) return; runBatch('resetPin', null, list => list.forEach(u => { u.mustChange = true; }), k => plural(k, 'PIN') + ' reset to the default'); },
+    async batchDeactivate() { const n = batchIds().filter(id => id !== S.me).length; if (!n || !await askConfirm('Deactivate ' + plural(n, 'member') + '?', { list: ['No sign-in until reactivated', 'History kept'] })) return; runBatch('deactivate', null, list => list.forEach(u => { if (u.id !== S.me) u.active = false; }), () => plural(n, 'member') + ' deactivated'); },
     batchReactivate() { runBatch('reactivate', null, list => list.forEach(u => { u.active = true; u.pending = false; }), n => plural(n, 'member') + ' reactivated'); },
     batchAdmin() { if (batchIds().length) openAdminPicker(null); },
     async batchUnadmin() {
       const n = batchIds().filter(id => id !== S.me && (S.admins || {})[id]).length;
       if (!n) { toast('None of the selected members is an admin', 'info'); return; }
-      if (!await askConfirm('Remove admin status from ' + plural(n, 'member') + '? Any admin mode they have open ends and their alerts stop.')) return;
+      if (!await askConfirm('Remove admin status from ' + plural(n, 'member') + '?', { list: ['Open admin mode ends', 'Admin alerts stop'] })) return;
       runBatch('unadmin', null, list => list.forEach(u => { if (u.id !== S.me) delete S.admins[u.id]; }), () => 'Admin status removed from ' + plural(n, 'member'));
     },
     async batchDelete() {
@@ -8408,7 +8412,7 @@
       if (!ids.length) return;
       const n = S.requests.filter(r => ids.includes(r.userId) && r.status !== 'Cancelled').length;
       if (!await askConfirm('Delete ' + plural(ids.length, 'member') + '?', { ok: 'Delete', danger: true, ack: 'I have read this warning',
-        html: 'This permanently deletes <b>' + plural(ids.length, 'member') + '</b>, their <b>' + plural(n, 'request') + '</b> and their notifications. It can’t be undone. To keep their history, use <b>Deactivate</b> instead.' + (batchIds().includes(S.me) ? ' Your own account is skipped.' : '') })) return;
+        list: [(n ? 'Accounts, ' + plural(n, 'request') + ' and' : 'Accounts and') + ' notifications deleted', 'Can’t be undone', 'To keep history: Deactivate', batchIds().includes(S.me) ? 'Your account skipped' : ''] })) return;
       runBatch('delete', 'DELETE', list => { const gone = new Set(list.filter(u => u.id !== S.me).map(u => u.id)); S.users = S.users.filter(u => !gone.has(u.id)); S.requests = S.requests.filter(r => !gone.has(r.userId)); reindex(); },
         k => plural(k - (batchIds().includes(S.me) ? 1 : 0), 'member') + ' deleted');
     },
@@ -8419,7 +8423,7 @@
       if (!u || u.id === S.me) return;
       const n = S.requests.filter(r => r.userId === u.id && r.status !== 'Cancelled').length;
       if (!await askConfirm('Delete ' + fullName(u) + '?', { ok: 'Delete', danger: true, ack: 'I have read this warning',
-        html: 'This permanently deletes <b>' + esc(fullName(u)) + '</b>: their account and <b>' + plural(n, 'request') + '</b>, plus their notifications. It can’t be undone. To keep their history, use <b>Deactivate</b> instead.' })) return;
+        list: [(n ? 'Account, ' + plural(n, 'request') + ' and' : 'Account and') + ' notifications deleted', 'Can’t be undone', 'To keep history: Deactivate'] })) return;
       const id = u.id, name = fullName(u);
       save(() => { S.users = S.users.filter(x => x.id !== id); S.requests = S.requests.filter(r => r.userId !== id); if (S.rosterSel) S.rosterSel.delete(id); reindex(); }, 'apiDeleteUser', S.token, id, 'DELETE');
       closeModal(); render(); toast(name + ' deleted', 'ok', 2500);
@@ -8427,7 +8431,7 @@
     async toggleUser(el) {
       const u = S.users.find(x => x.id === el.dataset.id);
       if (!u) return;
-      if (u.active && !await askConfirm('Deactivate ' + u.name + '? They will no longer be able to sign in. Their history is kept.')) return;
+      if (u.active && !await askConfirm('Deactivate ' + u.name + '?', { list: ['No sign-in until reactivated', 'History kept'] })) return;
       const on = !u.active;
       save(() => { u.active = on; }, 'apiSetUserActive', S.token, u.id, on);
       render(); if (S.modal === 'member') openMemberCard(u.id);
@@ -8447,7 +8451,7 @@
       const id = el.dataset.id, w = S.mgrFor, a = S.admins[id];
       const rows = scopeRows(a.scope).map(r => w.unit ? Object.assign({}, r, { units: r.units.filter(c => c !== w.unit) }) : Object.assign({}, r, { roles: r.roles.filter(x => x !== w.role) })).filter(r => r.units.length && r.roles.length);
       const cells = scopeCells(a.scope).filter(c => { const [u, r] = c.split('|'); return w.unit ? u !== w.unit : r !== w.role; });
-      if (!cells.length && !await askConfirm(nameText(userOf(id)) + ' manages nothing else, so this removes their admin status. Continue?')) return;
+      if (!cells.length && !await askConfirm('Remove ' + nameText(userOf(id)) + '’s last team?', { ok: 'Remove', danger: true, list: ['Manages nothing else after this', 'Admin status removed'] })) return;
       const sc = { cells, rows };
       save(() => { if (cells.length) S.admins[id] = { level: 'team', scope: sc }; else delete S.admins[id]; }, 'apiSetAdminStatus', S.token, id, cells.length ? 'team' : '', cells.length ? sc : null);
       render(); openManagers(w);
