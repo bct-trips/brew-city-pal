@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792578390"></script>
+    <script src="config.js?v=1792578614"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2205,6 +2205,15 @@
     .page > .lbar { order: 2; border-bottom: 0; border-top: 1px solid var(--line); }
     .page > .req-bar { order: 3; border-top: 0; padding-top: 2px; }
     .page > .lbar .pdrop-pop, .page > .lbar .fdrop-pop { top: auto; bottom: calc(100% + 4px); }
+  }
+  /* Phones: the bottom controls form one "dock" — a tinted panel with rounded top corners and an upward shadow, so it's
+     clearly separate from the list or calendar scrolling above it (All, My Requests, Roster, Calendar). */
+  @media (max-width: 700px) {
+    .page > .lbar, .cal > .calbar { position: relative; z-index: 2; background: var(--surface-high); border-top: 0;
+      border-radius: 18px 18px 0 0; box-shadow: 0 -6px 16px -4px rgba(0, 0, 0, .22); padding-top: 10px; }
+    .page > .req-bar, .cal > .req-bar { position: relative; z-index: 2; background: var(--surface-high); border-top: 0; }
+    .page > .lbar:last-child { padding-bottom: 10px; }
+    :root[data-theme="dark"] .page > .lbar, :root[data-theme="dark"] .cal > .calbar { box-shadow: 0 -6px 16px -4px rgba(0, 0, 0, .7); }
   }
 </style>
 
