@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792587471"></script>
+    <script src="config.js?v=1792587551"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792587471';
+      window.PAL_BUILD = '1792587551';
       (function () {
         function check(launch) {
           try {
@@ -2448,8 +2448,14 @@
   .pm-nh { padding: 0 6px 8px; }
   .pm-n { background: var(--card); border: 1px solid var(--outline-variant); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
   .pm-n + .pm-n { margin-top: 6px; }
-  .pm-n.unread { background: var(--card); box-shadow: inset 4px 0 0 var(--navy), 0 1px 2px rgba(0,0,0,.08); }
-  :root[data-theme="dark"] .pm-n.unread { box-shadow: inset 4px 0 0 var(--gold), 0 1px 2px rgba(0,0,0,.3); }
+  /* Every card: a left edge in its event type's color (cards with no request — sign-ups, account — get a neutral edge).
+     Added types get their own color from typeCss(), which copies the -leave / -pass rules. Unread = a dot by the time. */
+  .pm-n { box-shadow: inset 4px 0 0 var(--ne, var(--outline-variant)), 0 1px 2px rgba(0,0,0,.08); }
+  .pm-n.unread { background: var(--card); }
+  .pm-n.ne-leave { --ne: var(--leave); }
+  .pm-n.ne-pass { --ne: var(--gold); }
+  .pm-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--navy); margin-right: 5px; vertical-align: 1px; }
+  :root[data-theme="dark"] .pm-dot { background: var(--gold); }
   .pm-nb { align-items: flex-start; padding: 10px 4px 10px 14px; }
   .pm-nb .note-ic { margin-top: 1px; }
   .pm-nt span { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
@@ -5522,9 +5528,11 @@
     if (!notes.length) return head + (upd ? updRow : '<div class="pm-nempty">You’re all caught up.</div>');
     const rows = notes.slice(0, PM_NOTES).map(n => {
       const k = NOTE_IC[n.kind] || ['bell', 'info'];
-      return '<div class="pm-n' + (n.read ? '' : ' unread') + '"><button type="button" class="pm-nb" data-act="noteOpen" data-id="' + esc(n.id) + '" data-req="' + esc(n.requestId || '') + '">' +
+      // Left edge in the request's event-type color (Leave navy, Pass gold, added types theirs); unread = a dot by the time.
+      const rq = n.requestId && S.requests.find(r => r.id === n.requestId);
+      return '<div class="pm-n' + (rq ? ' ne-' + tcls(rq.type) : '') + (n.read ? '' : ' unread') + '"><button type="button" class="pm-nb" data-act="noteOpen" data-id="' + esc(n.id) + '" data-req="' + esc(n.requestId || '') + '">' +
         '<span class="note-ic note-' + k[1] + '">' + icon(k[0], 14) + '</span><span class="pm-nt"><b>' + esc(n.title) + '</b><span>' + esc(n.body) + '</span></span>' +
-        '<span class="pm-ago">' + esc(ago(n.ts)) + '</span></button>' +
+        '<span class="pm-ago">' + (n.read ? '' : '<i class="pm-dot" aria-label="Unread"></i>') + esc(ago(n.ts)) + '</span></button>' +
         '<button type="button" class="pm-nx" data-act="noteDel" data-id="' + esc(n.id) + '" aria-label="Clear notification: ' + esc(n.title) + '" title="Clear">' + icon('x', 16) + '</button></div>';
     }).join('');
     const more = notes.length > PM_NOTES ? '<button type="button" class="pm-more" data-act="openNotes">+' + (notes.length - PM_NOTES) + ' more</button>' : '';
