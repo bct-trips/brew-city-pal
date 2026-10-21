@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792599862"></script>
+    <script src="config.js?v=1792599950"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792599862';
+      window.PAL_BUILD = '1792599950';
       (function () {
         function check(launch) {
           try {
@@ -2648,6 +2648,12 @@
   .nav.seg-slide[data-placed] > button.on:hover::before { background: transparent; }
   .nav.seg-slide > button { z-index: 1; }
   .nav.seg-slide { position: relative; } /* the pill's frame of reference */
+  /* While the Profile drop-up is open, the sliding pill under the page you're on fades to the muted pill (Profile is the
+     strong one), and fades back when the menu closes. Not when you're on Profile itself. */
+  .nav.seg-slide > .seg-thumb.nav-thumb { transition: left .28s cubic-bezier(.2, .8, .2, 1), width .28s cubic-bezier(.2, .8, .2, 1), background-color .18s ease; }
+  .nav.seg-slide:has(button[aria-expanded="true"]):has(button.on:not([aria-expanded="true"])) > .seg-thumb.nav-thumb { background-color: rgba(255, 255, 255, .16); }
+  .nav.seg-slide:has(button[aria-expanded="true"]):has(button.on:not([aria-expanded="true"]):hover) > .seg-thumb.nav-thumb { background-color: rgba(255, 255, 255, .22); }
+  @media (prefers-reduced-motion: reduce) { .nav.seg-slide > .seg-thumb.nav-thumb { transition: background-color .18s ease; } }
 </style>
 
   </head>
