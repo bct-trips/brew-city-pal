@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792595057"></script>
+    <script src="config.js?v=1792595396"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792595057';
+      window.PAL_BUILD = '1792595396';
       (function () {
         function check(launch) {
           try {
@@ -2527,7 +2527,9 @@
   .sc-pick { display: flex; flex-direction: column; gap: 6px; }
   .sc-l { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
   .sc-note { margin: 6px 0 0; white-space: normal; }
-  .alert-scope { flex-direction: column; align-items: stretch; }
+  .alert-scope { flex-direction: column; align-items: stretch; gap: 6px; }
+  .push-row.alert-scope > * { flex: none; } .push-row.alert-scope > p { margin: 0; flex: none; } /* .push-row p has a 260px basis for side-by-side rows; in this column it would make the title 260px tall */
+  .alert-scope.is-off .sc-pick, .alert-scope.is-off .push-btns { opacity: .55; }
   .rp-row { align-items: flex-end; }
   .rp-row .rp-hour { flex: 0 0 140px; }
   #rpTz { width: 100%; }
@@ -5827,11 +5829,12 @@
       (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin Alerts</b>' + tip('New requests, edits, deletions and sign-ups for the members picked below (team admins: only their team).') + '</p><div class="push-btns">' +
         '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' +
         // Which members: positions (default: my Default Filter Positions) and units (none picked = every unit).
-        (S.adminAlerts ? '<div class="push-row alert-scope"><p><b>Alert Me About</b></p>' + scopeChips(S.alertScope || { units: [], roles: S.viewRoles || [] }, 'alertScopePick') +
+        // Always shown in admin mode (dimmed while alerts are off), so the choices can be set up first.
+        ('<div class="push-row alert-scope' + (S.adminAlerts ? '' : ' is-off') + '"><p><b>Alert Me About</b></p>' + scopeChips(S.alertScope || { units: [], roles: S.viewRoles || [] }, 'alertScopePick') +
           // Which kinds of alerts (all on by default).
           '<span class="sc-l">Alerts</span><div class="push-btns">' + ALERT_KINDS.map(k => { const on = alertKinds().includes(k[0]);
             return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="alertKindPick" data-v="' + k[0] + '">' + (on ? icon('check', 16) : '') + k[1] + '</button>'; }).join('') + '</div>' +
-          '<p class="meta sc-note">' + esc(alertScopeText()) + '</p></div>' : '') : '') +
+          '<p class="meta sc-note">' + (S.adminAlerts ? esc(alertScopeText()) : 'Admin Alerts are off. Turn them on above to get these.') + '</p></div>') : '') +
       '';
   }
   /** Admin alert kinds: [key, chip label]. */
