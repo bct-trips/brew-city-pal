@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792581245"></script>
+    <script src="config.js?v=1792581297"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2284,6 +2284,7 @@
   .cc-p:hover { border-color: var(--ink); }
   .cc-p .idb { margin-right: 0; }
   .cc-p-d { font-weight: 500; color: var(--muted); font-size: 13px; }
+  .cc-tbl { margin: 0; } .cc-tbl .rtable td, .cc-tbl .rtable th { white-space: nowrap; }
 </style>
 
   </head>
@@ -5292,17 +5293,22 @@
   /* ---------- Approval conflict calendar ---------- */
   /** Per day of r: who else of the same position is out (approved/pending), whether the daily max is exceeded,
    *  and any of the member's own overlapping requests (duplicates). */
-  /** "Conflicts with": everyone this request clashes with on any of its days (over the daily max, or the member's own
-   *  overlapping requests) — each a tappable badge that opens their request. Hide user schedules: just how many. */
+  /** "Conflicts with" table: every request this one clashes with on any of its days (over the daily max, or the member's
+   *  own overlapping requests) — name, type, dates, days, status; tap a row to open it. Admin mode, or schedules not
+   *  hidden. With Hide user schedules on, members only see how many other requests are involved. */
   function conflictsWithHtml(r) {
     const cs = [...reqConflicts(r).values()].filter(c => c.bad), seen = new Set(), who = [];
     cs.forEach(c => c.peers.concat(c.dups).forEach(x => { if (!seen.has(x.id)) { seen.add(x.id); who.push(x); } }));
-    if (S.priv && !who.length) { const n = Math.max(0, ...cs.map(c => c.n)); return n ? '<div class="cc-with"><span class="cc-with-h">Conflicts with</span><span class="muted">' + plural(n, 'other request') + '</span></div>' : ''; }
-    if (!who.length) return cs.some(c => c.bo) ? '<div class="cc-with"><span class="cc-with-h">Conflicts with</span><span class="muted">blackout days</span></div>' : '';
-    who.sort((a, b) => byPosName(a, b));
-    return '<div class="cc-with"><span class="cc-with-h">Conflicts with</span><div class="cc-with-l">' + who.map(x => { const u = userOf(x.userId);
-      return '<button type="button" class="cc-p" data-act="openReq" data-id="' + esc(x.id) + '" title="' + esc(describe(x)) + '">' + idBadge(u) + '<span>' + esc(calName(u)) + '</span>' +
-        '<span class="cc-p-d">' + esc(D.short(x.start)) + '–' + esc(D.short(x.end)) + '</span></button>'; }).join('') + '</div></div>';
+    if (S.priv && !S.isAdmin) { const n = Math.max(0, ...cs.map(c => c.n)); return n ? '<div class="cc-with"><span class="cc-with-h">Conflicts with</span><span class="muted">' + plural(n, 'other request') + '</span></div>' : ''; }
+    if (!who.length) return cs.some(c => c.bo) ? '<div class="cc-with"><span class="cc-with-h">Conflicts with</span><span class="muted">Blackout days</span></div>' : '';
+    who.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || byPosName(a, b));
+    return '<div class="cc-with"><span class="cc-with-h">Conflicts with</span><div class="tbl-wrap bo-tbl cc-tbl"><table class="rtable"><thead><tr>' +
+      '<th scope="col">Name</th><th scope="col">Type</th><th scope="col">Dates</th><th scope="col" class="num">Days</th><th scope="col">Status</th></tr></thead><tbody>' +
+      who.map(x => { const u = userOf(x.userId);
+        return '<tr data-act="openReq" data-id="' + esc(x.id) + '" tabindex="0" aria-label="' + esc(describe(x)) + '"><td class="strong">' + personBadge(x, false) + '</td>' +
+          '<td><span class="badge t-' + tcls(x.type) + '">' + esc(x.type) + '</span></td>' +
+          '<td>' + esc(D.short(x.start)) + ' → ' + esc(D.short(x.end)) + '</td><td class="num">' + D.days(x.start, x.end) + '</td>' +
+          '<td><span class="badge s-' + x.status.toLowerCase() + '">' + x.status + '</span></td></tr>'; }).join('') + '</tbody></table></div></div>';
   }
   function reqConflicts(r) {
     const u = userOf(r.userId), q = quota(u.role, r.type), out = new Map();
@@ -5390,8 +5396,7 @@
         (r.userId === S.me ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('check', 13) + ' Got it</button>' : ' The member hasn’t acknowledged this yet.' + (S.isAdmin ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('x', 13) + ' Clear notice</button>' : '')) + '</span></div>' : '') +
       (dupsOf(r).length ? '<div class="msg e">' + icon('alert', 15) + '<span>Overlap: this member also has ' + esc(dupText(r)) + '. A member can’t be on leave and a pass (or two requests) at the same time.</span></div>' : '') +
       (r.status !== 'Cancelled' && n <= 92
-        ? '<div class="cc-sum ' + (bad ? 'bad' : 'ok') + '">' + icon(bad ? 'alert' : 'check', 15) + (bad ? plural(bad, 'day') + ' in conflict' : 'No conflicts on any requested day') + '</div>' +
-          (bad ? conflictsWithHtml(r) : '') +
+        ? (bad ? conflictsWithHtml(r) : '<div class="cc-sum ok">' + icon('check', 15) + 'No conflicts on any requested day</div>') +
           reqCalendar(r) +
           '<div class="mini-key"><span class="mk-i"><span class="mk mk-ok"></span>No conflict</span><span class="mk-i"><span class="mk mk-full"></span>Conflict</span></div>' +
           '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>'
