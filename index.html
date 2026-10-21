@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792574157"></script>
+    <script src="config.js?v=1792574667"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2108,6 +2108,11 @@
     .cal.cal-day .req-bar .req-btn { flex: 1; width: auto; }
     .cal.cal-day .req-bar .back-btn { flex: none; }
   }
+  /* Request tables: Leave / Pass band headers count today's active ones; part-open bands end with "Show N more". */
+  .grp-now { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .grp-more td { padding: 6px 14px; }
+  .grp-more-in { position: sticky; left: 14px; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 600; }
+  .rtable td.stk .idb.pb { flex: none; max-width: none; }
 </style>
 
   </head>
@@ -2216,6 +2221,8 @@
     ROLES = list.map(r => r.name); ROLE_INFO = {};
     list.forEach(r => { ROLE_INFO[r.name] = r; });
   }
+  /** Positions this member can see (Admin → Positions → Can see). Admins and "Everyone" positions: all of them. */
+  const seeRoles = () => Array.isArray(S.scope) ? ROLES.filter(r => S.scope.includes(r)) : ROLES;
   const roleInfo = r => ROLE_INFO[r] || ROLE_DEF[r] || {};
   const roleL = r => roleInfo(r).letter || String(r || 'O')[0].toUpperCase();
   /** Class for the position square: white / black / grey keep the original P / B / O look; others reuse the unit badge colours. */
@@ -2452,7 +2459,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.1'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.2'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -2620,6 +2627,12 @@
       // Default view: the member's default positions (Settings); Clear filters returns here.
       S.f.role = defaultRoles();
       S.filtersFor = S.me;
+    }
+    // Positions this member can't see never stay in the filters (e.g. after an admin narrows Can see).
+    if (!S.priv) {
+      const see = seeRoles(), keep = S.f.role.filter(r => see.includes(r));
+      if (keep.length !== S.f.role.length) S.f.role = keep.length ? keep : defaultRoles();
+      if (S.dayRoles) { const dk = S.dayRoles.filter(r => see.includes(r)); S.dayRoles = dk.length ? dk : null; }
     }
   }
   function signOutLocal() {
@@ -2875,15 +2888,13 @@
   }
   const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); fitNav(); markScrolled(); markOpenDay(); fitTables(); }); };
   /** Outline the day that's open in the desktop day panel, in whichever calendar view is showing. */
-  /** Request tables: band headers stick just under the column titles; on first show, start both bands collapsed
-   *  when the rows don't fit on screen. */
+  /** Request tables: band headers stick just under the column titles. */
   function fitTables() {
     $$('.tbl-wrap[data-table]').forEach(w => {
       const th = w.querySelector('thead'); if (th) w.style.setProperty('--thead-h', th.offsetHeight + 'px');
       const k = w.dataset.table; S.grpInit = S.grpInit || {};
       if (S.grpInit[k] || !w.clientHeight) return;
       S.grpInit[k] = true;
-      if (w.scrollHeight > w.clientHeight + 2) { (S.grpCol = S.grpCol || {})[k] = { Leave: true, Pass: true }; render(); }
     });
   }
   function markOpenDay() {
@@ -3016,7 +3027,7 @@
    */
   const FILTERS = [
     { g: 'status', name: 'Status', all: 'All statuses', opts: [['Approved', 'Approved'], ['Pending', 'Pending'], ['Denied', 'Denied']] },
-    { g: 'role', name: 'Position', all: 'All positions', get opts() { return ROLES.map(r => [r, rolePl(r)]); } },
+    { g: 'role', name: 'Position', all: 'All positions', get opts() { return seeRoles().map(r => [r, rolePl(r)]); } },
     { g: 'type', name: 'Type', all: 'Leave & pass', opts: [['Leave', 'Leave'], ['Pass', 'Pass']] }
   ];
   /** Counts and meters leave out denied requests unless Denied is the only status selected. */
@@ -3179,10 +3190,12 @@
      Default positions: their choice in Settings, else Pilots + Booms for a Pilot or Boom, else just their own position.
      Clear filters returns to exactly this, and only shows when the filters differ from that. */
   function defaultRoles() {
-    const v = (S.viewRoles || []).filter(r => ROLES.includes(r));
+    const see = seeRoles();
+    const v = (S.viewRoles || []).filter(r => see.includes(r));
     if (v.length) return v;
     const mine = myRole();
-    return mine === 'Pilot' || mine === 'Boom' || !mine ? ['Pilot', 'Boom'] : [mine];
+    const d = (mine === 'Pilot' || mine === 'Boom' || !mine ? ['Pilot', 'Boom'] : [mine]).filter(r => see.includes(r));
+    return d.length ? d : see.slice();
   }
   function setDefaultFilters(st) {
     if (st === S.mf) S.mineConf = false;
@@ -3510,7 +3523,7 @@
       const cls = ['cell', d.slice(0, 7) !== month ? 'out' : '', d === S.today ? 'today' : '', (i === 0 || i === 6) ? 'wknd' : '', dayWarn(d), boCls(d).trim()].join(' ');
       html += '<div class="' + cls + '" data-act="pickDay" data-date="' + d + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + '>' +
         '<div class="cell-head"><button class="dnum" data-act="gotoDay" data-date="' + d + '" aria-label="Open day view for ' + D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + '">' + Number(d.slice(8)) + '</button>' +
-        (S.priv ? '' : '<span class="qday">' + ROLES.filter(r => ROLE_DEF[r] || quota(r) || countOn(d, r)).map(r => qChip(d, r)).join('') + '</span>') +
+        (S.priv ? '' : '<span class="qday">' + seeRoles().filter(r => ROLE_DEF[r] || quota(r) || countOn(d, r)).map(r => qChip(d, r)).join('') + '</span>') +
         '</div>' +
         (hidden[i] ? '<button class="more" data-act="dayList" data-date="' + d + '" aria-label="Show all ' + (hidden[i]) + ' more on ' + D.short(d) + '">+' + hidden[i] + '<span class="wide"> more</span></button>' : '') +
         '</div>';
@@ -3882,7 +3895,7 @@
     const av = S.priv ? availClass(d, myRole()) : '';
     const meters = S.priv
       ? (av ? '<div class="day-avail ' + av + '"><i></i>' + esc(myRole() || '') + ' slots ' + ({ 'av-open': 'open', 'av-over': 'overbooked', 'av-full': 'full' })[av] + '</div>' : '')
-      : ROLES.map(role => roleMeter(role, rc[role], 'lg')).join('');
+      : seeRoles().map(role => roleMeter(role, rc[role], 'lg')).join('');
     const weekStrip = '<div class="dstrip"><button class="ds-arrow" data-act="dayShift" data-v="-7" aria-label="Previous week">' + icon('left', 20) + '</button>' +
         '<div class="ds-days">' + strip + '</div>' +
         '<button class="ds-arrow" data-act="dayShift" data-v="7" aria-label="Next week">' + icon('right', 20) + '</button></div>';
@@ -3897,7 +3910,7 @@
         '<div class="rm-grid">';
     // Position filter for the day (shares the calendar's filter, so the calendar narrows too). Not on My Requests.
     // The day's own Pilots | Booms | Other filter — independent of the calendar's position filter.
-    const dr = S.dayRoles || (S.dayRoles = ROLES.slice());
+    const dr = S.dayRoles || (S.dayRoles = seeRoles().slice());
     const roleBar = S.view === 'mine' || S.priv ? '' : '<div class="day-roles"><div class="seg" role="group" aria-label="Positions for this day">' + FILTERS[1].opts.map(o =>
       '<button type="button" class="' + (dr.includes(o[0]) ? 'on' : '') + '" aria-pressed="' + dr.includes(o[0]) + '" data-act="dayRole" data-v="' + o[0] + '">' + o[1] + '</button>').join('') + '</div></div>';
     return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top.replace('<div class="dsum">', roleBar + '<div class="dsum">') +
@@ -3964,9 +3977,9 @@
   const nameHtml = (u, noRank) => '<b>' + esc(lastName(u)) + (firstName(u) ? ',</b> ' + esc(firstName(u)) : '</b>') + (u.rank && !noRank ? ' <span class="muted">· ' + esc(u.rank) + '</span>' : '');
   const milDate = d => Number(d.slice(8)) + ' ' + D.f(d, { month: 'short' }) + ' ' + d.slice(0, 4);
   const COLS = [
-    // The pinned Name (last name) comes right after the status mark; Unit scrolls with the other columns.
+    // The pinned Name comes right after the status mark, drawn as the calendar badge [P|MKE|Name ●] (so no Unit column).
     // Short headers, so the column is only as wide as the names in it.
-    ['st', ''], ['last', 'Name'], ['unit', 'Unit'], ['first', 'First'], ['rank', 'Rank'], ['role', 'Position'],
+    ['st', ''], ['last', 'Name'], ['first', 'First'], ['rank', 'Rank'], ['role', 'Position'],
     ['start', 'Start'], ['end', 'End'], ['days', 'Days'], ['note', 'Notes'], ['status', 'Status']
   ];
   const SORT_KEYS = {
@@ -4024,9 +4037,8 @@
     const head = cols.map(c => c[0] === 'st' ? '<th scope="col" class="st-ic-h"><span class="sr">Status</span></th>'
       : table ? sortTh(st, c[0], c[1], 'sortBy', ' data-table="' + table + '"') : '<th scope="col"' + (c[0] === 'last' ? ' class="stk"' : '') + '>' + c[1] + '</th>').join('') +
       '<th scope="col" class="th-acts">Actions</th>';
-    // Status mark; while the leave or pass is going on today it's the pulsing green dot instead.
+    // Status mark (the "going on now" green dot sits after the name, in the badge, as on the calendar).
     const stIcon = r => {
-      if (onNow(r)) return '<span class="st-ic st-ic-now" title="' + r.type + ' going on now · ' + r.status + '" aria-label="' + r.type + ' going on now, ' + r.status + '"><i class="now-dot"></i></span>';
       const m = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'] }[r.status] || ['clock', 'pend'];
       return '<span class="st-ic st-ic-' + m[1] + '" title="' + r.status + '" aria-label="' + r.status + '">' + icon(m[0], 18) + '</span>'; };
     // Compact marks next to the name (instead of wide badges): Overlap (orange), changed by admin (pencil).
@@ -4046,8 +4058,7 @@
         // as wide as the L / P badge and the name (no dead space on phones).
         '<td class="st-ic-c"><div class="st-in">' + stIcon(r) + conflictBadge(r, true) + marks(r) + '</div></td>' +
         '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '<span class="sr"> ' + r.type.slice(1) + '</span></span>' : '') +
-          '<span class="stk-n">' + esc(lastName(u)) + '</span></div></td>' +
-        '<td>' + unitBadge(u.unit) + '</td>' +
+          personBadge(r, false) + '</div></td>' +
         '<td>' + esc(firstName(u)) + '</td>' +
         '<td>' + esc(u.rank) + '</td>' +
         '<td>' + esc(roleName(u.role)) + '</td>' +
@@ -4065,17 +4076,27 @@
     // The whole header row is the tap target; the button inside keeps keyboard access and aria-expanded.
     const key = table || 'queue', col = (S.grpCol = S.grpCol || {})[key] || {};
     // Current (ending today or later) leave and passes in their own bands; finished ones go to a Past band, collapsed by default.
+    // Leave and Pass open part-way by default: only the requests going on today (always at the top of their band),
+    // plus a "Show N more" row. Tapping the header opens the whole band, then closes it.
     const group = (type, list) => {
-      const closed = type === 'Past' ? col.Past !== false : !!col[type], n = cols.length + 1;
-      const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : type === 'Now' ? '<span class="badge t-now"><i class="now-dot" aria-hidden="true"></i>Active Leave / Pass</span>' : '<span class="badge t-' + type.toLowerCase() + '">' + type + '</span>';
-      return '<tbody class="grp grp-' + type.toLowerCase() + (closed ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
-        '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + !closed + '">' +
-        icon(closed ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button></th></tr>' +
-        (closed ? '' : list.length ? list.map(r => rowHtml(r, type === 'Past' || type === 'Now')).join('')
-          : '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + ({ Leave: 'No upcoming leave to show.', Pass: 'No upcoming passes to show.', Past: 'Nothing past to show.', Now: 'No active leave or passes today.' })[type] + '</span></td></tr>') + '</tbody>';
+      const n = cols.length + 1, band = type === 'Leave' || type === 'Pass';
+      const state = type === 'Past' ? (col.Past === false ? 'open' : 'closed') : band ? (col[type] || 'partial') : (col[type] ? 'closed' : 'open');
+      const act = band ? list.filter(isNow) : [], rest = band ? list.filter(r => !isNow(r)) : list;
+      if (band) list = act.concat(rest);
+      const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : '<span class="badge t-' + type.toLowerCase() + '">' + type + '</span>' +
+        (act.length ? '<span class="grp-now"><i class="now-dot" aria-hidden="true"></i>' + act.length + ' active</span>' : '');
+      const empty = '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + ({ Leave: 'No leave to show.', Pass: 'No passes to show.', Past: 'Nothing past to show.' })[type] + '</span></td></tr>';
+      const more = '<tr class="grp-more"><td colspan="' + n + '"><button type="button" class="linkbtn grp-more-in" data-act="grpMore" data-table="' + key + '" data-v="' + type + '">' +
+        (act.length ? '' : 'No one on ' + type.toLowerCase() + ' today · ') + 'Show ' + rest.length + ' more' + icon('down', 14) + '</button></td></tr>';
+      const rowsHtml = state === 'closed' ? '' : !list.length ? empty
+        : state === 'partial' ? act.map(r => rowHtml(r, false)).join('') + (rest.length ? more : '')
+        : list.map(r => rowHtml(r, type === 'Past')).join('');
+      return '<tbody class="grp grp-' + type.toLowerCase() + (state === 'closed' ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
+        '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + (state === 'open') + '">' +
+        icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button></th></tr>' + rowsHtml + '</tbody>';
     };
     const cur = rows.filter(r => r.end >= S.today), past = rows.filter(r => r.end < S.today);
-    // Active Leave / Pass (in progress today: leave first, then passes), then upcoming Leave and Pass.
+    // Leave, then Pass (each with today's active ones first), then Past.
     // Blackouts (current and upcoming) get their own band at the top of All Requests and My Requests — everyone sees them.
     const bos = table ? blackouts().filter(b => b.end >= S.today) : [];
     const boGroup = () => {
@@ -4088,8 +4109,7 @@
           '<b>' + esc(boSpan(b)) + '</b><span class="badge bo-badge">' + esc(boLabel(b)) + '</span>' + (b.note ? '<span class="muted">' + esc(b.note) + '</span>' : '') +
           '</div></td></tr>').join('')) + '</tbody>';
     };
-    const now = cur.filter(r => isNow(r) && r.type === 'Leave').concat(cur.filter(r => isNow(r) && r.type === 'Pass')), next = cur.filter(r => !isNow(r));
-    const body = boGroup() + group('Now', now) + group('Leave', next.filter(r => r.type === 'Leave')) + group('Pass', next.filter(r => r.type === 'Pass')) + group('Past', past);
+    const body = boGroup() + group('Leave', cur.filter(r => r.type === 'Leave')) + group('Pass', cur.filter(r => r.type === 'Pass')) + group('Past', past);
     return '<div class="tbl-wrap" id="tbl-' + key + '" data-table="' + key + '"><table class="rtable"><thead><tr>' + head + '</tr></thead>' + body + '</table></div>';
   }
 
@@ -4324,7 +4344,7 @@
     const cur = defaultRoles();
     return '<div class="panel"><h3>' + icon('sliders', 16) + ' Default positions</h3>' +
       '<p class="cfg-help">The positions the calendar shows when you open the app and when you tap <b>Clear</b> on the filters.</p>' +
-      '<div class="push-btns">' + ROLES.map(r => {
+      '<div class="push-btns">' + seeRoles().map(r => {
         const on = cur.includes(r);
         return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="viewRole" data-v="' + esc(r) + '">' + (on ? icon('check', 18) : '') + esc(rolePl(r)) + '</button>';
       }).join('') + '</div></div>';
@@ -4420,7 +4440,7 @@
       // Positions: badge, daily leave max and whose schedules each position can see.
       '<div class="panel"><h3>' + icon('users', 16) + ' Positions</h3>' +
         '<p class="cfg-help"><b>Max on leave</b>: how many of a position may be on Leave the same day (approved + pending; 0 = no limit, passes never count). ' +
-        '<b>Can see</b>: whose schedules its members see — Everyone, or any mix of positions (e.g. Pilots see Pilots and Booms). With no positions picked they see only their own requests, plus green / orange / red availability for their position. Positions added later are included only where Everyone is on.' +
+        '<b>Can see</b>: whose schedules its members see — Everyone, or any mix of positions (e.g. Pilots see Pilots and Booms). With no positions picked they see only their own requests, plus green / orange / red availability for their position. Positions added later are included only where Everyone is on. Members tagged <b>Manager</b> (Roster → their card) always see every position.' +
         (st.hideSchedules ? ' <b>Hide user schedules is on</b>, so every position sees only its own requests right now.' : '') + '</p>' +
         adminRoles() + '</div>' +
 
@@ -4999,6 +5019,9 @@
         '<div class="mc-pin" id="mcPinRow" hidden><input id="mcPin1" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="New PIN" autocomplete="off" aria-label="New PIN" data-1p-ignore data-lpignore="true">' +
         '<input id="mcPin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Confirm" autocomplete="off" aria-label="Confirm new PIN" data-1p-ignore data-lpignore="true">' +
         '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div><div class="err" id="mcPinErr"></div></section>' +
+      '<section class="mc-sec mc-mgr"><h4>Manager <span class="meta">' + (u.manager ? 'sees every position’s schedule' : 'sees what their position can see') + '</span></h4>' +
+        '<div class="mc-btns"><button type="button" class="btn chip-tog' + (u.manager ? ' on' : '') + '" aria-pressed="' + !!u.manager + '" data-act="setManager" data-id="' + esc(uid) + '">' +
+          (u.manager ? icon('check', 16) + 'Manager' : 'Not a manager') + '</button></div></section>' +
       (isAdm && uid !== S.me ? '<section class="mc-sec"><h4>Admin access <span class="meta">has unlocked admin mode' + ((S.alertIds || []).includes(uid) ? ' · gets admin alerts' : '') + '</span></h4>' +
         '<div class="mc-btns"><button class="btn sm del" data-act="revokeAdmin" data-id="' + esc(uid) + '">' + icon('shield', 15) + 'Remove admin</button></div></section>' : '') +
       '<section class="mc-sec"><h4>Details</h4>' + userFields('ue', u, false).replace(' autofocus', '') + '<div class="err" id="ueErr"></div>' +
@@ -5697,10 +5720,12 @@
     grpToggle(el) {
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
       if (t === 'Past') c.Past = c.Past === false; // Past starts closed: first tap opens it (false = open)
+      else if (t === 'Leave' || t === 'Pass') c[t] = c[t] === 'open' ? 'closed' : 'open'; // part-open → open → closed → open
       else c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
     },
+    grpMore(el) { const c = (S.grpCol = S.grpCol || {})[el.dataset.table] = S.grpCol[el.dataset.table] || {}; c[el.dataset.v] = 'open'; render(); },
     dayRole(el) {
-      const cur = S.dayRoles || ROLES.slice(), v = el.dataset.v;
+      const cur = S.dayRoles || seeRoles().slice(), v = el.dataset.v;
       S.dayRoles = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat([v]);
       render();
     },
@@ -5879,6 +5904,13 @@
     },
     srvHelp() { const h = $('#srvHelp'); if (h) h.hidden = !h.hidden; },
     mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; $('#mcPin1').focus(); } },
+    setManager(el) {
+      const u = S.users.find(x => x.id === el.dataset.id); if (!u) return;
+      const on = !u.manager;
+      save(() => { u.manager = on; }, 'apiSetManager', S.token, u.id, on);
+      if (S.modal === 'member') openMemberCard(u.id);
+      toast(nameText(u) + (on ? ' is now a Manager' : ' is no longer a Manager'), 'ok', 1600);
+    },
     async revokeAdmin(el) {
       const u = userOf(el.dataset.id);
       if (!confirm('Remove admin access for ' + nameText(u) + '? Their admin alerts stop and any admin mode they have open ends. Unlocking again with the admin PIN restores it.')) return;
@@ -6147,7 +6179,7 @@
     },
     viewRole(el) {
       const v = el.dataset.v, cur = defaultRoles();
-      const next = cur.includes(v) ? cur.filter(x => x !== v) : ROLES.filter(r => cur.includes(r) || r === v);
+      const next = cur.includes(v) ? cur.filter(x => x !== v) : seeRoles().filter(r => cur.includes(r) || r === v);
       if (!next.length) return toast('Keep at least one position.', 'error');
       const wasDefault = isDefaultFilters(S.f);
       save(() => { S.viewRoles = next; if (wasDefault) S.f.role = next.slice(); }, 'apiSetViewRoles', S.token, next);
