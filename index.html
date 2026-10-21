@@ -15,12 +15,12 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792585302"></script>
+    <script src="config.js?v=1792585581"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one. When they
          differ — on launch and whenever the app comes back to the foreground — reload once to a cache-busted copy. */
-      window.PAL_BUILD = '1792585302';
+      window.PAL_BUILD = '1792585581';
       (function () {
         function check() {
           try {
@@ -2390,12 +2390,16 @@
   .stats-bar .rf-btn { flex: 0 1 auto; min-width: 0; max-width: 360px; }
   .stats-bar .rf-btn .manage-ct { margin-left: 2px; }
   @media (max-width: 700px) { .stats-bar .rf-btn { flex: 1 1 0; max-width: none; } }
-  /* Request-table type bands: three-position switch Closed · Active · All in the band header. */
-  .grp-seg { display: inline-flex; vertical-align: middle; margin-left: 12px; height: 28px; border: 1px solid var(--outline); border-radius: 14px; overflow: hidden; background: var(--card); }
-  .grp-seg button { border: 0; background: none; padding: 0 11px; font: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--muted); cursor: pointer; }
-  .grp-seg button + button { border-left: 1px solid var(--outline); }
-  .grp-seg button.on { background: var(--sel-bg); color: var(--sel-ink); }
-  .grp-seg button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+  /* Band header: which view is showing (tap the header to cycle All → Active → Closed). */
+  .grp-mode { display: inline-flex; align-items: center; vertical-align: middle; margin-left: 10px; height: 22px; padding: 0 9px; border-radius: 11px; background: var(--sel-bg); color: var(--sel-ink); font-size: 12px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+  /* Roster period: a radio list — title plus the dates it covers. */
+  .rf-radio { align-items: center; padding-top: 8px; padding-bottom: 8px; }
+  .rf-radio .pp-n { display: flex; flex-direction: column; gap: 1px; }
+  .rf-sub { font-size: 13px; font-weight: 500; color: var(--muted); }
+  .rf-dot { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--outline); box-sizing: border-box; }
+  .rf-radio.on .rf-dot { border-color: var(--navy); box-shadow: inset 0 0 0 4px var(--card); background: var(--navy); }
+  :root[data-theme="dark"] .rf-radio.on .rf-dot { border-color: var(--primary); background: var(--primary); }
+  .lbar .filters > .open-btn { order: 9; }
 </style>
 
   </head>
@@ -4566,7 +4570,7 @@
     const key = table || 'queue', col = (S.grpCol = S.grpCol || {})[key] || {};
     // Current (ending today or later) leave and passes in their own bands; finished ones go to a Past band, collapsed by default.
     // Leave and Pass open part-way by default: only the requests going on today (always at the top of their band),
-    // plus a "Show N more" row. Tapping the header opens the whole band, then closes it.
+    // plus a "Show N more" row. Tapping the header cycles All → Active → Closed; Active and Closed keep a "Show N more" row.
     const group = (type, list) => {
       const n = cols.length + 1, band = type !== 'Past';
       // My Requests: current bands start fully open and list everything in date order; Past starts collapsed.
@@ -4592,15 +4596,16 @@
       const empty = '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + (type === 'Past' ? 'Nothing past to show.' : 'No ' + esc(type.toLowerCase()) + ' to show.') + '</span></td></tr>';
       const more = '<tr class="grp-more"><td colspan="' + n + '"><button type="button" class="linkbtn grp-more-in" data-act="grpMore" data-table="' + key + '" data-v="' + type + '">' +
         (act.length ? '' : 'No one on ' + type.toLowerCase() + ' today · ') + 'Show ' + rest.length + ' more' + icon('down', 14) + '</button></td></tr>';
-      const rowsHtml = state === 'closed' ? '' : !list.length ? empty
+      const moreAll = '<tr class="grp-more"><td colspan="' + n + '"><button type="button" class="linkbtn grp-more-in" data-act="grpMore" data-table="' + key + '" data-v="' + type + '">' +
+        'Show ' + list.length + ' more' + icon('down', 14) + '</button></td></tr>';
+      const rowsHtml = state === 'closed' ? (band && !mine && list.length ? moreAll : '') : !list.length ? empty
         : state === 'partial' ? act.map(r => rowHtml(r, false)).join('') + (rest.length ? more : '')
         : list.map(r => rowHtml(r, type === 'Past')).join('');
       return '<tbody class="grp grp-' + (type === 'Past' ? 'past' : tcls(type)) + (state === 'closed' ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
         '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + (state === 'open') + '">' +
         icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button>' +
-        // Type bands (not Past, not My Requests): a three-position switch — Closed · Active (out today) · All.
-        (band && !mine ? '<span class="grp-seg" role="group" aria-label="Show">' + [['closed', 'Closed'], ['partial', 'Active'], ['open', 'All']].map(o =>
-          '<button type="button" class="' + (state === o[0] ? 'on' : '') + '" aria-pressed="' + (state === o[0]) + '" data-act="grpSet" data-table="' + key + '" data-v="' + type + '" data-s="' + o[0] + '">' + o[1] + '</button>').join('') + '</span>' : '') +
+        // Type bands (not Past, not My Requests): say which of the three views is showing.
+        (band && !mine ? '<span class="grp-mode">' + ({ open: 'All', partial: 'Active', closed: 'Closed' })[state] + '</span>' : '') +
         '</th></tr>' + rowsHtml + '</tbody>';
     };
     const cur = rows.filter(r => r.end >= S.today), past = rows.filter(r => r.end < S.today);
@@ -4635,7 +4640,7 @@
   function listBar(search, filters, sc) {
     return '<div class="lbar">' +
       '<div class="lsearch">' + icon('search', 16) + search + '</div>' +
-      '<div class="filters">' + (sc === 'list' && S.isAdmin ? openBtn() : '') + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'mine' ? mineSwitch() : '') + '</div>' +
+      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'list' && S.isAdmin ? openBtn() : '') + (sc === 'mine' ? mineSwitch() : '') + '</div>' +
       '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
   }
   /** Admin status control: a three-way slider Approved | Pending | Denied. The current status has a solid red / amber /
@@ -4810,11 +4815,21 @@
       '<div class="tbl-wrap" id="tbl-people"><table class="rtable ptable"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody>' + foot + '</table></div>';
   }
   const rosterRoles = () => ROLES.filter(r => !roleInfo(r).disabled || S.users.some(u => u.role === r));
-  const rosterPeriods = () => { const fy = fyOf(S.today)[2], cy = S.today.slice(0, 4); return [['12m', 'Last 12 months'], ['fy', fy], ['cy', cy], ['all', 'All time']]; };
+  /** Period choices in plain words: [key, title, what it covers]. */
+  function rosterPeriodRows() {
+    const y = Number(S.today.slice(0, 4)), m = Number(S.today.slice(5, 7)), fy = m >= 10 ? y + 1 : y;
+    const long = d => D.f(d, { month: 'short', day: 'numeric', year: 'numeric' });
+    return [
+      ['12m', 'Last 12 months', 'Since ' + long(D.add(S.today, -365)) + ', plus upcoming'],
+      ['fy', 'Fiscal year ' + fy, long((fy - 1) + '-10-01') + ' – ' + long(fy + '-09-30')],
+      ['cy', 'Calendar year ' + y, long(y + '-01-01') + ' – ' + long(y + '-12-31')],
+      ['all', 'All time', 'Every request on record']
+    ];
+  }
   /** Roster Filters button: a summary of what's filtered (or "Filters"); highlighted when anything is. */
   function rosterFilterBtn() {
     const P = S.people, parts = [];
-    if (P.period && P.period !== '12m') parts.push((rosterPeriods().find(o => o[0] === P.period) || [])[1]);
+    if (P.period && P.period !== '12m') parts.push((rosterPeriodRows().find(o => o[0] === P.period) || [])[1]);
     if (P.roles) parts.push(P.roles.length <= 2 ? P.roles.map(rolePl).join(', ') : P.roles.length + ' positions');
     if (P.units) parts.push(P.units.join(', '));
     if (P.inactive) parts.push('Inactive');
@@ -4831,7 +4846,9 @@
     const sect = (t, inner) => '<div class="fs-sect"><div class="fs-h">' + t + '</div>' + inner + '</div>';
     const waiting = S.users.filter(u => u.pending).length;
     const html = modalHead('Filters', 'sliders') + '<div class="modal-b fs-body">' +
-      sect('Period', seg(rosterPeriods(), P.period || '12m', 'rfPeriod')) +
+      sect('Period', '<div class="who-list rf-list" role="radiogroup" aria-label="Period">' + rosterPeriodRows().map(o => { const on = (P.period || '12m') === o[0];
+        return '<button type="button" class="who-row rf-radio' + (on ? ' on' : '') + '" role="radio" aria-checked="' + on + '" data-act="rfPeriod" data-v="' + o[0] + '">' +
+          '<span class="rf-dot" aria-hidden="true"></span><span class="pp-n"><b>' + esc(o[1]) + '</b><span class="rf-sub">' + esc(o[2]) + '</span></span></button>'; }).join('') + '</div>') +
       sect('Positions', '<div class="who-list rf-list" role="listbox" aria-multiselectable="true">' + rosterRoles().map(r => row('roles', r, !P.roles || P.roles.includes(r),
         '<span class="idb"><span class="idb-r ' + roleCls(r) + '">' + esc(roleL(r)) + '</span></span><span class="pp-n"><b>' + esc(rolePl(r)) + '</b></span>')).join('') + '</div>') +
       sect('Units', '<div class="who-list rf-list" role="listbox" aria-multiselectable="true">' + unitsList().map(un => row('units', un.code, !P.units || P.units.includes(un.code),
@@ -6447,10 +6464,9 @@
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
       if (k === 'mine') c[t] = t === 'Past' ? (c.Past === 'open' ? 'closed' : 'open') : c[t] === 'closed' ? 'open' : 'closed'; // My Requests: bands open, Past collapsed
       else if (t === 'Past') { const open = c.Past === false || (c.Past === undefined && S.f.conf && k === 'list'); c.Past = open; } // flip: open → closed (true), closed → open (false)
-      else if (t !== 'Blackouts') { const cur = c[t] || (S.f.conf && k === 'list' ? 'open' : 'partial'); c[t] = ({ partial: 'open', open: 'closed', closed: 'partial' })[cur]; } // Active → All → Closed → Active
+      else if (t !== 'Blackouts') { const cur = c[t] || (S.f.conf && k === 'list' ? 'open' : 'partial'); c[t] = ({ open: 'partial', partial: 'closed', closed: 'open' })[cur]; } // All → Active → Closed → All
       else c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
     },
-    grpSet(el) { const c = (S.grpCol = S.grpCol || {})[el.dataset.table] = S.grpCol[el.dataset.table] || {}; c[el.dataset.v] = el.dataset.s; render(); },
     grpMore(el) { const c = (S.grpCol = S.grpCol || {})[el.dataset.table] = S.grpCol[el.dataset.table] || {}; c[el.dataset.v] = 'open'; render(); },
     dayRole(el) {
       const cur = S.dayRoles || seeRoles().slice(), v = el.dataset.v;
