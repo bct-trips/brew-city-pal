@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792621542"></script>
+    <script src="config.js?v=1792622442"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792621542';
+      window.PAL_BUILD = '1792622442';
       (function () {
         function check(launch) {
           try {
@@ -2587,6 +2587,15 @@
   .cdlg #cdlgM { margin: 0 0 22px; font-size: 15px; line-height: 1.45; color: var(--on-surface-variant); }
   .cdlg .cdlg-l { margin: 0; }
   .cdlg-f { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+  /* Scroll cue (markScroll): a zero-height strip pinned to the bottom of the scroll area (sticky, as wide as the visible
+     area even when the table scrolls sideways) holding a fade into the background and a round down-caret button. Shown only
+     while there's more below. */
+  .more-hint { position: sticky; left: 0; bottom: 0; height: 0; width: 100%; max-width: 100vw; display: none; justify-content: center; z-index: 4; pointer-events: none; }
+  .more-below > .more-hint { display: flex; }
+  .more-hint::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 56px; background: linear-gradient(to bottom, transparent, var(--card) 92%); }
+  .more-pill { position: absolute; bottom: 10px; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%;
+    background: var(--sel-bg); color: var(--sel-ink); box-shadow: 0 2px 10px rgba(0, 0, 0, .3); cursor: pointer; pointer-events: auto; }
+  @media (prefers-reduced-motion: no-preference) { .more-pill { animation: fade .2s ease-out; } }
   /* Offline: a yellow pill at the top while the app shows data saved on this device (the server can't be reached). */
   .offline-bar { flex: none; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 5px 12px;
     background: var(--gold); color: var(--navy); font-size: 13px; font-weight: 800; }
@@ -3431,6 +3440,7 @@
     if (S.priv) { S.f.role = ROLES.slice(); S.f.person = ''; S.f.conf = false; S.mineMode = 'list'; if (S.view === 'all') S.view = 'mine'; }
     S.today = localToday();
     if (!S.isAdmin && (S.view === 'admin' || S.view === 'people' || S.view === 'roster')) S.view = 'calendar';
+    if (S.view === 'admin' && !S.isOrg) S.view = 'calendar'; // the Admin page is org settings only
     if (S.isAdmin && S.view === 'mine') S.view = 'all'; // My Requests isn't in the admin nav
     reindex();
     // Default the position filters to the signed-in member's own position (once per sign-in / account switch).
@@ -3895,10 +3905,25 @@
     if (isCalView() && S.cal === 'month') fitMonth();
     if (isCalView() && S.cal === 'week') fitWeek();
     paintSel();
-    markOpenDay(); fitTables(); if (S.offline) markOffline();
+    markOpenDay(); fitTables(); if (S.offline) markOffline(); markScrollers();
     store.set('view', S.view); store.set('cal', S.cal);
     renderInstallFab();
   }
+  /* Scroll cue: any list or page that scrolls (requests, roster, Admin, Settings) shows a soft fade at its bottom edge and a
+     small round caret button while there's more to see; tapping the pill scrolls down most of a screen. Both go at the end. */
+  const SCROLLERS = '#main .tbl-wrap, #main .scroll';
+  function markScroll(el) {
+    if (!el.querySelector(':scope > .more-hint')) el.insertAdjacentHTML('beforeend', '<div class="more-hint" aria-hidden="true"><button type="button" class="more-pill" tabindex="-1" aria-label="Scroll down" title="Scroll down">' + icon('down', 22) + '</button></div>');
+    el.classList.toggle('more-below', el.scrollHeight - el.scrollTop - el.clientHeight > 24);
+  }
+  function markScrollers() { $$(SCROLLERS).forEach(markScroll); }
+  document.addEventListener('scroll', ev => { const el = ev.target; if (el && el.matches && el.matches(SCROLLERS)) markScroll(el); }, true);
+  window.addEventListener('resize', () => markScrollers());
+  document.addEventListener('click', ev => {
+    const p = ev.target.closest && ev.target.closest('.more-pill'); if (!p) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const el = p.closest('.tbl-wrap, .scroll'); if (el) el.scrollBy({ top: el.clientHeight * 0.8, behavior: reduceMotion() ? 'auto' : 'smooth' });
+  }, true);
   /* Person pucks: the unit always stays; when even a couple of letters of the name won't fit, drop the status icon. */
   function fitPucks() {
     $$('.idb.pb').forEach(b => {
@@ -3969,7 +3994,7 @@
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
     // Admin mode swaps My Requests for Roster and Admin; Profile is always the last item.
     const items = [['calendar', 'Calendar', 'calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'All Requests', 'list', 'All']], S.isAdmin
-      ? [['people', 'Roster', 'users', 'Roster'], ['admin', 'Admin', 'shield', 'Admin']]
+      ? [['people', 'Roster', 'users', 'Roster']].concat(S.isOrg ? [['admin', 'Admin', 'shield', 'Admin']] : [])
       : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
       // The active tab's pill slides between tabs (same as segmented buttons: placeSeg, remembered as "nav").
@@ -6003,25 +6028,7 @@
   const adminModeBadge = () => '<span class="unlocked" title="' + esc(S.adminScope ? 'Team admin for ' + scopeText(S.adminScope) : 'Org admin: every team') + '">' + icon('unlock', 13) + (S.adminScope ? ' Team Admin' : ' Org Admin') + '</span>';
   /** Team admins change only blackouts that stay within their team; org admins change any. */
   const canEditBo = b => S.isOrg || (S.isAdmin && scopeWithin(b.scope || { units: [], roles: [] }, S.adminScope));
-  function blackoutPanel() {
-    const rows = blackouts().map(b => {
-      const n = boFlagged(b).length, ed = canEditBo(b);
-      return '<tr data-act="openBlackout" data-id="' + esc(b.id) + '" tabindex="0"><td class="strong">' + esc(boSpan(b)) + '</td>' +
-        '<td><span class="badge bo-badge">' + esc(b.types === 'Both' ? 'Blackout' : b.types + ' blackout') + '</span></td>' +
-        '<td>' + (b.scope ? esc(scopeText(b.scope)) : '<span class="muted">Everyone</span>') + '</td>' +
-        '<td class="note"><div class="clamp">' + (b.note ? esc(b.note) : '<span class="muted">—</span>') + '</div></td>' +
-        '<td class="num">' + (n ? '<b class="bo-n">' + n + '</b>' : '<span class="muted">0</span>') + '</td>' +
-        '<td class="acts-cell"><div class="row-acts">' + (ed ?
-          '<button class="btn sm act" data-act="editBlackout" data-id="' + esc(b.id) + '" aria-label="Edit blackout ' + esc(boSpan(b)) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
-          '<button class="btn sm del act" data-act="delBlackout" data-id="' + esc(b.id) + '" aria-label="Delete blackout ' + esc(boSpan(b)) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>'
-          : '<span class="muted">Org admin</span>') +
-        '</div></td></tr>';
-    }).join('');
-    return '<div class="panel"><div class="cfg-h"><h3>' + icon('ban', 16) + ' Blackout Dates' + tip('Days leave or passes shouldn’t be taken. Requests on them show a conflict until you allow, move, deny or delete them.') + '</h3>' +
-        '<button class="btn primary" data-act="newBlackout">' + icon('plus', 18) + 'Add Blackout</button></div>' +
-      (rows ? '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Dates</th><th scope="col">Blacks Out</th><th scope="col">Applies To</th><th scope="col">Reason</th><th scope="col" class="num">To Review</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<p class="meta">No blackout dates yet.</p>') + '</div>';
-  }
+
   /* ---------- Import Roster (org admins; opens by itself right after Setup) ----------
      A CSV (from a spreadsheet) or JSON file, one member per row: Rank, First, Middle, Last, Position, Unit — Last,
      Position and Unit required. Position can be the name (Pilot / Boom Operator / Booms) or the badge letter; Unit is
@@ -6084,19 +6091,12 @@
     const pinPair = (id1, id2, l1, l2, btn) => PIN_HINT + '<div class="pin-row">' +
       '<div class="field"><label for="' + id1 + '">' + l1 + '</label><input id="' + id1 + '" ' + NEW_PIN + '></div>' +
       '<div class="field"><label for="' + id2 + '">' + l2 + '</label><input id="' + id2 + '" ' + NEW_PIN + '></div>' + btn + '</div>';
-    // Team admin mode: only their team's blackouts (settings, units, positions, types and PINs are org-only).
-    if (S.adminScope) return '<section class="page admin-page"><div class="toolbar"><span class="title">Admin</span>' +
-      adminModeBadge() +
-      '<div class="cfg-tools"><button class="btn act" data-act="lockAdmin" aria-label="Lock admin" title="Lock admin">' + icon('lock', 18) + '<span class="bl">Lock</span></button></div></div>' +
-      '<div class="scroll" id="adminScroll">' + blackoutPanel() + '</div></section>';
     return '<section class="page admin-page"><div class="toolbar"><span class="title">Admin</span>' +
       adminModeBadge() +
       '<div class="cfg-tools">' +
       (S.sheetUrl ? '<a class="btn act" href="' + esc(S.sheetUrl) + '" target="_blank" rel="noopener" aria-label="Open data sheet" title="Data Sheet">' + icon('sheet', 18) + '<span class="bl">Data Sheet</span></a>' : '') +
       '<button class="btn act" data-act="lockAdmin" aria-label="Lock admin" title="Lock admin">' + icon('lock', 18) + '<span class="bl">Lock</span></button></div></div>' +
       '<div class="scroll" id="adminScroll">' +
-
-      blackoutPanel() +
 
       // Privacy: members see only their own schedule plus day availability. Admins always see everything.
       '<div class="panel"><div class="cfg-row-tog"><div><h3>' + icon('lock', 16) + ' Hide User Schedules' + tip('Members see only their own requests plus day availability. Admin mode always shows everything.') + '</h3>' +
