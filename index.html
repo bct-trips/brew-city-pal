@@ -15,12 +15,12 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792582218"></script>
+    <script src="config.js?v=1792582351"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
     --navy: #12284B; --navy-2: #1b3d7a; --gold: #FFC52F; --gold-2: #e8ab12;
-    /* Neutral greys: near-white calendar on a light grey canvas. */
+    /* Neutral grays: near-white calendar on a light gray canvas. */
     --bg: #e4e4e7; --card: #fafafa; --card-2: #f0f0f2; --ink: #18181b; --muted: #52525b;
     --line: #d0d0d6; --hatch: rgba(0, 0, 0, .08); --navy-3: #2c4f95; --gold-3: #ffd970; --navy-edge: #7f9ee0;
     --wknd: #f4f4f5; --out-bg: #ebebee; --denied-bg: #d4d4d8; --denied-2: #b8b8bf; --denied-ink: #27272a; --focus: #b4410c; --accent: var(--navy); --on-accent: #fff;
@@ -40,7 +40,7 @@
     color-scheme: light;
   }
   :root[data-theme="dark"] {
-    /* Neutral dark greys. */
+    /* Neutral dark grays. */
     --bg: #09090b; --card: #18181b; --card-2: #232326; --ink: #f4f4f5; --muted: #a8a8b3;
     --line: #3a3a40; --hatch: rgba(255, 255, 255, .06);
     --wknd: #1c1c20; --out-bg: #131316; --denied-bg: #52525b; --denied-2: #3f3f46; --denied-ink: #fafafa; --focus: #fde68a; --accent: var(--gold); --on-accent: var(--navy);
@@ -214,7 +214,7 @@
      person's absence reads as one interlocking bar. */
   .evs { position: relative; align-self: start; height: var(--bar-h); line-height: var(--bar-h); margin-bottom: 2px; padding: 0 8px;
     font-size: 14px; font-weight: 700; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-  /* Name row is a flex line so the tag, name and unit badge sit on the bar's exact vertical centre. */
+  /* Name row is a flex line so the tag, name and unit badge sit on the bar's exact vertical center. */
   .evs-t { display: flex; align-items: center; height: 100%; min-width: 0; }
   .evs.mid .evs-t { justify-content: center; }
   .evs-t .ln, .wpuck .n .ln { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -249,7 +249,7 @@
   /* Duplicate (same member, overlapping requests): thick red underline on the bar or name. */
   .badge.dup { margin-left: 4px; background: #b42318; border-color: #b42318; color: #fff; }
   /* Combined ID badge [P|MKE]: one chip, --tag tall, position square + unit section.
-     Position squares: P = white, B = black, O = grey. */
+     Position squares: P = white, B = black, O = gray. */
   .idb { display: inline-flex; flex: none; align-items: stretch; height: var(--tag); margin-right: 6px; border-radius: 4px; overflow: hidden;
     box-shadow: 0 0 0 1.5px #0b1730, 0 0 0 2.5px rgba(255, 255, 255, .7); vertical-align: middle; font-weight: 900; font-style: normal;
     line-height: 1; letter-spacing: .02em; text-decoration: none; }
@@ -260,7 +260,7 @@
   .idb-o { background: #a1a1aa; color: #0b0b0f; }
   .idb-u { padding: 0 5px; border-left: 1.5px solid #0b1730; letter-spacing: .04em; }
   /* Person badge: name section is white with dark text on every bar, so names always read the same.
-     Bars stay solid; status is a mark after the name on the first day (✓ / clock / ✕); denied greys and strikes the name. */
+     Bars stay solid; status is a mark after the name on the first day (✓ / clock / ✕); denied grays and strikes the name. */
   .idb.pb { flex: 0 1 auto; min-width: 0; max-width: 100%; margin-right: 0; }
   .idb-n { min-width: 0; padding: 0 7px; background: #ffffff; color: #0b1730; border-left: 1.5px solid #0b1730; font-weight: 800; letter-spacing: 0;
     font-size: calc(var(--tag) * .72) !important; justify-content: flex-start !important; overflow: hidden; }
@@ -279,7 +279,7 @@
   .idb.pb.st-denied .idb-n { background: #e4e4e7; color: #3f3f46; text-decoration: line-through; }
   .evs-t .idb.pb { flex: 0 1 auto; }
   td .idb, .dl-who .idb, .rrow .idb, .keypop .idb { box-shadow: 0 0 0 1.5px #0b1730; }
-  /* Unit badges. Each style has its own fill; a ring in a contrasting colour keeps it visible on bars. */
+  /* Unit badges. Each style has its own fill; a ring in a contrasting color keeps it visible on bars. */
   /* Same height as the P/B/O tag (--tag) wherever they appear together. */
   .ub { display: inline-flex; align-items: center; flex: none; box-sizing: border-box; height: var(--tag); line-height: 1; padding: 0 5px; margin-right: 6px; border-radius: 4px;
     font-size: var(--pill-fs); font-weight: 900; letter-spacing: .04em; vertical-align: middle; text-decoration: none; font-style: normal; white-space: nowrap;
@@ -296,9 +296,9 @@
   td .ub, .dl-who .ub, .uhead .ub, .rrow .ub, .ub-prev .ub { box-shadow: none; }
   td .ub, .uhead .ub, .ub-prev .ub { margin-right: 0; }
   .ub-prev { min-width: 64px; }
-  /* Pending: a lighter tint of the category colour (no marker), applied the same way everywhere.
+  /* Pending: a lighter tint of the category color (no marker), applied the same way everywhere.
      In shared hatched bars, pending names are italic. */
-  /* Denied: neutral grey with strike-through instead of fading, so text keeps full contrast. */
+  /* Denied: neutral gray with strike-through instead of fading, so text keeps full contrast. */
   .evs.st-denied, .wpuck.st-denied { background: var(--denied-bg) !important; color: var(--denied-ink) !important; text-decoration: line-through; }
     .evs:hover, .wpuck:hover { filter: brightness(1.1); }
   /* Focused request: everything else steps back so its single line stands out. */
@@ -542,7 +542,7 @@
     .badge.t-pass { background: var(--gold); border-color: var(--gold); color: var(--navy); }
   .badge.conflict { background: var(--bad-bg); border-color: transparent; color: var(--bad); }
   .badge.caution { background: var(--warn-bg); border-color: transparent; color: var(--warn); }
-  /* Status chips: neutral surface + full-contrast text; status colour is a dot (≥3:1 against the chip). */
+  /* Status chips: neutral surface + full-contrast text; status color is a dot (≥3:1 against the chip). */
   .badge.ok, .s-approved, .s-pending, .s-denied { background: var(--card-2); border-color: var(--line-strong); color: var(--ink); }
   .s-approved::before, .s-pending::before, .s-denied::before, .badge.ok::before { content: ""; width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .s-approved::before, .badge.ok::before { background: var(--dot-ok); }
@@ -760,7 +760,7 @@
   .btn.sm:has(> .ic:first-child) { padding-left: 10px; }
   .btn.sm .ic { width: 16px; height: 16px; }
   .btn.block { width: 100%; }
-  /* Icon button (Material 3 "standard icon button"): 40×40 circle, no outline, centred 20px icon. */
+  /* Icon button (Material 3 "standard icon button"): 40×40 circle, no outline, centered 20px icon. */
   .btn.icon-btn, .btn.icon-btn:has(> .ic:first-child) { width: 40px; min-width: 40px; height: 40px; padding: 0; gap: 0; justify-content: center;
     border-color: transparent; background: transparent; border-radius: 50%; color: var(--on-surface-variant); }
   .btn.icon-btn .ic { width: 20px; height: 20px; margin: 0; }
@@ -816,14 +816,14 @@
   .mini-g button.today { box-shadow: inset 0 0 0 1px var(--primary); }
   .cell.sel-a, :root[data-theme="dark"] .cell.sel-a { box-shadow: inset 0 0 0 2px var(--primary); }
 
-  /* Shared middle-day bar (2+ people): diagonal slash pattern in the type colour; badges stay solid on top. */
+  /* Shared middle-day bar (2+ people): diagonal slash pattern in the type color; badges stay solid on top. */
   .evs.mid.shared.leave { background: repeating-linear-gradient(135deg, var(--leave) 0 6px, var(--leave-2) 6px 12px); }
   .evs.mid.shared.pass { background: repeating-linear-gradient(135deg, var(--gold) 0 6px, var(--gold-2) 6px 12px); }
   .evs.mid.shared.denied { background: repeating-linear-gradient(135deg, var(--denied-bg) 0 6px, var(--denied-2) 6px 12px) !important; }
 
 
   /* Leave / Pass toggle buttons: two separate pills, each independently on/off.
-     On = filled in its bar colour (white on leave blue 6.7:1, navy on pass gold 8.8:1); off = outlined. */
+     On = filled in its bar color (white on leave blue 6.7:1, navy on pass gold 8.8:1); off = outlined. */
   .tchips { display: inline-flex; gap: 8px; }
   .tchip { position: relative; overflow: hidden; isolation: isolate; height: 40px; padding: 0 20px; border-radius: 20px; border: 1px solid var(--outline);
     background: transparent; color: var(--on-surface); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; }
@@ -836,12 +836,12 @@
 
 
   /* ---------- Calendar bar layout ----------
-     Wide screens: [view · Today · Add Request]   [ ‹ date › ] centred   [status · position · Leave|Pass] */
+     Wide screens: [view · Today · Add Request]   [ ‹ date › ] centered   [status · position · Leave|Pass] */
   .cb-left, .cb-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .cb-center { display: flex; justify-content: center; }
   .cb-right { margin-left: auto; }
   @media (min-width: 1101px) {
-    /* Equal side columns keep the date exactly centred; side groups wrap to a second line if they run out of room. */
+    /* Equal side columns keep the date exactly centered; side groups wrap to a second line if they run out of room. */
     .calbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 12px; }
     .cb-left { justify-self: start; }
     .cb-center { justify-self: center; }
@@ -861,7 +861,7 @@
     .calbar .today-btn { order: 4; }
     .calbar .filters > * { order: 5; }
   }
-  /* Leave / Pass button group: joined like the other groups; each side fills with its bar colour when on. */
+  /* Leave / Pass button group: joined like the other groups; each side fills with its bar color when on. */
   .seg.tgroup .tchip { height: 100%; border: 0; border-radius: 0; padding: 0 18px; }
   .seg.tgroup .tchip + .tchip { border-left: 1px solid var(--outline); }
   .seg.tgroup .tchip-leave.on { background: var(--leave); color: #ffffff; }
@@ -1212,7 +1212,7 @@
   .cfg-len .seg { display: flex; height: 44px; } .cfg-len .seg button { flex: 1 1 0; }
   .lbl-sm { display: block; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
 
-  /* Conflict chip on request rows: red while any request in the over-max day is pending, grey once all approved. Opens the resolver. */
+  /* Conflict chip on request rows: red while any request in the over-max day is pending, gray once all approved. Opens the resolver. */
   .cfl { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; margin-left: 6px; border-radius: 4px; border: 0; font: inherit; font-size: 12.5px; font-weight: 800; white-space: nowrap; cursor: pointer; vertical-align: middle; }
   .cfl-bad { background: var(--no-bg); color: var(--no-ink); }
   .cfl-ok { background: color-mix(in srgb, var(--on-surface) 12%, transparent); color: var(--on-surface); }
@@ -1221,8 +1221,8 @@
   .st-cell { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 0; }
   .cfl-count { display: inline-flex; align-items: center; gap: 4px; color: var(--bad); font-weight: 800; }
   /* Home-screen (standalone) app on iPhone: keep the top bar clear of the status bar / notch (0 everywhere else).
-     The status-bar strip is painted in the top bar's colour, so iOS's edge fade there blends into a solid colour
-     instead of fading the controls; the bottom (home indicator) area is the nav's own colour. */
+     The status-bar strip is painted in the top bar's color, so iOS's edge fade there blends into a solid color
+     instead of fading the controls; the bottom (home indicator) area is the nav's own color. */
   #app { padding-top: env(safe-area-inset-top, 0px); box-sizing: border-box; }
   #app::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--card); z-index: 50; pointer-events: none; }
   html, body { background: var(--bg); } /* the nav bar pads itself over the home indicator, so nothing navy shows around the app */
@@ -1288,7 +1288,7 @@
   .band-tag { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 4px; background: var(--rm); color: #0b1730; font-size: 12px; font-weight: 900; letter-spacing: 0; }
   .band-title .ct { background: var(--surface); border-color: var(--outline-variant); color: var(--on-surface); }
 
-  /* Person filter with someone picked: one joined pill [ Name ⌄ | ✕ ] in the selected colour (DESIGN.md §Selection). */
+  /* Person filter with someone picked: one joined pill [ Name ⌄ | ✕ ] in the selected color (DESIGN.md §Selection). */
   .fp { gap: 0; }
   .fp:has(.fp-clear) .fperson { border-top-right-radius: 0; border-bottom-right-radius: 0; padding-right: 10px; }
   .fp:has(.fp-clear) { align-items: stretch; }
@@ -1336,7 +1336,7 @@
   .st-ic-ok { color: #15803d; } .st-ic-pend { color: #b45309; } .st-ic-no { color: #c9302c; }
   :root[data-theme="dark"] .st-ic-ok { color: #86d99a; } :root[data-theme="dark"] .st-ic-pend { color: #fbbf24; } :root[data-theme="dark"] .st-ic-no { color: #fca5a5; }
   /* Approved rows have no tint: the status slider and ✓ already say so (rows keep the normal striping). */
-  /* Name cell: name and its small marks centred on one line. */
+  /* Name cell: name and its small marks centered on one line. */
   .rtable td.stk .stk-in { display: flex; align-items: center; gap: 6px; }
   .rtable td.stk .cfl { margin-left: 0; flex: none; }
   .cfl-warn { background: var(--rg-over); color: var(--rg-over-ink); }
@@ -1474,7 +1474,7 @@
     .stats-bar .seg button { flex: 1 1 0; min-width: 0; padding: 0 6px; }
     .stats-bar .chip-tog { flex: none; padding: 0 14px; }
   }
-  /* Request details footer: rows. Admin decision row (Deny · Approve, labelled, half width each) above Delete · Cancel · Edit. */
+  /* Request details footer: rows. Admin decision row (Deny · Approve, labeled, half width each) above Delete · Cancel · Edit. */
   .modal-f.modal-f-rows { flex-direction: column; align-items: stretch; gap: 10px; }
   .mf-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .mf-row .btn.act.act-lbl, .mf-row .btn.act.act-lbl:has(> .ic:first-child) { flex: 1 1 0; width: auto; border-radius: 20px; gap: 6px; padding: 0 14px; }
@@ -1486,7 +1486,7 @@
     background: var(--gold); border-color: var(--gold); color: var(--navy) !important; font-weight: 800; }
   .fp:not(.fp-conf) .fp-clear { border-left-color: color-mix(in srgb, var(--navy) 30%, transparent); }
   /* Clear filters: an outlined "✕ Clear" button at the end of the filters on wide screens; on phones a ✕ joined to the Filters button,
-     in the same colour as it (tonal when filtered, yellow when a person is picked). */
+     in the same color as it (tonal when filtered, yellow when a person is picked). */
   .fall-clear { flex: none; }
   .fall-clear:has(> .ic:first-child) { padding: 0 16px 0 12px; }
   @media all {
@@ -1499,7 +1499,7 @@
   }
   /* Collapsible band headers: the whole row toggles. */
   .rtable tr.grp-h, .rtable tr.grp-h th { cursor: pointer; user-select: none; }
-  /* Person badge name: a centred row — [marks] name [status icon]. The icon is centred on the name with a 4px gap,
+  /* Person badge name: a centered row — [marks] name [status icon]. The icon is centered on the name with a 4px gap,
      and only the name text truncates (…), never the icons. */
   .idb-n:has(> .idb-t) { display: flex !important; align-items: center; }
   .idb-n > .idb-t { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1563,7 +1563,7 @@
   .y-pend { background: var(--rg-over); color: var(--rg-over-ink); }
   .y-den { background: var(--no-bg); color: var(--no-ink); }
   /* Nav bar: Brewers navy for everyone (dark in dark mode), Brewers metallic gold (#85714D) in admin mode. Light labels, yellow selection pill.
-     --nav-bg is set on the bar itself so the badge rings and the home-indicator strip match its colour. */
+     --nav-bg is set on the bar itself so the badge rings and the home-indicator strip match its color. */
   :root { --brick: #7C2529; }
   .nav { --nav-bg: var(--navy); background: var(--nav-bg); border-top: 1px solid var(--nav-bg); }
   /* Admin mode: the same bar as everyone else, with a solid red line along its top edge (works in light and dark). */
@@ -1594,7 +1594,7 @@
   .y-year::before, .y-year::after { content: ""; flex: 1; height: 2px; background: var(--line); }
   .y-body .y-grid { margin-top: 0; }
   @media (max-width: 700px) { .y-grid { grid-template-columns: 1fr; } .y-d { height: 34px; font-size: 14px; } }
-  /* Hide user schedules: days tinted by the member's position availability (same colours as Qtr). */
+  /* Hide user schedules: days tinted by the member's position availability (same colors as Qtr). */
   .month:not(.compact) .cell.av-open, .month.compact .cell.cc.av-open, .wk-day.av-open { background-color: var(--av-open); }
   .month:not(.compact) .cell.av-over, .month.compact .cell.cc.av-over, .wk-day.av-over { background-color: var(--av-over); }
   .month:not(.compact) .cell.av-full, .month.compact .cell.cc.av-full, .wk-day.av-full { background-color: var(--av-full); }
@@ -1630,10 +1630,10 @@
   .bo-add { border-top: 1px solid var(--line); padding-top: 12px; }
   .bo-types .seg { display: flex; width: 100%; height: 44px; } .bo-types .seg button { flex: 1 1 0; }
   .note-prefs .push-btns .chip-tog { padding: 0 14px; }
-  /* ---------- Squadron logo (126th EARS patch, recoloured to Brewers navy / white / yellow / brick) on sign-in and loading ---------- */
+  /* ---------- Squadron logo (126th EARS patch, recolored to Brewers navy / white / yellow / brick) on sign-in and loading ---------- */
   .brand-logo { width: 148px; height: 148px; background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAHVCAMAAAAevdi5AAAB/lBMVEUgNVmpZSyhj2EYIzkeM1LQly8gM0/jzaNeW1YpVGRbXVVwIyRoRzqyjTvls1uFd2OvqZofMlJZaYTc294YKD3+wB6PeYUAAP////zHs5ZGOk9bbKO+wLw2QlA3T29+gHvRvcI2YZzps3UAbgB+jKKjo6NpYi7p6ahxsfCuenH/3W7+0l5GTER/f/9////AeSo4RE8Af/8A/wAA//9/AAB/v7+qqv+22rbMmZkAAAASKEv+xS7+/v2FcUx7JSnusyorRW8DG0MCGT0pOE3t5tUcMlaHkqPprSrX1tEjO2Tt6ub+9NkTJDw4RFNNWGgAAFVGSk9SVVS2ta90dnOUlpIAAH91HChnam6qqqkTKUx1aE7LxrfLyscTKUyJiYoAVVVZY2+CbkusppTk284APj4TKUwPJ0prd4kTKUsSKEsSJ0uKNimEJyarl457g43t2bKQRizEu6zNlzL4yFKKhnj75rEAAD/+0C2yucX21o/yx2r802q7wsv7vB4mOFGcoqkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADuesCzAAAAgHRSTlMf////Yv+Z//8WFv////////P//wn//wEB//8F/1b///8IBQL/AxAEBAUE/1ECAv+NAgEBAgQDBwUA/v//////////////////////////A///////Av///8////+x/wP/////BJET/3BQLv//////////////BP////////9Q/39R+ekAAFVlSURBVHja7X2Hf9s4ti5jJ7GTmfSZnZnd2d27t/f7+nuiiwSWWFIkWc2RbMmOIsctie0UJ/Ekmcm//giQAAEQYBMo0d7gtyVuIsGP55zvFJyjFS7RevLs2Xv87z/sa9rR0dXr29ubm7pkbW5ub29fPzy6emP/L/jv1p89e3KZnol2ebDFO7rhwqonWg7Ue4dHN278bwzzk42vAOcN233t6HpSYINAX//tqvYPGOWvAM8cXPR//6kdHU4KLQfzkXYTffSzZxtfAZ4p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") center / contain no-repeat;
     flex: none; }
-  /* No CSS filter (drop-shadow) on the logo: iPhone Safari draws a filtered element as its own square layer whose colours
+  /* No CSS filter (drop-shadow) on the logo: iPhone Safari draws a filtered element as its own square layer whose colors
      don't match the gradient behind it, so a faint box showed around the patch and the patch looked washed out. */
   .splash .brand-logo { width: 120px; height: 120px; }
   .splash, .login { background: radial-gradient(120% 90% at 50% 0%, #1d3d6e 0%, var(--navy) 55%, #0a1a33 100%); }
@@ -1644,7 +1644,7 @@
   :root[data-theme="dark"] .login-card .linkbtn, :root[data-theme="dark"] .auth-alt .linkbtn { color: var(--gold); }
   /* Loading (.logo-loading): the squadron logo NEVER spins. A brick arc sweeps around the white rim of the patch's inner
      circle (the disc with the bolt). The rim was fitted all the way round on the full-size logo: it's a very slightly tall
-     ellipse, centre 50.00% across / 44.87% down, white band from 39.71%–42.09% (across) and 40.01%–42.37% (down) of the
+     ellipse, center 50.00% across / 44.87% down, white band from 39.71%–42.09% (across) and 40.01%–42.37% (down) of the
      logo's width. The ring shape covers the band plus a hair each side and stays still (a rotating ellipse would wobble
      off the rim); only the arc moves, by turning the conic gradient (--arc-a). Used on the splash, sign-in screens and
      the Submitting cover. */
@@ -1658,8 +1658,8 @@
   @media (prefers-reduced-motion: reduce) { .logo-loading::after { animation-duration: 3s; } }
   .blocker-logo { display: block; width: 112px; height: 112px; }
 
-  /* Button spinner (busy() in App.html): a ring in the button's own text colour replaces its icon while it waits on the
-     server. The button keeps its colours (it isn't greyed out) and ignores taps. */
+  /* Button spinner (busy() in App.html): a ring in the button's own text color replaces its icon while it waits on the
+     server. The button keeps its colors (it isn't grayed out) and ignores taps. */
   .is-busy, .is-waiting { pointer-events: none; cursor: progress; }
   .is-busy > .ic { display: none; }
   .btn-spin { flex: none; display: inline-block; width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box;
@@ -1704,7 +1704,7 @@
   .pp-sheet .modal-f { display: flex; align-items: center; gap: 12px; }
   .pp-count { flex: 1; min-width: 0; color: var(--muted); font-weight: 700; font-size: 14.5px; }
   /* Request form (.wiz-sheet): compact so Type, calendar, dates, notes and the buttons fit a phone without scrolling.
-     The request's length shows at the end of the colour key under the calendar. */
+     The request's length shows at the end of the color key under the calendar. */
   .wiz-sheet .modal-h { padding: 10px 16px; }
   .wiz-sheet .modal-b { padding: 8px 16px 10px; }
   .wiz-sheet .sect { padding: 6px 0 8px; }
@@ -1815,14 +1815,14 @@
   .cfg-new-btn { justify-content: flex-start; border-top: 0; }
   #modal #passkey { display: block; width: 9.5em; max-width: 100%; box-sizing: border-box; height: 48px; margin: 0 auto; font-size: 20px; letter-spacing: .3em; text-align: center; } /* digits only: a short box */
   /* Profile menu header: one big [P|MKE|Name] badge filling the top of the menu — position square, unit, last name —
-     in the same colours and dividers as the small badges; the menu's rounded top corners clip it. */
+     in the same colors and dividers as the small badges; the menu's rounded top corners clip it. */
   .pm-bh { display: flex; align-items: stretch; height: 42px; font-size: 18px; /* one text size across the badge */ border-bottom: 1.5px solid #0b1730; }
   .pm-bh > span { display: flex; align-items: center; justify-content: center; flex: none; font-weight: 900; }
   .pm-bh .bh-r { width: 42px; }
   .pm-bh .bh-u { padding: 0 12px; letter-spacing: .04em; border-left: 1.5px solid #0b1730; }
   .pm-bh .bh-n { flex: 1 1 auto; min-width: 0; display: block; padding: 0 12px; line-height: 42px; text-align: center; background: #ffffff; color: #0b1730;
     border-left: 1.5px solid #0b1730; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  /* Dark mode: the name section is a soft grey instead of bright white, so the header isn't a harsh white block. */
+  /* Dark mode: the name section is a soft gray instead of bright white, so the header isn't a harsh white block. */
   :root[data-theme="dark"] .pm-bh .bh-n { background: #c9cdd6; }
   /* Same-dates bar: one solid bar (never hatched) holding each person's badge, separated by "/". */
   .evs.grp .evs-t, .cs-bar.grp, .wpuck.grp .n { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; padding-left: 3px; } /* room for the badge outline on the left */
@@ -1856,7 +1856,7 @@
   .rtable td.stk .stk-in > * { margin-left: 0; margin-right: 0; }
   .st-ic-now { display: inline-grid; place-items: center; width: 18px; height: 18px; }
   .st-ic-now .now-dot { width: 11px; height: 11px; }
-  /* Profile tab icon: the round centre of the EARS patch (no banner), from assets/logo-disc-96.png. */
+  /* Profile tab icon: the round center of the EARS patch (no banner), from assets/logo-disc-96.png. */
   .nav-logo { display: block; width: 26px; height: 26px; border-radius: 50%; background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAAB/lBMVEXj4Nvc1tagnp7o5+VrZlzr4tCNkpQtLR6UaTS3tLekqrXBu7f6z1thYm2hhjvwsCD94ZxTMDpQOUlVVSXDfCz/uLje3rXHxL57dnl2eoaJf3m2usP/v/8oKD86OkQAAP8/SlU7UndUUj1ib4N/f/+IfmyRiHafgkaqqv+//7+8wLyq//+/wcPlvVnBvb7//3/+xC4RJ0oAAAD9/fzyuCyGckx6JSn////O0df8zVEbM1guRm0FHUQiO2N4aUvp6Oh0GygpOFGCJif/0S7568sBGD781G+BbEnorCv857PTmjH39fPp6ehVU0nTpjb83I1FVW19fn++vr3Hy9CZiWy2trb39vEsLURodYfX19f88dlNLTmpqamaSSm2lDpGREymWCq2vMTGxsXV1tTb2NWMOSmxZiqvtLzHxsf/wB7i19fs6eT59/IdOmY4Qk17hpa7cyu0k0ajpKe8wcfY19T28uhQU1VwMjaMjZKCjJuNlqKpiEOlp6uztrLNhyzMyMcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6pm4ZAAAAgHRSTlNf41ijGB0qDv+e/2P/////////B/8DFGJFHhpTBP8aARj///8C/xz/AwRBA5n/ugL//wD9////Av7////////2//////3////////Q0v////8EBv3/Urf//9T+/wX//////lJUsP///7L/9myW//////9m/phRFv9L////UjD/mK80m1UAAAhfSURBVHjatVr5VxtHEm6BbRwHn4lzZ3dz7mY32VUPo9E10sxoEMgyIAliWwGbgGNDAF+EOI7ttfOvp6q7567WaPxe6gfB6+n+vq6jq09mTJZRtYp/3mNHszevLyi5fvMBY6exvCo/TxA28ato/h6bDaHjcv3B09NBnTcjwJavjm7GMDcXQTY3o4KbR3kcbCL8T7MKaPHa0lK9DGKa+FufX7q0GHAwVbkYwW38tiLBB0tlUuoDSXKdnQJDFiJAnSX85qBeniD1waak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") center / contain no-repeat; }
   /* Caret: points UP while the menu is closed (it opens upward) and DOWN while it's open. */
   .nav-caret .ic { transform: rotate(180deg); transition: transform .18s ease; }
@@ -1878,7 +1878,7 @@
   .qc-day.over, .qc-day.over.ok { background: #b42318; border-color: #b42318; color: #ffffff; }
   .qc-day.full { background: #c2410c; border-color: #c2410c; color: #ffffff; }
   .qc-day.open { background: #15803d; border-color: #15803d; color: #ffffff; }
-  /* Hovering the selected item keeps its text colour; the pill just deepens a little. */
+  /* Hovering the selected item keeps its text color; the pill just deepens a little. */
   .nav button.on:hover, .nav button[aria-expanded="true"]:hover { color: var(--navy); }
   .nav button.on:hover::before, .nav button[aria-expanded="true"]:hover::before { background: var(--gold-2); }
   .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover { color: #ffffff; }
@@ -1947,7 +1947,7 @@
   .srv-help[hidden] { display: none; }
   /* A shared bar carried over from last week starts exactly where other carried-over bars do (badges line up). */
   .evs.grp.end, .evs.grp.mid { padding-left: 11px !important; }
-  /* Request review: the type is a big coloured banner (Leave navy, Pass yellow), not a small badge. */
+  /* Request review: the type is a big colored banner (Leave navy, Pass yellow), not a small badge. */
   .rv-type { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 14px; }
   .rv-type.rv-leave { background: var(--leave); color: #ffffff; }
   .rv-type.rv-pass { background: var(--gold); color: var(--navy); }
@@ -2013,7 +2013,7 @@
   .cal-split { overflow: hidden; }
   #calBody { will-change: transform; }
   /* Blackout conflict resolver: the blackout on top, then a table-like list — a row per request (who · dates · status)
-     with one joined strip of four equal choices under it (outlined, coloured icons; no mixed filled shapes). */
+     with one joined strip of four equal choices under it (outlined, colored icons; no mixed filled shapes). */
   .bor-bo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px;
     background: color-mix(in srgb, var(--brick) 16%, transparent); color: var(--ink); }
   .bor-bo .ic { color: var(--brick); } :root[data-theme="dark"] .bor-bo .ic { color: #f09a95; }
@@ -2052,14 +2052,14 @@
   .wk-strip .band-title { position: relative; }
   .wk-strip .band-title .bt-in { position: sticky; left: 8px; display: inline-flex; align-items: center; gap: 8px; }
   .wk-strip .wk-day.wk-sun, .wk-strip .slot.wk-sun { border-left: 2px solid var(--outline); } /* each week starts on a clear line */
-  /* Month drag: the neighbouring month sits right beside the current one and moves with it. */
+  /* Month drag: the neighboring month sits right beside the current one and moves with it. */
   #calBody { position: relative; }
   .cal-peek { position: absolute; top: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; }
   .cal-peek > .month { flex: 1; min-height: 0; }
   .cal-peek > .dayv { flex: 1; min-height: 0; overflow: hidden; }
   /* Request details: a lone Close fills the footer row. */
   .mf-row .mf-close { flex: 1; }
-  /* Centred dialog on phones (e.g. Admin PIN) instead of a bottom sheet. */
+  /* Centered dialog on phones (e.g. Admin PIN) instead of a bottom sheet. */
   @media (max-width: 700px) {
     .overlay:has(.modal-center) { align-items: center; padding: 16px; }
     .modal.modal-center { border-radius: 20px; max-height: calc(100dvh - 32px); }
@@ -2073,8 +2073,8 @@
   .cal-peek { padding-top: 6px; box-sizing: border-box; }
   :root[data-theme="dark"] .nav.nav-admin { border-top-color: #f04438; } /* admin red line, brighter on dark */
   /* ---------- Calendar bar (final layout) ----------
-     Wide (one row fits, ≥ 1180px): [views · Today · Add Request]   [ ‹ date › ] centred   [filters] right-aligned.
-     Not enough room for one row (iPad / iPad Pro, 701–1179px): like a phone — the date centred on its own top row, then
+     Wide (one row fits, ≥ 1180px): [views · Today · Add Request]   [ ‹ date › ] centered   [filters] right-aligned.
+     Not enough room for one row (iPad / iPad Pro, 701–1179px): like a phone — the date centered on its own top row, then
      [views · Today · Add Request] on the left and [filters] on the right.
      Phones (≤ 700px) keep their own stacked layout. */
   .cb-start, .cb-views { display: contents; }
@@ -2090,7 +2090,7 @@
     .calbar .cb-left { grid-column: 1; grid-row: 2; justify-self: start; flex-wrap: nowrap; }
     .calbar .cb-right { grid-column: 2; grid-row: 2; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; min-width: 0; }
   }
-  /* Admin → Positions: square swatches show the position letter in each colour; white gets an outline. */
+  /* Admin → Positions: square swatches show the position letter in each color; white gets an outline. */
   .rsw .ub { display: inline-grid; place-items: center; border-radius: 6px; font-size: 13px; font-weight: 900; }
   .rsw .ub.idb-p { box-shadow: inset 0 0 0 1.5px #0b1730; }
   .rsw .ub.idb-b { color: #fff; } .rsw .ub.idb-o { color: #0b1730; }
@@ -2110,8 +2110,8 @@
   .grp-more td { padding: 6px 14px; }
   .grp-more-in { position: sticky; left: 14px; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 600; }
   .rtable td.stk .idb.pb { flex: none; max-width: none; }
-  /* Position letters on Day meters and Week bands use the position's badge square (same colours as the calendar badges,
-     all ≥ 4.5:1), instead of coloured text that failed contrast on some colours. */
+  /* Position letters on Day meters and Week bands use the position's badge square (same colors as the calendar badges,
+     all ≥ 4.5:1), instead of colored text that failed contrast on some colors. */
   .rm-l { display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 3px; box-sizing: border-box; border-radius: 3px; font-size: 11px; font-weight: 900; align-self: center; }
   .rm.lg .rm-l { min-width: 20px; height: 20px; font-size: 13px; }
   .rm-l.idb-p, .band-tag.band-l.idb-p { box-shadow: inset 0 0 0 1.5px #0b1730; }
@@ -2167,15 +2167,15 @@
   .cap-f { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; }
   .cap-f .cap-n { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cap-f input { width: 64px; height: 36px; padding: 0 8px; text-align: center; }
-  /* Day strip dot for an added event type: its own colour (rule generated per type). */
+  /* Day strip dot for an added event type: its own color (rule generated per type). */
   .ds-dots i.lv[class*="ty-"] { background: currentColor; }
-  /* Weekends (Sat / Sun) get a light blue-grey wash on Month, phone Month, Week and Qtr so they're easy to spot. */
+  /* Weekends (Sat / Sun) get a light blue-gray wash on Month, phone Month, Week and Qtr so they're easy to spot. */
   :root { --wknd: #e8ecf4; }
   :root[data-theme="dark"] { --wknd: #23262e; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --wknd: #23262e; } }
   .cell.wknd, .month.compact .cell.cc.wknd, .wk-day.wknd, .slot.wknd, .qd.wknd { background-color: var(--wknd); }
   .slot.wknd.today, .wk-day.wknd.today { background-color: color-mix(in srgb, var(--primary) 8%, var(--wknd)); }
-  /* Today vs weekends: today is shown by outline, not colour — a bold full-navy ring (no tint), so it never blends with
+  /* Today vs weekends: today is shown by outline, not color — a bold full-navy ring (no tint), so it never blends with
      the weekend wash. In Week view the whole column is outlined: header ring plus left / right rules down every band. */
   :root { --today-ring: var(--primary); }
   :is(.cell, .wk-day, .qd, .ds-d).today:not(.is-open)::before { border-width: 3px; background: none; }
@@ -2241,7 +2241,7 @@
   body.cal-grabbing, body.cal-grabbing * { cursor: grabbing !important; user-select: none !important; }
   .cal-split { overflow: hidden; }
   .cal-split > .dpanel { position: relative; z-index: 2; background: var(--card); }
-  /* Status slider, final: the selected option shows its word ("Approved" / "Pending" / "Denied") on its colour; the other
+  /* Status slider, final: the selected option shows its word ("Approved" / "Pending" / "Denied") on its color; the other
      two show only their icon (✓ / clock / ⊘). The selected one is wider; the change animates. */
   .stsl { display: inline-flex; grid-template-columns: none; gap: 2px; }
   .stsl .stsl-thumb { display: none; }
@@ -2256,7 +2256,7 @@
   .stsl.lg .stsl-o { flex: 1 1 0; } .stsl.lg .stsl-o.on { flex-grow: 2.4; }
   @media (max-width: 700px) { .rtable .stsl-o.on .stsl-t { display: inline; } }
   @media (prefers-reduced-motion: reduce) { .stsl-o { transition: none; } }
-  /* Status slider motion: one coloured pill behind the selected option glides (left + width) to the option you pick. */
+  /* Status slider motion: one colored pill behind the selected option glides (left + width) to the option you pick. */
   .stsl .stsl-thumb { display: block; left: 0; width: 0; transform: none !important; opacity: 0;
     transition: left .28s cubic-bezier(.3, .8, .25, 1), width .28s cubic-bezier(.3, .8, .25, 1), background-color .28s; }
   .stsl.st-approved .stsl-o.on, .stsl.st-pending .stsl-o.on, .stsl.st-denied .stsl-o.on { background: transparent; }
@@ -2317,9 +2317,9 @@
   .bb-prev .evs.demo-puck .idb { height: var(--tag); }
   .bb-prev .evs.demo-puck .idb-r { width: var(--tag); font-size: 13px; }
   /* ---------- Labels (Material 3 type roles) ----------
-     Section titles = Title small: sentence case, 15px bold, primary colour, room above — they name a group of controls.
+     Section titles = Title small: sentence case, 15px bold, primary color, room above — they name a group of controls.
      Field labels  = Label large: sentence case, 13.5px semibold, muted — they name one input.
-     List subheaders (people pickers) = primary, sentence case. Table headers and coloured band titles keep their caps. */
+     List subheaders (people pickers) = primary, sentence case. Table headers and colored band titles keep their caps. */
   .sect > .lbl, .rv > .lbl, .field > .lbl, .lbl-sm, .fs-h, .cfg-sub-h, .cc-with-h, .mc-sec h4 {
     display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: .005em;
     font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--primary); margin: 14px 0 8px; }
@@ -2427,7 +2427,7 @@
   const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
   const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   /* Positions: Pilot / Boom / Other are built in; admins add more (Admin → Positions). ROLES is refreshed from
-     settings.roles on every server reply. Each has a one-letter badge, a colour, a daily leave max and a visibility. */
+     settings.roles on every server reply. Each has a one-letter badge, a color, a daily leave max and a visibility. */
   let ROLES = ['Pilot', 'Boom', 'Other'];
   let ROLE_INFO = {};
   const ROLE_STYLES = ['white', 'grey', 'navy', 'gold', 'crimson', 'teal', 'purple', 'slate', 'orange', 'black', 'green'];
@@ -2447,12 +2447,12 @@
   /** Types offered for new requests and filters: enabled ones, plus a disabled one that still has requests. */
   const liveTypes = () => TYPE_LIST.filter(t => !t.disabled || IDX.live.some(r => r.type === t.name)).map(t => t.name);
   const tLetter = t => typeInfo(t).letter || String(t)[0];
-  /** CSS class for a type's colour: built-ins keep 'leave' / 'pass'; added types get 'ty-<slug>' (rules generated below). */
+  /** CSS class for a type's color: built-ins keep 'leave' / 'pass'; added types get 'ty-<slug>' (rules generated below). */
   const tSlug = t => 'ty-' + String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
   const tcls = t => t === 'Leave' ? 'leave' : t === 'Pass' ? 'pass' : tSlug(t);
   const TYPE_HEX = { leave: '#0A2351', pass: '#FFB612', navy: '#0A2351', gold: '#FFB612', crimson: '#9f1239', teal: '#0f766e', purple: '#6b21a8', slate: '#334155', orange: '#c2410c', black: '#111111', green: '#166534' };
   const LIGHT_STYLES = ['gold', 'pass'];
-  /** Copy every Leave style rule (or Pass, for light colours) for each added type, in that type's colour, so bars, badges,
+  /** Copy every Leave style rule (or Pass, for light colors) for each added type, in that type's color, so bars, badges,
    *  table rows and day groups all pick it up without per-type CSS. */
   function typeCss() {
     const custom = TYPE_LIST.filter(t => t.name !== 'Leave' && t.name !== 'Pass');
@@ -2491,14 +2491,14 @@
   }
   const roleInfo = r => ROLE_INFO[r] || ROLE_DEF[r] || {};
   const roleL = r => roleInfo(r).letter || String(r || 'O')[0].toUpperCase();
-  /** Class for the position square: white / black / grey keep the original P / B / O look; others reuse the unit badge colours. */
+  /** Class for the position square: white / black / gray keep the original P / B / O look; others reuse the unit badge colors. */
   const styleCls = st => st === 'white' ? 'idb-p' : st === 'black' ? 'idb-b' : st === 'grey' || !st ? 'idb-o' : 'ub-' + st;
   const roleCls = r => styleCls(roleInfo(r).style);
   const rolePl = r => ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[r] || r;            // filter chips, titles
   const roleGroup = r => ({ Pilot: 'Pilots', Boom: 'Boom operators', Other: 'Other' })[r] || r; // picker headings
   const ROLE_NAME_ = { Boom: 'Boom Operator' };
   const roleName = r => ROLE_NAME_[r] || r || '';                                                 // one person's position
-  /** Meter / band accent: built-ins keep their colours (CSS), added positions use their badge colour. */
+  /** Meter / band accent: built-ins keep their colors (CSS), added positions use their badge color. */
   const ROLE_HEX = { navy: '#3b5b9a', gold: '#d99a00', crimson: '#be123c', teal: '#0f766e', purple: '#7c3aed', slate: '#475569', orange: '#c2410c', black: '#27272a', green: '#15803d', white: '#94a3b8', grey: '#64748b' };
   const roleKey = r => ({ Pilot: 'p', Boom: 'b', Other: 'o' })[r] || 'x';
   const roleVar = r => roleKey(r) === 'x' ? ' style="--rm:' + (ROLE_HEX[roleInfo(r).style] || '#64748b') + '"' : '';
@@ -2585,7 +2585,7 @@
   const lastName = u => u.name.trim().split(/\s+/).pop();
   /** Name on calendar bars and filters: last name, with initials added only when another member shares it. */
   const calName = u => IDX.disp.get(u.id) || lastName(u);
-  /* Unit badges (MKE, PIT, …). Admins manage the list and each badge's colour in Admin → Unit badges. */
+  /* Unit badges (MKE, PIT, …). Admins manage the list and each badge's color in Admin → Unit badges. */
   const BADGE_STYLES = ['navy', 'gold', 'crimson', 'teal', 'purple', 'slate', 'orange', 'black', 'green'];
   const unitsList = () => (S.settings.units && S.settings.units.length) ? S.settings.units : [{ code: 'MKE', name: 'Milwaukee', style: 'navy' }, { code: 'PIT', name: 'Pittsburgh', style: 'gold' }];
   function unitBadge(code) {
@@ -2604,7 +2604,7 @@
   const apprOn = (d, role, type) => IDX.appr.get(d + '|' + role + '|' + (type || 'Leave')) || 0;
   /** Event types with a daily cap for a position. */
   const cappedTypes = role => typeNames().filter(t => quota(role, t));
-  /** Slot availability for a position on a day (Qtr colours): full = approvals fill every slot; over = requests fill or
+  /** Slot availability for a position on a day (Qtr colors): full = approvals fill every slot; over = requests fill or
    *  exceed the slots; open = a slot is still free. '' when the position has no daily max. */
   function availClass(d, role, type) {
     const q = quota(role, type);
@@ -2915,7 +2915,7 @@
   function applyTheme() {
     const t = S.theme === 'system' ? (mql && mql.matches ? 'dark' : 'light') : S.theme;
     document.documentElement.setAttribute('data-theme', t);
-    // Browser / home-screen chrome follows the theme: the status-bar area uses the top bar's colour.
+    // Browser / home-screen chrome follows the theme: the status-bar area uses the top bar's color.
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#ffffff');
   }
@@ -3174,7 +3174,7 @@
     if (!S.dayPanel || !$('.dpanel')) return;
     $$('#calBody [data-date="' + S.dayPanel + '"]').forEach(e => { const c = e.closest('.cell, .wk-day, .qd') || e; if (c.matches('.cell, .wk-day, .qd')) c.classList.add('is-open'); });
   }
-  /* Tables scrolled sideways get .scrolled, which shows the Leave / Pass colour bar on the pinned Last Name cell. */
+  /* Tables scrolled sideways get .scrolled, which shows the Leave / Pass color bar on the pinned Last Name cell. */
   function markScrolled(el) { (el ? [el] : $$('.tbl-wrap')).forEach(w => w.classList.toggle('scrolled', w.scrollLeft > 4)); }
   document.addEventListener('scroll', ev => { if (ev.target.classList && ev.target.classList.contains('tbl-wrap')) markScrolled(ev.target); }, true);
   new MutationObserver(queueFit).observe(document.getElementById('app'), { childList: true, subtree: true });
@@ -3260,7 +3260,7 @@
     return '<section class="cal' + (confOn ? ' conf-mode' : '') + (S.cal === 'day' ? ' cal-day' : '') + '">' +
       '<div class="cal-top">' + dateNav + '</div>' +
       '<div class="calbar">' +
-        // Left: view switch, Today, Add Request, then the filters — all together on the left; the date is centred.
+        // Left: view switch, Today, Add Request, then the filters — all together on the left; the date is centered.
         '<div class="cb-start"><div class="cb-left"><div class="cb-views">' +
           (S.cal === 'day' ? '<button class="btn back-month" data-act="backMonth">' + icon('left', 18) + 'Month</button>' : '') +
           // View switch as icons: Week (columns) · Month (calendar) · Qtr (four blocks); the name is the tooltip / label.
@@ -3276,7 +3276,7 @@
           // Phone Month: switch between name strips and P / B / O stats, next to the Filters button.
           (S.view === 'mine' ? mineSwitch() : S.cal === 'month' && !S.priv ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
         '</div>' +
-        // Centre: date navigator [ ‹ | label ⌄ | › ]
+        // Center: date navigator [ ‹ | label ⌄ | › ]
         '<div class="cb-center">' + dateNav + '</div>' +
       '</div>' +
       (confOn ? confBanner(calRequests().length) : '') +
@@ -3293,7 +3293,7 @@
    *   - middle:     per category (Leave / Pass) and per day. If one person is mid-absence
    *                 the segment is solid with their name; if several are, it is ONE hatched
    *                 segment listing all of them. Consecutive days with the same people merge
-   *                 into one contiguous segment with a single centred label.
+   *                 into one contiguous segment with a single centered label.
    *   - end puck:   on the return day, notched left, name left-aligned
    *   - single:     a one-day absence is a rounded rectangle
    * Segments are lane-packed on an overlay grid; a segment prefers the lane where its
@@ -3642,7 +3642,7 @@
 
   /* Phone month view: no names (they can't fit) — each day shows a blue Leave count and a gold Pass count.
      Tap a day for Day view with everyone listed. */
-  /* MacroFactor-style meter: letter, "count/max", thin bar. Each position has its own colour;
+  /* MacroFactor-style meter: letter, "count/max", thin bar. Each position has its own color;
      the bar and number turn red when the daily max is exceeded. */
   function roleMeter(role, c, size) {
     const q = quota(role), over = q && c > q, full = q && c === q;
@@ -3651,7 +3651,7 @@
       '<span class="rm-t"><span class="rm-l ' + roleCls(role) + '">' + esc(roleL(role)) + '</span><span class="rm-c">' + c + '</span>' + (q ? '<span class="rm-q">/' + q + '</span>' : '') + '</span>' +
       '<span class="rm-bar"><i style="width:' + pct + '%"></i></span></span>';
   }
-  /** Leave slots used per position on a day: Leave only (passes have no daily max), honouring the
+  /** Leave slots used per position on a day: Leave only (passes have no daily max), honoring the
    *  status and person filters but not the Leave/Pass toggle, so the meters always show slot usage. */
   function filteredRoleCounts(d) {
     const out = { Pilot: 0, Boom: 0, Other: 0 };
@@ -3663,7 +3663,7 @@
   }
   /* Phone month view: each day shows P / B / O meters (count vs daily max) for the current filters.
      Tap a day for Day view with everyone listed. */
-  /* Phone month view: event strips like the Week view. Each request is one bar per week row, labelled with the
+  /* Phone month view: event strips like the Week view. Each request is one bar per week row, labeled with the
      person puck [P|MKE|Lastname ✓] at the start of the bar in each row. Up to 3 lanes per row; extra people on a day show "+N".
      Tap a day (or "+N") for Day view; tap a bar to open the request. */
   function renderMonthCompact() {
@@ -3858,7 +3858,7 @@
     const c = countOn(d, role, type), q = quota(role, type), over = q && c > q;
     const ok = over && conflictState(d, role) === 'ok';
     const msg = quotaMsg(d, role, type) + (over ? (ok ? ' All approved.' : '') + ' Click to review the conflict.' : '');
-    // Solid colours: red = over the daily max (approved or not — approving doesn't free a slot), orange = at the max,
+    // Solid colors: red = over the daily max (approved or not — approving doesn't free a slot), orange = at the max,
     // green = slots open. Positions with no max stay neutral.
     const st = over ? ' over' : q && c === q ? ' full' : q ? ' open' : c ? '' : ' zero';
     return '<button class="qc-day' + st + '" data-act="quotaInfo" data-date="' + d + '" data-role="' + esc(role) + '" data-type="' + esc(type) + '" title="' + esc(msg) + '" aria-label="' + esc(msg) + '">' +
@@ -3880,7 +3880,7 @@
     return out;
   }
   /** Conflict chip for a request that puts its day over the daily leave max: "Conflict · 3/2" (worst day).
-   *  Red while any request in the conflict is pending; grey "Over max · approved" once all are approved.
+   *  Red while any request in the conflict is pending; gray "Over max · approved" once all are approved.
    *  Opens the conflict resolver for that day. */
   function conflictBadge(r, compact) {
     return blackoutBadge(r, compact) + quotaBadge(r, compact);
@@ -4073,7 +4073,7 @@
   /*
    * 4-month overview: a 2×2 quadrant of mini months. Each day shows how many people
    * have Leave and Pass requested (blue / gold counts), or reads as open. Days over a
-   * role quota get a red corner flag. Honours the status and role filters; denied
+   * role quota get a red corner flag. Honors the status and role filters; denied
    * requests only count when the Denied filter is on.
    */
   /* Qtr view: each day shows the P / B / O meters for the current filters (like the phone month).
@@ -4131,7 +4131,7 @@
 
   /* Week view: ONE continuous strip of days you scroll left / right (each day a seventh of the screen, snapping to days),
      so you can look at any 7 days in a row — Sun–Sat, Mon–Sun, Tue–Mon… It opens on Sunday of the current week and
-     quietly re-centres when you get near either end. Bars run unbroken across the whole strip. */
+     quietly re-centers when you get near either end. Bars run unbroken across the whole strip. */
   const WK_BACK = 28, WK_DAYS = 91;
   function weekLeft() { return S.weekLeft || D.weekStart(S.cursor); }
   function renderWeek() {
@@ -4173,7 +4173,7 @@
     // No blackout band: blackout days are already red-slashed in the day headers and lanes.
     return '<div class="week wk-strip" id="wkStrip" data-r0="' + ws + '" style="--days:' + WK_DAYS + '"><div class="wk-inner"><div class="wk-head wg">' + head + '</div><div class="bands">' + bands + '</div></div></div>';
   }
-  /** After drawing the strip: scroll to the left-most day and track scrolling (label, re-centre near the ends). */
+  /** After drawing the strip: scroll to the left-most day and track scrolling (label, re-center near the ends). */
   /* Desktop: drag the Week strip with the mouse. It follows the pointer, keeps a little momentum, then snaps to the
      nearest day; a drag never counts as a click on a day or a bar. Touch and trackpads keep native scrolling. */
   let wkDrag = null;
@@ -4464,7 +4464,7 @@
       const state = mine ? (col[type] === 'closed' ? 'closed' : 'open')
         : type === 'Past' ? (col.Past === false ? 'open' : 'closed') : band ? (col[type] || 'partial') : (col[type] ? 'closed' : 'open');
       // Top group = requests whose dates include today, whatever their status — so approving / denying / setting back to
-      // pending never moves a row (only its colour and slider change). "N active" counts the approved ones going on now.
+      // pending never moves a row (only its color and slider change). "N active" counts the approved ones going on now.
       const today = r => r.start <= S.today && r.end >= S.today;
       const act = band ? list.filter(today) : [], rest = band ? list.filter(r => !today(r)) : list, nAct = act.filter(isNow).length;
       // Default order (until a column is clicked): out today = position, last, first; the rest = departure date first.
@@ -4533,10 +4533,10 @@
     const sl = el.closest('.stsl'); if (!sl) return 0;
     sl.className = sl.className.replace(/\bst-\w+/, 'st-' + v.toLowerCase());
     sl.querySelectorAll('.stsl-o').forEach(b => { const on = b.dataset.v === v; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
-    placeThumb(sl, true); // the coloured pill glides to the new option (and resizes to its word)
+    placeThumb(sl, true); // the colored pill glides to the new option (and resizes to its word)
     return reduceMotion() ? 0 : 280;
   }
-  /** Put a slider's coloured pill under its selected option (animated when it moves, instant on first draw). */
+  /** Put a slider's colored pill under its selected option (animated when it moves, instant on first draw). */
   function placeThumb(sl, animate) {
     const on = sl.querySelector('.stsl-o.on'), th = sl.querySelector('.stsl-thumb');
     if (!th) return;
@@ -4709,14 +4709,14 @@
       '</div><div class="tbl-page" id="peopleBody">' + renderPeopleBody() + '</div></section>';
   }
 
-  /** Badge colour picker: a row of tappable swatches (radio group) — no native select. */
+  /** Badge color picker: a row of tappable swatches (radio group) — no native select. */
   function swatches(name, cur, code) {
-    return '<div class="swatches" role="radiogroup" aria-label="Badge colour">' + BADGE_STYLES.map(st =>
+    return '<div class="swatches" role="radiogroup" aria-label="Badge color">' + BADGE_STYLES.map(st =>
       '<label class="swatch" title="' + st[0].toUpperCase() + st.slice(1) + '"><input type="radio" name="' + esc(name) + '" value="' + st + '"' + (st === cur ? ' checked' : '') +
         ' data-change="previewUnit"' + (code ? ' data-code="' + esc(code) + '"' : '') + ' aria-label="' + st + '"><span class="ub ub-' + st + '"></span></label>').join('') + '</div>';
   }
 
-  /** New badge builder: live preview, code, name and colour; Cancel · Add badge. */
+  /** New badge builder: live preview, code, name and color; Cancel · Add badge. */
   function openBadgeBuilder(code) {
     const un = code ? unitsList().find(x => x.code === code) : null;
     S.badgeDraft = { code: un ? un.code : '' }; S.badgeEdit = un ? un.code : '';
@@ -4726,17 +4726,17 @@
       '<div class="row"><div class="field cfg-code"><label for="nuCode">Code</label><input id="nuCode" maxlength="5" placeholder="GRB" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-model="badgeDraft.code" data-live="badgePrev"' +
         (un ? ' value="' + esc(un.code) + '" disabled' : ' autofocus') + '></div>' +
       '<div class="field"><label for="nuUName">Name</label><input id="nuUName" maxlength="40" placeholder="Green Bay" autocomplete="off" value="' + esc(un ? un.name : '') + '"></div></div>' +
-      '<div class="field"><span class="lbl">Colour</span>' + swatches('st-new', st, '') + '</div>' +
+      '<div class="field"><span class="lbl">Color</span>' + swatches('st-new', st, '') + '</div>' +
       '<div class="err" id="nuErr"></div></div>' +
       '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="addUnit">' + icon(un ? 'check' : 'plus', 18) + (un ? 'Save' : 'Add badge') + '</button></div>';
     openModal('badge', html);
   }
   /** Small ⓘ beside a setting's title: one short sentence on hover, or as a toast when tapped (phones). */
   const tip = t => ' <button type="button" class="cfg-tip" data-act="showTip" data-tip="' + esc(t) + '" title="' + esc(t) + '" aria-label="' + esc(t) + '">' + icon('info', 15) + '</button>';
-  /** Position colour picker: the position square in each colour. */
+  /** Position color picker: the position square in each color. */
   function roleSwatches(name, cur, letter) {
-    return '<div class="swatches" role="radiogroup" aria-label="Position colour">' + ROLE_STYLES.map(st =>
-      '<label class="swatch rsw" title="' + st[0].toUpperCase() + st.slice(1) + '"><input type="radio" name="' + esc(name) + '" value="' + st + '"' + (st === cur ? ' checked' : '') +
+    return '<div class="swatches" role="radiogroup" aria-label="Position color">' + ROLE_STYLES.map(st =>
+      '<label class="swatch rsw" title="' + (st === 'grey' ? 'Gray' : st[0].toUpperCase() + st.slice(1)) + '"><input type="radio" name="' + esc(name) + '" value="' + st + '"' + (st === cur ? ' checked' : '') +
         ' data-change="previewRole" aria-label="' + st + '"><span class="ub ' + styleCls(st) + '">' + esc(letter || '') + '</span></label>').join('') + '</div>';
   }
   /** "Can see" for a position row: 'all', a list of positions, or 'own' (none picked = only their own requests). */
@@ -4762,7 +4762,7 @@
             '<input class="rl-cap" data-type="' + esc(t.name) + '" type="number" inputmode="numeric" min="0" max="99" value="' + v + '" aria-label="' + esc(t.name) + ' max per day"></label>';
         }).join('') + '</div></div>' +
       '<div class="field"><span class="lbl-sm">Can see</span><div id="cs-' + key + '" data-self="' + esc(r.name || '') + '">' + canSeeHtml(key, r.name, rv) + '</div></div>' +
-      '<div class="field"><span class="lbl">Colour</span>' + roleSwatches('rs-' + key, r.style || 'grey', r.letter) + '</div>';
+      '<div class="field"><span class="lbl">Color</span>' + roleSwatches('rs-' + key, r.style || 'grey', r.letter) + '</div>';
   }
   /** Event types table: tag · type · max days · when over · Edit / Disable / Delete. Blackout is listed as the special, admin-only type. */
   function adminTypes() {
@@ -4784,7 +4784,7 @@
     return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Tag</th><th scope="col">Type</th><th scope="col" class="num">Max length</th>' +
       '<th scope="col">When over</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
-  /** Event type editor (new or existing): name, tag letter, colour, max days, Warn / Limit; Cancel · Save. */
+  /** Event type editor (new or existing): name, tag letter, color, max days, Warn / Limit; Cancel · Save. */
   function openTypeEditor(name) {
     const t = name ? typeInfo(name) : { name: '', letter: '', style: 'teal', max: 5, mode: 'warn' };
     const builtIn = name === 'Leave' || name === 'Pass';
@@ -4796,7 +4796,7 @@
         '<div class="field cfg-code"><label for="tyLetter">Tag</label><input id="tyLetter" maxlength="1" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" value="' + esc(t.letter) + '"></div></div>' +
       '<div class="row"><div class="field cfg-code"><label for="tyMax">Max days</label><input id="tyMax" type="number" inputmode="numeric" min="1" max="60" value="' + (Number(t.max) || 1) + '"></div>' +
         '<div class="field"><span class="lbl-sm">When longer</span><div id="tyModeBox">' + seg([['warn', 'Warn'], ['limit', 'Limit']], S.typeDraft.mode, 'typeMode') + '</div></div></div>' +
-      '<div class="field"><span class="lbl">Colour</span><div class="swatches" role="radiogroup" aria-label="Colour">' + styles.map(st =>
+      '<div class="field"><span class="lbl">Color</span><div class="swatches" role="radiogroup" aria-label="Color">' + styles.map(st =>
         '<label class="swatch" title="' + (st === 'leave' ? 'Navy' : st === 'pass' ? 'Gold' : st[0].toUpperCase() + st.slice(1)) + '"><input type="radio" name="ty-st" value="' + st + '"' + (st === t.style ? ' checked' : '') + ' aria-label="' + st + '">' +
           '<span class="ub ub-' + (st === 'leave' ? 'navy' : st === 'pass' ? 'gold' : st) + '"></span></label>').join('') + '</div></div>' +
       '<div class="err" id="tyErr"></div></div>' +
@@ -4828,14 +4828,14 @@
     return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Position</th>' +
       '<th scope="col">Can see</th><th scope="col" class="num">Members</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
-  /** Position editor (new or existing): name, letter, max on leave, Can see and colour; Cancel · Save. */
+  /** Position editor (new or existing): name, letter, max on leave, Can see and color; Cancel · Save. */
   function openRoleEditor(name) {
     const r = name ? Object.assign({ name }, roleInfo(name)) : { name: '', letter: '', style: 'teal', quota: 0, view: 'all' };
     const builtIn = !!ROLE_DEF[name];
     S.roleView = Object.assign({}, S.roleView, { ed: r.view === 'same' ? [name] : r.view || 'all' });
     const html = modalHead(name ? 'Edit ' + roleName(name) : 'New position', name ? 'pencil' : 'plus') +
       '<div class="modal-b role-row badge-builder" data-k="ed" data-old="' + esc(name || '') + '">' +
-      // Demo puck: how a member of this position looks on the calendar (updates as the letter / colour change).
+      // Demo puck: how a member of this position looks on the calendar (updates as the letter / color change).
       '<div class="bb-prev"><div class="evs leave single st-approved demo-puck" aria-hidden="true"><span class="evs-t"><span class="idb pb st-approved">' +
         '<span class="idb-r ' + (name ? roleCls(name) : styleCls('teal')) + '" id="nrPrev">' + esc(r.letter || '?') + '</span>' +
         '<span class="idb-u ub-' + ((unitsList()[0] || {}).style || 'navy') + '">' + esc((unitsList()[0] || {}).code || 'MKE') + '</span>' +
@@ -5004,7 +5004,7 @@
   function modalHead(title, ic, extra) {
     return '<div class="modal-h">' + (ic ? icon(ic, 18) : '') + '<h2 id="modalTitle">' + title + '</h2>' + (extra || '') + '<button class="btn ghost icon-btn" data-act="closeModal" aria-label="Close">' + icon('x', 18) + '</button></div>';
   }
-  /** Request length in the dialog header: a big, solid pill ("4 days") in the Leave / Pass colour. */
+  /** Request length in the dialog header: a big, solid pill ("4 days") in the Leave / Pass color. */
   const dayPill = (n, type) => '<span class="hd-days hd-' + tcls(type) + '" id="hdDays" aria-live="polite">' +
     (n ? '<b>' + n + '</b> ' + (n === 1 ? 'day' : 'days') : 'Pick dates') + '</span>';
 
@@ -5180,7 +5180,7 @@
     const row = (act, ic, label, extra) => '<button type="button" class="pm-row" role="menuitem" data-act="' + act + '">' + icon(ic, 20) + '<span class="pm-l">' + label + '</span>' + (extra || '') + '</button>';
     const el = document.createElement('div');
     el.id = 'pmenu'; el.className = 'pm-pop'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'Profile');
-    // Header: one big [P|MKE|Name] badge filling the top of the menu (same colours as the small badges).
+    // Header: one big [P|MKE|Name] badge filling the top of the menu (same colors as the small badges).
     const L = roleL(me.role), un = unitsList().find(x => x.code === me.unit);
     el.innerHTML = '<div class="pm-bh" aria-label="' + esc(fullName(me)) + '">' +
         '<span class="bh-r ' + roleCls(me.role) + '" aria-hidden="true">' + esc(L) + '</span>' +
@@ -5391,7 +5391,7 @@
     if (c.dups.length) parts.push('duplicate of own ' + c.dups.map(x => x.type.toLowerCase() + ' ' + D.short(x.start) + '–' + D.short(x.end)).join(', '));
     return day + ': conflicts — ' + parts.join('. ') + '.';
   }
-  /** Request details calendar: the same month grid as the request form, with the request's range coloured
+  /** Request details calendar: the same month grid as the request form, with the request's range colored
    *  green (no conflict) or red (conflict). Every day in the range is tappable to see who else is out. */
   function reqCalendar(r) {
     const cf = reqConflicts(r);
@@ -5704,7 +5704,7 @@
     p.hidden = true; p.innerHTML = '';
     const b = $('#modal [data-act="whoDrop"]'); if (b) { b.setAttribute('aria-expanded', 'false'); b.innerHTML = whoBtnInner(); }
     if (!S.wiz.editId) S.wiz.assigneeId = (S.wiz.assignees || [])[0] || '';
-    refreshWizDates(); // slot colours depend on who it's for
+    refreshWizDates(); // slot colors depend on who it's for
   }
   document.addEventListener('click', ev => {
     const p = document.getElementById('whoPop');
@@ -5855,9 +5855,9 @@
       html += '<button type="button" data-act="miniPick" data-date="' + d + '" class="' + [d.slice(0, 7) !== ms.slice(0, 7) ? 'out' : '', d === S.today ? 'today' : '', blackoutsOn(d, w.type === 'Blackout' ? '' : w.type).filter(b => b.id !== w.editBoId).length ? 'bo' : '', inR ? 'in rg-' + st : '', first ? 'r-s' : '', last ? 'r-e' : '', !inR && st !== 'ok' ? 'dot-' + st : ''].join(' ') + '"' +
         (st !== 'ok' ? ' title="' + esc(role + (st === 'full' ? ' leave slots already full' : ' leave would go over the daily max')) + '"' : '') + '>' + Number(d.slice(8)) + '</button>';
     }
-    // Colour key only (leave with a daily max); each swatch stays with its label when wrapping.
+    // Color key only (leave with a daily max); each swatch stays with its label when wrapping.
     const anyBo = blackouts().some(b => b.id !== w.editBoId && (w.type === 'Blackout' || b.types === 'Both' || b.types === w.type) && b.end >= gs && b.start <= D.add(gs, 41));
-    // The request's length sits at the end of the colour key (no separate leave-days box: the form must fit without scrolling).
+    // The request's length sits at the end of the color key (no separate leave-days box: the form must fit without scrolling).
     const n = D.valid(w.start) && D.valid(w.end) && w.end >= w.start ? D.days(w.start, w.end) : 0;
     const len = ''; // the length shows in the header pill (#hdDays), not here
     return html + '</div><div class="mini-key">' + (q ? '<span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-over"></span>Overbooks</span><span class="mk-i"><span class="mk mk-full"></span>Full</span>' : '') +
@@ -5950,7 +5950,7 @@
       if (ev.touches.length !== 1) { on = false; return; }
       begin(ev.touches[0].clientX, ev.touches[0].clientY, ev.target);
     }, { passive: true });
-    let peekDir = 0; // Month / Day: the neighbouring month or day drawn beside the current one while dragging (+1 next, -1 previous)
+    let peekDir = 0; // Month / Day: the neighboring month or day drawn beside the current one while dragging (+1 next, -1 previous)
     const peeks = () => S.cal === 'month' || S.cal === 'day';
     function showPeek(b, dir) {
       if (peekDir === dir) return;
@@ -6252,7 +6252,7 @@
     },
     calMode(el) {
       S.cal = el.dataset.v; S.weekLeft = null; // Week opens on Sunday of the week
-      // With a day open in the side panel, switching views centres on that day.
+      // With a day open in the side panel, switching views centers on that day.
       if (S.dayPanel && $('.dpanel')) S.cursor = S.dayPanel;
       if (S.cal === 'quad') S.cursor = D.monthStart(S.cursor);
       render();
