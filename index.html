@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792592715"></script>
+    <script src="config.js?v=1792592888"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792592715';
+      window.PAL_BUILD = '1792592888';
       (function () {
         function check(launch) {
           try {
@@ -2498,6 +2498,13 @@
   }
   /* New-PIN boxes draw their own dots (dotPin in App.html): a little letter spacing so they read like the sign-in PIN. */
   input.pin-dots { letter-spacing: .18em; font-family: inherit; }
+  /* One logo size on every full-screen logo — loading splash, sign-in / sign-out / create account, and the dimmed
+     cover (Unlocking…, Locking…, Signing out…, Updating…, Submitting…) — with its loading ring. Shorter screens step down
+     together. */
+  :root { --logo-size: min(200px, 52vw); }
+  @media (max-height: 700px) { :root { --logo-size: 170px; } }
+  @media (max-height: 580px) { :root { --logo-size: 120px; } }
+  .splash .brand-logo, .login .brand-logo, .blocker .blocker-logo { width: var(--logo-size); height: var(--logo-size); }
 </style>
 
   </head>
