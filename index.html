@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792577813"></script>
+    <script src="config.js?v=1792577909"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -4188,7 +4188,16 @@
       (i > 0 ? ' title="Sort level ' + (i + 1) + '"' : '') + '>' + label +
       '<span class="arr" aria-hidden="true">' + (so ? (so.dir === 'asc' ? '▲' : '▼') : '') + '</span>' + lvl + '</button></th>';
   }
+  /** Position order: Pilots, Booms, then every other position A–Z. */
+  const posRank = role => role === 'Pilot' ? '0' : role === 'Boom' ? '1' : '2' + String(role || '').toLowerCase();
+  /** Default table order inside a band: position, then last name, then first name. */
+  const byPosName = (a, b) => {
+    const ua = userOf(a.userId), ub = userOf(b.userId);
+    return posRank(ua.role).localeCompare(posRank(ub.role)) || lastName(ua).localeCompare(lastName(ub)) || firstName(ua).localeCompare(firstName(ub));
+  };
   function sortNote(st, table) {
+    if (st.userSorted && table !== 'people') return (st.sorts.length > 1 ? ' · sorted by ' + st.sorts.length + ' columns' : ' · your sort') +
+      ' <button class="linkbtn" data-act="defaultSort" data-table="' + table + '">Default order</button>';
     return st.sorts.length > 1 ? ' · sorted by ' + st.sorts.length + ' columns <button class="linkbtn" data-act="resetSort" data-table="' + table + '">Clear extra sorts</button>' : '';
   }
   function sortRows(rows, st) {
@@ -4246,6 +4255,8 @@
       const n = cols.length + 1, band = type !== 'Past';
       const state = type === 'Past' ? (col.Past === false ? 'open' : 'closed') : band ? (col[type] || 'partial') : (col[type] ? 'closed' : 'open');
       const act = band ? list.filter(isNow) : [], rest = band ? list.filter(r => !isNow(r)) : list;
+      // Default order (until a column is clicked): out today = position, last, first; the rest = departure date first.
+      if (band && !st.userSorted) { act.sort(byPosName); rest.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || byPosName(a, b)); }
       if (band) list = act.concat(rest);
       const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : '<span class="badge t-' + tcls(type) + '">' + esc(type) + '</span>' +
         (act.length ? '<span class="grp-now"><i class="now-dot" aria-hidden="true"></i>' + act.length + ' active</span>' : '');
@@ -6160,6 +6171,13 @@
     sortBy(el) {
       const st = el.dataset.table === 'mine' ? S.mine : S.list, k = el.dataset.v;
       pushSort(st, k, (k === 'start' || k === 'end' || k === 'days' || k === 'submitted') ? 'desc' : 'asc');
+      if (st === S.list) store.set('list', S.list);
+      render();
+    },
+    /** Back to the default table order (out today first by position and name; then by departure date). */
+    defaultSort(el) {
+      const st = { list: S.list, mine: S.mine }[el.dataset.table]; if (!st) return;
+      st.userSorted = false; st.sorts = [{ k: 'start', dir: 'asc' }];
       if (st === S.list) store.set('list', S.list);
       render();
     },
