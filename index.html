@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792578255"></script>
+    <script src="config.js?v=1792578390"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2190,6 +2190,22 @@
   .open-btn { flex: none; gap: 6px; }
   .open-btn .open-ct { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #b45309; color: #fff; font-size: 12.5px; font-weight: 800; }
   .open-btn.on .open-ct { background: var(--sel-ink); }
+  /* Roster: period dropdown (button + small menu) in the bar. */
+  .pdrop { position: relative; flex: none; }
+  .pdrop-btn { height: 40px; gap: 8px; padding: 0 12px 0 14px; }
+  .pdrop-pop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; min-width: 190px; padding: 6px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 2px; }
+  .pdrop-o { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px; border: 0; border-radius: 8px; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .pdrop-o:hover { background: var(--card-2); } .pdrop-o.on { font-weight: 800; }
+  .pdrop-sp { display: inline-block; width: 15px; }
+  /* Phones: on All Requests, My Requests and Roster the search / filter bar sits at the bottom — just above Add Request
+     (or the nav bar on Roster), within thumb reach, like the calendar controls. Its menus open upward there. */
+  @media (max-width: 700px) {
+    .page > .tbl-page { order: 1; }
+    .page > .lbar { order: 2; border-bottom: 0; border-top: 1px solid var(--line); }
+    .page > .req-bar { order: 3; border-top: 0; padding-top: 2px; }
+    .page > .lbar .pdrop-pop, .page > .lbar .fdrop-pop { top: auto; bottom: calc(100% + 4px); }
+  }
 </style>
 
   </head>
@@ -3045,7 +3061,7 @@
     if (S.view === 'all') return S.priv ? renderMine() : renderAll(); // no All Requests when schedules are hidden
     if (S.view === 'mine') return renderMine();
     if (S.view === 'admin' && S.isAdmin) return renderAdmin();
-    if (S.view === 'roster' && S.isAdmin) return renderRoster();
+    if (S.view === 'roster') S.view = 'people'; // the Manage page is gone: its actions are on each Roster row
     if (S.view === 'people' && S.isAdmin) return renderPeople();
     if (S.view === 'profile') return renderProfile();
     return renderCalendar();
@@ -4428,22 +4444,36 @@
     rows.sort((a, b) => multiCompare(a, b, P.sorts, k => KEYS[k] || (m => m[k])) || lastName(a.u).localeCompare(lastName(b.u)));
     return { rows, label: rng[2] };
   }
+  /** Roster row actions (what the old Manage page had): Edit, Reset PIN, and Deactivate / Reactivate / Approve. */
+  function rosterActs(u) {
+    const act = (a, ic, short, cls) => '<button class="btn sm act' + (cls ? ' ' + cls : '') + '" data-act="' + a + '" data-id="' + esc(u.id) + '" aria-label="' + esc(short + ' ' + u.name) + '" title="' + esc(short + ' ' + u.name) + '">' + icon(ic, 13) + '<span class="bl">' + short + '</span></button>';
+    return '<td class="acts-cell"><div class="row-acts">' + act('editUser', 'pencil', 'Edit') + act('resetPin', 'key', 'Reset PIN') +
+      (u.id === S.me ? '' : u.active ? act('toggleUser', 'ban', 'Deactivate', 'del') : act('toggleUser', 'check', u.pending ? 'Approve' : 'Reactivate', u.pending ? 'ok' : '')) + '</div></td>';
+  }
   function renderPeopleBody() {
     const P = S.people, st = peopleStats(), rows = st.rows;
     const tot = rows.reduce((t, m) => { ['count', 'req', 'appr', 'den', 'pend', 'leave', 'pass'].forEach(k => { t[k] += m[k]; }); return t; }, { count: 0, req: 0, appr: 0, den: 0, pend: 0, leave: 0, pass: 0 });
-    const head = PEOPLE_COLS.map(c => sortTh(P, c[0], c[1], 'peopleSort', '', !!c[2])).join('');
+    const head = PEOPLE_COLS.map(c => sortTh(P, c[0], c[1], 'peopleSort', '', !!c[2])).join('') + '<th scope="col" class="th-acts">Actions</th>';
     const cell = (v, cls) => '<td class="num' + (cls ? ' ' + cls : '') + '">' + (v ? v : '<span class="muted">0</span>') + '</td>';
     const body = rows.length ? rows.map(m => '<tr data-act="memberCard" data-id="' + esc(m.u.id) + '" tabindex="0" class="' + (m.u.active ? '' : 'st-denied') + '" aria-label="' + esc(fullName(m.u) + ': ' + m.count + ' requests, ' + m.req + ' days requested, ' + m.appr + ' approved, ' + m.den + ' denied') + '">' +
         '<td>' + unitBadge(m.u.unit) + '</td><td class="strong stk">' + esc(lastName(m.u)) + '</td><td>' + esc(firstName(m.u)) + '</td><td>' + esc(m.u.rank) + '</td>' +
-        '<td>' + esc(roleName(m.u.role)) + (m.u.active ? '' : ' <span class="badge">Inactive</span>') + '</td>' +
-        cell(m.count) + cell(m.req, 'strong') + cell(m.appr, 'ok-t') + cell(m.den, 'bad-t') + cell(m.pend, 'pend-t') + cell(m.leave) + cell(m.pass) + '</tr>').join('')
-      : '<tr class="empty-row"><td colspan="' + PEOPLE_COLS.length + '">No members match.</td></tr>';
+        '<td>' + esc(roleName(m.u.role)) + (m.u.pending ? ' <span class="badge caution">Awaiting approval</span>' : m.u.active ? '' : ' <span class="badge">Inactive</span>') + '</td>' +
+        cell(m.count) + cell(m.req, 'strong') + cell(m.appr, 'ok-t') + cell(m.den, 'bad-t') + cell(m.pend, 'pend-t') + cell(m.leave) + cell(m.pass) + rosterActs(m.u) + '</tr>').join('')
+      : '<tr class="empty-row"><td colspan="' + (PEOPLE_COLS.length + 1) + '">No members match.</td></tr>';
     const foot = '<tfoot><tr><td colspan="5" class="strong">Squadron total · ' + plural(rows.length, 'member') + '</td>' +
-      ['count', 'req', 'appr', 'den', 'pend', 'leave', 'pass'].map(k => '<td class="num strong">' + tot[k] + '</td>').join('') + '</tr></tfoot>';
+      ['count', 'req', 'appr', 'den', 'pend', 'leave', 'pass'].map(k => '<td class="num strong">' + tot[k] + '</td>').join('') + '<td class="acts-cell"></td></tr></tfoot>';
     // Only the multi-sort note remains above the table (no period explanation).
     const note = sortNote(P, 'people').replace(/^ · /, '');
     return (note ? '<div class="tbl-count">' + note + '</div>' : '') +
       '<div class="tbl-wrap" id="tbl-people"><table class="rtable ptable"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody>' + foot + '</table></div>';
+  }
+  /** Period picker on the Roster bar: one dropdown button instead of a row of segments. */
+  function periodDrop(opts, cur) {
+    const lbl = (opts.find(o => o[0] === cur) || opts[0])[1];
+    return '<div class="pdrop"><button type="button" class="fsel fdrop-btn pdrop-btn" data-act="periodDrop" aria-haspopup="listbox" aria-expanded="' + !!S.periodOpen + '">' +
+        icon('calendar', 16) + '<span>' + esc(lbl) + '</span>' + icon('down', 14) + '</button>' +
+      (S.periodOpen ? '<div class="pdrop-pop" role="listbox" aria-label="Period">' + opts.map(o => '<button type="button" role="option" aria-selected="' + (o[0] === cur) + '" class="pdrop-o' + (o[0] === cur ? ' on' : '') + '" data-act="peoplePeriod" data-v="' + o[0] + '">' +
+        (o[0] === cur ? icon('check', 15) : '<i class="pdrop-sp"></i>') + esc(o[1]) + '</button>').join('') + '</div>' : '') + '</div>';
   }
   function renderPeople() {
     const P = S.people;
@@ -4451,11 +4481,11 @@
     const fy = fyOf(S.today)[2], cy = S.today.slice(0, 4);
     return '<section class="page"><div class="lbar stats-bar">' +
       '<div class="lsearch">' + icon('search', 16) + '<input type="search" placeholder="Search name, rank, unit…" value="' + esc(P.q) + '" data-model="people.q" data-live="peopleRefresh" aria-label="Search members"></div>' +
-      seg([['12m', '12 mo'], ['fy', fy], ['cy', cy], ['all', 'All']], P.period, 'peoplePeriod').replace('role="group"', 'role="group" aria-label="Period"') +
-      '<button type="button" class="btn chip-tog' + (P.inactive ? ' on' : '') + '" aria-pressed="' + !!P.inactive + '" data-act="peopleInactive">' + (P.inactive ? icon('check', 18) : '') + 'Inactive</button>' +
-      // Manage roster (add / edit / approve / reset PIN) lives here now; it shows how many sign-ups are waiting.
-      '<button type="button" class="btn primary manage-btn" data-act="openRoster">' + icon('userPlus', 18) + 'Manage' +
-        (S.users.some(u => u.pending) ? ' <b class="manage-ct">' + S.users.filter(u => u.pending).length + '</b>' : '') + '</button>' +
+      periodDrop([['12m', 'Last 12 months'], ['fy', fy], ['cy', cy], ['all', 'All time']], P.period) +
+      // Inactive includes sign-ups waiting for approval (their count shows on the toggle).
+      '<button type="button" class="btn chip-tog' + (P.inactive ? ' on' : '') + '" aria-pressed="' + !!P.inactive + '" data-act="peopleInactive">' + (P.inactive ? icon('check', 18) : '') + 'Inactive' +
+        (S.users.some(u => u.pending) ? ' <b class="manage-ct" title="Waiting for approval">' + S.users.filter(u => u.pending).length + '</b>' : '') + '</button>' +
+      '<button type="button" class="btn primary manage-btn" data-act="editUser" data-id="">' + icon('userPlus', 18) + 'Add member</button>' +
       '</div><div class="tbl-page" id="peopleBody">' + renderPeopleBody() + '</div></section>';
   }
 
@@ -6116,7 +6146,8 @@
     },
     peopleRefresh() { const b = $('#peopleBody'); if (b) b.innerHTML = renderPeopleBody(); },
     peopleInactive() { S.people.inactive = !S.people.inactive; render(); },
-    peoplePeriod(el) { S.people.period = el.dataset.v; render(); },
+    peoplePeriod(el) { S.people.period = el.dataset.v; S.periodOpen = false; render(); },
+    periodDrop() { S.periodOpen = !S.periodOpen; render(); },
     personYear(el) { openPersonYear(el.dataset.id); },
     memberCard(el) { openMemberCard(el.dataset.id); },
     whoDrop(el) {
@@ -6642,6 +6673,9 @@
     ev.stopPropagation();
     fn(el, ev);
   });
+  document.addEventListener('click', ev => {
+    if (S.periodOpen && !(ev.target.closest && ev.target.closest('.pdrop'))) { S.periodOpen = false; render(); }
+  }, true);
   document.addEventListener('input', ev => {
     const t = ev.target, m = t.dataset && t.dataset.model;
     if (!t.dataset) return;
