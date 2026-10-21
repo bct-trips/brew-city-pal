@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792596888"></script>
+    <script src="config.js?v=1792597017"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792596888';
+      window.PAL_BUILD = '1792597017';
       (function () {
         function check(launch) {
           try {
@@ -2564,6 +2564,40 @@
   .adm-ic.adm-team { color: var(--navy); }
   :root[data-theme="dark"] .adm-ic.adm-org { color: var(--gold); }
   :root[data-theme="dark"] .adm-ic.adm-team { color: #9db7e3; }
+  /* Member card (Roster): compact M3 dialog. Access = one-line list items (label + status left, actions right);
+     Details = a tight grid (Last · First · Middle / Rank · Position · Unit; two columns on phones); actions in the footer. */
+  .mc-sec { padding: 10px 0; }
+  .mc-sec h4 { margin-bottom: 6px; }
+  .mc-sec h4 .meta b { color: var(--ink); }
+  .mc-list { display: flex; flex-direction: column; }
+  .mc-li { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 4px 0; border-top: 1px solid var(--line); }
+  .mc-li:first-child { border-top: 0; }
+  .mc-li-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .mc-li-t b { font-size: 15px; color: var(--ink); }
+  .mc-li-t span { font-size: 13px; color: var(--muted); }
+  .mc-li-a { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+  #mcPinRow { margin: 0 0 6px; }
+  .mc-details > :is(.row, .field) { margin: 0; }
+  .mc-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; }
+  .mc-details > h4, .mc-details > .err { grid-column: 1 / -1; }
+  .mc-details .row { display: contents; }
+  .mc-details .field { margin: 0; min-width: 0; }
+  .mc-details .field:has(#ueLast) { order: 1; } .mc-details .field:has(#ueFirst) { order: 2; } .mc-details .field:has(#ueMid) { order: 3; }
+  .mc-details .field:has(#ueRank) { order: 4; } .mc-details .field:has(#ueRole) { order: 5; } .mc-details .field:has(#ueUnit) { order: 6; }
+  .mc-details > .err { order: 7; } .mc-details > h4 { order: 0; }
+  .mc-details input, .mc-details select { width: 100%; }
+  .mc-details h4 .meta .req { margin-left: 0; }
+  .modal-f.mc-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; }
+  .modal-f.mc-foot > .btn { flex: 0 0 auto; width: auto; }
+  .modal-f.mc-foot > .mc-save { margin-left: auto; }
+  @media (max-width: 600px) {
+    .mc-details { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mc-details .field:has(#ueLast) { grid-column: 1 / -1; }
+    .mc-details .field:has(#ueUnit) { grid-column: 1 / -1; }
+    .mc-li { flex-wrap: wrap; }
+    .modal-f.mc-foot > .btn { flex: 1 1 0; }
+    .modal-f.mc-foot > .mc-save { flex-basis: 100%; order: -1; margin-left: 0; }
+  }
 </style>
 
   </head>
@@ -6168,26 +6202,30 @@
       '<div class="mc-top">' + idBadge(u) + '<div class="mc-who"><b>' + esc(nameText(u)) + '</b>' +
         '<span class="meta">' + esc(meta) + (u.active ? '' : ' <span class="badge">Inactive</span>') + '</span></div>' +
         '<button class="btn sm" data-act="memberYear" data-id="' + esc(uid) + '">' + icon('calendar', 16) + 'Year</button></div>' +
-      '<section class="mc-sec"><h4>Leave &amp; passes <span class="meta">' + fyl + '</span></h4>' +
-        '<div class="mc-sum"><span><b>' + sum('Approved') + '</b> days approved</span><span><b>' + sum('Pending') + '</b> pending</span></div>' + table + '</section>' +
-      '<section class="mc-sec"><h4>PIN <span class="meta">' + (u.mustChange ? 'default — sets their own at next sign-in' : 'their own') + '</span></h4>' +
-        '<div class="mc-btns"><button class="btn sm" data-act="resetPin" data-id="' + esc(uid) + '">' + icon('key', 15) + 'Reset to Default</button>' +
-        '<button class="btn sm" data-act="mcPinShow">' + icon('pencil', 15) + 'Set a PIN</button></div>' +
+      '<section class="mc-sec"><h4>Leave &amp; Passes <span class="meta">' + fyl + ' · <b>' + sum('Approved') + '</b> days approved · <b>' + sum('Pending') + '</b> pending</span></h4>' + table + '</section>' +
+      // Access: one line each — what it is and where it stands on the left, its actions on the right (M3 list items).
+      '<section class="mc-sec"><h4>Access</h4><div class="mc-list">' +
+        '<div class="mc-li"><div class="mc-li-t"><b>PIN</b><span>' + (u.mustChange ? 'Default — sets their own at next sign-in' : 'Their own') + '</span></div>' +
+          '<div class="mc-li-a"><button class="btn sm" data-act="resetPin" data-id="' + esc(uid) + '">' + icon('key', 15) + 'Reset</button>' +
+          '<button class="btn sm" data-act="mcPinShow">' + icon('pencil', 15) + 'Set PIN</button></div></div>' +
         '<div id="mcPinRow" hidden>' + PIN_HINT + '<div class="mc-pin"><input id="mcPin1" ' + NEW_PIN + ' placeholder="PIN" aria-label="PIN">' +
-        '<input id="mcPin2" ' + NEW_PIN + ' placeholder="Again" aria-label="PIN again">' +
-        '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div></div><div class="err" id="mcPinErr"></div></section>' +
-      '<section class="mc-sec mc-mgr"><h4>Manager <span class="meta">' + (u.manager ? 'sees every position’s schedule' : 'sees what their position can see') + '</span></h4>' +
-        '<div class="mc-btns"><button type="button" class="btn chip-tog' + (u.manager ? ' on' : '') + '" aria-pressed="' + !!u.manager + '" data-act="setManager" data-id="' + esc(uid) + '">' +
-          (u.manager ? icon('check', 16) + 'Manager' : 'Not a Manager') + '</button></div></section>' +
-      (uid !== S.me ? '<section class="mc-sec"><h4>Admin Status <span class="meta">' + (adm ? (adm.level === 'org' ? 'Org admin · every team' : 'Team admin · ' + esc(scopeText(adm.scope))) + ((S.alertIds || []).includes(uid) ? ' · gets admin alerts' : '') : 'not an admin') + '</span></h4>' +
-        (canSetAdm ? '<div class="mc-btns"><button class="btn sm" data-act="adminStatus" data-id="' + esc(uid) + '">' + icon('shield', 15) + (adm ? 'Change' : 'Make Admin') + '</button>' +
-          (adm ? '<button class="btn sm del" data-act="revokeAdmin" data-id="' + esc(uid) + '">' + icon('shield', 15) + 'Remove Admin</button>' : '') + '</div>' : '') + '</section>' : '') +
-      '<section class="mc-sec"><h4>Details</h4>' + userFields('ue', u, false).replace(' autofocus', '') + '<div class="err" id="ueErr"></div>' +
-        '<div class="mc-actions">' +
-        (uid === S.me ? '' : '<button class="btn sm ' + (u.active ? 'del' : '') + '" data-act="toggleUser" data-id="' + esc(uid) + '">' + (u.active ? icon('ban', 15) + 'Deactivate' : icon('check', 15) + 'Reactivate') + '</button>' +
-          '<button class="btn sm del" data-act="deleteUser" data-id="' + esc(uid) + '">' + icon('trash', 15) + 'Delete Member</button>') +
-        '<button class="btn primary" data-act="saveUser" data-id="' + esc(uid) + '">' + icon('check', 16) + 'Save Details</button></div></section>' +
-      '</div><div class="modal-f"><button class="btn block" data-act="closeModal">Close</button></div>';
+          '<input id="mcPin2" ' + NEW_PIN + ' placeholder="Again" aria-label="PIN again">' +
+          '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div></div><div class="err" id="mcPinErr"></div>' +
+        '<div class="mc-li"><div class="mc-li-t"><b>Manager</b><span>' + (u.manager ? 'Sees every position’s schedule' : 'Sees what their position can see') + '</span></div>' +
+          '<div class="mc-li-a"><button type="button" class="btn sm chip-tog' + (u.manager ? ' on' : '') + '" aria-pressed="' + !!u.manager + '" data-act="setManager" data-id="' + esc(uid) + '">' +
+            (u.manager ? icon('check', 15) + 'On' : 'Off') + '</button></div></div>' +
+        (uid !== S.me ? '<div class="mc-li"><div class="mc-li-t"><b>Admin</b><span>' + (adm ? (adm.level === 'org' ? 'Org admin · every team' : 'Team admin · ' + esc(scopeText(adm.scope))) + ((S.alertIds || []).includes(uid) ? ' · gets alerts' : '') : 'Not an admin') + '</span></div>' +
+          (canSetAdm ? '<div class="mc-li-a"><button class="btn sm" data-act="adminStatus" data-id="' + esc(uid) + '">' + icon('shield', 15) + (adm ? 'Change' : 'Make Admin') + '</button>' +
+            (adm ? '<button class="btn sm del" data-act="revokeAdmin" data-id="' + esc(uid) + '">Remove</button>' : '') + '</div>' : '') + '</div>' : '') +
+      '</div></section>' +
+      // Details: Last · First · Middle, then Rank · Position · Unit (a tight grid; two columns on phones).
+      '<section class="mc-sec mc-details"><h4>Details <span class="meta">' + REQ_NOTE.replace('<p class="req-note">', '').replace('</p>', '') + '</span></h4>' +
+        userFields('ue', u, false).replace(' autofocus', '').replace(REQ_NOTE, '') + '<div class="err" id="ueErr"></div></section>' +
+      '</div>' +
+      // Actions (M3 dialog): destructive on the left, Save Details on the right; the ✕ at the top closes.
+      '<div class="modal-f mc-foot">' + (uid === S.me ? '' : '<button class="btn ' + (u.active ? 'del' : '') + '" data-act="toggleUser" data-id="' + esc(uid) + '">' + (u.active ? icon('ban', 16) + 'Deactivate' : icon('check', 16) + 'Reactivate') + '</button>' +
+        '<button class="btn del" data-act="deleteUser" data-id="' + esc(uid) + '">' + icon('trash', 16) + 'Delete</button>') +
+        '<button class="btn primary mc-save" data-act="saveUser" data-id="' + esc(uid) + '">' + icon('check', 16) + 'Save Details</button></div>';
     openModal('member', html, true);
   }
 
