@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792577245"></script>
+    <script src="config.js?v=1792577813"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2162,6 +2162,22 @@
   .rtable tr.is-off td:not(.acts-cell) { opacity: .55; }
   .see-sq { display: inline-flex; gap: 4px; }
   .see-sq .idb { margin-right: 0; }
+  /* Admin page: wide enough on desktop that its tables fit without sideways scrolling. */
+  .admin-page .panel { max-width: 1040px; }
+  .bo-tbl .rtable { width: 100%; min-width: 0; }
+  /* Position editor: one "max per day" box per event type. */
+  .cap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 6px; }
+  .cap-f { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; }
+  .cap-f .cap-n { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cap-f input { width: 64px; height: 36px; padding: 0 8px; text-align: center; }
+  /* Day strip dot for an added event type: its own colour (rule generated per type). */
+  .ds-dots i.lv[class*="ty-"] { background: currentColor; }
+  /* Weekends (Sat / Sun) get a light blue-grey wash on Month, phone Month, Week and Qtr so they're easy to spot. */
+  :root { --wknd: #e8ecf4; }
+  :root[data-theme="dark"] { --wknd: #23262e; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --wknd: #23262e; } }
+  .cell.wknd, .month.compact .cell.cc.wknd, .wk-day.wknd, .slot.wknd, .qd.wknd { background-color: var(--wknd); }
+  .slot.wknd.today, .wk-day.wknd.today { background-color: color-mix(in srgb, var(--primary) 8%, var(--wknd)); }
 </style>
 
   </head>
@@ -2274,6 +2290,55 @@
   /** Positions this member can see (Admin → Positions → Can see). Admins and "Everyone" positions: all of them. */
   const seeRoles = () => (Array.isArray(S.scope) ? ROLES.filter(r => S.scope.includes(r)) : ROLES)
     .filter(r => !roleInfo(r).disabled || S.users.some(u => u.role === r)); // a disabled position nobody holds is hidden
+  /* Event types: Leave and Pass are built in; admins add more (Admin → Event types). Refreshed from settings.types. */
+  let TYPE_LIST = [{ name: 'Leave', letter: 'L', style: 'leave', max: 10, mode: 'warn' }, { name: 'Pass', letter: 'P', style: 'pass', max: 4, mode: 'limit' }];
+  const typeInfo = t => TYPE_LIST.find(x => x.name === t) || { name: t, letter: String(t || '?')[0], style: t === 'Pass' ? 'pass' : 'leave', max: 60, mode: 'warn' };
+  const typeNames = () => TYPE_LIST.map(t => t.name);
+  /** Types offered for new requests and filters: enabled ones, plus a disabled one that still has requests. */
+  const liveTypes = () => TYPE_LIST.filter(t => !t.disabled || IDX.live.some(r => r.type === t.name)).map(t => t.name);
+  const tLetter = t => typeInfo(t).letter || String(t)[0];
+  /** CSS class for a type's colour: built-ins keep 'leave' / 'pass'; added types get 'ty-<slug>' (rules generated below). */
+  const tSlug = t => 'ty-' + String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const tcls = t => t === 'Leave' ? 'leave' : t === 'Pass' ? 'pass' : tSlug(t);
+  const TYPE_HEX = { leave: '#0A2351', pass: '#FFB612', navy: '#0A2351', gold: '#FFB612', crimson: '#9f1239', teal: '#0f766e', purple: '#6b21a8', slate: '#334155', orange: '#c2410c', black: '#111111', green: '#166534' };
+  const LIGHT_STYLES = ['gold', 'pass'];
+  /** Copy every Leave style rule (or Pass, for light colours) for each added type, in that type's colour, so bars, badges,
+   *  table rows and day groups all pick it up without per-type CSS. */
+  function typeCss() {
+    const custom = TYPE_LIST.filter(t => t.name !== 'Leave' && t.name !== 'Pass');
+    let el = document.getElementById('typeCss');
+    if (!el) { el = document.createElement('style'); el.id = 'typeCss'; document.head.appendChild(el); }
+    if (!custom.length) { el.textContent = ''; return; }
+    const mix = (hex, w) => { const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(v + (255 - v) * w)); return '#' + c.map(v => v.toString(16).padStart(2, '0')).join(''); };
+    const out = [];
+    const sheets = [...document.styleSheets].filter(sh => { try { return sh.ownerNode && sh.ownerNode.id !== 'typeCss' && sh.cssRules; } catch (e) { return false; } });
+    custom.forEach(t => {
+      const hex = TYPE_HEX[t.style] || '#334155', light = LIGHT_STYLES.includes(t.style), base = light ? 'pass' : 'leave', slug = tSlug(t.name);
+      const ink = light ? '#111111' : '#ffffff', hex2 = mix(hex, light ? .35 : .22);
+      const re = new RegExp('([.-])' + base + '(?![\\w-])', 'g');
+      const val = txt => light
+        ? txt.replace(/var\(--gold-2\)/g, hex2).replace(/var\(--gold\)/g, hex).replace(/var\(--navy\)/g, ink)
+        : txt.replace(/var\(--leave-2\)/g, hex2).replace(/var\(--leave-ink\)/g, ink).replace(/var\(--leave\)/g, hex);
+      const walk = (rules, wrap) => [...rules].forEach(r => {
+        if (r.media && r.cssRules) return walk(r.cssRules, '@media ' + r.media.mediaText);
+        if (!r.selectorText || !re.test(r.selectorText)) return;
+        re.lastIndex = 0;
+        const sel = r.selectorText.split(',').filter(x => { re.lastIndex = 0; return re.test(x); }).map(x => { re.lastIndex = 0; return x.replace(re, '$1' + slug); }).join(',');
+        const rule = sel + ' { ' + val(r.style.cssText) + ' }';
+        out.push(wrap ? wrap + ' { ' + rule + ' }' : rule);
+      });
+      sheets.forEach(sh => walk(sh.cssRules, ''));
+    });
+    el.textContent = out.join('\n');
+  }
+  function setTypes(list) {
+    if (!Array.isArray(list) || !list.length) return;
+    const known = typeNames();
+    TYPE_LIST = list;
+    // New types show by default wherever the type filter was showing everything.
+    [S.f, S.mf].forEach(st => { if (st && known.every(t => st.type.includes(t))) st.type = typeNames().slice(); });
+    typeCss();
+  }
   const roleInfo = r => ROLE_INFO[r] || ROLE_DEF[r] || {};
   const roleL = r => roleInfo(r).letter || String(r || 'O')[0].toUpperCase();
   /** Class for the position square: white / black / grey keep the original P / B / O look; others reuse the unit badge colours. */
@@ -2320,23 +2385,22 @@
   function reindex() {
     const users = new Map(S.users.map(u => [u.id, u]));
     const live = S.requests.filter(r => r.status !== 'Cancelled' && users.has(r.userId) && D.valid(r.start) && D.valid(r.end));
-    const counts = new Map();
-    // Daily max counts Leave only; Passes have no limit.
+    // Per day, position and event type (each position can cap each type): requests (not denied) and approved ones.
+    const counts = new Map(), appr = new Map();
     live.forEach(r => {
-      if (r.status === 'Denied' || r.type !== 'Leave') return;
-      const role = users.get(r.userId).role;
-      for (let d = r.start; d <= r.end; d = D.add(d, 1)) counts.set(d + '|' + role, (counts.get(d + '|' + role) || 0) + 1);
-    });
-    // Approved leave per day and position (availability: Full when approvals fill every slot).
-    const appr = new Map();
-    live.forEach(r => {
-      if (r.status !== 'Approved' || r.type !== 'Leave') return;
-      const role = users.get(r.userId).role;
-      for (let d = r.start; d <= r.end; d = D.add(d, 1)) appr.set(d + '|' + role, (appr.get(d + '|' + role) || 0) + 1);
+      if (r.status === 'Denied') return;
+      const k = '|' + users.get(r.userId).role + '|' + r.type;
+      for (let d = r.start; d <= r.end; d = D.add(d, 1)) {
+        counts.set(d + k, (counts.get(d + k) || 0) + 1);
+        if (r.status === 'Approved') appr.set(d + k, (appr.get(d + k) || 0) + 1);
+      }
     });
     if (S.priv && S.avail) { // counts come from the server's anonymous day totals instead
       counts.clear(); appr.clear();
-      Object.keys(S.avail.days || {}).forEach(d => { const v = S.avail.days[d]; appr.set(d + '|' + S.avail.role, v[0]); counts.set(d + '|' + S.avail.role, v[1]); });
+      const byType = S.avail.days || {};
+      // Older servers sent one Leave map {day: [a, b]}; newer ones send {type: {day: [a, b]}}.
+      const maps = Object.values(byType).some(v => Array.isArray(v)) ? { Leave: byType } : byType;
+      Object.keys(maps).forEach(t => Object.keys(maps[t] || {}).forEach(d => { const v = maps[t][d], k = d + '|' + S.avail.role + '|' + t; appr.set(k, v[0]); counts.set(k, v[1]); }));
     }
     const yr = S.today.slice(0, 4), ytd = new Map();
     live.forEach(r => {
@@ -2344,7 +2408,7 @@
       const s = D.max(r.start, yr + '-01-01'), e = D.min(r.end, D.min(S.today, yr + '-12-31'));
       if (s > e) return;
       const t = ytd.get(r.userId) || { Leave: 0, Pass: 0 };
-      t[r.type] += D.days(s, e);
+      t[r.type] = (t[r.type] || 0) + D.days(s, e);
       ytd.set(r.userId, t);
     });
     // Duplicates: the same member with overlapping (non-denied) requests — leave with pass, or any two.
@@ -2380,18 +2444,22 @@
   }
   const fullName = u => (u.rank ? u.rank + ' ' : '') + u.name + ' (' + u.unit + ')';
   const initials = u => u.name.split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
-  function quota(role) {
+  /** Most of a position on an event type the same day (0 = no limit). Leave unless a type is given. */
+  function quota(role, type) {
     if (!role) return 0; // no member chosen yet (admin request form)
-    return Number(roleInfo(role).quota) || 0; // 0 = unlimited
+    const x = roleInfo(role), t = type || 'Leave';
+    return Number(x.caps ? x.caps[t] : t === 'Leave' ? x.quota : 0) || 0;
   }
-  const countOn = (d, role) => IDX.counts.get(d + '|' + role) || 0;
-  const apprOn = (d, role) => IDX.appr.get(d + '|' + role) || 0;
+  const countOn = (d, role, type) => IDX.counts.get(d + '|' + role + '|' + (type || 'Leave')) || 0;
+  const apprOn = (d, role, type) => IDX.appr.get(d + '|' + role + '|' + (type || 'Leave')) || 0;
+  /** Event types with a daily cap for a position. */
+  const cappedTypes = role => typeNames().filter(t => quota(role, t));
   /** Slot availability for a position on a day (Qtr colours): full = approvals fill every slot; over = requests fill or
    *  exceed the slots; open = a slot is still free. '' when the position has no daily max. */
-  function availClass(d, role) {
-    const q = quota(role);
+  function availClass(d, role, type) {
+    const q = quota(role, type);
     if (!q) return '';
-    return apprOn(d, role) >= q ? 'av-full' : countOn(d, role) >= q ? 'av-over' : 'av-open';
+    return apprOn(d, role, type) >= q ? 'av-full' : countOn(d, role, type) >= q ? 'av-over' : 'av-open';
   }
   const myRole = () => (IDX.users.get(S.me) || {}).role;
   /* Day availability (Qtr and the request form's calendar). Approved leave still uses a slot, so a day stays Full (red) or Overbooked
@@ -2413,7 +2481,7 @@
   const blackouts = () => (S.settings && S.settings.blackouts) || [];
   /** Blackouts covering day d (optionally only those that apply to a request type). */
   const blackoutsOn = (d, type) => blackouts().filter(b => b.start <= d && b.end >= d && (!type || b.types === 'Both' || b.types === type));
-  const boLabel = b => b.types === 'Both' ? 'Leave & pass blackout' : b.types + ' blackout';
+  const boLabel = b => b.types === 'Both' ? 'Blackout' : b.types + ' blackout';
   /** ' bo' class for any blackout on day d (shown striped on every calendar). */
   const boCls = (d, type) => blackoutsOn(d, type).length ? ' bo' : '';
   const boTitle = d => blackoutsOn(d).map(b => boLabel(b) + (b.note ? ': ' + b.note : '')).join(' · ');
@@ -2435,19 +2503,17 @@
   /** A request on blackout days is a conflict until an admin allows it (approving it allows it too). */
   const boConflict = r => r.status !== 'Denied' && r.status !== 'Cancelled' && r.boOk !== 'true' && blackoutDaysOf(r).length > 0;
   function conflictDays(r) {
-    const u = userOf(r.userId), q = quota(u.role);
-    if (!q || r.type !== 'Leave' || r.status === 'Denied' || r.status === 'Cancelled') return [];
+    const u = userOf(r.userId), q = quota(u.role, r.type);
+    if (!q || r.status === 'Denied' || r.status === 'Cancelled') return [];
     const out = [];
-    for (let d = r.start; d <= r.end; d = D.add(d, 1)) if (countOn(d, u.role) > q) out.push(d);
+    for (let d = r.start; d <= r.end; d = D.add(d, 1)) if (countOn(d, u.role, r.type) > q) out.push(d);
     return out;
   }
   /** Length rule for a request type (Admin → Request length): max days, and 'limit' (blocked) or 'warn' (flagged). */
-  const lenRule = t => t === 'Pass'
-    ? { max: S.settings.passMaxDays || 4, mode: S.settings.passMode || 'limit' }
-    : { max: S.settings.leaveMaxDays || S.settings.leaveCautionDays || 10, mode: S.settings.leaveMode || 'warn' };
+  const lenRule = t => { const x = typeInfo(t); return { max: Number(x.max) || 60, mode: x.mode === 'limit' ? 'limit' : 'warn' }; };
   /** Over its type's max days (flagged for leadership when the rule is Warn). */
   const isCaution = r => D.days(r.start, r.end) > lenRule(r.type).max;
-  const cautionText = r => (r.type === 'Pass' ? 'Pass' : 'Leave') + ' over ' + lenRule(r.type).max + ' days';
+  const cautionText = r => r.type + ' over ' + lenRule(r.type).max + ' days';
   /** The calendar is showing: the Calendar tab, or My Requests in Calendar mode. */
   const isCalView = () => S.view === 'calendar' || (S.view === 'mine' && S.mineMode === 'cal');
   /** My Requests calendar: my requests (status / type filters), plus — with Show conflicts on — other members'
@@ -2474,7 +2540,7 @@
     const keep = new Set(mine.map(r => r.id));
     mine.forEach(m => {
       const role = userOf(m.userId).role, days = conflictDays(m);
-      IDX.live.forEach(r => { if (r.type === 'Leave' && r.status !== 'Denied' && userOf(r.userId).role === role && days.some(d => r.start <= d && r.end >= d)) keep.add(r.id); });
+      IDX.live.forEach(r => { if (r.type === m.type && r.status !== 'Denied' && userOf(r.userId).role === role && days.some(d => r.start <= d && r.end >= d)) keep.add(r.id); });
     });
     return keep;
   }
@@ -2510,7 +2576,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.5'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.6'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -2639,13 +2705,13 @@
 
   /* Trust boundary: the Sheet can be edited by hand, so enumerated fields are forced to known values before any of them
      reach HTML (they are used in class names and labels). Free text (names, notes, rank) always goes through esc(). */
-  const REQ_STATUS = ['Pending', 'Approved', 'Denied', 'Cancelled'], REQ_TYPE = ['Leave', 'Pass'];
+  const REQ_STATUS = ['Pending', 'Approved', 'Denied', 'Cancelled'];
   const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
   function cleanReq(r) {
     return Object.assign({}, r, {
       id: String(r.id), userId: String(r.userId),
       status: REQ_STATUS.includes(r.status) ? r.status : 'Pending',
-      type: REQ_TYPE.includes(r.type) ? r.type : 'Leave',
+      type: r.type ? String(r.type) : 'Leave',
       start: DAY_RE.test(r.start) ? r.start : '1970-01-01', end: DAY_RE.test(r.end) ? r.end : '1970-01-01'
     });
   }
@@ -2654,7 +2720,7 @@
     if (!data) return;
     S.me = data.me; S.isAdmin = !!data.isAdmin; S.users = (data.users || []).map(cleanUser); S.requests = (data.requests || []).map(cleanReq);
     S.settings = Object.assign(S.settings, data.settings || {}); S.sheetUrl = data.sheetUrl || '';
-    setRoles(S.settings.roles);
+    setRoles(S.settings.roles); setTypes(S.settings.types);
     // Clear filters target (Settings → Default positions) and how much of the roster this member can see.
     if (data.viewRoles) S.viewRoles = data.viewRoles;
     S.scope = data.scope || 'all';
@@ -3086,7 +3152,7 @@
   const FILTERS = [
     { g: 'status', name: 'Status', all: 'All statuses', opts: [['Approved', 'Approved'], ['Pending', 'Pending'], ['Denied', 'Denied']] },
     { g: 'role', name: 'Position', all: 'All positions', get opts() { return seeRoles().map(r => [r, rolePl(r)]); } },
-    { g: 'type', name: 'Type', all: 'Leave & pass', opts: [['Leave', 'Leave'], ['Pass', 'Pass']] }
+    { g: 'type', name: 'Type', all: 'All types', get opts() { return liveTypes().map(t => [t, t]); } }
   ];
   /** Counts and meters leave out denied requests unless Denied is the only status selected. */
   const onlyDenied = () => S.f.status.length === 1 && S.f.status[0] === 'Denied';
@@ -3105,9 +3171,9 @@
   /* Leave / Pass: a joined button group of two independent on/off toggles (both may be off). */
   function typeToggle(sc) {
     const st = fState(sc);
-    return '<div class="seg tgroup" role="group" aria-label="Show leave and pass">' + ['Leave', 'Pass'].map(v => {
+    return '<div class="seg tgroup" role="group" aria-label="Show event types">' + liveTypes().map(v => {
       const on = st.type.includes(v);
-      return '<button type="button" class="tchip tchip-' + v.toLowerCase() + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="fToggle" data-g="type" data-v="' + v + '"' + scAttr(sc) + '>' + v + '</button>';
+      return '<button type="button" class="tchip tchip-' + tcls(v) + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="fToggle" data-g="type" data-v="' + v + '"' + scAttr(sc) + '>' + v + '</button>';
     }).join('') + '</div>';
   }
 
@@ -3255,14 +3321,14 @@
   }
   function setDefaultFilters(st) {
     if (st === S.mf) S.mineConf = false;
-    st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
+    st.status = FILTERS[0].opts.map(o => o[0]); st.type = typeNames().slice();
     if (st.role) st.role = S.priv ? ROLES.slice() : defaultRoles();
     if ('person' in st) st.person = '';
     if ('conf' in st) st.conf = false;
   }
   function isDefaultFilters(st) {
     const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
-    return same(st.status, FILTERS[0].opts.map(o => o[0])) && same(st.type, ['Leave', 'Pass']) &&
+    return same(st.status, FILTERS[0].opts.map(o => o[0])) && typeNames().every(t => st.type.includes(t)) &&
       (!st.role || S.priv || same(st.role, defaultRoles())) && !st.person && !st.conf && !(st === S.mf && S.mineConf && S.mineMode === 'cal');
   }
   function filterButton(sc) {
@@ -3321,7 +3387,7 @@
   const cont = sg => (sg.kind === 'mid' || sg.kind === 'end') ? 1 : 0;
   // Vertical stacking order on the calendar: a focused request first, then Leave, Pass, and denied
   // requests last. Within a type, bars that include you sort first.
-  const STACK = ['Leave', 'Pass', 'Denied'];
+  const STACK = { indexOf: c => c === 'Denied' ? 99 : Math.max(0, typeNames().indexOf(c)) };
   function pinnedIds() {
     const ids = [];
     if (S.focus && IDX.live.some(r => r.id === S.focus)) ids.push(S.focus);
@@ -3460,10 +3526,10 @@
         const r = p.r, u = userOf(r.userId), first = r.start >= ws, last = r.end <= we;
         if (p.g) {
           const same = p.g.every(x => x.status === r.status);
-          return '<span class="' + ['cs-bar grp', r.type === 'Leave' ? 'leave' : 'pass', same ? 'st-' + r.status.toLowerCase() : '', first ? 'b-s' : '', last ? 'b-e' : '', p.g.some(x => x.userId === S.me) ? 'mine' : ''].join(' ') +
+          return '<span class="' + ['cs-bar grp', tcls(r.type), same ? 'st-' + r.status.toLowerCase() : '', first ? 'b-s' : '', last ? 'b-e' : '', p.g.some(x => x.userId === S.me) ? 'mine' : ''].join(' ') +
             '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '">' + groupBadges(p.g, true, D.max(r.start, ws), D.min(r.end, we)) + '</span>';
         }
-        const cls = ['cs-bar', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : '', r.userId === S.me ? 'mine' : ''].join(' ');
+        const cls = ['cs-bar', tcls(r.type), 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : '', r.userId === S.me ? 'mine' : ''].join(' ');
         return '<span class="' + cls + '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
           personBadge(r, true, D.max(r.start, ws), D.min(r.end, we)) + '</span>';
       }).join('') + hidden.map((n, i) => n ? '<span class="cs-more" style="grid-row:' + MAXL + ';grid-column:' + (i + 1) + '" data-act="pickDay" data-date="' + days[i] + '">+' + n + '</span>' : '').join('');
@@ -3475,7 +3541,7 @@
         const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' + (S.priv
           ? ({ 'av-open': 'slots open', 'av-over': 'slots overbooked', 'av-full': 'slots full' })[av] || ''
           : roles.map(role => c[role] + ' ' + roleLow(role) + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : ''));
-        html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + boCls(d) + (over.length && !S.priv ? ' over' : '') + (av ? ' ' + av : '') + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
+        html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + (D.dow(d) % 6 === 0 ? ' wknd' : '') + boCls(d) + (over.length && !S.priv ? ' over' : '') + (av ? ' ' + av : '') + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
           '<span class="cc-n">' + Number(d.slice(8)) + '</span></button>';
       });
       html += '<div class="cs-lanes">' + bars + '</div></div>';
@@ -3500,7 +3566,7 @@
         const over = roles.filter(role => quota(role) && c[role] > quota(role));
         const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' +
           roles.map(role => c[role] + ' ' + roleLow(role) + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : '');
-        html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
+        html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + (D.dow(d) % 6 === 0 ? ' wknd' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
           '<span class="cc-n">' + Number(d.slice(8)) + '</span>' + roles.map(role => roleMeter(role, c[role])).join('') + '</button>';
       }
       html += '</div>';
@@ -3577,12 +3643,12 @@
 
     let html = '<div class="week-row">';
     days.forEach((d, i) => {
-      const over = ROLES.filter(role => quota(role) && countOn(d, role) > quota(role));
+      const over = ROLES.filter(role => dayConflicts(d, role).length);
       // Hide user schedules: the day is tinted by my position's availability instead of showing P / B / O counts.
       const cls = ['cell', d.slice(0, 7) !== month ? 'out' : '', d === S.today ? 'today' : '', (i === 0 || i === 6) ? 'wknd' : '', dayWarn(d), boCls(d).trim()].join(' ');
       html += '<div class="' + cls + '" data-act="pickDay" data-date="' + d + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + '>' +
         '<div class="cell-head"><button class="dnum" data-act="gotoDay" data-date="' + d + '" aria-label="Open day view for ' + D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + '">' + Number(d.slice(8)) + '</button>' +
-        (S.priv ? '' : '<span class="qday">' + seeRoles().filter(r => ROLE_DEF[r] || quota(r) || countOn(d, r)).map(r => qChip(d, r)).join('') + '</span>') +
+        (S.priv ? '' : '<span class="qday">' + seeRoles().filter(r => ROLE_DEF[r] || quota(r) || countOn(d, r)).map(r => qChip(d, r) + cappedTypes(r).filter(t => t !== 'Leave' && countOn(d, r, t)).map(t => qChip(d, r, t)).join('')).join('') + '</span>') +
         '</div>' +
         (hidden[i] ? '<button class="more" data-act="dayList" data-date="' + d + '" aria-label="Show all ' + (hidden[i]) + ' more on ' + D.short(d) + '">+' + hidden[i] + '<span class="wide"> more</span></button>' : '') +
         '</div>';
@@ -3592,32 +3658,38 @@
 
   /* Per-day "P: 1/2" / "B: 3/2" markers: Leave only (Approved + Pending); passes have no limit. Red when over the admin-set max. */
   const roleLow = r => ({ Pilot: 'pilots', Boom: 'booms', Other: 'other personnel' })[r] || r + ' personnel';
-  function quotaMsg(d, role) {
-    const c = countOn(d, role), q = quota(role), day = D.f(d, { weekday: 'short', month: 'short', day: 'numeric' });
-    if (!q) return c + ' ' + roleLow(role) + ' requested leave on ' + day + ' (no daily max set).';
-    if (c > q) return 'More than ' + q + ' ' + roleLow(role) + ' have requested leave on ' + day + ' — ' + c + ' requested, max is ' + q + '. Passes don’t count.';
-    return c + ' of ' + q + ' ' + roleLow(role) + ' requested leave on ' + day + '. Passes don’t count.';
+  function quotaMsg(d, role, type) {
+    const t = (type || 'Leave').toLowerCase(), c = countOn(d, role, type), q = quota(role, type), day = D.f(d, { weekday: 'short', month: 'short', day: 'numeric' });
+    if (!q) return c + ' ' + roleLow(role) + ' requested ' + t + ' on ' + day + ' (no daily max set).';
+    if (c > q) return 'More than ' + q + ' ' + roleLow(role) + ' have requested ' + t + ' on ' + day + ' — ' + c + ' requested, max is ' + q + '.';
+    return c + ' of ' + q + ' ' + roleLow(role) + ' requested ' + t + ' on ' + day + '.';
   }
-  function qChip(d, role) {
-    const c = countOn(d, role), q = quota(role), over = q && c > q;
+  /** Day chip "P: 3/2" (Leave) — other capped types add their tag letter: "P·T: 1/1". */
+  function qChip(d, role, type) {
+    type = type || 'Leave';
+    const c = countOn(d, role, type), q = quota(role, type), over = q && c > q;
     const ok = over && conflictState(d, role) === 'ok';
-    const msg = quotaMsg(d, role) + (over ? (ok ? ' All approved.' : '') + ' Click to review the conflict.' : '');
+    const msg = quotaMsg(d, role, type) + (over ? (ok ? ' All approved.' : '') + ' Click to review the conflict.' : '');
     // Solid colours: red = over the daily max (approved or not — approving doesn't free a slot), orange = at the max,
     // green = slots open. Positions with no max stay neutral.
     const st = over ? ' over' : q && c === q ? ' full' : q ? ' open' : c ? '' : ' zero';
-    return '<button class="qc-day' + st + '" data-act="quotaInfo" data-date="' + d + '" data-role="' + esc(role) + '" title="' + esc(msg) + '" aria-label="' + esc(msg) + '">' +
-      esc(roleL(role)) + ': ' + c + (q ? '/' + q : '') + '</button>';
+    return '<button class="qc-day' + st + '" data-act="quotaInfo" data-date="' + d + '" data-role="' + esc(role) + '" data-type="' + esc(type) + '" title="' + esc(msg) + '" aria-label="' + esc(msg) + '">' +
+      esc(roleL(role)) + (type === 'Leave' ? '' : '·' + esc(tLetter(type))) + ': ' + c + (q ? '/' + q : '') + '</button>';
   }
 
   /* ---------- Conflict days ----------
      A day is in conflict when a position is over its daily max (approved + pending). The flag is red while
      any request in the conflict is still pending, and green once every one of them has been approved —
      until a new request joins the conflict and it turns red again. */
+  /** Positions over a daily cap on day d, one entry per position and event type. */
   function dayConflicts(d, only) {
-    return ROLES.filter(role => (!only || role === only) && quota(role) && countOn(d, role) > quota(role)).map(role => ({
-      role, q: quota(role),
-      list: IDX.live.filter(r => r.type === 'Leave' && r.status !== 'Denied' && r.start <= d && r.end >= d && userOf(r.userId).role === role).sort(byLast)
+    const out = [];
+    ROLES.filter(role => !only || role === only).forEach(role => cappedTypes(role).forEach(type => {
+      const q = quota(role, type);
+      if (countOn(d, role, type) <= q) return;
+      out.push({ role, type, q, list: IDX.live.filter(r => r.type === type && r.status !== 'Denied' && r.start <= d && r.end >= d && userOf(r.userId).role === role).sort(byLast) });
     }));
+    return out;
   }
   /** Conflict chip for a request that puts its day over the daily leave max: "Conflict · 3/2" (worst day).
    *  Red while any request in the conflict is pending; grey "Over max · approved" once all are approved.
@@ -3642,11 +3714,11 @@
     }
     const cd = conflictDays(r);
     if (!cd.length) return '';
-    const role = userOf(r.userId).role, q = quota(role);
-    const worst = cd.reduce((a, d) => countOn(d, role) > countOn(a, role) ? d : a, cd[0]);
+    const role = userOf(r.userId).role, q = quota(role, r.type);
+    const worst = cd.reduce((a, d) => countOn(d, role, r.type) > countOn(a, role, r.type) ? d : a, cd[0]);
     const bad = cd.some(d => conflictState(d, role) === 'bad');
     if (compact && !bad) return ''; // all approved: no mark beside the name (the Status column still says Over max)
-    const tip = (bad ? 'Conflict' : 'Over the daily max (all approved)') + ': ' + countOn(worst, role) + ' of ' + q + ' ' + roleLow(role) + ' on leave on ' +
+    const tip = (bad ? 'Conflict' : 'Over the daily max (all approved)') + ': ' + countOn(worst, role, r.type) + ' of ' + q + ' ' + roleLow(role) + ' on ' + r.type.toLowerCase() + ' on ' +
       cd.map(D.short).join(', ') + '. Click to resolve.';
     return '<button type="button" class="cfl ' + (bad ? 'cfl-bad' : 'cfl-ok') + (compact ? ' cfl-sm' : '') + '" data-act="openConflict" data-date="' + worst + '" data-role="' + role + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
       icon('alert', compact ? 13 : 14) + (compact ? '' : '<span>' + (bad ? 'Conflict' : 'Over max') + '</span>') + '</button>';
@@ -3684,7 +3756,7 @@
     const html = modalHead('Conflict · ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })), 'alert') + '<div class="modal-b">' +
       '<div class="cf-state cf-' + st + '">' + icon(st === 'ok' ? 'check' : 'alert', 18) +
         (st === 'ok' ? 'All requests in this conflict are approved — the day marker is green.' : 'Over the daily max — approve, deny, edit or delete requests below, or approve them all.') + '</div>' +
-      cs.map(c => '<div class="dl-sec"><div class="dl-h"><span>' + esc(rolePl(c.role)) + ' out: ' + c.list.length + ' · max ' + c.q + '</span></div>' +
+      cs.map(c => '<div class="dl-sec"><div class="dl-h"><span>' + esc(rolePl(c.role)) + ' on ' + esc(c.type.toLowerCase()) + ': ' + c.list.length + ' · max ' + c.q + '</span></div>' +
         '<ul class="dl-list cf-list">' + c.list.map(row).join('') + '</ul></div>').join('') +
       (S.isAdmin ? '' : '<p class="meta" style="white-space:normal">Move or delete your request to clear the conflict, or leave it for an admin to decide.</p>') +
       '</div><div class="modal-f">' +
@@ -3757,7 +3829,7 @@
   function segHtml(sg) {
     const pos = 'grid-row:' + (sg.lane + 1) + ';grid-column:' + (sg.a + 1) + '/' + (sg.b + 2);
     const r0 = sg.people[0];
-    const base = 'evs ' + (sg.cat === 'Denied' ? 'denied' : sg.type.toLowerCase()) + ' ' + sg.kind;
+    const base = 'evs ' + (sg.cat === 'Denied' ? 'denied' : tcls(sg.type)) + ' ' + sg.kind;
     if (sg.group) {
       // Same-dates bar: one solid bar for everyone on it; each badge opens that person's request.
       const same = sg.people.every(r => r.status === r0.status);
@@ -3835,7 +3907,7 @@
       '<span class="qk av-open"><i></i>Open</span><span class="qk av-over"><i></i>Overbooked</span><span class="qk av-full"><i></i>Full</span></div>' : '';
     const bar = (r, d) => {
       const first = d === r.start, last = d === r.end, lbl = first || D.dow(d) === 0 || d.slice(8) === '01';
-      const cls = ['qbar', r.type === 'Leave' ? 'leave' : 'pass', 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : ''].join(' ');
+      const cls = ['qbar', tcls(r.type), 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : ''].join(' ');
       return '<span class="' + cls + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' + (lbl ? '<span>' + r.type + '</span>' : '') + '</span>';
     };
     return key + '<div class="quad' + (person ? ' q-person' : '') + '">' + months.map(m0 => {
@@ -3848,7 +3920,7 @@
         const dayLabel = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' });
         let body, label;
         if (person) {
-          const mine = reqs.filter(r => r.start <= d && r.end >= d).sort((x, y) => (x.type === 'Leave' ? 0 : 1) - (y.type === 'Leave' ? 0 : 1));
+          const mine = reqs.filter(r => r.start <= d && r.end >= d).sort((x, y) => typeNames().indexOf(x.type) - typeNames().indexOf(y.type));
           body = mine.map(r => bar(r, d)).join('');
           label = dayLabel + ': ' + (mine.length ? mine.map(r => r.type + ' (' + r.status + ')').join(', ') : 'not out');
         } else {
@@ -3881,7 +3953,7 @@
     const reqs = calRequests().filter(r => r.start <= we && r.end >= ws);
     const head = days.map(d => {
       const p = countOn(d, 'Pilot'), b = countOn(d, 'Boom'), qp = quota('Pilot'), qb = quota('Boom');
-      return '<div class="wk-day' + (d === S.today ? ' today' : '') + (D.dow(d) === 0 ? ' wk-sun' : '') + ' ' + dayWarn(d) + boCls(d) + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + ' role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
+      return '<div class="wk-day' + (d === S.today ? ' today' : '') + (D.dow(d) === 0 ? ' wk-sun' : '') + (D.dow(d) % 6 === 0 ? ' wknd' : '') + ' ' + dayWarn(d) + boCls(d) + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + ' role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
         '<div class="wk-dow">' + DOW[D.dow(d)] + '</div><div class="wk-num">' + Number(d.slice(8)) + '</div>' +
         '<div class="wk-date">' + D.f(d, { month: 'short' }) + '</div>' +
         (S.priv ? '' : '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">P: ' + p + (qp ? '/' + qp : '') + '</span>' +
@@ -3899,13 +3971,13 @@
           .sort((x, y) => (x.r.start < y.r.start ? -1 : x.r.start > y.r.start ? 1 : D.diff(y.r.start, y.r.end) - D.diff(x.r.start, x.r.end)) || stackRank(x.r) - stackRank(y.r));
         const pucks = items.map(({ r, g }) => {
           const same = !g || g.every(x => x.status === r.status);
-          const cls = ['wpuck', g ? 'grp' : '', r.type === 'Leave' ? 'leave' : 'pass', same ? 'st-' + r.status.toLowerCase() : '', r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : ''].join(' ');
-          const sub = '<span class="s">' + r.type + (same ? ' · ' + r.status : '') + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span>';
+          const cls = ['wpuck', g ? 'grp' : '', tcls(r.type), same ? 'st-' + r.status.toLowerCase() : '', r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : ''].join(' ');
+          const sub = ''; // just the badge(s): no type / status / dates line under the bar
           if (g) return '<div class="' + cls + '" style="' + col(r.start, r.end) + '"><span class="n">' + groupBadges(g, true) + '</span>' + sub + '</div>';
           return '<div class="' + cls + '" style="' + col(r.start, r.end) + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
             '<span class="n">' + personBadge(r, true) + '</span>' + sub + '</div>';
         }).join('');
-        const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + (D.dow(d) === 0 ? ' wk-sun' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
+        const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + (D.dow(d) === 0 ? ' wk-sun' : '') + (D.dow(d) % 6 === 0 ? ' wknd' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
         return '<div class="band band-' + roleKey(b[0]) + '"' + roleVar(b[0]) + '><div class="band-title"><span class="bt-in"><span class="band-tag band-l ' + roleCls(b[0]) + '">' + esc(roleL(b[0])) + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></span></div>' +
           '<div class="band-body"><div class="band-inner"><div class="band-slots wg">' + slots + '</div><div class="band-pucks wg">' + pucks + '</div></div></div></div>';
       }).join('');
@@ -3979,7 +4051,7 @@
       const on = live.filter(r => r.start <= x && r.end >= x);
       const c = filteredRoleCounts(x);
       const over = roles.some(role => quota(role) && c[role] > quota(role));
-      const dots = (on.some(r => r.type === 'Leave') ? '<i class="lv"></i>' : '') + (on.some(r => r.type === 'Pass') ? '<i class="ps"></i>' : '') + (over ? '<i class="ov"></i>' : '');
+      const dots = typeNames().filter(t => on.some(r => r.type === t)).map(t => t === 'Leave' ? '<i class="lv"></i>' : t === 'Pass' ? '<i class="ps"></i>' : '<i class="lv ' + tcls(t) + '-dot"></i>').join('') + (over ? '<i class="ov"></i>' : '');
       return '<button class="ds-d' + (x === d ? ' on' : '') + (x === S.today ? ' today' : '') + '" data-act="gotoDay" data-date="' + x + '"' + (x === d ? ' aria-current="date"' : '') +
         ' aria-label="' + esc(D.f(x, { weekday: 'long', month: 'long', day: 'numeric' })) + '">' +
         '<span class="ds-w">' + DOW[D.dow(x)][0] + '</span><span class="ds-n">' + Number(x.slice(8)) + '</span><span class="ds-dots">' + dots + '</span></button>';
@@ -4148,11 +4220,11 @@
       }
       if (canEdit(r)) acts += '<button class="btn sm act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit request for ' + esc(u.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>';
       if (canDelete(r)) acts += '<button class="btn sm del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete request for ' + esc(u.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>';
-      return '<tr class="t-' + r.type.toLowerCase() + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + (isNow(r) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
+      return '<tr class="t-' + tcls(r.type) + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + (isNow(r) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
         // Status mark plus the ⚠ / overlap / changed marks live in the first column, so the pinned Name column is only
         // as wide as the L / P badge and the name (no dead space on phones).
         '<td class="st-ic-c"><div class="st-in">' + stIcon(r) + conflictBadge(r, true) + marks(r) + '</div></td>' +
-        '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '<span class="sr"> ' + r.type.slice(1) + '</span></span>' : '') +
+        '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + tcls(r.type) + ' t-ltr" title="' + esc(r.type) + '">' + esc(tLetter(r.type)) + '<span class="sr"> ' + esc(r.type) + '</span></span>' : '') +
           personBadge(r, false) + '</div></td>' +
         '<td class="num">' + milDate(r.start) + '</td>' +
         '<td class="num">' + milDate(r.end) + '</td>' +
@@ -4171,19 +4243,19 @@
     // Leave and Pass open part-way by default: only the requests going on today (always at the top of their band),
     // plus a "Show N more" row. Tapping the header opens the whole band, then closes it.
     const group = (type, list) => {
-      const n = cols.length + 1, band = type === 'Leave' || type === 'Pass';
+      const n = cols.length + 1, band = type !== 'Past';
       const state = type === 'Past' ? (col.Past === false ? 'open' : 'closed') : band ? (col[type] || 'partial') : (col[type] ? 'closed' : 'open');
       const act = band ? list.filter(isNow) : [], rest = band ? list.filter(r => !isNow(r)) : list;
       if (band) list = act.concat(rest);
-      const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : '<span class="badge t-' + type.toLowerCase() + '">' + type + '</span>' +
+      const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : '<span class="badge t-' + tcls(type) + '">' + esc(type) + '</span>' +
         (act.length ? '<span class="grp-now"><i class="now-dot" aria-hidden="true"></i>' + act.length + ' active</span>' : '');
-      const empty = '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + ({ Leave: 'No leave to show.', Pass: 'No passes to show.', Past: 'Nothing past to show.' })[type] + '</span></td></tr>';
+      const empty = '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + (type === 'Past' ? 'Nothing past to show.' : 'No ' + esc(type.toLowerCase()) + ' to show.') + '</span></td></tr>';
       const more = '<tr class="grp-more"><td colspan="' + n + '"><button type="button" class="linkbtn grp-more-in" data-act="grpMore" data-table="' + key + '" data-v="' + type + '">' +
         (act.length ? '' : 'No one on ' + type.toLowerCase() + ' today · ') + 'Show ' + rest.length + ' more' + icon('down', 14) + '</button></td></tr>';
       const rowsHtml = state === 'closed' ? '' : !list.length ? empty
         : state === 'partial' ? act.map(r => rowHtml(r, false)).join('') + (rest.length ? more : '')
         : list.map(r => rowHtml(r, type === 'Past')).join('');
-      return '<tbody class="grp grp-' + type.toLowerCase() + (state === 'closed' ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
+      return '<tbody class="grp grp-' + (type === 'Past' ? 'past' : tcls(type)) + (state === 'closed' ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
         '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + (state === 'open') + '">' +
         icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button></th></tr>' + rowsHtml + '</tbody>';
     };
@@ -4201,7 +4273,9 @@
           '<b>' + esc(boSpan(b)) + '</b><span class="badge bo-badge">' + esc(boLabel(b)) + '</span>' + (b.note ? '<span class="muted">' + esc(b.note) + '</span>' : '') +
           '</div></td></tr>').join('')) + '</tbody>';
     };
-    const body = boGroup() + group('Leave', cur.filter(r => r.type === 'Leave')) + group('Pass', cur.filter(r => r.type === 'Pass')) + group('Past', past);
+    // One band per event type (Leave, Pass, then added types that have requests or are enabled), then Past.
+    const tl = typeNames().filter(t => !typeInfo(t).disabled || cur.some(r => r.type === t));
+    const body = boGroup() + tl.map(t => group(t, cur.filter(r => r.type === t))).join('') + group('Past', past);
     return '<div class="tbl-wrap" id="tbl-' + key + '" data-table="' + key + '"><table class="rtable"><thead><tr>' + head + '</tr></thead>' + body + '</table></div>';
   }
 
@@ -4395,9 +4469,55 @@
   function roleFields(r, key) {
     const rv = rowView(key, r);
     return '<div class="row"><div class="field cfg-code"><label for="rl-' + key + '">Letter</label><input id="rl-' + key + '" class="rl-letter" maxlength="1" value="' + esc(r.letter || '') + '" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-live="rolePrev"></div>' +
-      '<div class="field cfg-code"><label for="rq-' + key + '">Max on leave</label><input id="rq-' + key + '" class="rl-quota" type="number" inputmode="numeric" min="0" max="99" value="' + (Number(r.quota) || 0) + '"></div></div>' +
+      '</div>' +
+      // Most of this position on each event type the same day (0 = no limit), e.g. Leave 2, Pass 0.
+      '<div class="field"><span class="lbl-sm">Max per day' + tip('How many of this position may be on each event type the same day. 0 = no limit.') + '</span><div class="cap-grid">' +
+        TYPE_LIST.filter(t => !t.disabled || Number((r.caps || {})[t.name])).map(t => {
+          const v = r.caps ? Number(r.caps[t.name]) || 0 : t.name === 'Leave' ? Number(r.quota) || 0 : 0;
+          return '<label class="cap-f"><span class="badge t-' + tcls(t.name) + ' t-ltr" aria-hidden="true">' + esc(t.letter) + '</span><span class="cap-n">' + esc(t.name) + '</span>' +
+            '<input class="rl-cap" data-type="' + esc(t.name) + '" type="number" inputmode="numeric" min="0" max="99" value="' + v + '" aria-label="' + esc(t.name) + ' max per day"></label>';
+        }).join('') + '</div></div>' +
       '<div class="field"><span class="lbl-sm">Can see</span><div id="cs-' + key + '" data-self="' + esc(r.name || '') + '">' + canSeeHtml(key, r.name, rv) + '</div></div>' +
       '<div class="field"><span class="lbl">Colour</span>' + roleSwatches('rs-' + key, r.style || 'grey', r.letter) + '</div>';
+  }
+  /** Event types table: tag · type · max days · when over · Edit / Disable / Delete. Blackout is listed as the special, admin-only type. */
+  function adminTypes() {
+    const rows = TYPE_LIST.map(t => {
+      const used = IDX.live.some(r => r.type === t.name), builtIn = t.name === 'Leave' || t.name === 'Pass';
+      return '<tr class="' + (t.disabled ? 'is-off' : '') + '" data-act="editType" data-name="' + esc(t.name) + '" tabindex="0">' +
+        '<td><span class="badge t-' + tcls(t.name) + ' t-ltr">' + esc(t.letter) + '</span></td>' +
+        '<td class="strong">' + esc(t.name) + (t.disabled ? ' <span class="badge">Disabled</span>' : '') + '</td>' +
+        '<td class="num">' + plural(Number(t.max) || 0, 'day') + '</td>' +
+        '<td>' + (t.mode === 'limit' ? 'Limit' : 'Warn') + '</td>' +
+        '<td class="acts-cell"><div class="row-acts">' +
+          '<button class="btn sm act" data-act="editType" data-name="' + esc(t.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
+          '<button class="btn sm act" data-act="toggleType" data-name="' + esc(t.name) + '" title="' + (t.disabled ? 'Enable' : 'Disable') + '">' + icon(t.disabled ? 'check' : 'ban', 13) + '<span class="bl">' + (t.disabled ? 'Enable' : 'Disable') + '</span></button>' +
+          (used || builtIn ? '' : '<button class="btn sm del act" data-act="deleteType" data-name="' + esc(t.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
+        '</div></td></tr>';
+    }).join('') +
+      '<tr class="ty-bo"><td><span class="badge bo-badge t-ltr">' + icon('ban', 12) + '</span></td><td class="strong">Blackout</td><td class="num"><span class="muted">—</span></td>' +
+        '<td><span class="muted">Admin only</span></td><td class="acts-cell"><div class="row-acts"><span class="muted">Set in Blackout dates</span></div></td></tr>';
+    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Tag</th><th scope="col">Type</th><th scope="col" class="num">Max length</th>' +
+      '<th scope="col">When over</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+  /** Event type editor (new or existing): name, tag letter, colour, max days, Warn / Limit; Cancel · Save. */
+  function openTypeEditor(name) {
+    const t = name ? typeInfo(name) : { name: '', letter: '', style: 'teal', max: 5, mode: 'warn' };
+    const builtIn = name === 'Leave' || name === 'Pass';
+    S.typeDraft = { mode: t.mode === 'limit' ? 'limit' : 'warn' };
+    const styles = ['leave', 'pass', 'crimson', 'teal', 'purple', 'slate', 'orange', 'black', 'green'];
+    const html = modalHead(name ? 'Edit ' + name : 'New event type', name ? 'pencil' : 'plus') +
+      '<div class="modal-b ty-row badge-builder" data-old="' + esc(name || '') + '">' +
+      '<div class="row"><div class="field"><label for="tyName">Name</label><input id="tyName" maxlength="20" placeholder="TDY" autocomplete="off" value="' + esc(t.name) + '"' + (builtIn ? ' disabled' : name ? '' : ' autofocus') + '></div>' +
+        '<div class="field cfg-code"><label for="tyLetter">Tag</label><input id="tyLetter" maxlength="1" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" value="' + esc(t.letter) + '"></div></div>' +
+      '<div class="row"><div class="field cfg-code"><label for="tyMax">Max days</label><input id="tyMax" type="number" inputmode="numeric" min="1" max="60" value="' + (Number(t.max) || 1) + '"></div>' +
+        '<div class="field"><span class="lbl-sm">When longer</span><div id="tyModeBox">' + seg([['warn', 'Warn'], ['limit', 'Limit']], S.typeDraft.mode, 'typeMode') + '</div></div></div>' +
+      '<div class="field"><span class="lbl">Colour</span><div class="swatches" role="radiogroup" aria-label="Colour">' + styles.map(st =>
+        '<label class="swatch" title="' + (st === 'leave' ? 'Navy' : st === 'pass' ? 'Gold' : st[0].toUpperCase() + st.slice(1)) + '"><input type="radio" name="ty-st" value="' + st + '"' + (st === t.style ? ' checked' : '') + ' aria-label="' + st + '">' +
+          '<span class="ub ub-' + (st === 'leave' ? 'navy' : st === 'pass' ? 'gold' : st) + '"></span></label>').join('') + '</div></div>' +
+      '<div class="err" id="tyErr"></div></div>' +
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="saveTypeEdit">' + icon(name ? 'check' : 'plus', 18) + (name ? 'Save' : 'Add type') + '</button></div>';
+    openModal('type', html);
   }
   /** Who a position can see, as small letter squares (or Everyone / Own only). */
   function seeCell(r) {
@@ -4406,14 +4526,13 @@
     if (v === 'own') return '<span class="muted">Own only</span>';
     return '<span class="see-sq">' + v.filter(n => ROLES.includes(n)).map(n => '<span class="idb"><span class="idb-r ' + roleCls(n) + '" title="' + esc(rolePl(n)) + '">' + esc(roleL(n)) + '</span></span>').join('') + '</span>';
   }
-  /** Positions table: badge · name · max on leave · can see · members · Edit / Disable / Delete. Tap a row to edit. */
+  /** Positions table: badge · name · can see · members · Edit / Disable / Delete. Tap a row to edit. */
   function adminRoles() {
     const rows = ROLES.map(name => {
       const r = roleInfo(name), used = S.users.filter(u => u.role === name).length, builtIn = !!ROLE_DEF[name];
       return '<tr class="' + (r.disabled ? 'is-off' : '') + '" data-act="editRole" data-name="' + esc(name) + '" tabindex="0">' +
         '<td><span class="idb"><span class="idb-r ' + roleCls(name) + '">' + esc(roleL(name)) + '</span></span></td>' +
         '<td class="strong">' + esc(roleName(name)) + (r.disabled ? ' <span class="badge">Disabled</span>' : '') + '</td>' +
-        '<td class="num">' + (Number(r.quota) ? Number(r.quota) : '<span class="muted">—</span>') + '</td>' +
         '<td>' + seeCell(Object.assign({ name }, r)) + '</td>' +
         '<td class="num">' + used + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
@@ -4422,7 +4541,7 @@
           (used || builtIn ? '' : '<button class="btn sm del act" data-act="deleteRole" data-name="' + esc(name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td></tr>';
     }).join('');
-    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Position</th><th scope="col" class="num">Max on leave</th>' +
+    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Position</th>' +
       '<th scope="col">Can see</th><th scope="col" class="num">Members</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
   /** Position editor (new or existing): name, letter, max on leave, Can see and colour; Cancel · Save. */
@@ -4550,15 +4669,10 @@
           '<button class="btn primary" data-act="newRole">' + icon('plus', 18) + 'New position</button></div>' +
         adminRoles() + '</div>' +
 
-      // Request length rules
-      '<div class="panel"><h3>' + icon('calendar', 16) + ' Request length' + tip('Most days in one request. Limit blocks longer ones; Warn allows them but flags them.') + '</h3>' +
-        ['Leave', 'Pass'].map(t => {
-          const r = lenRule(t), m = (S.lenDraft || {})[t] || r.mode;
-          return '<div class="cfg-len"><span class="cfg-len-t"><span class="badge t-' + t.toLowerCase() + '">' + t + '</span></span>' +
-            '<div class="field"><label for="len' + t + '">Max days</label><input id="len' + t + '" type="number" inputmode="numeric" min="1" max="60" value="' + r.max + '" data-change="saveLength"></div>' +
-            '<div class="field"><span class="lbl-sm">When over</span>' + seg([['warn', 'Warn'], ['limit', 'Limit']], m, 'lenMode', ' data-t="' + t + '"') + '</div></div>';
-        }).join('') +
-        '</div>' +
+      // Event types: Leave, Pass and added ones (max length, Warn / Limit), plus Blackout (special, admin only).
+      '<div class="panel"><div class="cfg-h"><h3>' + icon('calendar', 16) + ' Event types' + tip('Max days per request: Limit blocks longer ones; Warn allows them but flags them. Per-position daily limits are in Positions.') + '</h3>' +
+        '<button class="btn primary" data-act="newType">' + icon('plus', 18) + 'New type</button></div>' +
+        adminTypes() + '</div>' +
 
       // PINs
       '<div class="panel panel-warn"><h3>' + icon('key', 16) + ' Default PIN' + tip('Temporary PIN for new members and PIN resets. They must change it at next sign-in.') + '</h3>' +
@@ -4604,23 +4718,20 @@
     return '<div class="modal-h">' + (ic ? icon(ic, 18) : '') + '<h2 id="modalTitle">' + title + '</h2>' + (extra || '') + '<button class="btn ghost icon-btn" data-act="closeModal" aria-label="Close">' + icon('x', 18) + '</button></div>';
   }
   /** Request length in the dialog header: a big, solid pill ("4 days") in the Leave / Pass colour. */
-  const dayPill = (n, type) => '<span class="hd-days hd-' + (type === 'Pass' ? 'pass' : 'leave') + '" id="hdDays" aria-live="polite">' +
+  const dayPill = (n, type) => '<span class="hd-days hd-' + tcls(type) + '" id="hdDays" aria-live="polite">' +
     (n ? '<b>' + n + '</b> ' + (n === 1 ? 'day' : 'days') : 'Pick dates') + '</span>';
 
   /* ---------- Day list: everyone out on a date, by category ---------- */
   /** Everyone out on a date, grouped On leave / On pass (and Denied when present). */
   function dayGroupsHtml(list) {
     list = list.slice().sort((a, b) => stackRank(a) - stackRank(b) || ROLES.indexOf(userOf(a.userId).role) - ROLES.indexOf(userOf(b.userId).role) || byLast(a, b));
-    const groups = [
-      ['Leave', list.filter(r => r.type === 'Leave' && r.status !== 'Denied')],
-      ['Pass', list.filter(r => r.type === 'Pass' && r.status !== 'Denied')],
-      ['Denied', list.filter(r => r.status === 'Denied')]
-    ];
+    const groups = typeNames().map(t => [t, list.filter(r => r.type === t && r.status !== 'Denied')])
+      .filter(g => g[1].length || g[0] === 'Leave' || g[0] === 'Pass').concat([['Denied', list.filter(r => r.status === 'Denied')]]);
     return groups.map(g => {
       const name = g[0], rows = g[1];
       if (name === 'Denied' && !rows.length) return '';
       if (name !== 'Denied' && !S.f.type.includes(name)) return '';
-      return '<div class="dl-sec"><div class="dl-h ' + name.toLowerCase() + '"><span class="sw"></span>' + (name === 'Leave' ? 'On leave' : name === 'Pass' ? 'On pass' : 'Denied') +
+      return '<div class="dl-sec"><div class="dl-h ' + (name === 'Denied' ? 'denied' : tcls(name)) + '"><span class="sw"></span>' + (name === 'Denied' ? 'Denied' : 'On ' + esc(name.toLowerCase())) +
         '<span class="ct">' + rows.length + '</span></div>' +
         (rows.length ? '<ul class="dl-list">' + rows.map(r => {
           const u = userOf(r.userId);
@@ -4950,16 +5061,16 @@
   /** Per day of r: who else of the same position is out (approved/pending), whether the daily max is exceeded,
    *  and any of the member's own overlapping requests (duplicates). */
   function reqConflicts(r) {
-    const u = userOf(r.userId), q = quota(u.role), out = new Map();
+    const u = userOf(r.userId), q = quota(u.role, r.type), out = new Map();
     for (let d = r.start; d <= r.end; d = D.add(d, 1)) {
       const others = IDX.live.filter(x => x.id !== r.id && x.status !== 'Denied' && x.start <= d && x.end >= d);
-      // Only leave uses a slot: a pass is never over the max, and only other members' leave counts against it.
-      const peers = r.type === 'Leave' ? others.filter(x => x.type === 'Leave' && x.userId !== r.userId && userOf(x.userId).role === u.role).sort(byLast) : [];
-      // Hide user schedules: other people's leave is only a count (server day totals minus this request).
-      const self = r.type === 'Leave' && r.status !== 'Denied' ? 1 : 0;
-      const n = S.priv ? (r.type === 'Leave' ? Math.max(0, countOn(d, u.role) - self) : 0) : peers.length;
+      // Only a type with a cap for this position uses a slot; other members' requests of the same type count against it.
+      const peers = q ? others.filter(x => x.type === r.type && x.userId !== r.userId && userOf(x.userId).role === u.role).sort(byLast) : [];
+      // Hide user schedules: other people's requests are only a count (server day totals minus this request).
+      const self = r.status !== 'Denied' ? 1 : 0;
+      const n = S.priv ? (q ? Math.max(0, countOn(d, u.role, r.type) - self) : 0) : peers.length;
       const dups = others.filter(x => x.userId === r.userId);
-      const over = r.type === 'Leave' && !!q && n + 1 > q;
+      const over = !!q && n + 1 > q;
       const bo = r.boOk !== 'true' && blackoutsOn(d, r.type).length > 0;
       out.set(d, { peers, n, dups, over, bo, bad: over || bo || dups.length > 0, q, role: u.role });
     }
@@ -5024,7 +5135,7 @@
         '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(nameText(u)) + '</span>' +
         '<span class="badge s-' + esc(r.status.toLowerCase()) + '">' + esc(r.status) + '</span></div></div>' +
       '<div class="sect"><div class="lbl">Type</div><div class="wiz-type"><div class="seg seg-ro" role="group" aria-label="Type">' +
-        ['Leave', 'Pass'].map(t => '<button type="button" tabindex="-1" aria-disabled="true" class="' + (t === r.type ? 'on' : '') + '">' + t + '</button>').join('') + '</div></div></div>' +
+        liveTypes().map(t => '<button type="button" tabindex="-1" aria-disabled="true" class="' + (t === r.type ? 'on' : '') + '">' + esc(t) + '</button>').join('') + '</div></div></div>' +
       (isCaution(r) ? '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(cautionText(r)) + '</span></div>' : '') +
       (blackoutDaysOf(r).length && r.status !== 'Cancelled' ? (r.boOk === 'true'
         ? '<div class="msg i">' + icon('check', 15) + '<span>Falls on blackout days (' + esc(blackoutDaysOf(r).map(D.short).join(', ')) + ') — allowed by an admin.</span></div>'
@@ -5058,7 +5169,7 @@
     const RANK = { Approved: 0, Pending: 1, Denied: 2 };
     // One request per day: approved beats pending beats denied (overlaps are rare and flagged elsewhere).
     const dayReq = d => reqs.filter(r => r.start <= d && r.end >= d).sort((a, b) => RANK[a.status] - RANK[b.status])[0];
-    const cls = r => r.status === 'Approved' ? 'y-ap-' + r.type.toLowerCase() : r.status === 'Pending' ? 'y-pend' : 'y-den';
+    const cls = r => r.status === 'Approved' ? 'y-ap-' + tcls(r.type) : r.status === 'Pending' ? 'y-pend' : 'y-den';
     const blocks = months.map(m0 => {
       const gs = D.weekStart(m0), mon = m0.slice(0, 7);
       let cells = DOW.map(x => '<span class="y-dw">' + x[0] + '</span>').join('');
@@ -5312,7 +5423,7 @@
       if (hit.length) warns.push(plural(hit.length, 'request') + ' already on these days will show a Blackout conflict for you to review.');
     } else {
       n = D.days(w.start, w.end);
-      const rule = lenRule(w.type), tn = w.type === 'Pass' ? 'Pass' : 'Leave';
+      const rule = lenRule(w.type), tn = w.type;
       if (n > rule.max) (rule.mode === 'limit' ? errs : warns).push(rule.mode === 'limit'
         ? tn + ' is limited to ' + rule.max + ' days — you selected ' + n + '.'
         : 'Caution: ' + tn.toLowerCase() + ' over ' + rule.max + ' days is flagged for leadership review.');
@@ -5321,17 +5432,17 @@
       const roleN = {};
       (w.creating ? [w.nu.role] : wizIds().map(id => userOf(id).role)).forEach(r => { roleN[r] = (roleN[r] || 0) + 1; });
       Object.keys(roleN).forEach(role => {
-        const q = w.type === 'Leave' ? quota(role) : 0;
+        const q = quota(role, w.type);
         if (!q) return;
         const hits = [];
         // When editing, the request's current days are already in the counts.
         const self0 = w.editId && w.editStatus !== 'Denied' ? S.requests.find(r => r.id === w.editId) : null;
-        const self = self0 && self0.type === 'Leave' ? self0 : null;
+        const self = self0 && self0.type === w.type ? self0 : null;
         for (let d = w.start; d <= w.end && hits.length < 40; d = D.add(d, 1)) {
           const own = self && d >= self.start && d <= self.end ? 1 : 0;
-          if (countOn(d, role) - own + roleN[role] > q) hits.push(d);
+          if (countOn(d, role, w.type) - own + roleN[role] > q) hits.push(d);
         }
-        if (hits.length) warns.push(role + ' leave max (' + q + '/day) would be exceeded on ' + hits.map(D.short).join(', ') + '. Leadership will see a conflict flag.');
+        if (hits.length) warns.push(role + ' ' + w.type.toLowerCase() + ' max (' + q + '/day) would be exceeded on ' + hits.map(D.short).join(', ') + '. Leadership will see a conflict flag.');
       });
       if (!w.creating) {
         const ids = wizIds(), many = ids.length > 1;
@@ -5371,9 +5482,9 @@
           '</div>';
       }
       // Admins can also add a blackout from here (not when editing a request or a blackout).
-      const types = [['Leave', 'Leave'], ['Pass', 'Pass']].concat(S.isAdmin && !w.editId && !w.editBoId ? [['Blackout', 'Blackout']] : []);
+      const types = TYPE_LIST.filter(t => !t.disabled || t.name === w.type).map(t => [t.name, esc(t.name)]).concat(S.isAdmin && !w.editId && !w.editBoId ? [['Blackout', 'Blackout']] : []);
       body += (w.editBoId ? '' : '<div class="sect"><div class="lbl">Type</div><div class="wiz-type">' + seg(types, w.type, 'wizEditType') + '</div></div>') +
-        (isBo ? '<div class="sect"><div class="lbl">Blacks out</div><div class="wiz-type">' + seg([['Leave', 'Leave'], ['Pass', 'Pass'], ['Both', 'Both']], w.boTypes, 'wizBoTypes') + '</div></div>' : '') +
+        (isBo ? '<div class="sect"><div class="lbl">Blacks out</div><div class="wiz-type">' + seg(typeNames().map(t => [t, esc(t)]).concat([['Both', 'All']]), w.boTypes, 'wizBoTypes') + '</div></div>' : '') +
         renderWizDates() +
         '<div class="field"><label for="wzN">' + (isBo ? 'Reason &amp; notes (optional)' : 'Trip reason &amp; notes (optional)') + '</label><textarea id="wzN" maxlength="' + (isBo ? 80 : 500) + '" data-model="wiz.note" placeholder="' + (isBo ? 'e.g. ORE week, UTA' : 'Destination, reason, contact info…') + '">' + esc(w.note) + '</textarea></div>' +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div>';
@@ -5390,7 +5501,7 @@
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
       else body = '<div class="review">' +
         // A big Leave (navy) / Pass (yellow) banner at the top so the type can't be missed, with who it's for under it.
-        '<div class="rv-type rv-' + w.type.toLowerCase() + '"><span class="rv-tt">' + icon(w.type === 'Leave' ? 'calendar' : 'clock', 22) + w.type + '</span>' +
+        '<div class="rv-type rv-' + tcls(w.type) + '"><span class="rv-tt">' + icon(w.type === 'Pass' ? 'clock' : 'calendar', 22) + esc(w.type) + '</span>' +
           '<span class="rv-for">For ' + esc(who) + (w.creating ? ' · new member' : wizIds().length > 1 ? ' · one request each' : '') + '</span></div>' +
         '<div class="rv"><span class="lbl">Travel &amp; absence dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
           '<div style="margin-top:4px;font-weight:700">' + plural(c.n, 'day') + '</div></div>' +
@@ -5416,16 +5527,16 @@
   /** Slot state of a day for the request being made: 'ok' (green), 'over' (adding it overbooks, orange), 'full' (approved leave
    *  already fills the slots, red). Passes and positions without a max are always 'ok'. Excludes the request being edited. */
   function wizDayState(d) {
-    const w = S.wiz, role = wizRole(), q = w.type === 'Leave' ? quota(role) : 0;
+    const w = S.wiz, role = wizRole(), q = quota(role, w.type);
     if (!q) return 'ok';
     const self = w.editId ? S.requests.find(r => r.id === w.editId) : null;
-    const own = self && self.type === 'Leave' && self.status !== 'Denied' && d >= self.start && d <= self.end;
-    const appr = apprOn(d, role) - (own && self.status === 'Approved' ? 1 : 0);
-    const total = countOn(d, role) - (own ? 1 : 0) + Math.max(1, wizIds().filter(id => userOf(id).role === role).length);
+    const own = self && self.type === w.type && self.status !== 'Denied' && d >= self.start && d <= self.end;
+    const appr = apprOn(d, role, w.type) - (own && self.status === 'Approved' ? 1 : 0);
+    const total = countOn(d, role, w.type) - (own ? 1 : 0) + Math.max(1, wizIds().filter(id => userOf(id).role === role).length);
     return appr >= q ? 'full' : total > q ? 'over' : 'ok';
   }
   function renderMini() {
-    const w = S.wiz, ms = w.mini, gs = D.weekStart(ms), role = wizRole(), q = w.type === 'Leave' ? quota(role) : 0;
+    const w = S.wiz, ms = w.mini, gs = D.weekStart(ms), role = wizRole(), q = quota(role, w.type);
     let html = '<div class="mini"><div class="mini-h"><button class="btn ghost icon-btn" data-act="miniNav" data-v="-1" aria-label="Previous month">' + icon('left', 16) + '</button>' +
       '<span>' + D.f(ms, { month: 'long', year: 'numeric' }) + '</span><button class="btn ghost icon-btn" data-act="miniNav" data-v="1" aria-label="Next month">' + icon('right', 16) + '</button></div>' +
       '<div class="mini-g">' + DOW.map(d => '<div class="dw">' + d[0] + '</div>').join('');
@@ -5818,7 +5929,7 @@
     grpToggle(el) {
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
       if (t === 'Past') c.Past = c.Past === false; // Past starts closed: first tap opens it (false = open)
-      else if (t === 'Leave' || t === 'Pass') c[t] = c[t] === 'open' ? 'closed' : 'open'; // part-open → open → closed → open
+      else if (t !== 'Blackouts') c[t] = c[t] === 'open' ? 'closed' : 'open'; // part-open → open → closed → open
       else c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
     },
     grpMore(el) { const c = (S.grpCol = S.grpCol || {})[el.dataset.table] = S.grpCol[el.dataset.table] || {}; c[el.dataset.v] = 'open'; render(); },
@@ -6034,13 +6145,14 @@
       closeModal();
       const u = S.users.find(x => x.id === el.dataset.id);
       if (!u) return;
-      S.list.q = ''; S.f = { status: ['Approved', 'Pending', 'Denied'], role: ROLES.slice(), type: ['Leave', 'Pass'], person: u.id };
+      S.list.q = ''; S.f = { status: ['Approved', 'Pending', 'Denied'], role: ROLES.slice(), type: typeNames().slice(), person: u.id };
       S.view = 'all'; render();
     },
     quotaInfo(el) {
       const d = el.dataset.date, role = el.dataset.role;
-      if (quota(role) && countOn(d, role) > quota(role)) return openConflict(d, role);
-      toast(quotaMsg(d, role), 'hint', 4000);
+      const type = el.dataset.type || 'Leave';
+      if (dayConflicts(d, role).length) return openConflict(d, role);
+      toast(quotaMsg(d, role, type), 'hint', 4000);
     },
     /* First click lifts the request to the top as one unbroken bar; a second click opens it. */
     editReq(el) { openEditWizard(el.dataset.id); },
@@ -6255,6 +6367,41 @@
       if (!row) return;
       row.querySelectorAll('.bb-prev .idb-r, .rsw .ub').forEach(x => { x.textContent = L; });
     },
+    newType() { openTypeEditor(''); },
+    editType(el) { openTypeEditor(el.dataset.name); },
+    typeMode(el) { S.typeDraft.mode = el.dataset.v; $('#tyModeBox').innerHTML = seg([['warn', 'Warn'], ['limit', 'Limit']], S.typeDraft.mode, 'typeMode'); },
+    saveTypeEdit() {
+      const row = $('#modal .ty-row'), old = row.dataset.old, err = $('#tyErr');
+      const builtIn = old === 'Leave' || old === 'Pass';
+      const t = { name: builtIn ? old : $('#tyName').value.trim().replace(/\s+/g, ' '), letter: $('#tyLetter').value.trim().toUpperCase(), max: Number($('#tyMax').value),
+        mode: S.typeDraft.mode, style: ($('#modal input[name="ty-st"]:checked') || {}).value || 'teal', disabled: !!(old && typeInfo(old).disabled) };
+      const msg = !/^[A-Za-z][A-Za-z0-9 &\/-]{1,19}$/.test(t.name) ? 'Name must be 2–20 letters (e.g. TDY).'
+        : /^(blackout|both)$/i.test(t.name) ? 'That name is reserved.'
+        : !/^[A-Z0-9]$/.test(t.letter) ? 'Tag must be one letter or number.'
+        : !Number.isInteger(t.max) || t.max < 1 || t.max > 60 ? 'Max days must be 1–60.'
+        : TYPE_LIST.some(x => x.name.toLowerCase() === t.name.toLowerCase() && x.name !== old) ? t.name + ' already exists.' : '';
+      if (msg) { err.textContent = msg; return; }
+      S.nextSyncTab = 'admin';
+      save(() => {
+        S.settings.types = old ? TYPE_LIST.map(x => x.name === old ? t : x) : TYPE_LIST.concat([t]);
+        if (old && t.name !== old) S.requests.forEach(r => { if (r.type === old) r.type = t.name; });
+        setTypes(S.settings.types); reindex();
+      }, 'apiSaveType', S.token, t, old || '');
+      closeModal(); render(); toast(t.name + (old ? ' saved' : ' added'), 'ok', 1500);
+    },
+    toggleType(el) {
+      const name = el.dataset.name, t = Object.assign({}, typeInfo(name), { disabled: !typeInfo(name).disabled });
+      if (t.disabled && TYPE_LIST.every(x => x.name === name || x.disabled)) return toast('Keep at least one event type enabled.', 'error');
+      S.nextSyncTab = 'admin';
+      save(() => { S.settings.types = TYPE_LIST.map(x => x.name === name ? t : x); setTypes(S.settings.types); }, 'apiSaveType', S.token, t, name);
+      render(); toast(name + (t.disabled ? ' disabled' : ' enabled'), 'ok', 1500);
+    },
+    deleteType(el) {
+      const name = el.dataset.name;
+      if (!confirm('Delete the ' + name + ' event type?')) return;
+      save(() => { S.settings.types = TYPE_LIST.filter(x => x.name !== name); setTypes(S.settings.types); }, 'apiDeleteType', S.token, name);
+      render(); toast(name + ' deleted', 'ok', 1500);
+    },
     newRole() { openRoleEditor(''); },
     editRole(el) { openRoleEditor(el.dataset.name); },
     /** Save the position editor (new or existing). Renaming an added position moves its members with it. */
@@ -6262,8 +6409,9 @@
       const row = $('#modal .role-row'), err = $('#nrErr'), old = row.dataset.old;
       const name = ROLE_DEF[old] ? old : $('#nrName').value.trim().replace(/\s+/g, ' ');
       const r = { name, letter: row.querySelector('.rl-letter').value.trim().toUpperCase(), style: (row.querySelector('.swatches input:checked') || {}).value || 'grey',
-        quota: Number(row.querySelector('.rl-quota').value), view: rowView('ed', { name: old || name, view: roleInfo(old).view }), disabled: !!roleInfo(old).disabled };
-      const msg = roleError(r, !old) || (old && r.name.toLowerCase() !== old.toLowerCase() && ROLES.some(x => x.toLowerCase() === r.name.toLowerCase()) ? r.name + ' already exists.' : '');
+        caps: Object.fromEntries([...row.querySelectorAll('.rl-cap')].map(i => [i.dataset.type, Number(i.value)])), view: rowView('ed', { name: old || name, view: roleInfo(old).view }), disabled: !!roleInfo(old).disabled };
+      r.quota = Number(r.caps.Leave) || 0;
+      const msg = roleError(r, !old) || (Object.values(r.caps).some(n => !Number.isInteger(n) || n < 0 || n > 99) ? 'Max per day must be 0–99 (0 = no limit).' : '') || (old && r.name.toLowerCase() !== old.toLowerCase() && ROLES.some(x => x.toLowerCase() === r.name.toLowerCase()) ? r.name + ' already exists.' : '');
       if (msg) { err.textContent = msg; return; }
       S.nextSyncTab = 'admin';
       save(() => {
