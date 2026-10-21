@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792572679"></script>
+    <script src="config.js?v=1792573562"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2092,6 +2092,21 @@
     .calbar .cb-left { grid-column: 1; grid-row: 2; justify-self: start; flex-wrap: nowrap; }
     .calbar .cb-right { grid-column: 2; grid-row: 2; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; min-width: 0; }
   }
+  /* Admin → Positions: square swatches show the position letter in each colour; white gets an outline. */
+  .rsw .ub { display: inline-grid; place-items: center; border-radius: 6px; font-size: 13px; font-weight: 900; color: inherit; }
+  .rsw .ub.idb-p { box-shadow: inset 0 0 0 1.5px #0b1730; }
+  .rsw .ub.idb-b { color: #fff; } .rsw .ub.idb-o { color: #0b1730; }
+  .role-row .seg { flex-wrap: wrap; }
+  .role-nm { align-self: center; font-size: 16px; }
+  .role-row .ub-prev .idb, .bb-prev .idb { margin-right: 0; height: 30px; }
+  .role-row .ub-prev .idb-r, .bb-prev .idb-r { width: 30px; font-size: 15px; }
+  /* Tablet Day view: like phones, [‹ Back] [+ Add Request] sit in the bottom bar, so the top bar fits on one row. */
+  @media (min-width: 701px) and (max-width: 1179px) {
+    .cal.cal-day .calbar .req-btn, .cal.cal-day .calbar .back-month { display: none; }
+    .cal.cal-day .req-bar { display: flex; gap: 8px; }
+    .cal.cal-day .req-bar .req-btn { flex: 1; width: auto; }
+    .cal.cal-day .req-bar .back-btn { flex: none; }
+  }
 </style>
 
   </head>
@@ -2189,9 +2204,31 @@
   const fmtTs = iso => { const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
   const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
   const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-  const ROLES = ['Pilot', 'Boom', 'Other'];
+  /* Positions: Pilot / Boom / Other are built in; admins add more (Admin → Positions). ROLES is refreshed from
+     settings.roles on every server reply. Each has a one-letter badge, a colour, a daily leave max and a visibility. */
+  let ROLES = ['Pilot', 'Boom', 'Other'];
+  let ROLE_INFO = {};
+  const ROLE_STYLES = ['white', 'grey', 'navy', 'gold', 'crimson', 'teal', 'purple', 'slate', 'orange', 'black', 'green'];
+  const ROLE_DEF = { Pilot: { letter: 'P', style: 'white' }, Boom: { letter: 'B', style: 'black' }, Other: { letter: 'O', style: 'grey' } };
+  function setRoles(list) {
+    if (!Array.isArray(list) || !list.length) return;
+    ROLES = list.map(r => r.name); ROLE_INFO = {};
+    list.forEach(r => { ROLE_INFO[r.name] = r; });
+  }
+  const roleInfo = r => ROLE_INFO[r] || ROLE_DEF[r] || {};
+  const roleL = r => roleInfo(r).letter || String(r || 'O')[0].toUpperCase();
+  /** Class for the position square: white / black / grey keep the original P / B / O look; others reuse the unit badge colours. */
+  const styleCls = st => st === 'white' ? 'idb-p' : st === 'black' ? 'idb-b' : st === 'grey' || !st ? 'idb-o' : 'ub-' + st;
+  const roleCls = r => styleCls(roleInfo(r).style);
+  const rolePl = r => ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[r] || r;            // filter chips, titles
+  const roleGroup = r => ({ Pilot: 'Pilots', Boom: 'Boom operators', Other: 'Other' })[r] || r; // picker headings
+  const ROLE_NAME_ = { Boom: 'Boom Operator' };
+  const roleName = r => ROLE_NAME_[r] || r || '';                                                 // one person's position
+  /** Meter / band accent: built-ins keep their colours (CSS), added positions use their badge colour. */
+  const ROLE_HEX = { navy: '#3b5b9a', gold: '#d99a00', crimson: '#be123c', teal: '#0f766e', purple: '#7c3aed', slate: '#475569', orange: '#c2410c', black: '#27272a', green: '#15803d', white: '#94a3b8', grey: '#64748b' };
+  const roleKey = r => ({ Pilot: 'p', Boom: 'b', Other: 'o' })[r] || 'x';
+  const roleVar = r => roleKey(r) === 'x' ? ' style="--rm:' + (ROLE_HEX[roleInfo(r).style] || '#64748b') + '"' : '';
   const RANKS = ['Col', 'Lt Col', 'Maj', 'Capt', '1st Lt', '2d Lt', 'CMSgt', 'SMSgt', 'MSgt', 'TSgt', 'SSgt', 'SrA', 'A1C', 'Amn', 'Civ'];
-  const ROLE_LABEL = { Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' };
 
   /* ================================================================ */
   /* State                                                              */
@@ -2199,7 +2236,7 @@
   const S = {
     token: store.get('token', null),
     me: null, isAdmin: false, users: [], requests: [], sheetUrl: '',
-    settings: { pilotQuota: 2, boomQuota: 2, otherQuota: 0, leaveMaxDays: 10, leaveMode: 'warn', passMaxDays: 4, passMode: 'limit' },
+    settings: { leaveMaxDays: 10, leaveMode: 'warn', passMaxDays: 4, passMode: 'limit' },
     today: localToday(),
     view: store.get('view', 'calendar'),
     cal: store.get('cal', 'month'),
@@ -2286,8 +2323,7 @@
   const initials = u => u.name.split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
   function quota(role) {
     if (!role) return 0; // no member chosen yet (admin request form)
-    const q = role === 'Pilot' ? S.settings.pilotQuota : role === 'Boom' ? S.settings.boomQuota : S.settings.otherQuota;
-    return Number(q) || 0; // 0 = unlimited
+    return Number(roleInfo(role).quota) || 0; // 0 = unlimited
   }
   const countOn = (d, role) => IDX.counts.get(d + '|' + role) || 0;
   const apprOn = (d, role) => IDX.appr.get(d + '|' + role) || 0;
@@ -2415,7 +2451,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-20.4'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.1'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -2554,11 +2590,15 @@
       start: DAY_RE.test(r.start) ? r.start : '1970-01-01', end: DAY_RE.test(r.end) ? r.end : '1970-01-01'
     });
   }
-  function cleanUser(u) { return Object.assign({}, u, { id: String(u.id), role: ROLES.includes(u.role) ? u.role : 'Other' }); }
+  function cleanUser(u) { return Object.assign({}, u, { id: String(u.id), role: u.role || 'Other' }); }
   function apply(data) {
     if (!data) return;
     S.me = data.me; S.isAdmin = !!data.isAdmin; S.users = (data.users || []).map(cleanUser); S.requests = (data.requests || []).map(cleanReq);
     S.settings = Object.assign(S.settings, data.settings || {}); S.sheetUrl = data.sheetUrl || '';
+    setRoles(S.settings.roles);
+    // Clear filters target (Settings → Default positions) and how much of the roster this member can see.
+    if (data.viewRoles) S.viewRoles = data.viewRoles;
+    S.scope = data.scope || 'all';
     // Notifications: unread count (Profile badge + home-screen badge), push key, admin alert preference.
     // A change in the server's unread count means new notifications: refresh the list in the background (keep showing the old one meanwhile).
     if (typeof data.unread === 'number' && data.unread !== S.serverUnread) { S.serverUnread = data.unread; if (S.notes != null) setTimeout(loadNotes, 0); }
@@ -2576,8 +2616,8 @@
     reindex();
     // Default the position filters to the signed-in member's own position (once per sign-in / account switch).
     if (S.filtersFor !== S.me) {
-      // Default view: Pilots and Booms (Other is opt-in); Clear filters returns here.
-      S.f.role = DEFAULT_ROLES.slice();
+      // Default view: the member's default positions (Settings); Clear filters returns here.
+      S.f.role = defaultRoles();
       S.filtersFor = S.me;
     }
   }
@@ -2717,7 +2757,7 @@
       '<div class="field"><label for="rgMid">Middle (optional)</label><input id="rgMid" autocomplete="additional-name"></div></div>' +
       '<div class="field"><label for="rgLast">Last name</label><input id="rgLast" autocomplete="family-name"></div>' +
       '<div class="row"><div class="field"><label for="rgRank">Rank</label>' + sel('rgRank', RANKS.map(r => [r, r])) + '</div>' +
-      '<div class="field"><label for="rgRole">Position</label>' + sel('rgRole', [['Pilot', 'Pilot'], ['Boom', 'Boom Operator'], ['Other', 'Other']]) + '</div></div>' +
+      '<div class="field"><label for="rgRole">Position</label>' + sel('rgRole', (cfg.roles && cfg.roles.length ? cfg.roles.map(r => r.name) : ['Pilot', 'Boom', 'Other']).map(r => [r, roleName(r)])) + '</div></div>' +
       '<div class="field"><label for="rgUnit">Unit</label>' + sel('rgUnit', cfg.units.map(u => [u.code, u.code + (u.name && u.name !== u.code ? ' — ' + u.name : '')])) + '</div>' +
       pinInput('rgPin', 'Squadron default PIN', 'off') +
       '<p class="auth-note">Ask an admin for the default PIN. After you create your account you’ll choose your own PIN.</p>' +
@@ -2929,7 +2969,7 @@
     S.dpShown = showPanel;
     const body = S.cal === 'month' ? renderMonth() : S.cal === 'quad' ? renderQuad() : S.cal === 'week' ? renderWeek() : renderDay();
     const confOn = S.f.conf && S.view !== 'mine';
-    return '<section class="cal' + (confOn ? ' conf-mode' : '') + '">' +
+    return '<section class="cal' + (confOn ? ' conf-mode' : '') + (S.cal === 'day' ? ' cal-day' : '') + '">' +
       '<div class="calbar">' +
         // Left: view switch, Today, Add Request, then the filters — all together on the left; the date is centred.
         '<div class="cb-start"><div class="cb-left"><div class="cb-views">' +
@@ -2975,7 +3015,7 @@
    */
   const FILTERS = [
     { g: 'status', name: 'Status', all: 'All statuses', opts: [['Approved', 'Approved'], ['Pending', 'Pending'], ['Denied', 'Denied']] },
-    { g: 'role', name: 'Position', all: 'All positions', opts: [['Pilot', 'Pilots'], ['Boom', 'Booms'], ['Other', 'Other']] },
+    { g: 'role', name: 'Position', all: 'All positions', get opts() { return ROLES.map(r => [r, rolePl(r)]); } },
     { g: 'type', name: 'Type', all: 'Leave & pass', opts: [['Leave', 'Leave'], ['Pass', 'Pass']] }
   ];
   /** Counts and meters leave out denied requests unless Denied is the only status selected. */
@@ -3025,13 +3065,13 @@
     const meU = people.find(u => u.id === S.me);
     const groups = (meU ? '<div class="who-h">Me</div>' + row(meU) : '') + ROLES.map(role => {
       const list = people.filter(u => u.role === role && u.id !== S.me).sort((a, b) => lastName(a).localeCompare(lastName(b)));
-      return list.length ? '<div class="who-h">' + esc(({ Pilot: 'Pilots', Boom: 'Boom operators', Other: 'Other' })[role]) + '</div>' + list.map(row).join('') : '';
+      return list.length ? '<div class="who-h">' + esc(roleGroup(role)) + '</div>' + list.map(row).join('') : '';
     }).join('');
     return (sc === 'mine' ? '' : '<div class="fp-conf-row"><button type="button" class="btn sm conf-only' + (conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + conf + '">' +
         icon('alert', 16) + (conf ? 'Conflict mode on' : 'Conflict mode') + '</button></div>') +
       '<div class="who-search">' + icon('search', 15) + '<input type="search" class="fp-q" placeholder="Type a name…" autocomplete="off" aria-label="Search people" data-model="whoq" data-live="whoFilter"></div>' +
       '<div class="who-list" role="listbox" aria-multiselectable="true"><button type="button" class="who-row who-all" data-act="fpEveryone"' + scAttr(sc) + '>' +
-        '<span class="idb idb-all" aria-hidden="true"><span class="idb-r idb-p">P</span><span class="idb-r idb-b">B</span><span class="idb-r idb-o">O</span></span><span class="pp-n"><b>' + (conf ? 'All conflicts' : 'Everyone') + '</b></span></button>' +
+        allBadge() + '<span class="pp-n"><b>' + (conf ? 'All conflicts' : 'Everyone') + '</b></span></button>' +
       groups + '<div class="who-none" hidden>No one matches.</div></div>';
   }
   /** Close the open person-filter dropdown and, if anything changed, redraw with the new filter. */
@@ -3067,7 +3107,7 @@
     const groups = (meU ? '<div class="pp-g"><div class="pp-h">Me</div>' + personRow(meU) + '</div>' : '') + ROLES.map(role => {
       const list = people.filter(u => u.role === role && u.id !== S.me).sort((a, b) => lastName(a).localeCompare(lastName(b)));
       if (!list.length) return '';
-      return '<div class="pp-g"><div class="pp-h">' + esc(({ Pilot: 'Pilots', Boom: 'Boom operators', Other: 'Other' })[role]) + '</div>' +
+      return '<div class="pp-g"><div class="pp-h">' + esc(roleGroup(role)) + '</div>' +
         list.map(u => row(u.id, idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span>',
           lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit)).join('') + '</div>';
     }).join('');
@@ -3077,7 +3117,7 @@
       '<div class="pp-search"><div class="search">' + icon('search', 15) + '<input type="search" placeholder="Search name, rank, unit…" data-model="ppq" data-live="ppFilter" aria-label="Search people" autocomplete="off" autofocus></div></div>' +
       '<div class="modal-b pp-list">' + (assign && S.wiz.editId ? '' : assign
         ? '<button type="button" class="pp-row pp-add" data-act="wizCreate">' + icon('userPlus', 20) + '<span class="pp-n"><b>Add new member</b></span></button>'
-        : row('', '<span class="idb idb-all" aria-hidden="true"><span class="idb-r idb-p">P</span><span class="idb-r idb-b">B</span><span class="idb-r idb-o">O</span></span>' +
+        : row('', allBadge() +
             '<span class="pp-n"><b>' + (conf ? 'All conflicts' : 'Everyone') + '</b></span>', 'everyone all conflicts')) + groups +
       '<div class="pp-none" hidden>No one matches.</div></div>' +
       (assign ? '<div class="modal-f"><span class="pp-count" id="ppCount">' + ppCountText() + '</span><button class="btn primary" data-act="ppDone">' + icon('check', 18) + 'Done</button></div>' : '');
@@ -3132,20 +3172,28 @@
       : plural(n, 'request') + ' over the daily max') + '</span>' +
       '<button type="button" class="btn icon-btn conf-x" data-act="confOff" aria-label="Leave conflict mode" title="Leave conflict mode">' + icon('x', 18) + '</button></div>';
   }
-  /* Default filters: Pilots and Booms (Other is opt-in), all statuses, Leave and Pass, nobody picked, conflict mode off.
-     Clear filters returns to exactly this, and only shows when the filters differ from it. */
-  const DEFAULT_ROLES = ['Pilot', 'Boom'];
+  /** "Everyone" row badge: one square per position (up to four). */
+  const allBadge = () => '<span class="idb idb-all" aria-hidden="true">' + ROLES.slice(0, 4).map(r => '<span class="idb-r ' + roleCls(r) + '">' + esc(roleL(r)) + '</span>').join('') + '</span>';
+  /* Default filters: the member's default positions, all statuses, Leave and Pass, nobody picked, conflict mode off.
+     Default positions: their choice in Settings, else Pilots + Booms for a Pilot or Boom, else just their own position.
+     Clear filters returns to exactly this, and only shows when the filters differ from that. */
+  function defaultRoles() {
+    const v = (S.viewRoles || []).filter(r => ROLES.includes(r));
+    if (v.length) return v;
+    const mine = myRole();
+    return mine === 'Pilot' || mine === 'Boom' || !mine ? ['Pilot', 'Boom'] : [mine];
+  }
   function setDefaultFilters(st) {
     if (st === S.mf) S.mineConf = false;
     st.status = FILTERS[0].opts.map(o => o[0]); st.type = ['Leave', 'Pass'];
-    if (st.role) st.role = S.priv ? ROLES.slice() : DEFAULT_ROLES.slice();
+    if (st.role) st.role = S.priv ? ROLES.slice() : defaultRoles();
     if ('person' in st) st.person = '';
     if ('conf' in st) st.conf = false;
   }
   function isDefaultFilters(st) {
     const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
     return same(st.status, FILTERS[0].opts.map(o => o[0])) && same(st.type, ['Leave', 'Pass']) &&
-      (!st.role || S.priv || same(st.role, DEFAULT_ROLES)) && !st.person && !st.conf && !(st === S.mf && S.mineConf && S.mineMode === 'cal');
+      (!st.role || S.priv || same(st.role, defaultRoles())) && !st.person && !st.conf && !(st === S.mf && S.mineConf && S.mineMode === 'cal');
   }
   function filterButton(sc) {
     const parts = filterSummary(sc);
@@ -3155,7 +3203,7 @@
       // With a person picked, lead with their badge and "Last, First" (as in the picker) instead of the sliders icon.
       (person ? personPillInner(st).replace(/<\/span>$/, (parts.length > 1 ? ' · ' + esc(parts.slice(1).join(' · ')) : '') + '</span>')
         : icon('sliders', 16) + '<span>' + esc(parts.length ? parts.join(' · ') : 'Filters') + '</span>') + icon('down', 14) + '</button>' +
-      // Clear filters: back to the defaults (Pilots + Booms, everyone, all statuses, Leave and Pass). Only when filters differ from that.
+      // Clear filters: back to the defaults (my default positions, everyone, all statuses, Leave and Pass). Only when filters differ from that.
       (!isDefaultFilters(st) ? '<button type="button" class="btn fall-clear" data-act="clearFilters"' + scAttr(sc) + ' aria-label="Clear filters and show everything" title="Clear filters">' + icon('x', 18) + '<span class="bl">Clear</span></button>' : '');
   }
   function openFilterSheet(sc, inPlace) {
@@ -3244,11 +3292,11 @@
         return '<span class="gb" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
           personBadge(r, withStatus, from, to) + '</span>';
       }
-      const L = (b.u.role || 'Other')[0], un = unitsList().find(x => x.code === b.u.unit), r0 = b.list[0];
+      const L = roleL(b.u.role), un = unitsList().find(x => x.code === b.u.unit), r0 = b.list[0];
       const same = b.list.every(r => r.status === r0.status);
       const names = b.list.map(r => '<span class="mn" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
         barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (withStatus && !onNow(r, from, to) ? statusIcon(r.status) : '') + '</span>').join('<span class="rp-dot" aria-hidden="true">·</span>');
-      return '<span class="idb pb gbb' + (same ? ' st-' + r0.status.toLowerCase() : '') + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
+      return '<span class="idb pb gbb' + (same ? ' st-' + r0.status.toLowerCase() : '') + '"><span class="idb-r ' + roleCls(b.u.role) + '" aria-hidden="true">' + L + '</span>' +
         '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(b.u.unit) + '</span>' +
         '<span class="idb-n">' + names + '</span></span>';
     }).join('<span class="gsl" aria-hidden="true">·</span>');
@@ -3274,8 +3322,8 @@
   function roleMeter(role, c, size) {
     const q = quota(role), over = q && c > q, full = q && c === q;
     const pct = q ? Math.min(100, c / q * 100) : Math.min(100, c * 25);
-    return '<span class="rm rm-' + role[0].toLowerCase() + (over ? ' over' : full ? ' full' : '') + (c ? '' : ' zero') + (size ? ' ' + size : '') + '">' +
-      '<span class="rm-t"><b>' + role[0] + '</b><span class="rm-c">' + c + '</span>' + (q ? '<span class="rm-q">/' + q + '</span>' : '') + '</span>' +
+    return '<span class="rm rm-' + roleKey(role) + (over ? ' over' : full ? ' full' : '') + (c ? '' : ' zero') + (size ? ' ' + size : '') + '"' + roleVar(role) + ' title="' + esc(rolePl(role)) + '">' +
+      '<span class="rm-t"><b>' + esc(roleL(role)) + '</b><span class="rm-c">' + c + '</span>' + (q ? '<span class="rm-q">/' + q + '</span>' : '') + '</span>' +
       '<span class="rm-bar"><i style="width:' + pct + '%"></i></span></span>';
   }
   /** Leave slots used per position on a day: Leave only (passes have no daily max), honouring the
@@ -3353,7 +3401,7 @@
         const av = dayWarn(d);
         const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' + (S.priv
           ? ({ 'av-open': 'slots open', 'av-over': 'slots overbooked', 'av-full': 'slots full' })[av] || ''
-          : roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : ''));
+          : roles.map(role => c[role] + ' ' + roleLow(role) + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : ''));
         html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + boCls(d) + (over.length && !S.priv ? ' over' : '') + (av ? ' ' + av : '') + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
           '<span class="cc-n">' + Number(d.slice(8)) + '</span></button>';
       });
@@ -3378,7 +3426,7 @@
         const c = filteredRoleCounts(d);
         const over = roles.filter(role => quota(role) && c[role] > quota(role));
         const label = D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + ': ' +
-          roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : '');
+          roles.map(role => c[role] + ' ' + roleLow(role) + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ') + (over.length ? '. Over daily max for ' + over.join(' and ') : '');
         html += '<button class="cell cc' + (d.slice(0, 7) !== month ? ' out' : '') + (d === S.today ? ' today' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '" aria-label="' + esc(label) + '">' +
           '<span class="cc-n">' + Number(d.slice(8)) + '</span>' + roles.map(role => roleMeter(role, c[role])).join('') + '</button>';
       }
@@ -3461,7 +3509,7 @@
       const cls = ['cell', d.slice(0, 7) !== month ? 'out' : '', d === S.today ? 'today' : '', (i === 0 || i === 6) ? 'wknd' : '', dayWarn(d), boCls(d).trim()].join(' ');
       html += '<div class="' + cls + '" data-act="pickDay" data-date="' + d + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + '>' +
         '<div class="cell-head"><button class="dnum" data-act="gotoDay" data-date="' + d + '" aria-label="Open day view for ' + D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + '">' + Number(d.slice(8)) + '</button>' +
-        (S.priv ? '' : '<span class="qday">' + qChip(d, 'Pilot') + qChip(d, 'Boom') + qChip(d, 'Other') + '</span>') +
+        (S.priv ? '' : '<span class="qday">' + ROLES.filter(r => ROLE_DEF[r] || quota(r) || countOn(d, r)).map(r => qChip(d, r)).join('') + '</span>') +
         '</div>' +
         (hidden[i] ? '<button class="more" data-act="dayList" data-date="' + d + '" aria-label="Show all ' + (hidden[i]) + ' more on ' + D.short(d) + '">+' + hidden[i] + '<span class="wide"> more</span></button>' : '') +
         '</div>';
@@ -3470,12 +3518,12 @@
   }
 
   /* Per-day "P: 1/2" / "B: 3/2" markers: Leave only (Approved + Pending); passes have no limit. Red when over the admin-set max. */
-  const ROLE_PLURAL = { Pilot: 'pilots', Boom: 'booms', Other: 'other personnel' };
+  const roleLow = r => ({ Pilot: 'pilots', Boom: 'booms', Other: 'other personnel' })[r] || r + ' personnel';
   function quotaMsg(d, role) {
     const c = countOn(d, role), q = quota(role), day = D.f(d, { weekday: 'short', month: 'short', day: 'numeric' });
-    if (!q) return c + ' ' + ROLE_PLURAL[role] + ' requested leave on ' + day + ' (no daily max set).';
-    if (c > q) return 'More than ' + q + ' ' + ROLE_PLURAL[role] + ' have requested leave on ' + day + ' — ' + c + ' requested, max is ' + q + '. Passes don’t count.';
-    return c + ' of ' + q + ' ' + ROLE_PLURAL[role] + ' requested leave on ' + day + '. Passes don’t count.';
+    if (!q) return c + ' ' + roleLow(role) + ' requested leave on ' + day + ' (no daily max set).';
+    if (c > q) return 'More than ' + q + ' ' + roleLow(role) + ' have requested leave on ' + day + ' — ' + c + ' requested, max is ' + q + '. Passes don’t count.';
+    return c + ' of ' + q + ' ' + roleLow(role) + ' requested leave on ' + day + '. Passes don’t count.';
   }
   function qChip(d, role) {
     const c = countOn(d, role), q = quota(role), over = q && c > q;
@@ -3484,8 +3532,8 @@
     // Solid colours: red = over the daily max (approved or not — approving doesn't free a slot), orange = at the max,
     // green = slots open. Positions with no max stay neutral.
     const st = over ? ' over' : q && c === q ? ' full' : q ? ' open' : c ? '' : ' zero';
-    return '<button class="qc-day' + st + '" data-act="quotaInfo" data-date="' + d + '" data-role="' + role + '" title="' + esc(msg) + '" aria-label="' + esc(msg) + '">' +
-      role[0] + ': ' + c + (q ? '/' + q : '') + '</button>';
+    return '<button class="qc-day' + st + '" data-act="quotaInfo" data-date="' + d + '" data-role="' + esc(role) + '" title="' + esc(msg) + '" aria-label="' + esc(msg) + '">' +
+      esc(roleL(role)) + ': ' + c + (q ? '/' + q : '') + '</button>';
   }
 
   /* ---------- Conflict days ----------
@@ -3524,7 +3572,7 @@
     const role = userOf(r.userId).role, q = quota(role);
     const worst = cd.reduce((a, d) => countOn(d, role) > countOn(a, role) ? d : a, cd[0]);
     const bad = cd.some(d => conflictState(d, role) === 'bad');
-    const tip = (bad ? 'Conflict' : 'Over the daily max (all approved)') + ': ' + countOn(worst, role) + ' of ' + q + ' ' + ROLE_PLURAL[role] + ' on leave on ' +
+    const tip = (bad ? 'Conflict' : 'Over the daily max (all approved)') + ': ' + countOn(worst, role) + ' of ' + q + ' ' + roleLow(role) + ' on leave on ' +
       cd.map(D.short).join(', ') + '. Click to resolve.';
     return '<button type="button" class="cfl ' + (bad ? 'cfl-bad' : 'cfl-ok') + (compact ? ' cfl-sm' : '') + '" data-act="openConflict" data-date="' + worst + '" data-role="' + role + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
       icon('alert', compact ? 13 : 14) + (compact ? '' : '<span>' + (bad ? 'Conflict' : 'Over max') + '</span>') + '</button>';
@@ -3562,7 +3610,7 @@
     const html = modalHead('Conflict · ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })), 'alert') + '<div class="modal-b">' +
       '<div class="cf-state cf-' + st + '">' + icon(st === 'ok' ? 'check' : 'alert', 18) +
         (st === 'ok' ? 'All requests in this conflict are approved — the day marker is green.' : 'Over the daily max — approve, deny, edit or delete requests below, or approve them all.') + '</div>' +
-      cs.map(c => '<div class="dl-sec"><div class="dl-h"><span>' + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[c.role] + ' out: ' + c.list.length + ' · max ' + c.q + '</span></div>' +
+      cs.map(c => '<div class="dl-sec"><div class="dl-h"><span>' + esc(rolePl(c.role)) + ' out: ' + c.list.length + ' · max ' + c.q + '</span></div>' +
         '<ul class="dl-list cf-list">' + c.list.map(row).join('') + '</ul></div>').join('') +
       (S.isAdmin ? '' : '<p class="meta" style="white-space:normal">Move or delete your request to clear the conflict, or leave it for an admin to decide.</p>') +
       '</div><div class="modal-f">' +
@@ -3576,7 +3624,7 @@
   const isNow = r => r.status !== 'Denied' && r.start <= S.today && r.end >= S.today;
   function describe(r) {
     const u = userOf(r.userId);
-    return fullName(u) + ', ' + ({ Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' })[u.role] + ', ' + r.type + ', ' + r.status + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
+    return fullName(u) + ', ' + roleName(u.role) + ', ' + r.type + ', ' + r.status + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
       (dupsOf(r).length ? ', overlap' : '');
   }
   const dupsOf = r => (IDX.dups && IDX.dups.get(r.id)) || [];
@@ -3594,9 +3642,9 @@
   /* Combined ID badge: [P|MKE] — position square on the left, unit section on the right, one button-like chip.
      Decorative: the parent's aria-label / title spells out position and unit. */
   function idBadge(u) {
-    const L = (u.role || 'Other')[0];
+    const L = roleL(u.role);
     const un = unitsList().find(x => x.code === u.unit);
-    return '<span class="idb" aria-hidden="true"><span class="idb-r idb-' + L.toLowerCase() + '">' + L + '</span>' +
+    return '<span class="idb" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(L) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span></span>';
   }
   /* Full person badge on calendar bars: [P|MKE|Lastname] as one chip. Approved = green border. */
@@ -3606,9 +3654,9 @@
   const onNow = r => r.status === 'Approved' && isNow(r);
   const nowDot = (r, from, to) => onNow(r, from, to) ? '<i class="now-dot" title="On ' + r.type.toLowerCase() + ' now"></i>' : '';
   function personBadge(r, withStatus, from, to) {
-    const u = userOf(r.userId), L = (u.role || 'Other')[0];
+    const u = userOf(r.userId), L = roleL(u.role);
     const un = unitsList().find(x => x.code === u.unit);
-    return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r idb-' + L.toLowerCase() + '">' + L + '</span>' +
+    return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(L) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
       '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + nowDot(r, from, to) + (withStatus ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
   }
@@ -3621,14 +3669,14 @@
   /** Shared middle-day badge for one position + unit: [P|MKE|Doe · Roe · Poe] (or "4+ Pilots" when more than 3). */
   function rolePuck(role, list, from, to, unit) {
     list = list.slice().sort(byLast);
-    const L = role[0], un = unit && unitsList().find(x => x.code === unit);
-    const title = ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[role] + ': ' + list.map(r => fullName(userOf(r.userId)) + ' (' + r.status + ')').join('; ');
+    const L = roleL(role), un = unit && unitsList().find(x => x.code === unit);
+    const title = rolePl(role) + ': ' + list.map(r => fullName(userOf(r.userId)) + ' (' + r.status + ')').join('; ');
     const names = list.length > 3
-      ? '<span class="rp-more">4+ ' + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[role] + '</span>'
+      ? '<span class="rp-more">4+ ' + esc(rolePl(role)) + '</span>'
       : list.map(r => '<span class="mn' + (dupsOf(r).length ? ' dup' : '') + (r.id === S.focus ? ' focus' : '') + (r.status === 'Denied' ? ' st-denied' : '') +
           '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (onNow(r) ? '' : statusIcon(r.status)) + '</span>')
           .join('<span class="rp-dot" aria-hidden="true">·</span>');
-    return '<span class="idb pb rp" title="' + esc(title) + '"><span class="idb-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
+    return '<span class="idb pb rp" title="' + esc(title) + '"><span class="idb-r ' + roleCls(role) + '" aria-hidden="true">' + esc(L) + '</span>' +
       (unit ? '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(unit) + '</span>' : '') +
       '<span class="idb-n">' + names + '</span></span>';
   }
@@ -3708,8 +3756,7 @@
     // but approvals don't; Open (green) = requests still leave a slot free. Counts ignore the status/type filters (they are facts about the day).
     const aRoles = availRoles();
     const avail = d => dayAvail(d);
-    const ROLE_PL = { Pilot: 'Pilot', Boom: 'Boom', Other: 'Other' };
-    const slotsName = aRoles.length === 1 ? ROLE_PL[aRoles[0]] + ' slots' : 'Leave slots (' + aRoles.map(r => r[0]).join(', ') + ')';
+    const slotsName = aRoles.length === 1 ? esc(aRoles[0]) + ' slots' : 'Leave slots (' + aRoles.map(r => esc(roleL(r))).join(', ') + ')';
     const key = aRoles.length ? '<div class="qkey"><span class="qk-t">' + slotsName + '</span>' +
       '<span class="qk av-open"><i></i>Open</span><span class="qk av-over"><i></i>Overbooked</span><span class="qk av-full"><i></i>Full</span></div>' : '';
     const bar = (r, d) => {
@@ -3733,7 +3780,7 @@
         } else {
           const c = filteredRoleCounts(d);
           body = roles.map(role => roleMeter(role, c[role])).join('');
-          label = dayLabel + ': ' + roles.map(role => c[role] + ' ' + ROLE_PLURAL[role] + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ');
+          label = dayLabel + ': ' + roles.map(role => c[role] + ' ' + roleLow(role) + ' on leave' + (quota(role) ? ' of ' + quota(role) : '')).join(', ');
         }
         const av = avail(d);
         if (av) label += '. ' + slotsName + ' ' + ({ 'av-open': 'open', 'av-over': 'overbooked', 'av-full': 'full' })[av];
@@ -3767,7 +3814,8 @@
         '<span class="' + (qb && b > qb ? 'over' : '') + '">B: ' + b + (qb ? '/' + qb : '') + '</span></div>') + '</div>';
     }).join('');
     const col = (a, z) => 'grid-column:' + (D.diff(ws, D.max(a, ws)) + 1) + '/' + (D.diff(ws, D.min(z, we)) + 2);
-    const bands = [['Pilot', 'PILOTS ACTIVE SCHEDULE'], ['Boom', 'BOOM OPERATORS ACTIVE SCHEDULE'], ['Other', 'OTHER SQUADRON PERSONNEL']]
+    const BAND_T = { Pilot: 'PILOTS ACTIVE SCHEDULE', Boom: 'BOOM OPERATORS ACTIVE SCHEDULE', Other: 'OTHER SQUADRON PERSONNEL' };
+    const bands = ROLES.map(r => [r, BAND_T[r] || esc(r.toUpperCase()) + ' ACTIVE SCHEDULE'])
       .filter(b => S.f.role.includes(b[0]))
       .map(b => {
         const evs = reqs.filter(r => userOf(r.userId).role === b[0]);
@@ -3784,7 +3832,7 @@
             '<span class="n">' + personBadge(r, true) + '</span>' + sub + '</div>';
         }).join('');
         const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + (D.dow(d) === 0 ? ' wk-sun' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
-        return '<div class="band band-' + b[0][0].toLowerCase() + '"><div class="band-title"><span class="bt-in"><span class="band-tag">' + b[0][0] + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></span></div>' +
+        return '<div class="band band-' + roleKey(b[0]) + '"' + roleVar(b[0]) + '><div class="band-title"><span class="bt-in"><span class="band-tag">' + esc(roleL(b[0])) + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></span></div>' +
           '<div class="band-body"><div class="band-inner"><div class="band-slots wg">' + slots + '</div><div class="band-pucks wg">' + pucks + '</div></div></div></div>';
       }).join('');
     // Blackouts band on top (everyone sees it).
@@ -3837,7 +3885,7 @@
     // Hide user schedules: one availability line for my position instead of P / B / O counts.
     const av = S.priv ? availClass(d, myRole()) : '';
     const meters = S.priv
-      ? (av ? '<div class="day-avail ' + av + '"><i></i>' + esc(({ Pilot: 'Pilot', Boom: 'Boom', Other: 'Other' })[myRole()]) + ' slots ' + ({ 'av-open': 'open', 'av-over': 'overbooked', 'av-full': 'full' })[av] + '</div>' : '')
+      ? (av ? '<div class="day-avail ' + av + '"><i></i>' + esc(myRole() || '') + ' slots ' + ({ 'av-open': 'open', 'av-over': 'overbooked', 'av-full': 'full' })[av] + '</div>' : '')
       : ROLES.map(role => roleMeter(role, rc[role], 'lg')).join('');
     const weekStrip = '<div class="dstrip"><button class="ds-arrow" data-act="dayShift" data-v="-7" aria-label="Previous week">' + icon('left', 20) + '</button>' +
         '<div class="ds-days">' + strip + '</div>' +
@@ -3918,7 +3966,6 @@
   /** "Last, First · Rank" with the comma and rank left out when a member has no first name or rank on file. */
   const nameText = (u, noRank) => lastName(u) + (firstName(u) ? ', ' + firstName(u) : '') + (u.rank && !noRank ? ' · ' + u.rank : '');
   const nameHtml = (u, noRank) => '<b>' + esc(lastName(u)) + (firstName(u) ? ',</b> ' + esc(firstName(u)) : '</b>') + (u.rank && !noRank ? ' <span class="muted">· ' + esc(u.rank) + '</span>' : '');
-  const ROLE_NAME = { Pilot: 'Pilot', Boom: 'Boom Operator', Other: 'Other' };
   const milDate = d => Number(d.slice(8)) + ' ' + D.f(d, { month: 'short' }) + ' ' + d.slice(0, 4);
   const COLS = [
     // The pinned Name (last name) comes right after the status mark; Unit scrolls with the other columns.
@@ -4007,7 +4054,7 @@
         '<td>' + unitBadge(u.unit) + '</td>' +
         '<td>' + esc(firstName(u)) + '</td>' +
         '<td>' + esc(u.rank) + '</td>' +
-        '<td>' + esc(ROLE_NAME[u.role] || u.role) + '</td>' +
+        '<td>' + esc(roleName(u.role)) + '</td>' +
         '<td class="num">' + milDate(r.start) + '</td>' +
         '<td class="num">' + milDate(r.end) + '</td>' +
         '<td class="num"><span class="days">' + n + '</span>' +
@@ -4173,7 +4220,7 @@
     const cell = (v, cls) => '<td class="num' + (cls ? ' ' + cls : '') + '">' + (v ? v : '<span class="muted">0</span>') + '</td>';
     const body = rows.length ? rows.map(m => '<tr data-act="memberCard" data-id="' + esc(m.u.id) + '" tabindex="0" class="' + (m.u.active ? '' : 'st-denied') + '" aria-label="' + esc(fullName(m.u) + ': ' + m.count + ' requests, ' + m.req + ' days requested, ' + m.appr + ' approved, ' + m.den + ' denied') + '">' +
         '<td>' + unitBadge(m.u.unit) + '</td><td class="strong stk">' + esc(lastName(m.u)) + '</td><td>' + esc(firstName(m.u)) + '</td><td>' + esc(m.u.rank) + '</td>' +
-        '<td>' + esc(ROLE_NAME[m.u.role] || m.u.role) + (m.u.active ? '' : ' <span class="badge">Inactive</span>') + '</td>' +
+        '<td>' + esc(roleName(m.u.role)) + (m.u.active ? '' : ' <span class="badge">Inactive</span>') + '</td>' +
         cell(m.count) + cell(m.req, 'strong') + cell(m.appr, 'ok-t') + cell(m.den, 'bad-t') + cell(m.pend, 'pend-t') + cell(m.leave) + cell(m.pass) + '</tr>').join('')
       : '<tr class="empty-row"><td colspan="' + PEOPLE_COLS.length + '">No members match.</td></tr>';
     const foot = '<tfoot><tr><td colspan="5" class="strong">Squadron total · ' + plural(rows.length, 'member') + '</td>' +
@@ -4216,6 +4263,76 @@
       '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="addUnit">' + icon('plus', 18) + 'Add badge</button></div>';
     openModal('badge', html);
   }
+  /** Position colour picker: the position square in each colour. */
+  function roleSwatches(name, cur, letter) {
+    return '<div class="swatches" role="radiogroup" aria-label="Position colour">' + ROLE_STYLES.map(st =>
+      '<label class="swatch rsw" title="' + st[0].toUpperCase() + st.slice(1) + '"><input type="radio" name="' + esc(name) + '" value="' + st + '"' + (st === cur ? ' checked' : '') +
+        ' data-change="previewRole" aria-label="' + st + '"><span class="ub ' + styleCls(st) + '">' + esc(letter || '') + '</span></label>').join('') + '</div>';
+  }
+  /** "Can see" for a position row: 'all', a list of positions, or 'own' (none picked = only their own requests). */
+  const rowView = (key, r) => { const v = (S.roleView || {})[key] || r.view || 'all'; return v === 'same' ? [r.name] : v; };
+  function canSeeHtml(key, self, v) {
+    const names = self && !ROLES.includes(self) ? ROLES.concat([self]) : ROLES;
+    const chip = (val, label, on) => '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="roleView" data-k="' + esc(key) + '" data-v="' + esc(val) + '">' + (on ? icon('check', 16) : '') + esc(label) + '</button>';
+    return '<div class="push-btns can-see">' + chip('all', 'Everyone', v === 'all') +
+      names.map(n => chip(n, rolePl(n), v === 'all' || (Array.isArray(v) && v.includes(n)))).join('') + '</div>' +
+      (v === 'own' ? '<p class="cfg-help cs-own">' + icon('lock', 14) + ' Nothing picked: members see only their own requests, plus open / overbooked / full days for their position.</p>' : '');
+  }
+  /** One position's fields (Admin list row and the New position builder share them). */
+  function roleFields(r, key) {
+    const rv = rowView(key, r);
+    return '<div class="row"><div class="field cfg-code"><label for="rl-' + key + '">Letter</label><input id="rl-' + key + '" class="rl-letter" maxlength="1" value="' + esc(r.letter || '') + '" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-live="rolePrev"></div>' +
+      '<div class="field cfg-code"><label for="rq-' + key + '">Max on leave</label><input id="rq-' + key + '" class="rl-quota" type="number" inputmode="numeric" min="0" max="99" value="' + (Number(r.quota) || 0) + '"></div></div>' +
+      '<div class="field"><span class="lbl-sm">Can see</span><div id="cs-' + key + '" data-self="' + esc(r.name || '') + '">' + canSeeHtml(key, r.name, rv) + '</div></div>' +
+      '<div class="field"><span class="lbl">Colour</span>' + roleSwatches('rs-' + key, r.style || 'grey', r.letter) + '</div>';
+  }
+  /** Positions panel body: built-ins can't be renamed or deleted; added ones can be deleted once nobody holds them. */
+  function adminRoles() {
+    return ROLES.map((name, i) => {
+      const r = roleInfo(name), used = S.users.filter(u => u.role === name).length, builtIn = !!ROLE_DEF[name];
+      return '<div class="cfg-unit role-row" data-name="' + esc(name) + '" data-k="r' + i + '"><div class="cfg-unit-h"><span class="ub-prev"><span class="idb"><span class="idb-r ' + roleCls(name) + '">' + esc(roleL(name)) + '</span></span></span>' +
+          (builtIn ? '<b class="role-nm">' + esc(roleName(name)) + '</b>' : '<input class="un-name rl-name" value="' + esc(name) + '" aria-label="Position name" maxlength="24">') + '</div>' +
+        roleFields(r, 'r' + i) +
+        '<div class="cfg-foot"><span class="meta">' + plural(used, 'member') + (builtIn ? ' · built in' : '') + '</span>' +
+        (used || builtIn ? '' : '<button class="btn del" data-act="deleteRole" data-name="' + esc(name) + '">' + icon('trash', 18) + ' Delete</button>') +
+        '<button class="btn" data-act="saveRole" data-name="' + esc(name) + '">Save</button></div></div>';
+    }).join('') +
+      '<div class="cfg-foot cfg-new-btn"><button class="btn primary" data-act="newRole">' + icon('plus', 18) + 'New position</button></div>';
+  }
+  /** New position builder: name, letter, max on leave, visibility and colour; Cancel · Add position. */
+  function openRoleBuilder() {
+    S.roleView = Object.assign({}, S.roleView, { nr: 'all' });
+    const html = modalHead('New position', 'plus') + '<div class="modal-b role-row badge-builder" data-k="nr">' +
+      '<div class="bb-prev"><span class="idb"><span class="idb-r idb-o" id="nrPrev">?</span></span></div>' +
+      '<div class="field"><label for="nrName">Name</label><input id="nrName" class="rl-name" maxlength="24" placeholder="Maintenance" autocomplete="off" autofocus></div>' +
+      roleFields({ letter: '', style: 'teal', quota: 0, view: 'all' }, 'nr') +
+      '<div class="err" id="nrErr"></div></div>' +
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="addRole">' + icon('plus', 18) + 'Add position</button></div>';
+    openModal('role', html);
+  }
+  /** Read a position row / builder into {name, letter, style, quota, view}. */
+  function readRole(row, name) {
+    const k = row.dataset.k;
+    return { name: name, letter: row.querySelector('.rl-letter').value.trim().toUpperCase(), style: (row.querySelector('.swatches input:checked') || {}).value || 'grey',
+      quota: Number(row.querySelector('.rl-quota').value), view: rowView(k, { name: row.dataset.name || name, view: roleInfo(row.dataset.name || name).view }) };
+  }
+  function roleError(r, isNew) {
+    if (!/^[A-Za-z][A-Za-z0-9 &\/-]{1,23}$/.test(r.name)) return 'Name must be 2–24 letters (e.g. Maintenance).';
+    if (!/^[A-Z0-9]$/.test(r.letter)) return 'Letter must be one letter or number.';
+    if (!Number.isInteger(r.quota) || r.quota < 0 || r.quota > 99) return 'Max on leave must be 0–99 (0 = no limit).';
+    if (isNew && ROLES.some(x => x.toLowerCase() === r.name.toLowerCase())) return r.name + ' already exists.';
+    return '';
+  }
+  /** Settings: which positions Clear filters goes back to. */
+  function viewRolesPanel() {
+    const cur = defaultRoles();
+    return '<div class="panel"><h3>' + icon('sliders', 16) + ' Default positions</h3>' +
+      '<p class="cfg-help">The positions the calendar shows when you open the app and when you tap <b>Clear</b> on the filters.</p>' +
+      '<div class="push-btns">' + ROLES.map(r => {
+        const on = cur.includes(r);
+        return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="viewRole" data-v="' + esc(r) + '">' + (on ? icon('check', 18) : '') + esc(rolePl(r)) + '</button>';
+      }).join('') + '</div></div>';
+  }
   /** Unit badges panel body. Any error shows inline instead of leaving the panel blank. */
   function adminUnits() {
     try {
@@ -4256,7 +4373,7 @@
         '<div class="ro-show">' + seg([['active', 'Active ' + n.active], ['inactive', 'Inactive ' + n.inactive], ['all', 'All ' + n.all]], show, 'rosterShow') + '</div>' +
         '<div class="cfg-roster">' + users.map(u => '<div class="cfg-row' + (u.active ? '' : ' off') + '" data-q="' + esc((u.rank + ' ' + u.name + ' ' + u.unit + ' ' + u.role).toLowerCase()) + '">' +
           idBadge(u) + '<div class="cfg-who"><div class="cfg-nm">' + nameHtml(u, true) + '</div>' +
-          '<div class="cfg-sub">' + esc([u.rank, ROLE_NAME[u.role] || u.role].filter(Boolean).join(' · ')) + '</div>' +
+          '<div class="cfg-sub">' + esc([u.rank, roleName(u.role)].filter(Boolean).join(' · ')) + '</div>' +
           (u.active && !u.mustChange ? '' : '<div class="cfg-tags">' + (u.pending ? '<span class="badge caution">Awaiting approval</span>' : u.active ? '' : '<span class="badge">Inactive</span>') + (u.mustChange ? '<span class="badge caution">Must set PIN</span>' : '') + '</div>') + '</div>' +
           '<div class="cfg-acts">' + act('editUser', u.id, 'pencil', 'Edit', u.name) + act('resetPin', u.id, 'key', 'Reset PIN', 'for ' + u.name) +
             (u.id === S.me ? '' : u.active ? act('toggleUser', u.id, 'ban', 'Deactivate', u.name, 'del') : act('toggleUser', u.id, 'check', u.pending ? 'Approve' : 'Reactivate', u.name, u.pending ? 'ok' : '')) + '</div></div>').join('') +
@@ -4304,14 +4421,12 @@
         (st.hideSchedules ? '<p class="cfg-help cfg-note">' + icon('alert', 14) + ' You’re in admin mode, so you still see everyone. Lock admin mode (Profile) to see what members see.</p>' : '') + '</div>' +
 
 
-      // Leave limits
-      '<div class="panel"><h3>' + icon('sliders', 16) + ' Max on leave per day</h3>' +
-        '<p class="cfg-help">How many of each position may be on Leave the same day (approved + pending). Passes have no limit. Use 0 for no limit.</p>' +
-        '<div class="cfg-grid3">' +
-        '<div class="field"><label for="qP">Pilots</label><input id="qP" type="number" inputmode="numeric" min="0" max="99" value="' + st.pilotQuota + '"></div>' +
-        '<div class="field"><label for="qB">Booms</label><input id="qB" type="number" inputmode="numeric" min="0" max="99" value="' + st.boomQuota + '"></div>' +
-        '<div class="field"><label for="qO">Other</label><input id="qO" type="number" inputmode="numeric" min="0" max="99" value="' + st.otherQuota + '"></div></div>' +
-        '<div class="cfg-foot"><button class="btn primary" data-act="saveQuotas">Save limits</button></div></div>' +
+      // Positions: badge, daily leave max and whose schedules each position can see.
+      '<div class="panel"><h3>' + icon('users', 16) + ' Positions</h3>' +
+        '<p class="cfg-help"><b>Max on leave</b>: how many of a position may be on Leave the same day (approved + pending; 0 = no limit, passes never count). ' +
+        '<b>Can see</b>: whose schedules its members see — Everyone, or any mix of positions (e.g. Pilots see Pilots and Booms). With no positions picked they see only their own requests, plus green / orange / red availability for their position. Positions added later are included only where Everyone is on.' +
+        (st.hideSchedules ? ' <b>Hide user schedules is on</b>, so every position sees only its own requests right now.' : '') + '</p>' +
+        adminRoles() + '</div>' +
 
       // Request length rules
       '<div class="panel"><h3>' + icon('calendar', 16) + ' Request length</h3>' +
@@ -4397,7 +4512,7 @@
           const u = userOf(r.userId);
           return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
             '<span class="dl-who">' + idBadge(u) + nameHtml(u) + '</span>' +
-            '<span class="dl-meta">' + esc(ROLE_NAME[u.role] || u.role) + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + '</span>' +
+            '<span class="dl-meta">' + esc(roleName(u.role)) + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + '</span>' +
             '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>';
         }).join('') + '</ul>' : '<div class="dl-none">No one</div>') + '</div>';
     }).join('');
@@ -4554,9 +4669,9 @@
     const el = document.createElement('div');
     el.id = 'pmenu'; el.className = 'pm-pop'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'Profile');
     // Header: one big [P|MKE|Name] badge filling the top of the menu (same colours as the small badges).
-    const L = (me.role || 'Other')[0], un = unitsList().find(x => x.code === me.unit);
+    const L = roleL(me.role), un = unitsList().find(x => x.code === me.unit);
     el.innerHTML = '<div class="pm-bh" aria-label="' + esc(fullName(me)) + '">' +
-        '<span class="bh-r idb-' + L.toLowerCase() + '" aria-hidden="true">' + L + '</span>' +
+        '<span class="bh-r ' + roleCls(me.role) + '" aria-hidden="true">' + esc(L) + '</span>' +
         '<span class="bh-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(me.unit) + '</span>' +
         '<span class="bh-n" aria-hidden="true">' + esc(calName(me)) + '</span></div>' +
       '<div class="pm-notes" id="pmNotes">' + pmNotesHtml() + '</div>' +
@@ -4689,9 +4804,11 @@
       '<div class="scroll" id="profileScroll">' +
 
       '<div class="panel"><div class="uhead"><div class="avatar">' + esc(initials(me)) + '</div><div><div class="nm">' + esc(me.rank + ' ' + me.name) + '</div>' +
-        '<div style="display:flex;gap:6px;margin-top:4px"><span class="badge">' + esc(me.role === 'Boom' ? 'Boom Operator' : me.role) + '</span>' + unitBadge(me.unit) + '</div></div></div></div>' +
+        '<div style="display:flex;gap:6px;margin-top:4px"><span class="badge">' + esc(roleName(me.role)) + '</span>' + unitBadge(me.unit) + '</div></div></div></div>' +
 
       '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' +
+
+      (S.priv ? '' : viewRolesPanel()) +
 
       '<div class="panel"><h3>' + icon('key', 16) + ' Change PIN</h3><div class="row">' +
         '<div class="field"><label for="np1">New PIN</label><input id="np1" type="password" inputmode="numeric" maxlength="8" placeholder="4+ digits" autocomplete="new-password"></div>' +
@@ -4737,9 +4854,9 @@
   const r_bo_text = d => 'a blackout day (' + blackoutsOn(d).map(b => boLabel(b).toLowerCase() + (b.note ? ' — ' + b.note : '')).join('; ') + ')';
   function conflictText(d, c) {
     const day = D.f(d, { weekday: 'short', month: 'short', day: 'numeric' });
-    if (!c.bad) return day + ': no conflict' + (c.n ? ' (' + (c.n + 1) + (c.q ? ' of ' + c.q : '') + ' ' + ROLE_PLURAL[c.role] + ' out)' : '') + '.';
+    if (!c.bad) return day + ': no conflict' + (c.n ? ' (' + (c.n + 1) + (c.q ? ' of ' + c.q : '') + ' ' + roleLow(c.role) + ' out)' : '') + '.';
     const parts = [];
-    if (c.over) parts.push('over the ' + ROLE_PLURAL[c.role] + ' max (' + (c.n + 1) + ' of ' + c.q + ') with ' + (S.priv ? plural(c.n, 'other leave request')
+    if (c.over) parts.push('over the ' + roleLow(c.role) + ' max (' + (c.n + 1) + ' of ' + c.q + ') with ' + (S.priv ? plural(c.n, 'other leave request')
       : c.peers.map(x => fullName(userOf(x.userId)) + ' – ' + x.type.toLowerCase() + ', ' + x.status.toLowerCase()).join('; ')));
     if (c.bo) parts.push(r_bo_text(d));
     if (c.dups.length) parts.push('duplicate of own ' + c.dups.map(x => x.type.toLowerCase() + ' ' + D.short(x.start) + '–' + D.short(x.end)).join(', '));
@@ -4872,7 +4989,7 @@
           '<td><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></td></tr>').join('') + '</tbody></table></div>'
       : '<div class="note muted">No requests yet.</div>';
     // Clean layout: who (badge, name, rank · position) + View year; Leave & passes; PIN; Admin access (if any); Details.
-    const meta = [u.rank, ROLE_NAME[u.role] || u.role].filter(Boolean).join(' · ');
+    const meta = [u.rank, roleName(u.role)].filter(Boolean).join(' · ');
     const isAdm = (S.adminIds || []).includes(uid);
     const html = modalHead(esc(nameText(u, true)), 'user') + '<div class="modal-b mc-body">' +
       '<div class="mc-top">' + idBadge(u) + '<div class="mc-who"><b>' + esc(nameText(u)) + '</b>' +
@@ -4917,7 +5034,7 @@
       '<div class="field"><label for="' + p + 'Last">Last name</label><input id="' + p + 'Last" value="' + esc(nl) + '"></div>' +
       // Rank can be left blank ("—").
       '<div class="row"><div class="field"><label for="' + p + 'Rank">Rank</label>' + sel('Rank', [['', '—']].concat(RANKS.indexOf(u.rank) < 0 && u.rank ? RANKS.concat([u.rank]) : RANKS), u.rank) + '</div>' +
-      '<div class="field"><label for="' + p + 'Role">Position</label>' + sel('Role', ROLES.map(r => [r, ROLE_NAME[r] || r]), u.role) + '</div></div>' +
+      '<div class="field"><label for="' + p + 'Role">Position</label>' + sel('Role', ROLES.map(r => [r, roleName(r)]), u.role) + '</div></div>' +
       '<div class="field"><label for="' + p + 'Unit">Unit</label>' + sel('Unit', unitsList().map(x => x.code), u.unit) + '</div>' +
       // No PIN here: new members start on the default PIN (Admin → Default PIN); use Reset PIN to send someone back to it.
       (u.id ? '' : '<p class="meta pin-note">' + icon('key', 14) + ' Signs in with the default PIN, then sets their own.</p>');
@@ -5044,7 +5161,7 @@
     const meU = people.find(u => u.id === S.me);
     const groups = (meU ? '<div class="who-h">Me</div>' + row(meU) : '') + ROLES.map(role => {
       const list = people.filter(u => u.role === role && u.id !== S.me).sort((a, b) => lastName(a).localeCompare(lastName(b)));
-      return list.length ? '<div class="who-h">' + esc(({ Pilot: 'Pilots', Boom: 'Boom operators', Other: 'Other' })[role]) + '</div>' + list.map(row).join('') : '';
+      return list.length ? '<div class="who-h">' + esc(roleGroup(role)) + '</div>' + list.map(row).join('') : '';
     }).join('');
     return '<div class="who-search">' + icon('search', 15) + '<input type="search" id="whoQ" placeholder="Type a name…" autocomplete="off" aria-label="Search members" data-model="whoq" data-live="whoFilter"></div>' +
       '<div class="who-list" role="listbox" aria-multiselectable="true">' + (w.editId ? '' : '<button type="button" class="who-row who-new" data-act="wizCreate">' + icon('userPlus', 18) + '<span class="pp-n"><b>Add new member</b></span></button>') +
@@ -5710,14 +5827,14 @@
         (c.bo ? '<p class="cc-why">' + icon('ban', 13) + ' ' + esc(r_bo_text(d).replace(/^a b/, 'B')) + '</p>' : '');
       if (!c.bad) { box.innerHTML = head + '<p class="muted">No conflict' + (c.peers.length ? ' — also out: ' + esc(c.peers.map(x => fullName(userOf(x.userId))).join(', ')) : '') + '.</p>'; return; }
       if (S.priv) { // count only, never names
-        box.innerHTML = head + (c.over ? '<p class="cc-why">' + (c.n + 1) + ' ' + ROLE_PLURAL[c.role] + ' requested leave — the max is ' + c.q + '. This conflicts with ' + plural(c.n, 'other leave request') + '; an admin will decide.</p>' : '') +
+        box.innerHTML = head + (c.over ? '<p class="cc-why">' + (c.n + 1) + ' ' + roleLow(c.role) + ' requested leave — the max is ' + c.q + '. This conflicts with ' + plural(c.n, 'other leave request') + '; an admin will decide.</p>' : '') +
           (c.dups.length ? '<p class="cc-why">Overlap — you already have a request on this day.</p>' : '');
         return;
       }
       const li = x => '<li><button class="dl-row" data-act="openReq" data-id="' + esc(x.id) + '"><span class="dl-who">' + idBadge(userOf(x.userId)) + nameHtml(userOf(x.userId)) + '</span>' +
         '<span class="dl-meta">' + x.type + ' · ' + D.short(x.start) + ' → ' + D.short(x.end) + '</span><span class="badge s-' + x.status.toLowerCase() + '">' + x.status + '</span></button></li>';
       box.innerHTML = head +
-        (c.over ? '<p class="cc-why">' + (c.peers.length + 1) + ' ' + ROLE_PLURAL[c.role] + ' out — max is ' + c.q + '. Conflicts with:</p><ul class="dl-list">' + c.peers.map(li).join('') + '</ul>' : '') +
+        (c.over ? '<p class="cc-why">' + (c.peers.length + 1) + ' ' + roleLow(c.role) + ' out — max is ' + c.q + '. Conflicts with:</p><ul class="dl-list">' + c.peers.map(li).join('') + '</ul>' : '') +
         (c.dups.length ? '<p class="cc-why">Overlap — this member already has:</p><ul class="dl-list">' + c.dups.map(li).join('') + '</ul>' : '');
     },
     peopleSort(el) {
@@ -5782,7 +5899,7 @@
       closeModal();
       const u = S.users.find(x => x.id === el.dataset.id);
       if (!u) return;
-      S.list.q = ''; S.f = { status: ['Approved', 'Pending', 'Denied'], role: ['Pilot', 'Boom', 'Other'], type: ['Leave', 'Pass'], person: u.id };
+      S.list.q = ''; S.f = { status: ['Approved', 'Pending', 'Denied'], role: ROLES.slice(), type: ['Leave', 'Pass'], person: u.id };
       S.view = 'all'; render();
     },
     quotaInfo(el) {
@@ -5970,10 +6087,66 @@
         'apiSaveLengthRules', S.token, cfg);
       render(); toast('Length rules saved', 'ok', 1500);
     },
-    async saveQuotas() {
-      const cfg = { pilotQuota: Number($('#qP').value), boomQuota: Number($('#qB').value), otherQuota: Number($('#qO').value) };
-      save(() => { Object.assign(S.settings, cfg); }, 'apiSaveSettings', S.token, cfg);
-      render(); toast('Daily limits saved', 'ok', 1500);
+    // Can see: Everyone, or tap positions on / off. With none picked, members see only their own requests.
+    roleView(el) {
+      const k = el.dataset.k, box = $('#cs-' + k), self = box.dataset.self, v = el.dataset.v;
+      const cur = rowView(k, { name: self, view: roleInfo(self).view });
+      let next;
+      if (v === 'all') next = cur === 'all' ? 'own' : 'all';
+      else {
+        const list = cur === 'all' ? ROLES.slice() : cur === 'own' ? [] : cur.slice();
+        next = list.includes(v) ? list.filter(x => x !== v) : list.concat([v]);
+        if (!next.length) next = 'own';
+        else if (ROLES.every(n => next.includes(n))) next = 'all';
+      }
+      S.roleView = Object.assign({}, S.roleView, { [k]: next });
+      box.innerHTML = canSeeHtml(k, self, next);
+    },
+    previewRole(el) {
+      const row = el.closest('.role-row'), sq = row && row.querySelector('.ub-prev .idb-r, .bb-prev .idb-r');
+      if (sq) sq.className = 'idb-r ' + styleCls(el.value);
+    },
+    rolePrev(el) {
+      const row = el.closest('.role-row'), L = el.value.trim().toUpperCase() || '?';
+      if (!row) return;
+      row.querySelectorAll('.ub-prev .idb-r, .bb-prev .idb-r, .rsw .ub').forEach(x => { x.textContent = L; });
+    },
+    saveRole(el) {
+      const old = el.dataset.name, row = el.closest('.role-row');
+      const nameIn = row.querySelector('.rl-name');
+      const r = readRole(row, nameIn ? nameIn.value.trim().replace(/\s+/g, ' ') : old);
+      const err = roleError(r, false) || (r.name.toLowerCase() !== old.toLowerCase() && ROLES.some(x => x.toLowerCase() === r.name.toLowerCase()) ? r.name + ' already exists.' : '');
+      if (err) return toast(err, 'error');
+      save(() => {
+        S.settings.roles = ROLES.map(n => n === old ? r : roleInfo(n));
+        if (r.name !== old) S.users.forEach(u => { if (u.role === old) u.role = r.name; });
+        setRoles(S.settings.roles); reindex();
+      }, 'apiSaveRole', S.token, r, old);
+      render(); toast(r.name + ' saved', 'ok', 1500);
+    },
+    newRole() { openRoleBuilder(); },
+    addRole() {
+      const row = $('#modal .role-row'), err = $('#nrErr');
+      const r = readRole(row, $('#nrName').value.trim().replace(/\s+/g, ' '));
+      const msg = roleError(r, true);
+      if (msg) { err.textContent = msg; return; }
+      S.nextSyncTab = 'admin';
+      save(() => { S.settings.roles = ROLES.map(roleInfo).concat([r]); setRoles(S.settings.roles); }, 'apiSaveRole', S.token, r, '');
+      closeModal(); render(); toast(r.name + ' added', 'ok', 1500);
+    },
+    deleteRole(el) {
+      const name = el.dataset.name;
+      if (!confirm('Delete the ' + name + ' position?')) return;
+      save(() => { S.settings.roles = ROLES.filter(n => n !== name).map(roleInfo); setRoles(S.settings.roles); }, 'apiDeleteRole', S.token, name);
+      render(); toast(name + ' deleted', 'ok', 1500);
+    },
+    viewRole(el) {
+      const v = el.dataset.v, cur = defaultRoles();
+      const next = cur.includes(v) ? cur.filter(x => x !== v) : ROLES.filter(r => cur.includes(r) || r === v);
+      if (!next.length) return toast('Keep at least one position.', 'error');
+      const wasDefault = isDefaultFilters(S.f);
+      save(() => { S.viewRoles = next; if (wasDefault) S.f.role = next.slice(); }, 'apiSetViewRoles', S.token, next);
+      render();
     },
     editUser(el) { openUserEditor(el.dataset.id); },
     async saveUser(el) {
@@ -6134,8 +6307,8 @@
   });
   document.addEventListener('input', ev => {
     const t = ev.target, m = t.dataset && t.dataset.model;
-    if (!m) return;
-    setPath(m, t.value);
+    if (!t.dataset) return;
+    if (m) setPath(m, t.value);
     if (t.dataset.live && A[t.dataset.live]) A[t.dataset.live](t, ev);
   });
   document.addEventListener('change', ev => {
