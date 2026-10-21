@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792608533"></script>
+    <script src="config.js?v=1792608964"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792608533';
+      window.PAL_BUILD = '1792608964';
       (function () {
         function check(launch) {
           try {
@@ -3841,7 +3841,7 @@
       : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
       // The active tab's pill slides between tabs (same as segmented buttons: placeSeg, remembered as "nav").
-      '<nav class="nav seg-slide' + (S.isAdmin ? ' nav-admin' : '') + '" data-sk="nav" aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '"><span class="seg-thumb nav-thumb" aria-hidden="true"></span>' + items.map(i =>
+      '<nav class="nav seg-slide' + (S.isAdmin ? ' nav-admin' : '') + '" data-sk="nav"' + segPre('nav').attr + ' aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '"><span class="seg-thumb nav-thumb" aria-hidden="true"' + segPre('nav').style + '></span>' + items.map(i =>
       '<button data-act="nav" data-v="' + i[0] + '"' + (i[0] === 'profile' ? ' aria-haspopup="menu" aria-expanded="' + !!document.getElementById('pmenu') + '"' : '') + ' class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
       '<span class="nav-ic' + (i[0] === syncTab() && S.pending ? ' syncing' : i[0] === syncTab() && S.syncErr ? ' sync-err' : '') + '">' + (i[0] === 'profile' ? '<span class="nav-logo" aria-hidden="true"></span>' : icon(i[2], 20)) + '</span><span class="wide">' + i[1] + caret(i[0]) + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + caret(i[0]) + '</span>' +
       (i[0] === 'all' && S.isAdmin && pending ? '<b class="dot">' + pending + '</b>' : '') +
@@ -3851,7 +3851,8 @@
   /** Single-choice segmented buttons. A pill slides to the chosen one (like the status slider) — see placeSeg. */
   function seg(options, current, act, extra) {
     const key = act + ((extra || '').match(/data-id="([^"]*)"/) || ['', ''])[1];
-    return '<div class="seg seg-slide" role="group" data-sk="' + esc(key) + '"><span class="seg-thumb" aria-hidden="true"></span>' + options.map(o => {
+    const pre = segPre(key);
+    return '<div class="seg seg-slide" role="group" data-sk="' + esc(key) + '"' + pre.attr + '><span class="seg-thumb" aria-hidden="true"' + pre.style + '></span>' + options.map(o => {
       const v = Array.isArray(o) ? o[0] : o, l = Array.isArray(o) ? o[1] : o;
       return '<button type="button" class="' + (v === current ? 'on' : '') + '" aria-pressed="' + (v === current) + '" data-act="' + act + '" data-v="' + esc(v) + '"' + (extra || '') + '>' + l + '</button>';
     }).join('') + '</div>';
@@ -5257,9 +5258,16 @@
   /** Segmented buttons (single choice): the highlight pill glides from where it last was to the chosen button —
    *  even when the group is redrawn (its last spot is remembered per group, data-sk). */
   const segLast = {};
+  /** A group being redrawn starts with its pill already where it last was (and counts as placed, so the buttons'
+   *  plain highlight never flashes on for a frame); placeSeg then glides it to the new choice. */
+  function segPre(key) {
+    const f = segLast[key];
+    if (!f) return { attr: '', style: '' };
+    return { attr: ' data-placed="1" data-pre="1"', style: ' style="top:' + f.t + 'px;height:' + f.h + 'px;left:' + f.l + 'px;width:' + f.w + 'px;opacity:1;transition:none"' };
+  }
   function placeSeg(sg, animate) {
     const th = sg.querySelector(':scope > .seg-thumb'), on = sg.querySelector(':scope > button.on');
-    sg.dataset.placed = '1';
+    sg.dataset.placed = '1'; delete sg.dataset.pre;
     if (!th) return;
     if (!on) { th.style.opacity = '0'; return; }
     const to = { l: on.offsetLeft, w: on.offsetWidth, t: on.offsetTop, h: on.offsetHeight }, key = sg.dataset.sk, from = key && segLast[key];
@@ -5278,7 +5286,7 @@
       if (!raf) raf = requestAnimationFrame(() => { raf = 0; document.querySelectorAll('.stsl:not([data-placed])').forEach(sl => placeThumb(sl, false)); });
       // Segmented pills: a timer, not a frame, so they're placed even in a background tab (until then the group keeps
       // its plain selected highlight).
-      if (!tmr) tmr = setTimeout(() => { tmr = 0; document.querySelectorAll('.seg-slide:not([data-placed])').forEach(sg => placeSeg(sg, false)); }, 0);
+      if (!tmr) tmr = setTimeout(() => { tmr = 0; document.querySelectorAll('.seg-slide:not([data-placed]), .seg-slide[data-pre]').forEach(sg => placeSeg(sg, false)); }, 0);
     }).observe(document.body, { childList: true, subtree: true });
     // A choice changed in place (no redraw): slide to it.
     document.addEventListener('click', ev => {
