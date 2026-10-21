@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792572242"></script>
+    <script src="config.js?v=1792572437"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1569,15 +1569,14 @@
      --nav-bg is set on the bar itself so the badge rings and the home-indicator strip match its colour. */
   :root { --brick: #7C2529; }
   .nav { --nav-bg: var(--navy); background: var(--nav-bg); border-top: 1px solid var(--nav-bg); }
-  .nav.nav-admin { --nav-bg: #85714D; } /* admin mode: Brewers metallic gold */
+  /* Admin mode: the same bar as everyone else, with a solid red line along its top edge (works in light and dark). */
+  .nav.nav-admin { border-top: 3px solid #d92d20; }
   :root[data-theme="dark"] .nav { border-top-color: rgba(255, 255, 255, .14); }
   /* Dark mode: the regular nav bar is dark (not navy); admin mode stays metallic gold so it's still obvious. */
-  :root[data-theme="dark"] .nav:not(.nav-admin) { --nav-bg: #1d1e24; }
-  :root[data-theme="dark"] .nav:not(.nav-admin) button:not(.on):not([aria-expanded="true"]) { color: #c5c6d0; }
+  :root[data-theme="dark"] .nav { --nav-bg: #1d1e24; }
+  :root[data-theme="dark"] .nav button:not(.on):not([aria-expanded="true"]) { color: #c5c6d0; }
   .nav button { color: #c9d3e8; }
-  .nav.nav-admin button { color: #f6efe2; }
   .nav button.on { color: var(--navy); }
-  .nav.nav-admin button.on { color: #ffffff; }
   .nav button:hover .nav-ic, .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: transparent; color: inherit; }
   .nav .dot { background: var(--gold); color: var(--navy); }
   .nav .dot.warn { background: #ffffff; color: #c2410c; }
@@ -1585,7 +1584,6 @@
   .nav button.on .nav-ic.syncing::after { border-color: color-mix(in srgb, var(--navy) 25%, transparent); border-top-color: var(--navy); }
   /* Admin mode (metallic gold bar): the open page's pill is Brewers navy with a white icon, so it contrasts with the bar. */
   .nav.nav-admin button.on .nav-ic, :root[data-theme="dark"] .nav.nav-admin button.on .nav-ic { background: transparent; color: inherit; }
-  .nav.nav-admin button.on .nav-ic.syncing::after { border-color: rgba(255, 255, 255, .25); border-top-color: #ffffff; }
   .modal.modal-wide:has(.y-grid) { max-width: 1100px; }
   @media (min-width: 900px) { .y-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   /* My Requests: List | Calendar ("Cal" on phones) in the filter row, at every width. */
@@ -1845,8 +1843,6 @@
   .nav button:hover::before { background: rgba(255, 255, 255, .10); }
   .nav button.on::before, .nav button[aria-expanded="true"]::before { background: var(--gold); }
   .nav button[aria-expanded="true"] { color: var(--navy); }
-  .nav.nav-admin button.on::before, .nav.nav-admin button[aria-expanded="true"]::before { background: var(--navy); }
-  .nav.nav-admin button[aria-expanded="true"] { color: #ffffff; }
   .nav button.on .nav-ic.syncing::after, .nav button[aria-expanded="true"] .nav-ic.syncing::after { border-color: color-mix(in srgb, currentColor 25%, transparent); border-top-color: currentColor; }
   /* Profile tab: a small caret after the label says it opens a menu upward; it flips while the menu is open. */
   .nav-caret { display: inline-flex; vertical-align: -1px; margin-left: 2px; transition: transform .18s ease; }
@@ -1887,9 +1883,7 @@
   .qc-day.open { background: #15803d; border-color: #15803d; color: #ffffff; }
   /* Hovering the selected item keeps its text colour; the pill just deepens a little. */
   .nav button.on:hover, .nav button[aria-expanded="true"]:hover { color: var(--navy); }
-  .nav.nav-admin button.on:hover, .nav.nav-admin button[aria-expanded="true"]:hover { color: #ffffff; }
   .nav button.on:hover::before, .nav button[aria-expanded="true"]:hover::before { background: var(--gold-2); }
-  .nav.nav-admin button.on:hover::before, .nav.nav-admin button[aria-expanded="true"]:hover::before { background: var(--navy-2); }
   .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover { color: #ffffff; }
   .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover::before { background: rgba(255, 255, 255, .22); }
   /* Saving ring on the Profile tab: the same brick arc as the logo loading ring, circling the patch icon. */
@@ -2094,6 +2088,7 @@
       background: color-mix(in srgb, var(--on-surface) 25%, transparent); }
   }
   .cal-peek { padding-top: 6px; box-sizing: border-box; }
+  :root[data-theme="dark"] .nav.nav-admin { border-top-color: #f04438; } /* admin red line, brighter on dark */
 </style>
 
   </head>
