@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792589940"></script>
+    <script src="config.js?v=1792590918"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792589940';
+      window.PAL_BUILD = '1792590918';
       (function () {
         function check(launch) {
           try {
@@ -4334,8 +4334,8 @@
         '<span class="' + (qb && b > qb ? 'over' : '') + '">B: ' + b + (qb ? '/' + qb : '') + '</span></div>') + '</div>';
     }).join('');
     const col = (a, z) => 'grid-column:' + (D.diff(ws, D.max(a, ws)) + 1) + '/' + (D.diff(ws, D.min(z, we)) + 2);
-    const BAND_T = { Pilot: 'PILOTS ACTIVE SCHEDULE', Boom: 'BOOM OPERATORS ACTIVE SCHEDULE', Other: 'OTHER SQUADRON PERSONNEL' };
-    const bands = ROLES.map(r => [r, BAND_T[r] || esc(r.toUpperCase()) + ' ACTIVE SCHEDULE'])
+    // Band titles: just the position's plural name — Pilots, Booms, Maintenance, Other…
+    const bands = ROLES.map(r => [r, esc(rolePl(r))])
       .filter(b => S.f.role.includes(b[0]))
       .map(b => {
         const evs = reqs.filter(r => userOf(r.userId).role === b[0]);
