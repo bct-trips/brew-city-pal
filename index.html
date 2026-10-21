@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792578893"></script>
+    <script src="config.js?v=1792579034"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3453,19 +3453,21 @@
   const cont = sg => (sg.kind === 'mid' || sg.kind === 'end') ? 1 : 0;
   // Vertical stacking order on the calendar: a focused request first, then Leave, Pass, and denied
   // requests last. Within a type, bars that include you sort first.
-  const STACK = { indexOf: c => c === 'Denied' ? 99 : Math.max(0, typeNames().indexOf(c)) };
+  /** Stacking order: Leave, Pass, then added event types, denied last (a real array — the lane packer concatenates it). */
+  const stackList = () => typeNames().concat(['Denied']);
   function pinnedIds() {
     const ids = [];
     if (S.focus && IDX.live.some(r => r.id === S.focus)) ids.push(S.focus);
     return ids;
   }
-  const stackOrder = () => pinnedIds().map(id => 'pin:' + id).concat(STACK);
+  // Your own requests (and shared bars that include you) always take the top lanes, so you can always see when you're out.
+  const stackOrder = () => pinnedIds().map(id => 'pin:' + id).concat(['me'], stackList());
   // Only a focused request is lifted out of the shared middle-day bars; your own requests merge like everyone
   // else's (one bar per type) and are simply sorted first within their type.
   const isPinned = r => r.id === S.focus;
   const hasMe = sg => sg.people.some(r => r.userId === S.me) ? 1 : 0;
-  const stackCat = r => isPinned(r) ? 'pin:' + r.id : r.status === 'Denied' ? 'Denied' : r.type;
-  const stackRank = r => r.id === S.focus ? -2 : r.userId === S.me ? -1 : STACK.indexOf(r.status === 'Denied' ? 'Denied' : r.type);
+  const stackCat = r => isPinned(r) ? 'pin:' + r.id : r.userId === S.me ? 'me' : r.status === 'Denied' ? 'Denied' : r.type;
+  const stackRank = r => r.id === S.focus ? -2 : r.userId === S.me ? -1 : stackList().indexOf(r.status === 'Denied' ? 'Denied' : r.type);
   const byLast = (a, b) => lastName(userOf(a.userId)).localeCompare(lastName(userOf(b.userId)));
 
   /** Requests with the same dates and type (not denied, not the focused one) share one bar: "[P|MKE|Smith] / [B|PIT|Jones]".
@@ -3514,7 +3516,8 @@
     const { groups, solo } = sameDateGroups(all);
     const seg = (list, group) => {
       const r0 = list[0], first = r0.start >= ws, last = r0.end <= we;
-      return { kind: first && last ? 'single' : first ? 'start' : last ? 'end' : 'mid', group, cat: stackCat(r0), type: r0.type,
+      const cat = isPinned(r0) ? stackCat(r0) : list.some(r => r.userId === S.me) ? 'me' : stackCat(r0);
+      return { kind: first && last ? 'single' : first ? 'start' : last ? 'end' : 'mid', group, cat, type: r0.type,
         a: D.diff(ws, D.max(r0.start, ws)), b: D.diff(ws, D.min(r0.end, we)), people: list, ws };
     };
     return groups.map(g => seg(g, true)).concat(solo.map(r => seg([r], false)));
@@ -3562,8 +3565,10 @@
       const days = Array.from({ length: 7 }, (_, i) => D.add(ws, i));
       // Same dates and type share one bar (its first person stands in for sorting); everyone else gets their own.
       const sg = sameDateGroups(all.filter(r => r.start <= we && r.end >= ws));
+      // Your own bars (or shared bars that include you) first, so they take the top lanes.
+      const itRank = it => it.r.id === S.focus ? -2 : (it.g || [it.r]).some(r => r.userId === S.me) ? -1 : stackRank(it.r);
       const evs = sg.solo.map(r => ({ r })).concat(sg.groups.map(g => ({ r: g[0], g })))
-        .sort((x, y) => stackRank(x.r) - stackRank(y.r) || (x.r.start < y.r.start ? -1 : x.r.start > y.r.start ? 1 : D.diff(y.r.start, y.r.end) - D.diff(x.r.start, x.r.end)) || byLast(x.r, y.r));
+        .sort((x, y) => itRank(x) - itRank(y) || (x.r.start < y.r.start ? -1 : x.r.start > y.r.start ? 1 : D.diff(y.r.start, y.r.end) - D.diff(x.r.start, x.r.end)) || byLast(x.r, y.r));
       // Lane packing: each bar takes the first lane free across all its days. Blackouts go first (top lanes).
       const lanes = [], placed = [];
       blackouts().filter(b => b.start <= we && b.end >= ws).forEach(b => {
@@ -4032,8 +4037,9 @@
         const evs = reqs.filter(r => userOf(r.userId).role === b[0]);
         // Same dates and type share one strip (tap a badge for that request).
         const wg = sameDateGroups(evs);
+        const mineFirst = it => (it.g || [it.r]).some(r => r.userId === S.me) ? 0 : 1; // your bars sit on top
         const items = wg.solo.map(r => ({ r })).concat(wg.groups.map(g => ({ r: g[0], g })))
-          .sort((x, y) => (x.r.start < y.r.start ? -1 : x.r.start > y.r.start ? 1 : D.diff(y.r.start, y.r.end) - D.diff(x.r.start, x.r.end)) || stackRank(x.r) - stackRank(y.r));
+          .sort((x, y) => mineFirst(x) - mineFirst(y) || (x.r.start < y.r.start ? -1 : x.r.start > y.r.start ? 1 : D.diff(y.r.start, y.r.end) - D.diff(x.r.start, x.r.end)) || stackRank(x.r) - stackRank(y.r));
         const pucks = items.map(({ r, g }) => {
           const same = !g || g.every(x => x.status === r.status);
           const cls = ['wpuck', g ? 'grp' : '', tcls(r.type), same ? 'st-' + r.status.toLowerCase() : '', r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : ''].join(' ');
