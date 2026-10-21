@@ -15,7 +15,28 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792584146"></script>
+    <script src="config.js?v=1792584385"></script>
+    <script>
+      /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
+         reloading). This page knows its build; version.json (fetched past every cache) holds the latest one. When they
+         differ — on launch and whenever the app comes back to the foreground — reload once to a cache-busted copy. */
+      window.PAL_BUILD = '1792584385';
+      (function () {
+        function check() {
+          try {
+            fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (v) {
+              if (!v || !v.build || v.build === window.PAL_BUILD) return;
+              var k = 'pal.freshFor';
+              if (sessionStorage.getItem(k) === v.build) return; // already tried this build in this session: no loop
+              sessionStorage.setItem(k, v.build);
+              location.replace(location.pathname + '?v=' + v.build + location.hash);
+            }).catch(function () {});
+          } catch (e) {}
+        }
+        check();
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+      })();
+    </script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
