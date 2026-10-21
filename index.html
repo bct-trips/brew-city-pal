@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792596188"></script>
+    <script src="config.js?v=1792596534"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792596188';
+      window.PAL_BUILD = '1792596534';
       (function () {
         function check(launch) {
           try {
@@ -2550,6 +2550,14 @@
   body.has-upd .snackbar.save-bar { bottom: calc(var(--nav-h) + 74px + env(safe-area-inset-bottom)); }
   body.has-save #toast { bottom: calc(var(--nav-h) + 74px + env(safe-area-inset-bottom)); }
   body.has-save.has-upd #toast { bottom: calc(var(--nav-h) + 134px + env(safe-area-inset-bottom)); }
+  /* Teams → Admins: one row per member (badge, name + admin badge, Team Admin switch for this team). */
+  .ta-list { display: flex; flex-direction: column; }
+  .ta-row { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-top: 1px solid var(--line); }
+  .ta-row:first-child { border-top: 0; }
+  .ta-row .pp-n { flex: 1; min-width: 0; }
+  .ta-sect + .ta-sect { margin-top: 14px; }
+  .ta-sect > .lbl { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .pin-state { margin: 0 0 8px; display: flex; align-items: center; gap: 6px; white-space: normal; }
 </style>
 
   </head>
@@ -2977,7 +2985,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.14'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.17'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -3133,7 +3141,7 @@
   function apply(data) {
     if (!data) return;
     S.me = data.me; S.isAdmin = !!data.isAdmin; S.adminScope = data.isAdmin ? (data.adminScope || null) : null; S.isOrg = S.isAdmin && !S.adminScope;
-    S.teamPins = data.teamPins || []; S.admins = data.admins || {}; S.alertScope = data.alertScope || null; S.report = data.report || null;
+    S.teamPinSet = !!data.teamPinSet; S.admins = data.admins || {}; S.alertScope = data.alertScope || null; S.report = data.report || null;
     S.myAdmin = data.myAdmin || null; // my admin status: alerts and daily report are mine to set in Settings, admin mode or not
     S.users = (data.users || []).map(cleanUser); S.requests = (data.requests || []).map(cleanReq);
     S.settings = Object.assign(S.settings, data.settings || {}); S.sheetUrl = data.sheetUrl || '';
@@ -3258,7 +3266,17 @@
      never sees an empty fillable box. No "4–8 digits" placeholder, length limit or pattern on the box either — Safari reads
      those as password rules and offers a strong one; the rule is plain text above the boxes (PIN_HINT) and checked on
      save. Only the sign-in PIN stays a real password field (saved-password fill). */
-  const PIN_HINT = '<p class="pin-hint">4–8 Digits</p>'; // once, above each pair of new-PIN boxes
+  const PIN_HINT = '<p class="pin-hint">4–8 Digits · no 0000, 1234 or 1212</p>'; // once, above each pair of new-PIN boxes
+  /** Why a new PIN isn't allowed ('' = fine): 4–8 digits, and not too easy to guess — one digit repeated (0000), a
+   *  straight run up or down (1234, 4321) or a repeated pair (1212). The server checks the same (strongPin_). */
+  function pinProblem(p) {
+    p = String(p || '');
+    if (!/^\d{4,8}$/.test(p)) return 'PIN must be 4–8 digits.';
+    const d = p.split('').map(Number);
+    if (/^(\d)\1+$/.test(p) || d.every((x, i) => !i || x === d[i - 1] + 1) || d.every((x, i) => !i || x === d[i - 1] - 1) || (p.length % 2 === 0 && p === p.slice(0, 2).repeat(p.length / 2)))
+      return 'That PIN is too easy to guess. Avoid repeats (0000), runs (1234 or 4321) and patterns (1212).';
+    return '';
+  }
   /** Required-field marker after a label (red *), with a "* Required" note at the top of the form. */
   const REQ = '<span class="req" aria-hidden="true">*</span>', REQ_NOTE = '<p class="req-note"><span class="req">*</span> Required</p>';
   const NEW_PIN = 'type="text" class="pin-dots" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" readonly data-arm';
@@ -3425,7 +3443,7 @@
     $('#spOut').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); A.signOut(ev.currentTarget); });
     const save = async () => {
       const a = $('#spA').value.trim(), b = $('#spB').value.trim(), err = $('#spErr');
-      if (!/^\d{4,8}$/.test(a)) return (err.textContent = 'PIN must be 4–8 digits.');
+      if (pinProblem(a)) return (err.textContent = pinProblem(a));
       if (a !== b) return (err.textContent = 'The two PIN entries do not match.');
       err.textContent = '';
       await authBusy($('#spGo'), async () => {
@@ -5310,6 +5328,28 @@
   }
   /** Unit badges panel body. Any error shows inline instead of leaving the panel blank. */
   /** Unit badges table: badge · name · members · Edit / Disable / Delete. Tap a row to edit. */
+  /** Team admins who manage this unit: team status whose units include it (or no units = every unit, for their positions). */
+  const isUnitAdmin = (id, code) => { const a = (S.admins || {})[id]; return !!a && a.level === 'team' && !!a.scope && (a.scope.units || []).includes(code); };
+  const teamAdminsOf = code => S.users.filter(u => isUnitAdmin(u.id, code));
+  /** Teams → Admins: the unit's members (and anyone already admin for it), each with a Team Admin switch for THIS team.
+   *  The switch adds / removes this unit from the person's teams, so one manager can run several teams. Positions and
+   *  multiple teams can also be set together in Admin Status on the Roster. Org admins are shown, not switchable. */
+  function openTeamAdmins(code) {
+    const un = unitsList().find(x => x.code === code) || { code, name: code };
+    const byLast = (a, b) => lastName(a).localeCompare(lastName(b));
+    const active = S.users.filter(u => u.active);
+    const mgrs = active.filter(u => isUnitAdmin(u.id, code)).sort(byLast);
+    const own = active.filter(u => u.unit === code && !isUnitAdmin(u.id, code)).sort(byLast);
+    const others = active.filter(u => u.unit !== code && !isUnitAdmin(u.id, code)).sort(byLast);
+    const row = u => { const a = (S.admins || {})[u.id], on = isUnitAdmin(u.id, code), self = u.id === S.me;
+      return '<div class="ta-row">' + idBadge(u) + '<span class="pp-n">' + nameHtml(u) + (a ? ' <span class="badge adm-b">' + (a.level === 'org' ? 'Org Admin' : 'Team Admin · ' + esc(scopeText(a.scope))) + '</span>' : '') + '</span>' +
+        (a && a.level === 'org' || self ? '' : '<button type="button" class="btn sm chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="teamAdminTog" data-id="' + esc(u.id) + '" data-code="' + esc(code) + '">' + (on ? icon('check', 14) : '') + 'Manager</button>') + '</div>'; };
+    const sect = (title, list, empty) => '<div class="ta-sect"><div class="lbl">' + title + ' <span class="ct">' + list.length + '</span></div>' + (list.length ? '<div class="ta-list">' + list.map(row).join('') + '</div>' : '<p class="meta">' + empty + '</p>') + '</div>';
+    openModal('teamAdmins', modalHead(esc(un.code) + ' Managers', 'shield') + '<div class="modal-b">' +
+      '<p class="meta" style="margin:0 0 10px;white-space:normal">Managers are team admins: they unlock Admin Mode with the Team Admin PIN and run this team (approve / deny, blackouts, roster). One person can manage several teams. To also limit them to certain positions, use Admin Status on the Roster.</p>' +
+      sect('Managers', mgrs, 'No managers yet.') + sect(esc(un.code) + ' Members', own, 'No other members.') + sect('Other Teams', others, 'No one else.') + '</div>' +
+      '<div class="modal-f"><button class="btn primary block" data-act="closeModal">Done</button></div>', true);
+  }
   function adminUnits() {
     const rows = unitsList().map(un => {
       const used = S.users.filter(u => u.unit === un.code).length;
@@ -5317,13 +5357,15 @@
         '<td>' + unitBadge(un.code) + '</td>' +
         '<td class="strong">' + esc(un.name) + (un.disabled ? ' <span class="badge">Disabled</span>' : '') + '</td>' +
         '<td class="num">' + used + '</td>' +
+        '<td>' + (teamAdminsOf(un.code).map(u => esc(nameText(u))).join(', ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
           '<button class="btn sm act" data-act="editUnit" data-code="' + esc(un.code) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
+          '<button class="btn sm act" data-act="teamAdmins" data-code="' + esc(un.code) + '" title="Team managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
           '<button class="btn sm act" data-act="toggleUnit" data-code="' + esc(un.code) + '" title="' + (un.disabled ? 'Enable' : 'Disable') + '">' + icon(un.disabled ? 'check' : 'ban', 13) + '<span class="bl">' + (un.disabled ? 'Enable' : 'Disable') + '</span></button>' +
           (used ? '' : '<button class="btn sm del act" data-act="deleteUnit" data-code="' + esc(un.code) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td></tr>';
     }).join('');
-    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Name</th><th scope="col" class="num">Members</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Name</th><th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
   /* Roster page (admin): add members, edit, reset PINs, deactivate / reactivate. Opened from the Roster tab → Manage. */
@@ -5388,33 +5430,6 @@
     ['Europe/London', 'London'], ['Europe/Paris', 'Paris'], ['Europe/Berlin', 'Germany (Berlin)'], ['Europe/Istanbul', 'Turkey (Istanbul)'], ['Asia/Qatar', 'Qatar'],
     ['Asia/Dubai', 'UAE (Dubai)'], ['Asia/Riyadh', 'Saudi Arabia (Riyadh)'], ['Asia/Kuwait', 'Kuwait'], ['Asia/Seoul', 'Korea (Seoul)'], ['Asia/Tokyo', 'Japan (Tokyo)'], ['Pacific/Guam', 'Guam']];
   const redrawReport = () => { const p = $('#reportPanel'); if (p) p.outerHTML = reportPanel(); };
-  /** Admin → Team Admin PINs (org admins): each PIN unlocks team admin mode for its units and / or positions. */
-  function teamPinsPanel() {
-    const rows = (S.teamPins || []).map(t => '<tr data-act="editTeamPin" data-id="' + esc(t.id) + '" tabindex="0"><td class="strong">' + esc(t.name) + '</td>' +
-      '<td>' + esc(scopeText(t)) + '</td><td class="acts-cell"><div class="row-acts">' +
-        '<button class="btn sm act" data-act="editTeamPin" data-id="' + esc(t.id) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
-        '<button class="btn sm del act" data-act="delTeamPin" data-id="' + esc(t.id) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button></div></td></tr>').join('');
-    return '<div class="panel"><div class="cfg-h"><h3>' + icon('key', 16) + ' Team Admin PINs' + tip('Give a team admin their PIN. Unlocking Admin Mode with it lets them approve / deny, add blackouts and manage members only for these units and positions.') + '</h3>' +
-        '<button class="btn primary" data-act="editTeamPin" data-id="">' + icon('plus', 18) + 'New Team PIN</button></div>' +
-      (rows ? '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Team</th><th scope="col">Covers</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<p class="meta">No team admin PINs yet. The admin PIN below unlocks everything.</p>') + '</div>';
-  }
-  function openTeamPin(id) {
-    const t = (S.teamPins || []).find(x => x.id === id);
-    S.tpDraft = { id: t ? t.id : '', units: t ? (t.units || []).slice() : [], roles: t ? (t.roles || []).slice() : [] };
-    renderTeamPin(t ? t.name : '');
-  }
-  function renderTeamPin(name) {
-    const d = S.tpDraft, nm = $('#tpName') ? $('#tpName').value : name;
-    openModal('teamPin', modalHead(d.id ? 'Edit Team PIN' : 'New Team PIN', 'key') + '<div class="modal-b">' + REQ_NOTE +
-      '<div class="field"><label for="tpName">Team Name' + REQ + '</label><input id="tpName" maxlength="40" placeholder="e.g. PIT Maintenance" value="' + esc(nm || '') + '"></div>' +
-      '<div class="sect"><div class="lbl">Covers' + REQ + '</div>' + scopeChips(d, 'tpScope') +
-        '<p class="meta sc-note">' + (d.units.length || d.roles.length ? 'Manages ' + esc(scopeText(d)) + '.' : 'Pick at least one unit or position. Both = only members in both (e.g. PIT + Maintenance = PIT’s maintenance).') + '</p></div>' +
-      PIN_HINT + '<div class="row"><div class="field"><label for="tp1">' + (d.id ? 'New PIN (optional)' : 'PIN' + REQ) + '</label><input id="tp1" ' + NEW_PIN + '></div>' +
-        '<div class="field"><label for="tp2">Confirm</label><input id="tp2" ' + NEW_PIN + '></div></div>' +
-      '<div class="err" id="tpErr"></div></div>' +
-      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="saveTeamPin">' + icon('check', 18) + 'Save</button></div>');
-  }
   /** Which admin mode is unlocked: "Org Admin", or "Team Admin" (its team in the tooltip). */
   const adminModeBadge = () => '<span class="unlocked" title="' + esc(S.adminScope ? 'Team admin for ' + scopeText(S.adminScope) : 'Org admin: every team') + '">' + icon('unlock', 13) + (S.adminScope ? ' Team Admin' : ' Org Admin') + '</span>';
   /** Team admins change only blackouts that stay within their team; org admins change any. */
@@ -5458,8 +5473,6 @@
 
       blackoutPanel() +
 
-      teamPinsPanel() +
-
       // Privacy: members see only their own schedule plus day availability. Admins always see everything.
       '<div class="panel"><div class="cfg-row-tog"><div><h3>' + icon('lock', 16) + ' Hide User Schedules' + tip('Members see only their own requests plus day availability. Admin mode always shows everything.') + '</h3>' +
         '</div>' +
@@ -5468,7 +5481,7 @@
 
 
       // Unit badges
-      '<div class="panel"><div class="cfg-h"><h3>' + icon('users', 16) + ' Unit Badges' + tip('Disabled units aren’t offered to new members.') + '</h3>' +
+      '<div class="panel"><div class="cfg-h"><h3>' + icon('users', 16) + ' Teams' + tip('Each unit is a team: its badge, members and team admins. Team admins unlock with the Team Admin PIN and manage only their teams (and positions, if set). Disabled teams aren’t offered to new members.') + '</h3>' +
         '<button class="btn primary" data-act="newBadge">' + icon('plus', 18) + 'New Badge</button></div>' +
         adminUnits() + '</div>' +
 
@@ -5490,8 +5503,13 @@
       // PINs
       '<div class="panel panel-warn"><h3>' + icon('key', 16) + ' Default PIN' + tip('Temporary PIN for new members and PIN resets. They must change it at next sign-in.') + '</h3>' +
         pinPair('dp1', 'dp2', 'New Default PIN', 'Confirm', '<button class="btn" data-act="saveDefaultPin">Update Default PIN</button>') + '</div>' +
-      '<div class="panel panel-danger"><h3>' + icon('shield', 16) + ' Admin PIN' + tip('Unlocks admin mode from Profile.') + '</h3>' +
-        pinPair('pk1', 'pk2', 'New Admin PIN', 'Confirm', '<button class="btn" data-act="savePasskey">Update Admin PIN</button>') + '</div>' +
+      // One team admin PIN for every team admin: it unlocks Team Admin mode for members marked as team admins, for
+      // exactly their teams and positions (their admin status). It can never be the org admin PIN.
+      '<div class="panel panel-warn"><h3>' + icon('shield', 16) + ' Team Admin PIN' + tip('Team admins unlock Admin Mode with this. What they manage comes from their admin status (Teams → Admins, or Admin Status on the Roster). It can’t be the org admin PIN.') + '</h3>' +
+        '<p class="meta pin-state">' + (S.teamPinSet ? icon('check', 14) + ' Set' : 'Not set yet: team admins can’t unlock until you set it.') + '</p>' +
+        pinPair('tk1', 'tk2', 'New Team Admin PIN', 'Confirm', '<button class="btn" data-act="saveTeamPin">Update Team Admin PIN</button>') + '</div>' +
+      '<div class="panel panel-danger"><h3>' + icon('shield', 16) + ' Org Admin PIN' + tip('Unlocks Org Admin mode (everything) from Profile. It can’t be the team admin PIN.') + '</h3>' +
+        pinPair('pk1', 'pk2', 'New Org Admin PIN', 'Confirm', '<button class="btn" data-act="savePasskey">Update Org Admin PIN</button>') + '</div>' +
       // Last on the page, on its own: every member back to the default PIN (asks twice — tick the warning, then OK).
       '<div class="ra-wrap"><button class="btn ra-btn" data-act="resetAllPins">' + icon('key', 18) + 'Reset All Account PINs</button></div>' +
       '</div></section>';
@@ -5778,7 +5796,7 @@
    *  read-only until tapped) so your sign-in PIN never lands in it. */
   function openAdminPin() {
     const html = modalHead('Admin Mode', 'shield') + '<div class="modal-b">' +
-      '<input id="passkey" name="pal-admin-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Admin PIN" aria-label="Admin PIN" autocomplete="off" readonly data-lpignore="true" data-1p-ignore data-bwignore>' +
+      '<input id="passkey" name="pal-admin-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Org or Team Admin PIN" aria-label="Org or team admin PIN" autocomplete="off" readonly data-lpignore="true" data-1p-ignore data-bwignore>' +
       '<div class="err" id="admErr"></div></div>' +
       '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="unlockAdmin" id="admGo">' + icon('unlock', 18) + 'Unlock</button></div>';
     openModal('adminPin', html);
@@ -6823,24 +6841,6 @@
       if (res) { apply(res); S.rpDraft = null; redrawReport(); toast(r.on ? 'Daily report saved' : 'Daily report off', 'ok', 2000); }
     },
     async rpTest(el) { const res = await run(el, 'apiSendReportNow', S.token); if (res) toast('Report sent to ' + res.sent, 'ok', 2600); },
-    editTeamPin(el) { openTeamPin(el.dataset.id); },
-    tpScope(el) { const d = S.tpDraft; d[el.dataset.k] = toggleIn(d[el.dataset.k], el.dataset.v); renderTeamPin(); },
-    async saveTeamPin(el) {
-      const d = S.tpDraft, name = $('#tpName').value.trim(), a = $('#tp1').value, b = $('#tp2').value, err = $('#tpErr');
-      if (!name) return (err.textContent = 'Name the team.');
-      if (!d.units.length && !d.roles.length) return (err.textContent = 'Pick at least one unit or position.');
-      if ((!d.id || a) && !/^\d{4,8}$/.test(a)) return (err.textContent = 'PIN must be 4–8 digits.');
-      if (a !== b) return (err.textContent = 'PINs do not match.');
-      err.textContent = '';
-      const res = await run(el, 'apiSaveTeamPin', S.token, { id: d.id, name, units: d.units, roles: d.roles }, a, b);
-      if (res) { apply(res); closeModal(); render(); toast('Team PIN saved', 'ok', 2000); }
-    },
-    delTeamPin(el) {
-      const t = (S.teamPins || []).find(x => x.id === el.dataset.id);
-      if (!t || !confirm('Delete the team PIN for ' + t.name + '? It will stop unlocking admin mode (anyone using it now keeps it until they lock or sign out).')) return;
-      save(() => { S.teamPins = S.teamPins.filter(x => x.id !== t.id); }, 'apiDeleteTeamPin', S.token, t.id);
-      render(); toast('Team PIN deleted', 'ok', 1800);
-    },
     editBlackout(el) { const b = blackouts().find(x => x.id === el.dataset.id); if (b && canEditBo(b)) openBlackoutWizard(el.dataset.id); },
     newBlackout() { if (S.isAdmin) openBlackoutWizard(); },
     allowBlackout(el) {
@@ -7183,7 +7183,7 @@
     memberYear(el) { S.yearFrom = el.dataset.id; openPersonYear(el.dataset.id); },
     async setUserPin(el) {
       const a = $('#mcPin1').value.trim(), b = $('#mcPin2').value.trim(), err = $('#mcPinErr');
-      if (!/^\d{4,8}$/.test(a)) { err.textContent = 'PIN must be 4–8 digits.'; return; }
+      if (pinProblem(a)) { err.textContent = pinProblem(a); return; }
       if (a !== b) { err.textContent = 'The two PIN entries do not match.'; return; }
       err.textContent = '';
       const data = await run(el, 'apiSetUserPin', S.token, el.dataset.id, a, b);
@@ -7264,7 +7264,7 @@
     /* Profile */
     async savePin(el) {
       const a = $('#np1').value.trim(), b = $('#np2').value.trim(), err = $('#pinErr');
-      if (!/^\d{4,8}$/.test(a)) { err.textContent = 'PIN must be 4–8 digits.'; return; }
+      if (pinProblem(a)) { err.textContent = pinProblem(a); return; }
       if (a !== b) { err.textContent = 'The two PIN entries do not match.'; return; }
       err.textContent = '';
       const ok = await run(el, 'apiChangePin', S.token, a, b);
@@ -7397,7 +7397,7 @@
     },
     async saveDefaultPin(el) {
       const a = $('#dp1').value.trim(), b = $('#dp2').value.trim();
-      if (!/^\d{4,8}$/.test(a)) return toast('PIN must be 4–8 digits.', 'error');
+      if (pinProblem(a)) return toast(pinProblem(a), 'error');
       if (a !== b) return toast('PINs do not match.', 'error');
       const ok = await run(el, 'apiSetDefaultPin', S.token, a, b);
       if (ok) { $('#dp1').value = ''; $('#dp2').value = ''; toast('Default PIN updated'); }
@@ -7617,9 +7617,26 @@
       render(); if (S.modal === 'member') openMemberCard(u.id);
       toast(u.name + (on ? ' reactivated' : ' deactivated'), 'ok', 1500);
     },
+    teamAdmins(el) { openTeamAdmins(el.dataset.code); },
+    // Add / remove this unit from the person's team admin units (their positions, if any, stay).
+    teamAdminTog(el) {
+      const id = el.dataset.id, code = el.dataset.code, a = (S.admins || {})[id];
+      const cur = a && a.level === 'team' && a.scope ? { units: (a.scope.units || []).slice(), roles: (a.scope.roles || []).slice() } : { units: [], roles: [] };
+      cur.units = toggleIn(cur.units, code);
+      const none = !cur.units.length && !cur.roles.length;
+      save(() => { if (none) delete S.admins[id]; else S.admins[id] = { level: 'team', scope: cur }; }, 'apiSetAdminStatus', S.token, id, none ? '' : 'team', none ? null : cur);
+      render(); openTeamAdmins(code);
+    },
+    async saveTeamPin(el) {
+      const a = $('#tk1').value.trim(), b = $('#tk2').value.trim();
+      if (pinProblem(a)) return toast(pinProblem(a), 'error');
+      if (a !== b) return toast('PINs do not match.', 'error');
+      const d = await run(el, 'apiSetTeamPin', S.token, a, b);
+      if (d) { apply(d); $('#tk1').value = ''; $('#tk2').value = ''; render(); toast('Team Admin PIN updated'); }
+    },
     async savePasskey(el) {
       const a = $('#pk1').value.trim(), b = $('#pk2').value.trim();
-      if (!/^\d{4,8}$/.test(a)) return toast('Passkey must be 4–8 digits.', 'error');
+      if (pinProblem(a)) return toast(pinProblem(a), 'error');
       if (a !== b) return toast('Passkeys do not match.', 'error');
       const ok = await run(el, 'apiChangePasskey', S.token, a, b);
       if (ok) { $('#pk1').value = ''; $('#pk2').value = ''; toast('Admin PIN updated'); }
