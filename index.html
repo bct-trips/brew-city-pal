@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792596595"></script>
+    <script src="config.js?v=1792596689"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792596595';
+      window.PAL_BUILD = '1792596689';
       (function () {
         function check(launch) {
           try {
@@ -3186,7 +3186,6 @@
     if (!S.priv) {
       const see = seeRoles(), keep = S.f.role.filter(r => see.includes(r));
       if (keep.length !== S.f.role.length) S.f.role = keep.length ? keep : defaultRoles();
-      if (S.dayRoles) { const dk = S.dayRoles.filter(r => see.includes(r)); S.dayRoles = dk.length ? dk : null; }
     }
   }
   function signOutLocal() {
@@ -4599,9 +4598,9 @@
   const useDayPanel = () => window.matchMedia('(min-width: 900px)').matches;
   function renderDay(day, panel) {
     const d = day || S.cursor;
-    // Day list: the calendar's status / type / person / conflict filters, but the day's own position filter.
+    // Day list: the calendar's filters, positions included (the panel has no position filter of its own).
     const dayPool = S.view === 'mine' ? calRequests() : IDX.live.filter(r => S.f.status.includes(r.status) && S.f.type.includes(r.type) &&
-      personConfOk(r, S.f) && (S.dayRoles || ROLES).includes(userOf(r.userId).role));
+      personConfOk(r, S.f) && S.f.role.includes(userOf(r.userId).role));
     const reqs = dayPool.filter(r => r.start <= d && r.end >= d)
       .sort((a, b) => stackRank(a) - stackRank(b) || ROLES.indexOf(userOf(a.userId).role) - ROLES.indexOf(userOf(b.userId).role) || lastName(userOf(a.userId)).localeCompare(lastName(userOf(b.userId))));
     const live = calRequests().filter(countable);
@@ -4622,7 +4621,7 @@
     const av = S.priv ? availClass(d, myRole()) : '';
     const meters = S.priv
       ? (av ? '<div class="day-avail ' + av + '"><i></i>' + esc(myRole() || '') + ' slots ' + ({ 'av-open': 'open', 'av-over': 'overbooked', 'av-full': 'full' })[av] + '</div>' : '')
-      : seeRoles().map(role => roleMeter(role, rc[role], 'lg')).join('');
+      : seeRoles().filter(role => S.f.role.includes(role)).map(role => roleMeter(role, rc[role] || 0, 'lg')).join(''); // only the positions the calendar shows
     const weekStrip = '<div class="dstrip"><button class="ds-arrow" data-act="dayShift" data-v="-7" aria-label="Previous week">' + icon('left', 20) + '</button>' +
         '<div class="ds-days">' + strip + '</div>' +
         '<button class="ds-arrow" data-act="dayShift" data-v="7" aria-label="Next week">' + icon('right', 20) + '</button></div>';
@@ -4635,12 +4634,7 @@
       : weekStrip +
       '<div class="dsum"><div class="dsum-h"><span>' + esc(D.f(d, { weekday: 'long' })) + '</span><span class="muted">' + esc(D.f(d, { month: 'long', day: 'numeric' })) + (d === S.today ? ' · Today' : '') + '</span></div>' +
         '<div class="rm-grid">';
-    // Position filter for the day (shares the calendar's filter, so the calendar narrows too). Not on My Requests.
-    // The day's own Pilots | Booms | Other filter — independent of the calendar's position filter.
-    const dr = S.dayRoles || (S.dayRoles = seeRoles().slice());
-    const roleBar = S.view === 'mine' || S.priv ? '' : '<div class="day-roles"><div class="seg" role="group" aria-label="Positions for this day">' + FILTERS[1].opts.map(o =>
-      '<button type="button" class="' + (dr.includes(o[0]) ? 'on' : '') + '" aria-pressed="' + dr.includes(o[0]) + '" data-act="dayRole" data-v="' + o[0] + '">' + o[1] + '</button>').join('') + '</div></div>';
-    return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top.replace('<div class="dsum">', roleBar + '<div class="dsum">') +
+    return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top +
         meters + '</div></div>' +
       '<div class="dayv-in">' + blackoutsOn(d).map(b => '<div class="msg e bo-day">' + icon('ban', 15) + '<span><b>' + esc(boLabel(b)) + '</b>' + (b.note ? ' — ' + esc(b.note) : '') + '</span></div>').join('') +
       // No overlap / over-the-max notes here: conflicts are handled by the conflict resolver.
@@ -6968,11 +6962,6 @@
     updateNo() { hideUpdateBar(); S.updateLater = true; renderNavOnly(); redrawNotes(); },
     updateAsk() { closeProfileMenu(); askUpdate(); },
     grpMore(el) { const c = (S.grpCol = S.grpCol || {})[el.dataset.table] = S.grpCol[el.dataset.table] || {}; c[el.dataset.v] = 'open'; render(); },
-    dayRole(el) {
-      const cur = S.dayRoles || seeRoles().slice(), v = el.dataset.v;
-      S.dayRoles = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat([v]);
-      render();
-    },
     confToggle() {
       S.f.conf = !S.f.conf; render();
       if (S.modal === 'person') openPersonPicker(S.ppScope, S.ppMode);
