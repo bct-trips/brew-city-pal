@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792582351"></script>
+    <script src="config.js?v=1792582723"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -4211,12 +4211,16 @@
   /** Week strip: a bar that starts off-screen to the left keeps its name badge at the visible left edge (it slides along
    *  inside the bar as you scroll, but never past the bar's own end), so every visible bar shows who it is. */
   function stickWeekLabels(el) {
-    const left = el.getBoundingClientRect().left;
+    // Every pinned badge lines up on ONE edge: where a bar starting on the first visible day puts its badge (its left
+    // margin + padding), whatever the bar's own padding (single, shared or continuing).
+    const edge = el.getBoundingClientRect().left + 12;
     el.querySelectorAll('.wpuck').forEach(p => {
       const n = p.querySelector('.n'), c = n && n.firstElementChild; if (!c) return;
+      const cur = parseFloat((c.style.transform.match(/-?[\d.]+/) || [0])[0]) || 0;
+      const natural = c.getBoundingClientRect().left - cur; // where the badge sits with no shift
       const pr = p.getBoundingClientRect();
-      const room = Math.max(0, pr.width - c.offsetWidth - 16);
-      const shift = Math.min(room, Math.max(0, left - pr.left + 4));
+      const room = Math.max(0, pr.right - 8 - c.offsetWidth - natural); // never past the bar's end
+      const shift = Math.min(room, Math.max(0, edge - natural));
       c.style.transform = shift ? 'translateX(' + Math.round(shift) + 'px)' : '';
     });
   }
