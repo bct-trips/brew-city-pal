@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792587134"></script>
+    <script src="config.js?v=1792587471"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792587134';
+      window.PAL_BUILD = '1792587471';
       (function () {
         function check(launch) {
           try {
@@ -2407,18 +2407,19 @@
   /* Event types table: the Blackout tag lines up with the other tags (no side margin). */
   .ty-bo .bo-badge.t-ltr { margin-left: 0; }
   /* Update snackbar (Material 3): inverse surface above the nav bar, text + Not now · Update. Non-blocking. */
-  #updBar { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom));
+  .snackbar { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom));
     width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 16px; min-height: 48px;
     background: var(--navy); color: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.3); font-size: 15px; font-weight: 600; animation: ubIn .25s ease-out; }
-  #updBar > .ic { flex: none; color: var(--gold); }
-  #updBar .ub-t { flex: 1 1 auto; min-width: 0; }
-  #updBar .ub-b { flex: none; border: 0; background: none; color: #ffffff; font: inherit; font-size: 14px; font-weight: 700; padding: 0 12px; min-height: 40px; border-radius: 20px; cursor: pointer; }
-  #updBar .ub-b:hover { background: rgba(255,255,255,.12); }
-  #updBar .ub-go { color: var(--gold); }
-  #updBar .ub-b:focus-visible { outline: 3px solid var(--gold); outline-offset: -3px; }
+  .snackbar > .ic { flex: none; color: var(--gold); }
+  .snackbar .ub-t { flex: 1 1 auto; min-width: 0; }
+  .snackbar .ub-b { flex: none; border: 0; background: none; color: #ffffff; font: inherit; font-size: 14px; font-weight: 700; padding: 0 12px; min-height: 40px; border-radius: 20px; cursor: pointer; }
+  .snackbar .ub-b:hover { background: rgba(255,255,255,.12); }
+  .snackbar .ub-go { color: var(--gold); }
+  .snackbar .ub-b:focus-visible { outline: 3px solid var(--gold); outline-offset: -3px; }
   body.has-upd #toast { bottom: calc(var(--nav-h) + 74px + env(safe-area-inset-bottom)); }
   @keyframes ubIn { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
-  @media (prefers-reduced-motion: reduce) { #updBar { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .snackbar { animation: none; } }
+  .snackbar .ub-t { line-height: 1.3; }
   /* Roster: inactive (deactivated) members show red — tinted row, red edge, red "Inactive" badge. */
   #tbl-people tbody tr.ro-off > td { background: var(--bad-bg); color: var(--bad); }
   #tbl-people tbody tr.ro-off > td:first-child { box-shadow: inset 4px 0 0 var(--bad); }
@@ -2441,6 +2442,20 @@
   .pin-row > .field { flex: 1 1 140px; min-width: 0; margin-bottom: 0; }
   .pin-row > .field input { width: 100%; }
   .pin-row > .btn { flex: none; margin-left: auto; margin-top: 10px; }
+  /* Profile menu → Notifications: a tinted tray set apart from the menu options, each notification its own card
+     (rounded, bordered, slight shadow). Unread cards get a navy (dark: gold) left edge. Message wraps to two lines. */
+  .pm-notes { background: var(--surface-high); padding: 10px 10px 10px; border-bottom: 1px solid color-mix(in srgb, var(--pm-edge, var(--line)) 60%, transparent); }
+  .pm-nh { padding: 0 6px 8px; }
+  .pm-n { background: var(--card); border: 1px solid var(--outline-variant); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .pm-n + .pm-n { margin-top: 6px; }
+  .pm-n.unread { background: var(--card); box-shadow: inset 4px 0 0 var(--navy), 0 1px 2px rgba(0,0,0,.08); }
+  :root[data-theme="dark"] .pm-n.unread { box-shadow: inset 4px 0 0 var(--gold), 0 1px 2px rgba(0,0,0,.3); }
+  .pm-nb { align-items: flex-start; padding: 10px 4px 10px 14px; }
+  .pm-nb .note-ic { margin-top: 1px; }
+  .pm-nt span { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+  .pm-ago { margin-top: 2px; }
+  .pm-nempty { padding: 10px 12px; margin: 0; background: var(--card); border: 1px dashed var(--outline-variant); border-radius: 12px; text-align: center; }
+  .pm-more { margin-top: 6px; padding: 6px 6px 0; background: none; }
 </style>
 
   </head>
@@ -3000,6 +3015,7 @@
     S.reloadAt = Number(data.reloadAt) || 0;
     if (checkForceReload(S.reloadAt, !S.booted)) return;
     S.booted = true;
+    setTimeout(askPush, 0); // signed in now: offer notifications if they're off (Home Screen app)
     S.adminIds = data.adminIds || []; S.alertIds = data.alertIds || []; // shares a last name: must add a first / middle initial before using the app
     if (S.priv) { S.f.role = ROLES.slice(); S.f.person = ''; S.f.conf = false; S.mineMode = 'list'; if (S.view === 'all') S.view = 'mine'; }
     S.today = localToday();
@@ -3117,6 +3133,7 @@
     apply(res.data); render();
   }
   function showLogin() {
+    hidePushBar();
     S.me = null;
     authShell('<form id="loginForm" autocomplete="on">' +
       '<div class="field"><label for="lgLast">Last name</label><input id="lgLast" name="username" autocomplete="username" autocapitalize="words" spellcheck="false" value="' + esc(store.get('lastName', '')) + '"></div>' +
@@ -5365,7 +5382,29 @@
       st = sub && Notification.permission === 'granted' ? 'on' : 'off';
     }
     S.pushState = st; redrawNotes();
+    askPush();
   }
+  /* ---------- Turn on notifications (Home Screen app) ----------
+     Signed in, opened from the Home Screen, and notifications are off on this device (never asked, or turned off):
+     a snackbar like the update one — "Get notified when your requests are approved or changed" · Not now · Turn on.
+     It asks at most twice per device (once per app launch); after the second time it stops for good — Profile →
+     Notifications still has Turn on. Never shown while the update snackbar is up, or once permission was blocked
+     (that needs the phone's Settings, which Profile explains). */
+  const PUSH_ASKS = 2;
+  let pushAsked = false; // shown (or answered) this launch
+  function askPush() {
+    const want = S.me && isStandalone() && S.pushState === 'off' && !pushAsked && !document.getElementById('updBar') &&
+      Number(store.get('pushAsks', '0')) < PUSH_ASKS;
+    if (!want) { if (S.pushState !== 'off' || !S.me) hidePushBar(); return; }
+    if (document.getElementById('pushBar')) return;
+    pushAsked = true; store.set('pushAsks', String(Number(store.get('pushAsks', '0')) + 1)); // counts toward the two asks
+    const bar = document.createElement('div'); bar.id = 'pushBar'; bar.className = 'snackbar'; bar.setAttribute('role', 'status'); bar.setAttribute('aria-live', 'polite');
+    bar.innerHTML = icon('bell', 18) + '<span class="ub-t">Get notified when your requests are approved or changed</span>' +
+      '<button type="button" class="ub-b" data-act="pushLater">Not now</button><button type="button" class="ub-b ub-go" data-act="pushOnBar">Turn on</button>';
+    document.body.appendChild(bar);
+    document.body.classList.add('has-upd');
+  }
+  function hidePushBar() { const b = document.getElementById('pushBar'); if (b) { b.remove(); if (!document.getElementById('updBar')) document.body.classList.remove('has-upd'); } }
   /** Links from notifications: #req=<id> opens that request, #notes opens Profile. */
   function openLink(url) {
     const h = String(url || '').split('#')[1] || '';
@@ -6347,6 +6386,9 @@
       } catch (e) { toast('Couldn’t turn on notifications: ' + e.message, 'error', 6000); }
       await refreshPushState();
     },
+    // Snackbar: Turn on runs the same steps as Profile's button (the permission prompt must come straight from the tap).
+    pushOnBar() { hidePushBar(); A.pushOn(); },
+    pushLater() { hidePushBar(); },
     async pushOff(el) {
       await busy(el, async () => {
         try {
@@ -7354,14 +7396,15 @@
     if (!S.update) return;
     let bar = document.getElementById('updBar');
     if (!bar) {
-      bar = document.createElement('div'); bar.id = 'updBar'; bar.setAttribute('role', 'status'); bar.setAttribute('aria-live', 'polite');
+      bar = document.createElement('div'); bar.id = 'updBar'; bar.className = 'snackbar'; bar.setAttribute('role', 'status'); bar.setAttribute('aria-live', 'polite');
       bar.innerHTML = icon('refresh', 18) + '<span class="ub-t">A new version is available</span>' +
         '<button type="button" class="ub-b" data-act="updateNo">Not now</button><button type="button" class="ub-b ub-go" data-act="updateYes">Update</button>';
       document.body.appendChild(bar);
     }
     document.body.classList.add('has-upd');
+    hidePushBar(); // one snackbar at a time: the update wins
   }
-  function hideUpdateBar() { const b = document.getElementById('updBar'); if (b) b.remove(); document.body.classList.remove('has-upd'); }
+  function hideUpdateBar() { const b = document.getElementById('updBar'); if (b) b.remove(); document.body.classList.remove('has-upd'); askPush(); }
   /** Admin → Update all devices: the server's FORCE_RELOAD time. A device updates once for each new push it hasn't seen
    *  (remembered on the device); the first time a device meets the setting it just records it. */
   function checkForceReload(at, launch) {
