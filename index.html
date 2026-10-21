@@ -15,12 +15,12 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792585756"></script>
+    <script src="config.js?v=1792585826"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one. When they
          differ — on launch and whenever the app comes back to the foreground — reload once to a cache-busted copy. */
-      window.PAL_BUILD = '1792585756';
+      window.PAL_BUILD = '1792585826';
       (function () {
         function check() {
           try {
@@ -2390,8 +2390,9 @@
   .stats-bar .rf-btn { flex: 0 1 auto; min-width: 0; max-width: 360px; }
   .stats-bar .rf-btn .manage-ct { margin-left: 2px; }
   @media (max-width: 700px) { .stats-bar .rf-btn { flex: 1 1 0; max-width: none; } }
-  /* Band header: which view is showing (tap the header to cycle All → Active → Closed). */
-  .grp-mode { display: inline-flex; align-items: center; vertical-align: middle; margin-left: 2px; height: 22px; padding: 0 9px; border-radius: 11px; background: var(--sel-bg); color: var(--sel-ink); font-size: 12px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+  /* Band header: which view is showing (tap the header to cycle All → Active → Closed), pinned to the right edge. */
+  .grp-side { float: right; position: sticky; right: 0; height: 36px; display: flex; align-items: center; padding: 0 14px; }
+  .grp-mode { display: inline-flex; align-items: center; margin: 0; height: 22px; padding: 0 9px; border-radius: 11px; background: var(--sel-bg); color: var(--sel-ink); font-size: 12px; font-weight: 700; letter-spacing: 0; text-transform: none; }
   /* Roster period: a radio list — title plus the dates it covers. */
   .rf-radio { align-items: center; padding-top: 8px; padding-bottom: 8px; }
   .rf-radio .pp-n { display: flex; flex-direction: column; gap: 1px; }
@@ -4604,11 +4605,11 @@
         : state === 'partial' ? act.map(r => rowHtml(r, false)).join('') + (rest.length ? more : '')
         : list.map(r => rowHtml(r, type === 'Past')).join('');
       return '<tbody class="grp grp-' + (type === 'Past' ? 'past' : tcls(type)) + (state === 'closed' ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
+        // Type bands (not Past, not My Requests): which of the three views is showing, as a chip pinned to the header's right
+        // edge (it stays in view when the table scrolls sideways; tapping anywhere on the header cycles the view).
+        (band && !mine ? '<span class="grp-side"><span class="grp-mode">' + ({ open: 'All', partial: 'Active', closed: 'Closed' })[state] + '</span></span>' : '') +
         '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + (state === 'open') + '">' +
-        icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span>' +
-        // Type bands (not Past, not My Requests): say which of the three views is showing — inside the sticky header button,
-        // so it stays put with the label when the table scrolls sideways.
-        (band && !mine ? '<span class="grp-mode">' + ({ open: 'All', partial: 'Active', closed: 'Closed' })[state] + '</span>' : '') + '</button>' +
+        icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button>' +
         '</th></tr>' + rowsHtml + '</tbody>';
     };
     const cur = rows.filter(r => r.end >= S.today), past = rows.filter(r => r.end < S.today);
