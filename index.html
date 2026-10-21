@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792580444"></script>
+    <script src="config.js?v=1792580538"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2270,6 +2270,9 @@
   .stsl:not(.lg) .stsl-o { justify-content: center; }
   .stsl:not(.lg) .stsl-o.on { width: 6.9em; padding: 0; }
   .stsl:not(.lg) .stsl-o:not(.on) { width: 36px; padding: 0; }
+  /* Badges on bars: the dark border is drawn just inside the badge edge, so a tight bar can never clip it (shared badges too). */
+  :is(.evs, .wpuck, .cs-bar, .qbar) .idb.pb { outline: 1.5px solid #0b1730; outline-offset: -1.5px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .7); }
+  .mn-more { font-weight: 700; color: #3f3f46; white-space: nowrap; cursor: default; }
 </style>
 
   </head>
@@ -3514,6 +3517,9 @@
    *  and different position/unit pairs get their own badge, separated by "/". Each name opens that person's request. */
   function groupBadges(list, withStatus, from, to) {
     const buckets = [];
+    // You first: your own request leads its badge, and the badge that includes you comes first.
+    const meFirst = (a, b) => (a.userId === S.me ? 0 : 1) - (b.userId === S.me ? 0 : 1);
+    list = list.slice().sort(meFirst);
     list.forEach(r => {
       const u = userOf(r.userId), k = (u.role || 'Other') + '|' + u.unit;
       const b = buckets.find(x => x.k === k);
@@ -3527,8 +3533,11 @@
       }
       const L = roleL(b.u.role), un = unitsList().find(x => x.code === b.u.unit), r0 = b.list[0];
       const same = b.list.every(r => r.status === r0.status);
-      const names = b.list.map(r => '<span class="mn" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-        barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (withStatus && !onNow(r, from, to) ? statusIcon(r.status) : '') + '</span>').join('<span class="rp-dot" aria-hidden="true">·</span>');
+      // At most three names, then "… +N" (hover the bar for everyone).
+      const shown = b.list.slice(0, 3), extra = b.list.length - shown.length;
+      const names = shown.map(r => '<span class="mn" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
+        barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (withStatus && !onNow(r, from, to) ? statusIcon(r.status) : '') + '</span>').join('<span class="rp-dot" aria-hidden="true">·</span>') +
+        (extra ? '<span class="rp-dot" aria-hidden="true">·</span><span class="mn mn-more" title="' + esc(b.list.slice(3).map(r => calName(userOf(r.userId))).join(', ')) + '">… +' + extra + '</span>' : '');
       return '<span class="idb pb gbb' + (same ? ' st-' + r0.status.toLowerCase() : '') + '"><span class="idb-r ' + roleCls(b.u.role) + '" aria-hidden="true">' + L + '</span>' +
         '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(b.u.unit) + '</span>' +
         '<span class="idb-n">' + names + '</span></span>';
@@ -3910,7 +3919,7 @@
   /* Middle days: one badge per position — [P|Doe · Roe · Poe], or [P|4+ Pilots] when more than 3. */
   /** Shared middle-day badge for one position + unit: [P|MKE|Doe · Roe · Poe] (or "4+ Pilots" when more than 3). */
   function rolePuck(role, list, from, to, unit) {
-    list = list.slice().sort(byLast);
+    list = list.slice().sort((a, b) => (a.userId === S.me ? 0 : 1) - (b.userId === S.me ? 0 : 1) || byLast(a, b));
     const L = roleL(role), un = unit && unitsList().find(x => x.code === unit);
     const title = rolePl(role) + ': ' + list.map(r => fullName(userOf(r.userId)) + ' (' + r.status + ')').join('; ');
     const names = list.length > 3
