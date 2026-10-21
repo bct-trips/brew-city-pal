@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792583713"></script>
+    <script src="config.js?v=1792583770"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2342,6 +2342,13 @@
   /* Sign-in / loading screens: the strip under the phone's status bar (and any overscroll) is their navy, not white. */
   #app:has(> .login, > .splash)::before { background: #1d3d6e; }
   html:has(#app > .login, #app > .splash), html:has(#app > .login, #app > .splash) body { background: #0a1a33; }
+  /* Sign-in screens: logo + card sit at the optical center (a little above true center): the space below is ~1.4× the space
+     above, and the logo-to-card gap grows with screen height. Short screens collapse the spacers and scroll. */
+  .login { justify-content: flex-start; overflow-y: auto; }
+  .login::before, .login::after { content: ""; flex: 1 1 0; min-height: 8px; }
+  .login::after { flex-grow: 1.4; }
+  .login .brand-logo { flex: none; margin-bottom: clamp(4px, 3vh, 28px); }
+  .login .login-card { flex: none; }
 </style>
 
   </head>
