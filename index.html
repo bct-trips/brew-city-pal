@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792575416"></script>
+    <script src="config.js?v=1792575617"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2473,7 +2473,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.3'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.4'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -3666,7 +3666,7 @@
   const isChanged = r => r.adminChanged === 'true';
   function changeText(r) {
     const by = r.changedBy ? userOf(r.changedBy) : null;
-    return 'Your request was changed by ' + (by ? fullName(by) : 'an admin') + (r.changedAt ? ' on ' + fmtTs(r.changedAt) : '') +
+    return (r.userId === S.me ? 'Your request' : 'This request') + ' was changed by ' + (by ? fullName(by) : 'an admin') + (r.changedAt ? ' on ' + fmtTs(r.changedAt) : '') +
       ': was ' + (r.origType || r.type) + ' ' + D.short(r.origStart || r.start) + ' → ' + D.short(r.origEnd || r.end) +
       ', now ' + r.type + ' ' + D.short(r.start) + ' → ' + D.short(r.end) + '.';
   }
@@ -4951,7 +4951,7 @@
           (S.isAdmin ? 'Allow it, change the dates, deny or delete it.' : 'An admin needs to review it.') + '</span>' +
           (S.isAdmin && r.status !== 'Denied' ? '<button class="btn sm" data-act="allowBlackout" data-id="' + esc(r.id) + '">' + icon('check', 13) + 'Allow</button>' : '') + '</div>') : '') +
       (isChanged(r) ? '<div class="msg w chg-msg">' + icon('alert', 15) + '<span>' + esc(changeText(r)) +
-        (r.userId === S.me ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('check', 13) + ' Got it</button>' : ' The member has not acknowledged this yet.') + '</span></div>' : '') +
+        (r.userId === S.me ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('check', 13) + ' Got it</button>' : ' The member hasn’t acknowledged this yet.' + (S.isAdmin ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('x', 13) + ' Clear notice</button>' : '')) + '</span></div>' : '') +
       (dupsOf(r).length ? '<div class="msg e">' + icon('alert', 15) + '<span>Overlap: this member also has ' + esc(dupText(r)) + '. A member can’t be on leave and a pass (or two requests) at the same time.</span></div>' : '') +
       (r.status !== 'Cancelled' && n <= 92
         ? '<div class="cc-sum ' + (bad ? 'bad' : 'ok') + '">' + icon(bad ? 'alert' : 'check', 15) + (bad ? plural(bad, 'day') + ' in conflict — tap a red day to see with whom' : 'No conflicts on any requested day') + '</div>' +
