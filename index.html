@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792580977"></script>
+    <script src="config.js?v=1792581103"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3548,18 +3548,27 @@
         '<span class="idb-n">' + names + '</span></span>';
     }).join('<span class="gsl" aria-hidden="true">·</span>');
   }
-  /** Everyone on a shared request (same dates and type): you first, then position and name. Tap a person for their request. */
+  /** Everyone on a shared request: every request visible on the calendar (current filters) with the same type and dates as
+   *  the puck you tapped — across ALL positions, even when Week shows them in separate bands — in sections by position
+   *  (Pilots, Booms, then the rest A–Z), you first within yours. Tap a person for their request. */
   function openGroupList(ids) {
-    const list = ids.map(findReq).filter(Boolean).sort((a, b) => (a.userId === S.me ? 0 : 1) - (b.userId === S.me ? 0 : 1) || byPosName(a, b));
-    if (!list.length) return;
-    const r0 = list[0];
-    const html = modalHead(esc(r0.type) + ' · ' + plural(list.length, 'person').replace('persons', 'people'), 'users') +
-      '<div class="modal-b"><p class="meta" style="margin:0 0 8px">' + esc(D.short(r0.start)) + ' → ' + esc(D.short(r0.end)) + ' · ' + plural(D.days(r0.start, r0.end), 'day') + '</p>' +
-      '<ul class="dl-list">' + list.map(r => { const u = userOf(r.userId);
-        return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
-          '<span class="dl-who">' + idBadge(u) + nameHtml(u) + '</span>' +
-          '<span class="dl-meta">' + esc(roleName(u.role)) + '</span>' +
-          '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>'; }).join('') + '</ul></div>' +
+    const picked = ids.map(findReq).filter(Boolean);
+    if (!picked.length) return;
+    const r0 = picked[0];
+    const seen = new Set();
+    const list = picked.concat(calRequests().filter(r => r.status !== 'Denied' && r.type === r0.type && r.start === r0.start && r.end === r0.end))
+      .filter(r => !seen.has(r.id) && seen.add(r.id));
+    const roles = [...new Set(list.map(r => userOf(r.userId).role))].sort((a, b) => posRank(a).localeCompare(posRank(b)));
+    const row = r => { const u = userOf(r.userId);
+      return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
+        '<span class="dl-who">' + idBadge(u) + nameHtml(u) + '</span>' +
+        '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>'; };
+    const sections = roles.map(role => {
+      const rs = list.filter(r => userOf(r.userId).role === role).sort((a, b) => (a.userId === S.me ? 0 : 1) - (b.userId === S.me ? 0 : 1) || byPosName(a, b));
+      return '<div class="dl-sec"><div class="dl-h"><span>' + esc(roleGroup(role)) + '</span><span class="ct">' + rs.length + '</span></div><ul class="dl-list">' + rs.map(row).join('') + '</ul></div>';
+    }).join('');
+    const html = modalHead(esc(r0.type) + ' · ' + list.length + (list.length === 1 ? ' person' : ' people'), 'users') +
+      '<div class="modal-b"><p class="meta" style="margin:0 0 8px">' + esc(D.short(r0.start)) + ' → ' + esc(D.short(r0.end)) + ' · ' + plural(D.days(r0.start, r0.end), 'day') + '</p>' + sections + '</div>' +
       '<div class="modal-f"><button class="btn block" data-act="closeModal">Close</button></div>';
     openModal('group', html);
   }
