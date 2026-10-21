@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792581908"></script>
+    <script src="config.js?v=1792581950"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2312,6 +2312,10 @@
   .row.role-top .field.cfg-code { flex: 0 0 76px; min-width: 0; }
   .row.role-top .field.cfg-code input { text-align: center; }
   .row.role-top .role-name { flex: 1 1 auto; min-width: 0; }
+  /* Position editor: demo calendar puck at the top. */
+  .bb-prev .evs.demo-puck { --bar-h: 34px; --tag: 22px; --pill-fs: 13px; display: inline-flex; align-items: center; width: 260px; max-width: 100%; border-radius: 10px; }
+  .bb-prev .evs.demo-puck .idb { height: var(--tag); }
+  .bb-prev .evs.demo-puck .idb-r { width: var(--tag); font-size: 13px; }
 </style>
 
   </head>
@@ -4812,7 +4816,11 @@
     S.roleView = Object.assign({}, S.roleView, { ed: r.view === 'same' ? [name] : r.view || 'all' });
     const html = modalHead(name ? 'Edit ' + roleName(name) : 'New position', name ? 'pencil' : 'plus') +
       '<div class="modal-b role-row badge-builder" data-k="ed" data-old="' + esc(name || '') + '">' +
-      '<div class="bb-prev"><span class="idb"><span class="idb-r ' + (name ? roleCls(name) : styleCls('teal')) + '" id="nrPrev">' + esc(r.letter || '?') + '</span></span></div>' +
+      // Demo puck: how a member of this position looks on the calendar (updates as the letter / colour change).
+      '<div class="bb-prev"><div class="evs leave single st-approved demo-puck" aria-hidden="true"><span class="evs-t"><span class="idb pb st-approved">' +
+        '<span class="idb-r ' + (name ? roleCls(name) : styleCls('teal')) + '" id="nrPrev">' + esc(r.letter || '?') + '</span>' +
+        '<span class="idb-u ub-' + ((unitsList()[0] || {}).style || 'navy') + '">' + esc((unitsList()[0] || {}).code || 'MKE') + '</span>' +
+        '<span class="idb-n"><span class="idb-t">Sample</span>' + statusIcon('Approved') + '</span></span></span></div></div>' +
       roleFields(r, 'ed', '<div class="field role-name"><label for="nrName">Name</label>' + (builtIn ? '<input id="nrName" class="rl-name" value="' + esc(name) + '" disabled>'
         : '<input id="nrName" class="rl-name" maxlength="24" placeholder="Maintenance" autocomplete="off" value="' + esc(r.name) + '"' + (name ? '' : ' autofocus') + '>') + '</div>') +
       '<div class="err" id="nrErr"></div></div>' +
