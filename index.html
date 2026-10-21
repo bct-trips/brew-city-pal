@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792583541"></script>
+    <script src="config.js?v=1792583713"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2970,7 +2970,9 @@
     autoFocus($('.login-card input, .login-card select'));
     renderInstallFab(); // phones: offer Add to Homescreen before signing in too
   }
-  const pinInput = (id, label, ac) => '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="4–8 digits" autocomplete="' + ac + '"></div>';
+  // Sign-in PIN: name="password" + autocomplete="current-password" next to a username field, so iOS / password managers
+  // treat it as a login (offer the saved PIN) — never as a new account ("use strong password").
+  const pinInput = (id, label, ac) => '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '"' + (ac === 'current-password' ? ' name="password"' : '') + ' type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="4–8 digits" autocomplete="' + ac + '"></div>';
   /** Handle any sign-in style result: choose-who, must-set-PIN, or straight into the app. */
   function afterAuth(res, lastName, pin, first) {
     if (res.pending) {
@@ -2988,7 +2990,7 @@
   function showLogin() {
     S.me = null;
     authShell('<form id="loginForm" autocomplete="on">' +
-      '<div class="field"><label for="lgLast">Last name</label><input id="lgLast" autocomplete="family-name" autocapitalize="words" value="' + esc(store.get('lastName', '')) + '"></div>' +
+      '<div class="field"><label for="lgLast">Last name</label><input id="lgLast" name="username" autocomplete="username" autocapitalize="words" spellcheck="false" value="' + esc(store.get('lastName', '')) + '"></div>' +
       pinInput('lgPin', 'PIN', 'current-password') +
       '<div class="err" id="lgErr"></div>' +
       '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('arrow', 16) + ' Sign in</button></form>' +
