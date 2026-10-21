@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792576317"></script>
+    <script src="config.js?v=1792576729"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2141,6 +2141,10 @@
     .cal > .calbar { order: 2; border-bottom: 0; border-top: 1px solid var(--line); }
     .cal > .req-bar { order: 3; border-top: 0; padding-top: 2px; }
   }
+  /* Desktop Week strip: grab to drag it sideways (snapping is off while dragging so it follows the mouse). */
+  @media (hover: hover) and (pointer: fine) { .wk-strip { cursor: grab; } }
+  .wk-strip.dragging { cursor: grabbing; scroll-snap-type: none; scroll-behavior: auto; user-select: none; }
+  .wk-strip.dragging * { cursor: grabbing !important; }
 </style>
 
   </head>
@@ -3886,6 +3890,40 @@
     return '<div class="week wk-strip" id="wkStrip" data-r0="' + ws + '" style="--days:' + WK_DAYS + '"><div class="wk-inner"><div class="wk-head wg">' + head + '</div><div class="bands">' + bands + '</div></div></div>';
   }
   /** After drawing the strip: scroll to the left-most day and track scrolling (label, re-centre near the ends). */
+  /* Desktop: drag the Week strip with the mouse. It follows the pointer, keeps a little momentum, then snaps to the
+     nearest day; a drag never counts as a click on a day or a bar. Touch and trackpads keep native scrolling. */
+  let wkDrag = null;
+  document.addEventListener('pointerdown', ev => {
+    if (ev.pointerType !== 'mouse' || ev.button !== 0) return;
+    const el = ev.target.closest && ev.target.closest('#wkStrip');
+    if (!el) return;
+    wkDrag = { el, x: ev.clientX, left: el.scrollLeft, moved: false, lx: ev.clientX, lt: performance.now(), v: 0 };
+  });
+  document.addEventListener('pointermove', ev => {
+    const g = wkDrag; if (!g) return;
+    const dx = ev.clientX - g.x;
+    if (!g.moved && Math.abs(dx) < 5) return;
+    if (!g.moved) { g.moved = true; g.el.classList.add('dragging'); }
+    const now = performance.now(), dt = Math.max(1, now - g.lt);
+    g.v = (ev.clientX - g.lx) / dt; g.lx = ev.clientX; g.lt = now;
+    g.el.scrollLeft = g.left - dx;
+    ev.preventDefault();
+  });
+  const endWkDrag = () => {
+    const g = wkDrag; wkDrag = null;
+    if (!g || !g.moved) return;
+    const el = g.el, dw = el.clientWidth / 7;
+    // A quick flick carries on a little; then land on a day boundary.
+    const target = Math.round((el.scrollLeft - g.v * 220) / dw) * dw;
+    el.classList.remove('dragging');
+    el.scrollTo({ left: Math.max(0, target), behavior: reduceMotion() ? 'auto' : 'smooth' });
+    // Swallow the click that follows the drag.
+    const stop = e => { e.stopPropagation(); e.preventDefault(); };
+    document.addEventListener('click', stop, { capture: true, once: true });
+    setTimeout(() => document.removeEventListener('click', stop, { capture: true }), 50);
+  };
+  document.addEventListener('pointerup', endWkDrag);
+  document.addEventListener('pointercancel', endWkDrag);
   function fitWeek() {
     const el = $('#wkStrip'); if (!el) return;
     const dayW = el.clientWidth / 7, r0 = el.dataset.r0;
@@ -3896,7 +3934,7 @@
       S.weekLeft = D.add(r0, idx); S.cursor = S.weekLeft;
       const lb = $('.lbl-date'); if (lb && lb.firstChild) lb.firstChild.nodeValue = calLabel();
       clearTimeout(t);
-      t = setTimeout(() => { if (idx < 7 || idx > WK_DAYS - 14) { $('#calBody').innerHTML = renderWeek(); fitWeek(); paintSel(); } }, 180);
+      t = setTimeout(() => { if (!wkDrag && (idx < 7 || idx > WK_DAYS - 14)) { $('#calBody').innerHTML = renderWeek(); fitWeek(); paintSel(); } }, 180);
     }, { passive: true });
   }
 
