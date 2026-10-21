@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792579800"></script>
+    <script src="config.js?v=1792579865"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2265,6 +2265,10 @@
   .stsl.st-approved .stsl-o.on, .stsl.st-pending .stsl-o.on, .stsl.st-denied .stsl-o.on { background: transparent; }
   .stsl-o { transition: color .2s; }
   @media (prefers-reduced-motion: reduce) { .stsl .stsl-thumb { transition: none; } }
+  /* Week strip: the name badge slides inside its bar to stay visible while scrolling (JS sets the transform). */
+  .wpuck .n > * { will-change: transform; }
+  .wpuck .n { overflow: visible; }
+  .wpuck { overflow: hidden; }
 </style>
 
   </head>
@@ -4111,12 +4115,26 @@
   };
   document.addEventListener('pointerup', endWkDrag);
   document.addEventListener('pointercancel', endWkDrag);
+  /** Week strip: a bar that starts off-screen to the left keeps its name badge at the visible left edge (it slides along
+   *  inside the bar as you scroll, but never past the bar's own end), so every visible bar shows who it is. */
+  function stickWeekLabels(el) {
+    const left = el.getBoundingClientRect().left;
+    el.querySelectorAll('.wpuck').forEach(p => {
+      const n = p.querySelector('.n'), c = n && n.firstElementChild; if (!c) return;
+      const pr = p.getBoundingClientRect();
+      const room = Math.max(0, pr.width - c.offsetWidth - 16);
+      const shift = Math.min(room, Math.max(0, left - pr.left + 4));
+      c.style.transform = shift ? 'translateX(' + Math.round(shift) + 'px)' : '';
+    });
+  }
   function fitWeek() {
     const el = $('#wkStrip'); if (!el) return;
     const dayW = el.clientWidth / 7, r0 = el.dataset.r0;
     el.scrollLeft = D.diff(r0, weekLeft()) * dayW;
-    let t = null;
+    let t = null, raf = 0;
+    stickWeekLabels(el);
     el.addEventListener('scroll', () => {
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; stickWeekLabels(el); });
       const dw = el.clientWidth / 7, idx = Math.round(el.scrollLeft / dw);
       S.weekLeft = D.add(r0, idx); S.cursor = S.weekLeft;
       $$('.lbl-date').forEach(lb => { if (lb.firstChild) lb.firstChild.nodeValue = calLabel(); });
