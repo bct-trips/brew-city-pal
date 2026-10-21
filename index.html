@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792574667"></script>
+    <script src="config.js?v=1792574817"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2459,7 +2459,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.2'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.3'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -4785,7 +4785,7 @@
           const on = S.notePrefs[k[0]] !== false;
           return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="notePref" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>';
         }).join('') + '</div></div>' +
-      (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin alerts</b> — new requests, member edits and deletions, new accounts.</p><div class="push-btns">' +
+      (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin alerts</b> — new requests, member edits and deletions, new accounts — only for members in your <b>Default positions</b>.</p><div class="push-btns">' +
         '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' : '') +
       '';
   }
