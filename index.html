@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792574817"></script>
+    <script src="config.js?v=1792575416"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2094,7 +2094,7 @@
     .calbar .cb-right { grid-column: 2; grid-row: 2; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; min-width: 0; }
   }
   /* Admin → Positions: square swatches show the position letter in each colour; white gets an outline. */
-  .rsw .ub { display: inline-grid; place-items: center; border-radius: 6px; font-size: 13px; font-weight: 900; color: inherit; }
+  .rsw .ub { display: inline-grid; place-items: center; border-radius: 6px; font-size: 13px; font-weight: 900; }
   .rsw .ub.idb-p { box-shadow: inset 0 0 0 1.5px #0b1730; }
   .rsw .ub.idb-b { color: #fff; } .rsw .ub.idb-o { color: #0b1730; }
   .role-row .seg { flex-wrap: wrap; }
@@ -2113,6 +2113,20 @@
   .grp-more td { padding: 6px 14px; }
   .grp-more-in { position: sticky; left: 14px; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 600; }
   .rtable td.stk .idb.pb { flex: none; max-width: none; }
+  /* Position letters on Day meters and Week bands use the position's badge square (same colours as the calendar badges,
+     all ≥ 4.5:1), instead of coloured text that failed contrast on some colours. */
+  .rm-l { display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 3px; box-sizing: border-box; border-radius: 3px; font-size: 11px; font-weight: 900; align-self: center; }
+  .rm.lg .rm-l { min-width: 20px; height: 20px; font-size: 13px; }
+  .rm-l.idb-p, .band-tag.band-l.idb-p { box-shadow: inset 0 0 0 1.5px #0b1730; }
+  .band-tag.band-l.idb-p { background: #ffffff; color: #0b1730; } .band-tag.band-l.idb-b { background: #0b0b0f; color: #ffffff; } .band-tag.band-l.idb-o { background: #a1a1aa; color: #0b0b0f; }
+  .band-tag.band-l.ub-navy { background: #0A2351; color: #fff; } .band-tag.band-l.ub-gold { background: #FFB612; color: #111; }
+  .band-tag.band-l.ub-crimson { background: #9f1239; color: #fff; } .band-tag.band-l.ub-teal { background: #0f766e; color: #fff; }
+  .band-tag.band-l.ub-purple { background: #6b21a8; color: #fff; } .band-tag.band-l.ub-slate { background: #334155; color: #fff; }
+  .band-tag.band-l.ub-orange { background: #c2410c; color: #fff; } .band-tag.band-l.ub-black { background: #111111; color: #fff; }
+  .band-tag.band-l.ub-green { background: #166534; color: #fff; }
+  :root[data-theme="dark"] .band-tag.band-l.ub-black, :root[data-theme="dark"] .rm-l.ub-black, :root[data-theme="dark"] .rm-l.idb-b, :root[data-theme="dark"] .band-tag.band-l.idb-b { box-shadow: inset 0 0 0 1.5px #71717a; }
+  /* Approve / Deny on a request already in that state: shown pressed; tapping it again sets the request back to Pending. */
+  .btn.ok[data-undo], .btn.bad[data-undo] { box-shadow: inset 0 0 0 2px currentColor; }
 </style>
 
   </head>
@@ -2855,8 +2869,11 @@
     if (S.nameNeed) { showNameNeed(); return; }
     const keep = {};
     $$('.scroll, .dayv, .tbl-wrap').forEach(el => { if (el.id) keep[el.id] = [el.scrollTop, el.scrollLeft]; });
+    // Admin settings auto-save on change, which redraws the page: keep focus on the field the user moved to.
+    const ae = document.activeElement, focusId = ae && ae.id && ae.closest && ae.closest('#adminScroll') ? ae.id : '';
     $('#app').innerHTML = '<main class="main" id="main">' + renderView() + '</main>' + renderNav();
     Object.keys(keep).forEach(id => { const el = document.getElementById(id); if (el) { el.scrollTop = keep[id][0]; el.scrollLeft = keep[id][1]; } });
+    if (focusId) { const f = document.getElementById(focusId); if (f) try { f.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
     if (isCalView() && S.cal === 'month') fitMonth();
     if (isCalView() && S.cal === 'week') fitWeek();
     paintSel();
@@ -3079,9 +3096,8 @@
       const list = people.filter(u => u.role === role && u.id !== S.me).sort((a, b) => lastName(a).localeCompare(lastName(b)));
       return list.length ? '<div class="who-h">' + esc(roleGroup(role)) + '</div>' + list.map(row).join('') : '';
     }).join('');
-    return (sc === 'mine' ? '' : '<div class="fp-conf-row"><button type="button" class="btn sm conf-only' + (conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + conf + '">' +
-        icon('alert', 16) + (conf ? 'Conflict mode on' : 'Conflict mode') + '</button></div>') +
-      '<div class="who-search">' + icon('search', 15) + '<input type="search" class="fp-q" placeholder="Type a name…" autocomplete="off" aria-label="Search people" data-model="whoq" data-live="whoFilter"></div>' +
+    // Conflict mode lives in the Filters sheet, not in the person dropdown.
+    return '<div class="who-search">' + icon('search', 15) + '<input type="search" class="fp-q" placeholder="Type a name…" autocomplete="off" aria-label="Search people" data-model="whoq" data-live="whoFilter"></div>' +
       '<div class="who-list" role="listbox" aria-multiselectable="true"><button type="button" class="who-row who-all" data-act="fpEveryone"' + scAttr(sc) + '>' +
         allBadge() + '<span class="pp-n"><b>' + (conf ? 'All conflicts' : 'Everyone') + '</b></span></button>' +
       groups + '<div class="who-none" hidden>No one matches.</div></div>';
@@ -3123,8 +3139,7 @@
         list.map(u => row(u.id, idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span>',
           lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit)).join('') + '</div>';
     }).join('');
-    const confRow = assign || sc === 'mine' ? '' : '<div class="pp-conf"><button type="button" class="btn conf-only' + (conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + conf + '">' +
-      icon('alert', 18) + (conf ? 'Conflict mode on' : 'Conflict mode') + '</button><span class="pp-conf-t">' + (conf ? 'Pick a person to see who they conflict with, or All conflicts.' : 'Show only leave that’s over the daily max.') + '</span></div>';
+    const confRow = ''; // Conflict mode lives in the Filters sheet
     const html = modalHead(assign ? (S.wiz.editId ? 'Add members' : 'Request for') : conf ? 'Conflicts' : 'Show one person', assign ? 'users' : conf ? 'alert' : 'user') + confRow +
       '<div class="pp-search"><div class="search">' + icon('search', 15) + '<input type="search" placeholder="Search name, rank, unit…" data-model="ppq" data-live="ppFilter" aria-label="Search people" autocomplete="off" autofocus></div></div>' +
       '<div class="modal-b pp-list">' + (assign && S.wiz.editId ? '' : assign
@@ -3231,6 +3246,9 @@
       (wideFilters() ? '' : sect('Show', typeToggle(sc))) +
       sect('Status', chips(groups[0])) +
       (groups.some(f => f.g === 'role') ? sect('Position', chips(FILTERS[1])) + sect('Person', personSelect('in-sheet', sc)) : '') +
+      // Calendar / All Requests: Conflict mode (only leave that's over the daily max; pick a person to see who they conflict with).
+      (sc !== 'mine' && !S.priv ? sect('Conflicts', '<button type="button" class="btn chip-tog fs-conf' + (S.f.conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + !!S.f.conf + '">' +
+        (S.f.conf ? icon('check', 18) : icon('alert', 18)) + 'Conflict mode</button><p class="fs-help">' + (S.f.conf ? 'Showing only leave that’s over the daily max. Pick a person above to see who they conflict with.' : 'Show only leave that’s over the daily max.') + '</p>') : '') +
       // My Requests calendar: also show other members' leave / passes (same position) that overlap mine.
       (sc === 'mine' && S.mineMode === 'cal' ? sect('Conflicts', '<button type="button" class="btn chip-tog fs-conf' + (S.mineConf ? ' on' : '') + '" data-act="mineConf" aria-pressed="' + !!S.mineConf + '">' +
         (S.mineConf ? icon('check', 18) : '') + 'Show conflicts</button><p class="fs-help">Adds other members’ leave and passes in your position that overlap yours.</p>') : '') +
@@ -3337,7 +3355,7 @@
     const q = quota(role), over = q && c > q, full = q && c === q;
     const pct = q ? Math.min(100, c / q * 100) : Math.min(100, c * 25);
     return '<span class="rm rm-' + roleKey(role) + (over ? ' over' : full ? ' full' : '') + (c ? '' : ' zero') + (size ? ' ' + size : '') + '"' + roleVar(role) + ' title="' + esc(rolePl(role)) + '">' +
-      '<span class="rm-t"><b>' + esc(roleL(role)) + '</b><span class="rm-c">' + c + '</span>' + (q ? '<span class="rm-q">/' + q + '</span>' : '') + '</span>' +
+      '<span class="rm-t"><span class="rm-l ' + roleCls(role) + '">' + esc(roleL(role)) + '</span><span class="rm-c">' + c + '</span>' + (q ? '<span class="rm-q">/' + q + '</span>' : '') + '</span>' +
       '<span class="rm-bar"><i style="width:' + pct + '%"></i></span></span>';
   }
   /** Leave slots used per position on a day: Leave only (passes have no daily max), honouring the
@@ -3576,7 +3594,7 @@
   function quotaBadge(r, compact) {
     if (S.priv) { // Hide user schedules: how many other requests, never who
       const c = S.myConf[r.id];
-      if (!c) return '';
+      if (!c || (compact && c.ok)) return ''; // the compact mark beside a name is only for unresolved conflicts
       const tip = 'Conflicts with ' + plural(c.n, 'other leave request') + (c.ok ? ' (all approved).' : '. An admin will decide.');
       return '<button type="button" class="cfl ' + (c.ok ? 'cfl-ok' : 'cfl-bad') + (compact ? ' cfl-sm' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
         icon('alert', compact ? 13 : 14) + (compact ? '' : '<span>' + (c.ok ? 'Over max' : 'Conflict') + '</span>') + '</button>';
@@ -3586,6 +3604,7 @@
     const role = userOf(r.userId).role, q = quota(role);
     const worst = cd.reduce((a, d) => countOn(d, role) > countOn(a, role) ? d : a, cd[0]);
     const bad = cd.some(d => conflictState(d, role) === 'bad');
+    if (compact && !bad) return ''; // all approved: no mark beside the name (the Status column still says Over max)
     const tip = (bad ? 'Conflict' : 'Over the daily max (all approved)') + ': ' + countOn(worst, role) + ' of ' + q + ' ' + roleLow(role) + ' on leave on ' +
       cd.map(D.short).join(', ') + '. Click to resolve.';
     return '<button type="button" class="cfl ' + (bad ? 'cfl-bad' : 'cfl-ok') + (compact ? ' cfl-sm' : '') + '" data-act="openConflict" data-date="' + worst + '" data-role="' + role + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
@@ -3611,8 +3630,8 @@
       if (S.isAdmin) {
         acts = '<span class="cf-acts">' +
           b('del', 'cfDelete', 'trash', 'Delete') +
-          b('bad', 'cfSet', 'ban', 'Deny', ' data-v="Denied"' + (r.status === 'Denied' ? ' disabled' : '')) +
-          b('ok', 'cfSet', 'check', 'Approve', ' data-v="Approved"' + (r.status === 'Approved' ? ' disabled' : '')) +
+          b('bad', 'cfSet', 'ban', 'Deny', ' data-v="Denied"' + (r.status === 'Denied' ? ' aria-pressed="true" data-undo="1"' : '')) +
+          b('ok', 'cfSet', 'check', 'Approve', ' data-v="Approved"' + (r.status === 'Approved' ? ' aria-pressed="true" data-undo="1"' : '')) +
           b('', 'cfEdit', 'pencil', 'Edit') + '</span>';
       } else if (r.userId === S.me) {
         acts = '<span class="cf-acts">' + (canDelete(r) ? b('del', 'cfDelete', 'trash', 'Delete') : '') + (canEdit(r) ? b('', 'cfEdit', 'pencil', 'Edit') : '') + '</span>';
@@ -3846,7 +3865,7 @@
             '<span class="n">' + personBadge(r, true) + '</span>' + sub + '</div>';
         }).join('');
         const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + (D.dow(d) === 0 ? ' wk-sun' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
-        return '<div class="band band-' + roleKey(b[0]) + '"' + roleVar(b[0]) + '><div class="band-title"><span class="bt-in"><span class="band-tag">' + esc(roleL(b[0])) + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></span></div>' +
+        return '<div class="band band-' + roleKey(b[0]) + '"' + roleVar(b[0]) + '><div class="band-title"><span class="bt-in"><span class="band-tag band-l ' + roleCls(b[0]) + '">' + esc(roleL(b[0])) + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></span></div>' +
           '<div class="band-body"><div class="band-inner"><div class="band-slots wg">' + slots + '</div><div class="band-pucks wg">' + pucks + '</div></div></div></div>';
       }).join('');
     // No blackout band: blackout days are already red-slashed in the day headers and lanes.
@@ -4048,8 +4067,8 @@
       const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r), st2 = r.status.toLowerCase();
       let acts = '';
       if (S.isAdmin) {
-        acts += '<button class="btn ok sm act" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' disabled' : '') + ' aria-label="Approve ' + esc(u.name) + '" title="Approve">' + icon('check', 14) + '<span class="bl">Approve</span></button>' +
-          '<button class="btn bad sm act" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' disabled' : '') + ' aria-label="Deny ' + esc(u.name) + '" title="Deny">' + icon('ban', 14) + '<span class="bl">Deny</span></button>';
+        acts += '<button class="btn ok sm act" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' aria-pressed="true" data-undo="1"' : '') + ' aria-label="Approve ' + esc(u.name) + '" title="Approve">' + icon('check', 14) + '<span class="bl">Approve</span></button>' +
+          '<button class="btn bad sm act" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' aria-pressed="true" data-undo="1"' : '') + ' aria-label="Deny ' + esc(u.name) + '" title="Deny">' + icon('ban', 14) + '<span class="bl">Deny</span></button>';
       }
       if (canEdit(r)) acts += '<button class="btn sm act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit request for ' + esc(u.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>';
       if (canDelete(r)) acts += '<button class="btn sm del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete request for ' + esc(u.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>';
@@ -4297,8 +4316,8 @@
   /** One position's fields (Admin list row and the New position builder share them). */
   function roleFields(r, key) {
     const rv = rowView(key, r);
-    return '<div class="row"><div class="field cfg-code"><label for="rl-' + key + '">Letter</label><input id="rl-' + key + '" class="rl-letter" maxlength="1" value="' + esc(r.letter || '') + '" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-live="rolePrev"></div>' +
-      '<div class="field cfg-code"><label for="rq-' + key + '">Max on leave</label><input id="rq-' + key + '" class="rl-quota" type="number" inputmode="numeric" min="0" max="99" value="' + (Number(r.quota) || 0) + '"></div></div>' +
+    return '<div class="row"><div class="field cfg-code"><label for="rl-' + key + '">Letter</label><input id="rl-' + key + '" class="rl-letter" maxlength="1" value="' + esc(r.letter || '') + '" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-live="rolePrev" data-change="autoRole"></div>' +
+      '<div class="field cfg-code"><label for="rq-' + key + '">Max on leave</label><input id="rq-' + key + '" class="rl-quota" type="number" inputmode="numeric" min="0" max="99" value="' + (Number(r.quota) || 0) + '" data-change="autoRole"></div></div>' +
       '<div class="field"><span class="lbl-sm">Can see</span><div id="cs-' + key + '" data-self="' + esc(r.name || '') + '">' + canSeeHtml(key, r.name, rv) + '</div></div>' +
       '<div class="field"><span class="lbl">Colour</span>' + roleSwatches('rs-' + key, r.style || 'grey', r.letter) + '</div>';
   }
@@ -4307,11 +4326,10 @@
     return ROLES.map((name, i) => {
       const r = roleInfo(name), used = S.users.filter(u => u.role === name).length, builtIn = !!ROLE_DEF[name];
       return '<div class="cfg-unit role-row" data-name="' + esc(name) + '" data-k="r' + i + '"><div class="cfg-unit-h"><span class="ub-prev"><span class="idb"><span class="idb-r ' + roleCls(name) + '">' + esc(roleL(name)) + '</span></span></span>' +
-          (builtIn ? '<b class="role-nm">' + esc(roleName(name)) + '</b>' : '<input class="un-name rl-name" value="' + esc(name) + '" aria-label="Position name" maxlength="24">') + '</div>' +
+          (builtIn ? '<b class="role-nm">' + esc(roleName(name)) + '</b>' : '<input id="rn-r' + i + '" class="un-name rl-name" value="' + esc(name) + '" aria-label="Position name" maxlength="24" data-change="autoRole">') + '</div>' +
         roleFields(r, 'r' + i) +
         '<div class="cfg-foot"><span class="meta">' + plural(used, 'member') + (builtIn ? ' · built in' : '') + '</span>' +
-        (used || builtIn ? '' : '<button class="btn del" data-act="deleteRole" data-name="' + esc(name) + '">' + icon('trash', 18) + ' Delete</button>') +
-        '<button class="btn" data-act="saveRole" data-name="' + esc(name) + '">Save</button></div></div>';
+        (used || builtIn ? '' : '<button class="btn del" data-act="deleteRole" data-name="' + esc(name) + '">' + icon('trash', 18) + ' Delete</button>') + '</div></div>';
     }).join('') +
       '<div class="cfg-foot cfg-new-btn"><button class="btn primary" data-act="newRole">' + icon('plus', 18) + 'New position</button></div>';
   }
@@ -4356,11 +4374,10 @@
         unitsList().map(un => {
           const used = S.users.filter(u => u.unit === un.code).length;
           return '<div class="cfg-unit unit-row"><div class="cfg-unit-h"><span class="ub-prev">' + unitBadge(un.code) + '</span>' +
-            '<input class="un-name" data-code="' + esc(un.code) + '" value="' + esc(un.name) + '" aria-label="' + esc(un.code) + ' name" maxlength="40"></div>' +
+            '<input id="un-' + esc(un.code) + '" class="un-name" data-code="' + esc(un.code) + '" value="' + esc(un.name) + '" aria-label="' + esc(un.code) + ' name" maxlength="40" data-change="saveUnit"></div>' +
             swatches('st-' + un.code, un.style, un.code) +
             '<div class="cfg-foot"><span class="meta">' + plural(used, 'member') + '</span>' +
-            (used ? '' : '<button class="btn del" data-act="deleteUnit" data-code="' + esc(un.code) + '">' + icon('trash', 18) + ' Delete</button>') +
-            '<button class="btn" data-act="saveUnit" data-code="' + esc(un.code) + '">Save</button></div></div>';
+            (used ? '' : '<button class="btn del" data-act="deleteUnit" data-code="' + esc(un.code) + '">' + icon('trash', 18) + ' Delete</button>') + '</div></div>';
         }).join('') +
         // A new badge is made in its own builder (a dialog), not an always-open form.
         '<div class="cfg-foot cfg-new-btn"><button class="btn primary" data-act="newBadge">' + icon('plus', 18) + 'New badge</button></div>'
@@ -4450,10 +4467,10 @@
         ['Leave', 'Pass'].map(t => {
           const r = lenRule(t), m = (S.lenDraft || {})[t] || r.mode;
           return '<div class="cfg-len"><span class="cfg-len-t"><span class="badge t-' + t.toLowerCase() + '">' + t + '</span></span>' +
-            '<div class="field"><label for="len' + t + '">Max days</label><input id="len' + t + '" type="number" inputmode="numeric" min="1" max="60" value="' + r.max + '"></div>' +
+            '<div class="field"><label for="len' + t + '">Max days</label><input id="len' + t + '" type="number" inputmode="numeric" min="1" max="60" value="' + r.max + '" data-change="saveLength"></div>' +
             '<div class="field"><span class="lbl-sm">When over</span>' + seg([['warn', 'Warn'], ['limit', 'Limit']], m, 'lenMode', ' data-t="' + t + '"') + '</div></div>';
         }).join('') +
-        '<div class="cfg-foot"><button class="btn primary" data-act="saveLength">Save length rules</button></div></div>' +
+        '</div>' +
 
       // Unit badges
       '<div class="panel"><h3>' + icon('users', 16) + ' Unit badges</h3>' +
@@ -4909,8 +4926,8 @@
     // Footer (DESIGN.md): admins get a decision row on top (Deny · Approve), then Delete · Cancel · Edit —
     // destructive on the left, Cancel in the middle, the main action on the far right.
     const decide = S.isAdmin && r.status !== 'Cancelled'
-      ? '<button class="btn bad act act-lbl" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' disabled' : '') + ' aria-label="Deny" title="Deny">' + icon('ban', 15) + '<span class="bl">Deny</span></button>' +
-        '<button class="btn ok act act-lbl" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' disabled' : '') + ' aria-label="Approve" title="Approve">' + icon('check', 15) + '<span class="bl">Approve</span></button>'
+      ? '<button class="btn bad act act-lbl" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' aria-pressed="true" data-undo="1"' : '') + ' aria-label="Deny" title="Deny">' + icon('ban', 15) + '<span class="bl">Deny</span></button>' +
+        '<button class="btn ok act act-lbl" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' aria-pressed="true" data-undo="1"' : '') + ' aria-label="Approve" title="Approve">' + icon('check', 15) + '<span class="bl">Approve</span></button>'
       : '';
     const edit = canEdit(r) ? '<button class="btn act act-lbl act-edit" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>' : '';
     const del = canDelete(r) ? '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' : '';
@@ -5821,12 +5838,12 @@
     openReq(el) { openRequest(el.dataset.id); },
     openConflict(el) { openConflict(el.dataset.date, el.dataset.role || null); },
     async cfSet(el) {
-      const v = el.dataset.v, d = el.dataset.date;
+      const d = el.dataset.date, id = el.dataset.id, cur = findReq(id);
+      const v = cur && cur.status === el.dataset.v ? 'Pending' : el.dataset.v; // tapping the current decision undoes it
       if (v === 'Denied' && !confirm('Deny this request?')) return;
-      const id = el.dataset.id;
-      save(() => { const r = findReq(id); if (r) Object.assign(r, { status: v, decidedBy: S.me, decidedAt: nowIso() }); }, 'apiSetStatus', S.token, id, v);
+      save(() => { const r = findReq(id); if (r) Object.assign(r, { status: v, decidedBy: v === 'Pending' ? '' : S.me, decidedAt: v === 'Pending' ? '' : nowIso() }); }, 'apiSetStatus', S.token, id, v);
       render(); openConflict(d, S.cfRole);
-      toast('Request ' + v.toLowerCase(), 'ok', 1500);
+      toast(v === 'Pending' ? 'Back to pending' : 'Request ' + v.toLowerCase(), 'ok', 1500);
     },
     cfEdit(el) { S.cfReturn = el.dataset.date; openEditWizard(el.dataset.id); },
     cfDelete(el) {
@@ -5963,7 +5980,9 @@
     mineRefresh() { const b = $('#mineBody'); if (!b) return; const at = document.activeElement; render(); const i = $('[data-model="mine.q"]'); if (i && at && at.dataset && at.dataset.model === 'mine.q') { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } },
 
     async setStatus(el) {
-      const id = el.dataset.id, v = el.dataset.v;
+      const id = el.dataset.id, cur = findReq(id);
+      // Tapping Approve on an approved request (or Deny on a denied one) undoes it: back to Pending.
+      const v = cur && cur.status === el.dataset.v ? 'Pending' : el.dataset.v;
       // Approving from a list/calendar: no conflict → approve straight away; over the daily max → open the conflict
       // resolver for that day; overlap with the member's own other request → open the request to sort it out.
       if (v === 'Approved' && !el.closest('#modal')) {
@@ -5975,7 +5994,7 @@
         'apiSetStatus', S.token, id, v);
       render();
       if (S.modal === 'req') openRequest(id);
-      toast('Request ' + v.toLowerCase(), 'ok', 1500);
+      toast(v === 'Pending' ? 'Back to pending' : 'Request ' + v.toLowerCase(), 'ok', 1500);
     },
     async cancelReq(el) {
       if (!confirm('Delete this request? It will be removed from the schedule.')) return;
@@ -6065,6 +6084,7 @@
     previewUnit(el) {
       const prev = el.closest('.unit-row') && el.closest('.unit-row').querySelector('.ub');
       if (prev) prev.className = 'ub ub-' + el.value;
+      if (el.dataset.code) A.saveUnit(el); // an existing badge saves as soon as a colour is picked
     },
     openRoster() { S.view = 'roster'; S.adq = ''; render(); },
     backAdmin() { S.view = 'people'; render(); }, // Manage roster ← Roster tab
@@ -6077,8 +6097,10 @@
     async saveUnit(el) {
       const code = el.dataset.code, row = el.closest('.unit-row');
       const unit = { code, name: row.querySelector('.un-name').value, style: (row.querySelector('.swatches input:checked') || {}).value };
+      const cur = unitsList().find(x => x.code === code) || {};
+      if (cur.name === unit.name && cur.style === unit.style) return; // nothing changed
       save(() => { S.settings.units = unitsList().map(x => x.code === code ? Object.assign({}, x, unit) : x); }, 'apiSaveUnit', S.token, unit);
-      render(); toast(code + ' badge saved', 'ok', 1500);
+      render(); toast(code + ' badge saved', 'ok', 1200);
     },
     newBadge() { openBadgeBuilder(); },
     badgePrev() { const p = $('#nuPrev'), c = $('#nuCode'); if (p && c) p.textContent = c.value.trim().toUpperCase() || 'NEW'; },
@@ -6114,15 +6136,17 @@
     lenMode(el) {
       S.lenDraft = Object.assign({}, S.lenDraft, { [el.dataset.t]: el.dataset.v });
       $$('[data-act="lenMode"][data-t="' + el.dataset.t + '"]').forEach(b => b.classList.toggle('on', b.dataset.v === el.dataset.v));
+      A.saveLength();
     },
     saveLength() {
       const cfg = {};
       ['Leave', 'Pass'].forEach(t => { cfg[t] = { max: Number($('#len' + t).value), mode: (S.lenDraft || {})[t] || lenRule(t).mode }; });
       const bad = ['Leave', 'Pass'].find(t => !Number.isInteger(cfg[t].max) || cfg[t].max < 1 || cfg[t].max > 60);
-      if (bad) return toast(bad + ' max days must be 1–60.', 'error');
+      if (bad) { toast(bad + ' max days must be 1–60.', 'error'); return render(); }
+      if (['Leave', 'Pass'].every(t => cfg[t].max === lenRule(t).max && cfg[t].mode === lenRule(t).mode)) return; // nothing changed
       save(() => { Object.assign(S.settings, { leaveMaxDays: cfg.Leave.max, leaveMode: cfg.Leave.mode, passMaxDays: cfg.Pass.max, passMode: cfg.Pass.mode }); S.lenDraft = null; },
         'apiSaveLengthRules', S.token, cfg);
-      render(); toast('Length rules saved', 'ok', 1500);
+      render(); toast('Length rules saved', 'ok', 1200);
     },
     // Can see: Everyone, or tap positions on / off. With none picked, members see only their own requests.
     roleView(el) {
@@ -6138,10 +6162,17 @@
       }
       S.roleView = Object.assign({}, S.roleView, { [k]: next });
       box.innerHTML = canSeeHtml(k, self, next);
+      A.autoRole(box);
     },
     previewRole(el) {
       const row = el.closest('.role-row'), sq = row && row.querySelector('.ub-prev .idb-r, .bb-prev .idb-r');
       if (sq) sq.className = 'idb-r ' + styleCls(el.value);
+      A.autoRole(el);
+    },
+    /** Positions auto-save: any change in an existing position's row (not the New position builder) saves it. */
+    autoRole(el) {
+      const row = el.closest('.role-row');
+      if (row && row.dataset.name) A.saveRole({ dataset: { name: row.dataset.name }, closest: () => row });
     },
     rolePrev(el) {
       const row = el.closest('.role-row'), L = el.value.trim().toUpperCase() || '?';
@@ -6153,13 +6184,16 @@
       const nameIn = row.querySelector('.rl-name');
       const r = readRole(row, nameIn ? nameIn.value.trim().replace(/\s+/g, ' ') : old);
       const err = roleError(r, false) || (r.name.toLowerCase() !== old.toLowerCase() && ROLES.some(x => x.toLowerCase() === r.name.toLowerCase()) ? r.name + ' already exists.' : '');
-      if (err) return toast(err, 'error');
+      if (err) { toast(err, 'error'); S.roleView = null; return render(); } // put the saved values back
+      const was = roleInfo(old);
+      if (r.name === old && r.letter === was.letter && r.style === was.style && Number(r.quota) === Number(was.quota) && JSON.stringify(r.view) === JSON.stringify(was.view || 'all')) return;
       save(() => {
         S.settings.roles = ROLES.map(n => n === old ? r : roleInfo(n));
         if (r.name !== old) S.users.forEach(u => { if (u.role === old) u.role = r.name; });
         setRoles(S.settings.roles); reindex();
       }, 'apiSaveRole', S.token, r, old);
-      render(); toast(r.name + ' saved', 'ok', 1500);
+      S.roleView = null; // drafts are keyed by row; the saved values now come from the positions list
+      render(); toast(r.name + ' saved', 'ok', 1200);
     },
     newRole() { openRoleBuilder(); },
     addRole() {
@@ -6175,6 +6209,7 @@
       const name = el.dataset.name;
       if (!confirm('Delete the ' + name + ' position?')) return;
       save(() => { S.settings.roles = ROLES.filter(n => n !== name).map(roleInfo); setRoles(S.settings.roles); }, 'apiDeleteRole', S.token, name);
+      S.roleView = null;
       render(); toast(name + ' deleted', 'ok', 1500);
     },
     viewRole(el) {
