@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792571313"></script>
+    <script src="config.js?v=1792571486"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2036,12 +2036,29 @@
   /* Smooth paging between weeks / months: the calendar body slides; its frame clips it. */
   .cal-split { overflow: hidden; }
   #calBody { will-change: transform; }
-  /* Blackout conflict resolver. */
-  .bor-intro { margin: 0 0 12px; }
-  .bor-row { padding: 12px 0; border-top: 1px solid var(--line); }
-  .bor-who { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .bor-row .meta { margin: 4px 0 8px; }
-  .bor-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* Blackout conflict resolver: the blackout on top, then a table-like list — a row per request (who · dates · status)
+     with one joined strip of four equal choices under it (outlined, coloured icons; no mixed filled shapes). */
+  .bor-bo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px;
+    background: color-mix(in srgb, var(--brick) 16%, transparent); color: var(--ink); }
+  .bor-bo .ic { color: var(--brick); } :root[data-theme="dark"] .bor-bo .ic { color: #f09a95; }
+  .bor-intro { margin: 10px 0 8px; color: var(--muted); font-size: 14.5px; }
+  .bor-row { border: 1px solid var(--line); border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+  .bor-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who status" "when when"; gap: 4px 10px; align-items: center; padding: 10px 12px; }
+  @media (min-width: 560px) { .bor-top { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "who when status"; } }
+  .bor-who { grid-area: who; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .bor-who b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bor-when { grid-area: when; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14.5px; white-space: nowrap; }
+  .bor-top > .badge { grid-area: status; }
+  .bor-acts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+  .bor-a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border: 0; border-left: 1px solid var(--line);
+    background: none; color: var(--ink); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; min-width: 0; }
+  .bor-a:first-child { border-left: 0; }
+  .bor-a small { font-size: 11.5px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .bor-a:hover:not(:disabled) { background: color-mix(in srgb, var(--on-surface) 7%, transparent); }
+  .bor-a:disabled { opacity: .45; cursor: not-allowed; }
+  .bor-a .ic { color: var(--navy); } :root[data-theme="dark"] .bor-a .ic { color: var(--primary); }
+  .bor-deny .ic, .bor-del .ic { color: #d92d20 !important; } .bor-ok .ic { color: #15803d !important; }
+  :root[data-theme="dark"] .bor-ok .ic { color: #4ade80 !important; } :root[data-theme="dark"] .bor-deny .ic, :root[data-theme="dark"] .bor-del .ic { color: #f97066 !important; }
   /* Admin PIN: a wrong PIN shakes the box, turns it red and shows a clear message. */
   #modal #passkey.pin-bad { border-color: #d92d20; box-shadow: 0 0 0 3px color-mix(in srgb, #d92d20 30%, transparent); animation: pinShake .35s ease-in-out; }
   @keyframes pinShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
@@ -4946,32 +4963,31 @@
   }
   /* ---------- Blackout conflict resolver ----------
      After a blackout is saved, every approved / pending request on those days (of the blocked type) is listed with:
-     Curtail (trim it so it no longer touches the blackout), Deny, Approve anyway (allowed over the blackout) or Edit dates.
+     Delete (the request), Deny, Approve anyway (allowed over the blackout) or Edit dates.
      Each choice saves at once and the request drops off the list; "Decide later" leaves the rest flagged as conflicts. */
-  /** Dates the request keeps if it's curtailed to stay clear of blackout b (the part before it, else the part after). */
-  function curtailRange(r, b) {
-    if (r.start < b.start) return { start: r.start, end: D.min(r.end, D.add(b.start, -1)) };
-    if (r.end > b.end) return { start: D.max(r.start, D.add(b.end, 1)), end: r.end };
-    return null; // entirely inside the blackout
-  }
   function openBoResolve(b) {
     S.boResolve = b;
     const hits = boFlagged(b);
     if (!hits.length) { if (S.modal === 'boResolve') closeModal(); toast('Blackout conflicts resolved', 'ok', 2000); return; }
+    // A small table: one row per request (who · dates · status), and under it one strip of four equal choices.
+    const sd = (a, z) => a === z ? D.short(a) : D.short(a) + ' – ' + D.short(z);
     const rows = hits.map(r => {
-      const u = userOf(r.userId), cr = curtailRange(r, b);
-      return '<div class="bor-row"><div class="bor-who">' + idBadge(u) + '<b>' + esc(nameText(u)) + '</b>' +
-          '<span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '</span><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></div>' +
-        '<div class="meta">' + D.short(r.start) + ' – ' + D.short(r.end) + ' · ' + plural(D.days(r.start, r.end), 'day') + '</div>' +
-        '<div class="bor-acts">' +
-          '<button class="btn sm" data-act="boCurtail" data-id="' + esc(r.id) + '"' + (cr ? ' title="Curtail to ' + esc(D.short(cr.start) + ' – ' + D.short(cr.end)) + '"' : ' disabled title="It is entirely inside the blackout"') + '>' + icon('sort', 14) + 'Curtail' + (cr ? ' to ' + esc(D.short(cr.start) + '–' + D.short(cr.end)) : '') + '</button>' +
-          '<button class="btn sm bad" data-act="boDeny" data-id="' + esc(r.id) + '">' + icon('ban', 14) + 'Deny</button>' +
-          '<button class="btn sm ok" data-act="boAllow" data-id="' + esc(r.id) + '">' + icon('check', 14) + 'Approve anyway</button>' +
-          '<button class="btn sm" data-act="boEdit" data-id="' + esc(r.id) + '">' + icon('pencil', 14) + 'Edit dates</button>' +
+      const u = userOf(r.userId);
+      return '<div class="bor-row">' +
+        '<div class="bor-top"><div class="bor-who">' + idBadge(u) + '<b>' + esc(nameText(u)) + '</b></div>' +
+          '<div class="bor-when"><span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '</span>' + esc(sd(r.start, r.end)) +
+            ' <span class="muted">· ' + plural(D.days(r.start, r.end), 'day') + '</span></div>' +
+          '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></div>' +
+        '<div class="bor-acts" role="group" aria-label="Resolve ' + esc(nameText(u)) + '">' +
+          '<button type="button" class="bor-a bor-del" data-act="boDelete" data-id="' + esc(r.id) + '">' + icon('trash', 18) + '<span>Delete</span><small>request</small></button>' +
+          '<button type="button" class="bor-a bor-deny" data-act="boDeny" data-id="' + esc(r.id) + '">' + icon('ban', 18) + '<span>Deny</span><small>' + esc(r.type.toLowerCase()) + '</small></button>' +
+          '<button type="button" class="bor-a bor-ok" data-act="boAllow" data-id="' + esc(r.id) + '">' + icon('check', 18) + '<span>Approve</span><small>anyway</small></button>' +
+          '<button type="button" class="bor-a" data-act="boEdit" data-id="' + esc(r.id) + '">' + icon('pencil', 18) + '<span>Edit</span><small>dates</small></button>' +
         '</div></div>';
     }).join('');
-    const html = modalHead('Blackout conflicts', 'ban') + '<div class="modal-b"><p class="bor-intro"><b>' + plural(hits.length, 'request') + '</b> fall' + (hits.length === 1 ? 's' : '') +
-      ' on the blackout <b>' + esc(boSpan(b)) + '</b> (' + esc(boLabel(b)) + '). Choose what to do with each.</p>' + rows + '</div>' +
+    const html = modalHead('Blackout conflicts', 'ban') + '<div class="modal-b">' +
+      '<div class="bor-bo">' + icon('ban', 16) + '<b>' + esc(boSpan(b)) + '</b><span class="muted">· ' + esc(boLabel(b)) + '</span></div>' +
+      '<p class="bor-intro">' + plural(hits.length, 'request') + ' on these days. Pick what to do with each.</p>' + rows + '</div>' +
       '<div class="modal-f"><button class="btn block" data-act="closeModal">Decide later</button></div>';
     openModal('boResolve', html, true);
   }
@@ -5452,10 +5468,11 @@
     },
     openBlackout(el) { openBlackout(el.dataset.id); },
     boResolveOpen(el) { const b = blackouts().find(x => x.id === el.dataset.id); if (b) openBoResolve(b); },
-    boCurtail(el) {
-      const r = findReq(el.dataset.id), b = S.boResolve, cr = r && b && curtailRange(r, b); if (!cr) return;
-      save(() => { Object.assign(r, cr); }, 'apiUpdateRequest', S.token, r.id, { type: r.type, start: cr.start, end: cr.end, note: r.note || '' });
-      render(); openBoResolve(b); toast(nameText(userOf(r.userId)) + ' curtailed to ' + D.short(cr.start) + '–' + D.short(cr.end), 'ok', 1800);
+    boDelete(el) {
+      const r = findReq(el.dataset.id), b = S.boResolve; if (!r) return;
+      if (!confirm('Delete ' + nameText(userOf(r.userId)) + '’s ' + r.type.toLowerCase() + ' (' + D.short(r.start) + ' – ' + D.short(r.end) + ')? It will be removed from the schedule.')) return;
+      save(() => { r.status = 'Cancelled'; }, 'apiCancelRequest', S.token, r.id);
+      render(); openBoResolve(b); toast(nameText(userOf(r.userId)) + '’s ' + r.type.toLowerCase() + ' deleted', 'ok', 1500);
     },
     boDeny(el) {
       const r = findReq(el.dataset.id), b = S.boResolve; if (!r) return;
