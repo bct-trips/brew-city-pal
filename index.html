@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792589386"></script>
+    <script src="config.js?v=1792589493"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792589386';
+      window.PAL_BUILD = '1792589493';
       (function () {
         function check(launch) {
           try {
@@ -4345,7 +4345,7 @@
             '<span class="n">' + personBadge(r, true) + '</span>' + sub + '</div>';
         }).join('');
         const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + (D.dow(d) === 0 ? ' wk-sun' : '') + (D.dow(d) % 6 === 0 ? ' wknd' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
-        return '<div class="band band-' + roleKey(b[0]) + '"' + roleVar(b[0]) + '><div class="band-title"><span class="bt-in"><span class="band-tag band-l ' + roleCls(b[0]) + '">' + esc(roleL(b[0])) + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></span></div>' +
+        return '<div class="band band-' + roleKey(b[0]) + '"' + roleVar(b[0]) + '><div class="band-title"><span class="bt-in"><span class="band-tag band-l ' + roleCls(b[0]) + '">' + esc(roleL(b[0])) + '</span>' + b[1] + '</span></div>' + // no count: it adds nothing in the week view
           '<div class="band-body"><div class="band-inner"><div class="band-slots wg">' + slots + '</div><div class="band-pucks wg">' + pucks + '</div></div></div></div>';
       }).join('');
     // No blackout band: blackout days are already red-slashed in the day headers and lanes.
