@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792578614"></script>
+    <script src="config.js?v=1792578893"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2215,6 +2215,35 @@
     .page > .lbar:last-child { padding-bottom: 10px; }
     :root[data-theme="dark"] .page > .lbar, :root[data-theme="dark"] .cal > .calbar { box-shadow: 0 -6px 16px -4px rgba(0, 0, 0, .7); }
   }
+  /* Status slider (admin): Denied | Pending | Approved. A solid thumb (red / amber / green, white text ≥ 4.5:1) sits under
+     the current status and slides to the one you pick. */
+  .stsl { position: relative; display: inline-grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex: none; height: 34px; padding: 2px;
+    border: 1px solid var(--outline); border-radius: 17px; background: var(--card-2); isolation: isolate; }
+  .stsl-thumb { position: absolute; z-index: 0; top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / 3); border-radius: 15px;
+    transition: transform .2s cubic-bezier(.2, .8, .2, 1), background-color .2s; }
+  .stsl.st-denied .stsl-thumb { transform: translateX(0); background: #b42318; }
+  .stsl.st-pending .stsl-thumb { transform: translateX(100%); background: #b45309; }
+  .stsl.st-approved .stsl-thumb { transform: translateX(200%); background: #15803d; }
+  .stsl.st-cancelled .stsl-thumb { display: none; }
+  .stsl-o { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; padding: 0 10px;
+    border: 0; border-radius: 15px; background: none; color: var(--muted); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .stsl-o:hover:not(.on) { color: var(--ink); }
+  .stsl-o.on { color: #ffffff; cursor: default; }
+  .stsl-o:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+  .stsl.lg { display: grid; width: 100%; height: 44px; border-radius: 22px; }
+  .stsl.lg .stsl-thumb { border-radius: 20px; } .stsl.lg .stsl-o { border-radius: 20px; font-size: 15px; }
+  .mf-decide .stsl.lg { flex: 1; }
+  /* Phones: table rows show just the icons. */
+  @media (max-width: 700px) { .rtable .stsl-o .stsl-t { display: none; } .rtable .stsl-o { padding: 0 9px; } }
+  @media (prefers-reduced-motion: reduce) { .stsl-thumb { transition: none; } }
+  /* Blackout resolver: the status slider on its own row, then Delete · Edit dates. */
+  .bor-dec { padding: 8px 10px; border-top: 1px solid var(--line); }
+  .bor-acts.bor-acts2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Desktop: grab the calendar (Month / Day / Qtr) and drag it sideways. */
+  @media (hover: hover) and (pointer: fine) { .cal-split > #calBody { cursor: grab; } }
+  body.cal-grabbing, body.cal-grabbing * { cursor: grabbing !important; user-select: none !important; }
+  .cal-split { overflow: hidden; }
+  .cal-split > .dpanel { position: relative; z-index: 2; background: var(--card); }
 </style>
 
   </head>
@@ -3780,8 +3809,7 @@
       if (S.isAdmin) {
         acts = '<span class="cf-acts">' +
           b('del', 'cfDelete', 'trash', 'Delete') +
-          b('bad', 'cfSet', 'ban', 'Deny', ' data-v="Denied"' + (r.status === 'Denied' ? ' aria-pressed="true" data-undo="1"' : '')) +
-          b('ok', 'cfSet', 'check', 'Approve', ' data-v="Approved"' + (r.status === 'Approved' ? ' aria-pressed="true" data-undo="1"' : '')) +
+          statusSlider(r, 'cfSet', ' data-date="' + d + '"') +
           b('', 'cfEdit', 'pencil', 'Edit') + '</span>';
       } else if (r.userId === S.me) {
         acts = '<span class="cf-acts">' + (canDelete(r) ? b('del', 'cfDelete', 'trash', 'Delete') : '') + (canEdit(r) ? b('', 'cfEdit', 'pencil', 'Edit') : '') + '</span>';
@@ -4265,8 +4293,7 @@
       const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r), st2 = r.status.toLowerCase();
       let acts = '';
       if (S.isAdmin) {
-        acts += '<button class="btn ok sm act" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' aria-pressed="true" data-undo="1"' : '') + ' aria-label="Approve ' + esc(u.name) + '" title="Approve">' + icon('check', 14) + '<span class="bl">Approve</span></button>' +
-          '<button class="btn bad sm act" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' aria-pressed="true" data-undo="1"' : '') + ' aria-label="Deny ' + esc(u.name) + '" title="Deny">' + icon('ban', 14) + '<span class="bl">Deny</span></button>';
+        acts += statusSlider(r, 'setStatus');
       }
       if (canEdit(r)) acts += '<button class="btn sm act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit request for ' + esc(u.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>';
       if (canDelete(r)) acts += '<button class="btn sm del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete request for ' + esc(u.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>';
@@ -4343,6 +4370,22 @@
       '<div class="lsearch">' + icon('search', 16) + search + '</div>' +
       '<div class="filters">' + (sc === 'list' && S.isAdmin ? openBtn() : '') + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'mine' ? mineSwitch() : '') + '</div>' +
       '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
+  }
+  /** Admin status control: a three-way slider Denied | Pending | Approved. The current status has a solid red / amber /
+   *  green thumb that slides to the option you pick. Used in the request tables, request details and the conflict screen. */
+  function statusSlider(r, act, extra, lg) {
+    const opts = [['Denied', 'ban'], ['Pending', 'clock'], ['Approved', 'check']];
+    return '<div class="stsl st-' + r.status.toLowerCase() + (lg ? ' lg' : '') + '" role="radiogroup" aria-label="Status">' +
+      '<span class="stsl-thumb" aria-hidden="true"></span>' + opts.map(([v, ic]) =>
+        '<button type="button" role="radio" aria-checked="' + (r.status === v) + '" class="stsl-o' + (r.status === v ? ' on' : '') + '" data-act="' + act + '" data-v="' + v + '" data-id="' + esc(r.id) + '"' + (extra || '') +
+        ' title="' + (v === 'Pending' ? 'Pending' : v === 'Approved' ? 'Approve' : 'Deny') + '">' + icon(ic, 14) + '<span class="stsl-t">' + v + '</span></button>').join('') + '</div>';
+  }
+  /** Slide the thumb at once (the page redraws a moment later, after the animation). */
+  function slideStatus(el, v) {
+    const sl = el.closest('.stsl'); if (!sl) return 0;
+    sl.className = sl.className.replace(/\bst-\w+/, 'st-' + v.toLowerCase());
+    sl.querySelectorAll('.stsl-o').forEach(b => { const on = b.dataset.v === v; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+    return reduceMotion() ? 0 : 200;
   }
   /** Admin: show only open requests (pending, or in an unresolved conflict), with how many there are. */
   function openBtn() {
@@ -5190,8 +5233,7 @@
     // Footer (DESIGN.md): admins get a decision row on top (Deny · Approve), then Delete · Cancel · Edit —
     // destructive on the left, Cancel in the middle, the main action on the far right.
     const decide = S.isAdmin && r.status !== 'Cancelled'
-      ? '<button class="btn bad act act-lbl" data-act="setStatus" data-v="Denied" data-id="' + esc(r.id) + '"' + (r.status === 'Denied' ? ' aria-pressed="true" data-undo="1"' : '') + ' aria-label="Deny" title="Deny">' + icon('ban', 15) + '<span class="bl">Deny</span></button>' +
-        '<button class="btn ok act act-lbl" data-act="setStatus" data-v="Approved" data-id="' + esc(r.id) + '"' + (r.status === 'Approved' ? ' aria-pressed="true" data-undo="1"' : '') + ' aria-label="Approve" title="Approve">' + icon('check', 15) + '<span class="bl">Approve</span></button>'
+      ? statusSlider(r, 'setStatus', '', true)
       : '';
     const edit = canEdit(r) ? '<button class="btn act act-lbl act-edit" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>' : '';
     const del = canDelete(r) ? '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' : '';
@@ -5386,10 +5428,10 @@
           '<div class="bor-when"><span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '</span>' + esc(sd(r.start, r.end)) +
             ' <span class="muted">· ' + plural(D.days(r.start, r.end), 'day') + '</span></div>' +
           '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></div>' +
-        '<div class="bor-acts" role="group" aria-label="Resolve ' + esc(nameText(u)) + '">' +
+        // Status slider (Approved = allowed over the blackout, also for one that's already approved), then Delete · Edit dates.
+        '<div class="bor-dec">' + statusSlider(r, 'boSet', '', true) + '</div>' +
+        '<div class="bor-acts bor-acts2" role="group" aria-label="Resolve ' + esc(nameText(u)) + '">' +
           '<button type="button" class="bor-a bor-del" data-act="boDelete" data-id="' + esc(r.id) + '">' + icon('trash', 18) + '<span>Delete</span><small>request</small></button>' +
-          '<button type="button" class="bor-a bor-deny" data-act="boDeny" data-id="' + esc(r.id) + '">' + icon('ban', 18) + '<span>Deny</span><small>' + esc(r.type.toLowerCase()) + '</small></button>' +
-          '<button type="button" class="bor-a bor-ok" data-act="boAllow" data-id="' + esc(r.id) + '">' + icon('check', 18) + '<span>Approve</span><small>anyway</small></button>' +
           '<button type="button" class="bor-a" data-act="boEdit" data-id="' + esc(r.id) + '">' + icon('pencil', 18) + '<span>Edit</span><small>dates</small></button>' +
         '</div></div>';
     }).join('');
@@ -5703,15 +5745,20 @@
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 650);
   }
-  /* Swipe left / right on the calendar: next / previous day, week or month; Qtr shifts by one month. */
+  /* Swipe left / right on the calendar (touch), or grab and drag it with the mouse (desktop): next / previous day, week or
+     month; Qtr shifts by one month. Week view has its own drag (the strip scrolls). */
   (function () {
-    let sx = 0, sy = 0, st = 0, on = false;
-    let drag = false; // the calendar is following the finger sideways
-    document.addEventListener('touchstart', ev => {
-      const t = ev.touches[0];
-      on = ev.touches.length === 1 && isCalView() && S.cal !== 'week' && !S.modal && !S.openDrop && !!ev.target.closest('#calBody');
+    let sx = 0, sy = 0, st = 0, on = false, mouse = false;
+    let drag = false; // the calendar is following the finger / pointer sideways
+    function begin(x, y, target) {
+      on = isCalView() && S.cal !== 'week' && !S.modal && !S.openDrop && !!target.closest('#calBody') && !target.closest('.dpanel');
       drag = false;
-      if (on) { sx = t.clientX; sy = t.clientY; st = Date.now(); }
+      if (on) { sx = x; sy = y; st = Date.now(); }
+    }
+    document.addEventListener('touchstart', ev => {
+      mouse = false;
+      if (ev.touches.length !== 1) { on = false; return; }
+      begin(ev.touches[0].clientX, ev.touches[0].clientY, ev.target);
     }, { passive: true });
     let peekDir = 0; // Month / Day: the neighbouring month or day drawn beside the current one while dragging (+1 next, -1 previous)
     const peeks = () => S.cal === 'month' || S.cal === 'day';
@@ -5731,10 +5778,10 @@
       p.innerHTML = html; b.appendChild(p); peekDir = dir;
     }
     function dropPeek() { const p = document.querySelector('#calBody .cal-peek'); if (p) p.remove(); peekDir = 0; }
-    document.addEventListener('touchmove', ev => {
+    function moveTo(x, y) {
       if (!on || reduceMotion()) return;
-      const t = ev.touches[0], dx = t.clientX - sx, dy = t.clientY - sy;
-      if (!drag && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) drag = true;
+      const dx = x - sx, dy = y - sy;
+      if (!drag && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) { drag = true; if (mouse) document.body.classList.add('cal-grabbing'); }
       if (!drag) return;
       const b = $('#calBody'); if (!b) return;
       b.style.transition = 'none';
@@ -5746,11 +5793,27 @@
       }
       b.style.transform = 'translateX(' + dx * 0.85 + 'px)';
       b.style.opacity = String(Math.max(0.55, 1 - Math.abs(dx) / 900));
-    }, { passive: true });
-    document.addEventListener('touchend', ev => {
+    }
+    document.addEventListener('touchmove', ev => moveTo(ev.touches[0].clientX, ev.touches[0].clientY), { passive: true });
+    // Desktop: the same with the mouse (left button). A drag never counts as a click on a day or a bar.
+    document.addEventListener('pointerdown', ev => { if (ev.pointerType === 'mouse' && ev.button === 0) { mouse = true; begin(ev.clientX, ev.clientY, ev.target); } });
+    document.addEventListener('pointermove', ev => { if (mouse && on) { moveTo(ev.clientX, ev.clientY); if (drag) ev.preventDefault(); } });
+    document.addEventListener('pointerup', ev => {
+      if (!mouse || !on) return;
+      const dragged = drag;
+      document.body.classList.remove('cal-grabbing');
+      finish(ev.clientX, ev.clientY);
+      if (dragged) {
+        const stop = e => { e.stopPropagation(); e.preventDefault(); };
+        document.addEventListener('click', stop, { capture: true, once: true });
+        setTimeout(() => document.removeEventListener('click', stop, { capture: true }), 50);
+      }
+    });
+    document.addEventListener('touchend', ev => { if (on) finish(ev.changedTouches[0].clientX, ev.changedTouches[0].clientY); }, { passive: true });
+    function finish(x, y) {
       if (!on) return;
       on = false;
-      const t = ev.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      const dx = x - sx, dy = y - sy;
       const go = Math.abs(dx) >= 60 && (drag || (Date.now() - st <= 700 && Math.abs(dx) >= Math.abs(dy) * 1.5));
       if (!go) {
         // Not far enough: settle back into place.
@@ -5774,7 +5837,7 @@
       }
       moveCursor(dx < 0 ? 1 : -1, 1, drag ? dx * 0.85 : 0);
       drag = false;
-    }, { passive: true });
+    }
   })();
   /* Phones: pull a bottom-sheet dialog down to close it — but only when the swipe STARTS with its content already
      scrolled to the top (a swipe that's scrolling the content up never closes it). */
@@ -5890,6 +5953,17 @@
       if (!confirm('Delete ' + nameText(userOf(r.userId)) + '’s ' + r.type.toLowerCase() + ' (' + D.short(r.start) + ' – ' + D.short(r.end) + ')? It will be removed from the schedule.')) return;
       save(() => { r.status = 'Cancelled'; }, 'apiCancelRequest', S.token, r.id);
       render(); openBoResolve(b); toast(nameText(userOf(r.userId)) + '’s ' + r.type.toLowerCase() + ' deleted', 'ok', 1500);
+    },
+    /** Blackout resolver slider: Denied / Pending set the status; Approved approves it over the blackout (or, when it is
+     *  already approved, just allows it there). Approved or denied requests drop off the list. */
+    boSet(el) {
+      const r = findReq(el.dataset.id), b = S.boResolve, v = el.dataset.v; if (!r) return;
+      if (r.status === v && v !== 'Approved') return;
+      const wait = slideStatus(el, v);
+      if (v === 'Approved' && r.status === 'Approved') save(() => { r.boOk = 'true'; }, 'apiAllowBlackout', S.token, r.id);
+      else save(() => { Object.assign(r, { status: v, boOk: v === 'Approved' ? 'true' : r.boOk, decidedBy: v === 'Pending' ? '' : S.me, decidedAt: v === 'Pending' ? '' : nowIso() }); }, 'apiSetStatus', S.token, r.id, v);
+      setTimeout(() => { render(); openBoResolve(b); }, wait);
+      toast(nameText(userOf(r.userId)) + (v === 'Approved' ? ' approved over the blackout' : v === 'Denied' ? ' denied' : ' back to pending'), 'ok', 1500);
     },
     boDeny(el) {
       const r = findReq(el.dataset.id), b = S.boResolve; if (!r) return;
@@ -6102,11 +6176,12 @@
     openReq(el) { openRequest(el.dataset.id); },
     openConflict(el) { openConflict(el.dataset.date, el.dataset.role || null); },
     async cfSet(el) {
-      const d = el.dataset.date, id = el.dataset.id, cur = findReq(id);
-      const v = cur && cur.status === el.dataset.v ? 'Pending' : el.dataset.v; // tapping the current decision undoes it
+      const d = el.dataset.date, id = el.dataset.id, cur = findReq(id), v = el.dataset.v;
+      if (!cur || cur.status === v) return;
       if (v === 'Denied' && !confirm('Deny this request?')) return;
+      const wait = slideStatus(el, v);
       save(() => { const r = findReq(id); if (r) Object.assign(r, { status: v, decidedBy: v === 'Pending' ? '' : S.me, decidedAt: v === 'Pending' ? '' : nowIso() }); }, 'apiSetStatus', S.token, id, v);
-      render(); openConflict(d, S.cfRole);
+      setTimeout(() => { render(); openConflict(d, S.cfRole); }, wait);
       toast(v === 'Pending' ? 'Back to pending' : 'Request ' + v.toLowerCase(), 'ok', 1500);
     },
     cfEdit(el) { S.cfReturn = el.dataset.date; openEditWizard(el.dataset.id); },
@@ -6254,9 +6329,8 @@
     mineRefresh() { const b = $('#mineBody'); if (!b) return; const at = document.activeElement; render(); const i = $('[data-model="mine.q"]'); if (i && at && at.dataset && at.dataset.model === 'mine.q') { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } },
 
     async setStatus(el) {
-      const id = el.dataset.id, cur = findReq(id);
-      // Tapping Approve on an approved request (or Deny on a denied one) undoes it: back to Pending.
-      const v = cur && cur.status === el.dataset.v ? 'Pending' : el.dataset.v;
+      const id = el.dataset.id, cur = findReq(id), v = el.dataset.v;
+      if (!cur || cur.status === v) return; // already that status
       // Approving from a list/calendar: no conflict → approve straight away; over the daily max → open the conflict
       // resolver for that day; overlap with the member's own other request → open the request to sort it out.
       if (v === 'Approved' && !el.closest('#modal')) {
@@ -6264,10 +6338,10 @@
         if (cd.length) return openConflict(cd[0], userOf(r.userId).role);
         if (r && dupsOf(r).length) return openRequest(id);
       }
+      const wait = slideStatus(el, v), inReq = S.modal === 'req';
       save(() => { const r = findReq(id); if (r) Object.assign(r, { status: v, decidedBy: v === 'Pending' ? '' : S.me, decidedAt: v === 'Pending' ? '' : nowIso() }); },
         'apiSetStatus', S.token, id, v);
-      render();
-      if (S.modal === 'req') openRequest(id);
+      setTimeout(() => { render(); if (inReq && S.modal === 'req') openRequest(id); }, wait);
       toast(v === 'Pending' ? 'Back to pending' : 'Request ' + v.toLowerCase(), 'ok', 1500);
     },
     async cancelReq(el) {
