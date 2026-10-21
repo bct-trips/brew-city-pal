@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792590918"></script>
+    <script src="config.js?v=1792591354"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792590918';
+      window.PAL_BUILD = '1792591354';
       (function () {
         function check(launch) {
           try {
@@ -2465,6 +2465,9 @@
   /* Settings → Start-up: two radio lists side by side when there's room. */
   .su-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
   .su-l { display: block; margin-bottom: 6px; }
+  /* Required fields: a red * after the label (labels are uppercase; the * keeps its own look), "* Required" note on top. */
+  .req { color: var(--bad); margin-left: 3px; font-weight: 800; letter-spacing: 0; }
+  .req-note { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
 </style>
 
   </head>
@@ -2866,7 +2869,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.12'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.13'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -3126,8 +3129,11 @@
   // treat it as a login (offer the saved PIN) — never as a new account ("use strong password").
   /* Every box where a NEW PIN is typed (Settings, set-PIN screen, Admin default / admin PIN, a member's PIN): a plain
      text box masked as dots with the number keypad — not a password field — so no browser or password manager offers a
-     "strong password" or to save it. Only the sign-in PIN stays a real password field (saved-password fill). */
-  const NEW_PIN = 'type="text" class="pin-mask" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other"';
+     "strong password" or to save it. It also stays read-only until tapped (data-arm, like the Admin PIN box), so iOS
+     never sees an empty fillable box. Only the sign-in PIN stays a real password field (saved-password fill). */
+  /** Required-field marker after a label (red *), with a "* Required" note at the top of the form. */
+  const REQ = '<span class="req" aria-hidden="true">*</span>', REQ_NOTE = '<p class="req-note"><span class="req">*</span> Required</p>';
+  const NEW_PIN = 'type="text" class="pin-mask" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" readonly data-arm';
   const pinInput = (id, label, ac) => ac === 'current-password'
     // Signing in: no "4–8 digits" hint, length limit or pattern — Safari reads those as new-password rules and offers a
     // "strong password". Just an existing password (numeric keypad) paired with the username field.
@@ -3216,27 +3222,30 @@
     try { cfg = await call('apiPublicConfig'); } catch (e) { $('#rgBody').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; return; }
     finally { const l = $('.login .brand-logo'); if (l) l.classList.remove('logo-loading'); }
     const sel = (id, opts) => '<select id="' + id + '">' + opts.map(o => '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>').join('') + '</select>';
-    $('#rgBody').outerHTML = '<form id="regForm" autocomplete="on"><h2 class="auth-h">Create an Account</h2>' +
+    // Required: last name, position, unit and the squadron default PIN. First name, middle and rank are optional (rank
+    // starts blank). Position and unit start on "Choose…" so they're picked on purpose.
+    $('#rgBody').outerHTML = '<form id="regForm" autocomplete="on"><h2 class="auth-h">Create an Account</h2>' + REQ_NOTE +
       '<div class="row"><div class="field"><label for="rgFirst">First Name</label><input id="rgFirst" autocomplete="given-name"></div>' +
-      '<div class="field"><label for="rgMid">Middle (Optional)</label><input id="rgMid" autocomplete="additional-name"></div></div>' +
-      '<div class="field"><label for="rgLast">Last Name</label><input id="rgLast" autocomplete="family-name"></div>' +
-      '<div class="row"><div class="field"><label for="rgRank">Rank</label>' + sel('rgRank', RANKS.map(r => [r, r])) + '</div>' +
-      '<div class="field"><label for="rgRole">Position</label>' + sel('rgRole', (cfg.roles && cfg.roles.length ? cfg.roles.map(r => r.name) : ['Pilot', 'Boom', 'Other']).map(r => [r, roleName(r)])) + '</div></div>' +
-      '<div class="field"><label for="rgUnit">Unit</label>' + sel('rgUnit', cfg.units.map(u => [u.code, u.code + (u.name && u.name !== u.code ? ' — ' + u.name : '')])) + '</div>' +
-      pinInput('rgPin', 'Squadron Default PIN', 'off') +
+      '<div class="field"><label for="rgMid">Middle</label><input id="rgMid" autocomplete="additional-name"></div></div>' +
+      '<div class="field"><label for="rgLast">Last Name' + REQ + '</label><input id="rgLast" autocomplete="family-name" aria-required="true"></div>' +
+      '<div class="row"><div class="field"><label for="rgRank">Rank</label>' + sel('rgRank', [['', '—']].concat(RANKS.map(r => [r, r]))) + '</div>' +
+      '<div class="field"><label for="rgRole">Position' + REQ + '</label>' + sel('rgRole', [['', 'Choose…']].concat((cfg.roles && cfg.roles.length ? cfg.roles.map(r => r.name) : ['Pilot', 'Boom', 'Other']).map(r => [r, roleName(r)]))) + '</div></div>' +
+      '<div class="field"><label for="rgUnit">Unit' + REQ + '</label>' + sel('rgUnit', [['', 'Choose…']].concat(cfg.units.map(u => [u.code, u.code + (u.name && u.name !== u.code ? ' — ' + u.name : '')]))) + '</div>' +
+      pinInput('rgPin', 'Squadron Default PIN' + REQ, 'off') +
       '<p class="auth-note">Ask an admin for the default PIN. After you create your account you’ll choose your own PIN.</p>' +
       '<div class="err" id="rgErr"></div>' +
-      '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('userPlus', 16) + ' Create account</button></form>' +
+      '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('userPlus', 16) + ' Create Account</button></form>' +
       '<div class="auth-alt">Already have an account? <button class="linkbtn" id="toLogin">Sign In</button></div>';
     autoFocus($('#rgFirst'));
-    $('#rgRank').value = 'SSgt';
     $('#toLogin').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); showLogin(); });
     $('#regForm').addEventListener('submit', async ev => {
       ev.preventDefault();
       const reg = { first: $('#rgFirst').value.trim(), middle: $('#rgMid').value.trim(), last: $('#rgLast').value.trim(), rank: $('#rgRank').value, role: $('#rgRole').value,
         unit: $('#rgUnit').value, pin: $('#rgPin').value.trim() };
       const err = $('#rgErr');
-      if (!reg.first || !reg.last) return (err.textContent = 'Enter your first and last name.');
+      if (!reg.last) return (err.textContent = 'Enter your last name.');
+      if (!reg.role) return (err.textContent = 'Choose your position.');
+      if (!reg.unit) return (err.textContent = 'Choose your unit.');
       if (!/^\d{4,8}$/.test(reg.pin)) return (err.textContent = 'Enter the squadron’s default PIN (4–8 digits).');
       err.textContent = '';
       await authBusy(ev.target.querySelector('button[type=submit]'), async () => {
@@ -3277,24 +3286,28 @@
   /** Shown after first sign-in, an admin reset, or a shared PIN: the member must choose their own PIN. */
   function showSetPin(me) {
     // Short and direct; the rules (not the default PIN, not shared with a namesake) show only if they're broken.
-    authShell('<form id="setPinForm"><h2 class="auth-h">Please Set Your PIN!</h2>' +
-      '<div class="row">' + pinInput('spPin', 'New PIN', 'new-password') + pinInput('spPin2', 'Confirm New PIN', 'new-password') + '</div>' +
+    // No <form> and no "pin" in the box names: iOS reads a form with two new-secret boxes as "create a password" and
+    // offers a strong one. Enter in either box saves, like a form would.
+    authShell('<div id="setPinBox"><h2 class="auth-h">Please Set Your PIN!</h2>' +
+      '<div class="row">' + pinInput('spA', 'New PIN', 'new') + pinInput('spB', 'Confirm New PIN', 'new') + '</div>' +
       '<div class="err" id="spErr"></div>' +
-      '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('check', 16) + ' Save PIN and continue</button></form>' +
+      '<button class="btn primary block" type="button" id="spGo" style="margin-top:8px">' + icon('check', 16) + ' Save PIN and Continue</button></div>' +
       '<div class="auth-alt"><button class="linkbtn" id="spOut">Sign Out</button></div>');
     $('#spOut').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); A.signOut(ev.currentTarget); });
-    $('#setPinForm').addEventListener('submit', async ev => {
-      ev.preventDefault();
-      const a = $('#spPin').value.trim(), b = $('#spPin2').value.trim(), err = $('#spErr');
+    const save = async () => {
+      const a = $('#spA').value.trim(), b = $('#spB').value.trim(), err = $('#spErr');
       if (!/^\d{4,8}$/.test(a)) return (err.textContent = 'PIN must be 4–8 digits.');
       if (a !== b) return (err.textContent = 'The two PIN entries do not match.');
       err.textContent = '';
-      await authBusy(ev.target.querySelector('button[type=submit]'), async () => {
+      await authBusy($('#spGo'), async () => {
         try { apply(await call('apiChangePin', S.token, a, b)); render(); toast('PIN saved'); }
-        catch (e) { err.textContent = e.message; $('#spPin').value = ''; $('#spPin2').value = ''; $('#spPin').focus(); }
+        catch (e) { err.textContent = e.message; $('#spA').value = ''; $('#spB').value = ''; $('#spA').focus(); }
       });
-    });
+    };
+    $('#spGo').addEventListener('click', save);
+    ['#spA', '#spB'].forEach(id => $(id).addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); save(); } }));
   }
+
 
 
   /* ================================================================ */
@@ -5881,13 +5894,13 @@
     const t = String(u.name || '').trim().split(/\s+/).filter(Boolean);
     // A one-word name (the seeded roster is last names only) is the last name; the admin fills in the first name.
     const nf = t.length > 1 ? t[0] : '', nl = t.length ? t[t.length - 1] : '', nm = t.slice(1, -1).join(' ');
-    return '<div class="row"><div class="field"><label for="' + p + 'First">First Name</label><input id="' + p + 'First" value="' + esc(nf) + '" autofocus></div>' +
+    return REQ_NOTE + '<div class="row"><div class="field"><label for="' + p + 'First">First Name</label><input id="' + p + 'First" value="' + esc(nf) + '" autofocus></div>' +
       '<div class="field"><label for="' + p + 'Mid">Middle</label><input id="' + p + 'Mid" value="' + esc(nm) + '"></div></div>' +
-      '<div class="field"><label for="' + p + 'Last">Last Name</label><input id="' + p + 'Last" value="' + esc(nl) + '"></div>' +
+      '<div class="field"><label for="' + p + 'Last">Last Name' + REQ + '</label><input id="' + p + 'Last" value="' + esc(nl) + '"></div>' +
       // Rank can be left blank ("—").
       '<div class="row"><div class="field"><label for="' + p + 'Rank">Rank</label>' + sel('Rank', [['', '—']].concat(RANKS.indexOf(u.rank) < 0 && u.rank ? RANKS.concat([u.rank]) : RANKS), u.rank) + '</div>' +
-      '<div class="field"><label for="' + p + 'Role">Position</label>' + sel('Role', ROLES.filter(r => !roleInfo(r).disabled || r === u.role).map(r => [r, roleName(r)]), u.role) + '</div></div>' +
-      '<div class="field"><label for="' + p + 'Unit">Unit</label>' + sel('Unit', unitsList().filter(x => !x.disabled || x.code === u.unit).map(x => x.code), u.unit) + '</div>' +
+      '<div class="field"><label for="' + p + 'Role">Position' + REQ + '</label>' + sel('Role', ROLES.filter(r => !roleInfo(r).disabled || r === u.role).map(r => [r, roleName(r)]), u.role) + '</div></div>' +
+      '<div class="field"><label for="' + p + 'Unit">Unit' + REQ + '</label>' + sel('Unit', unitsList().filter(x => !x.disabled || x.code === u.unit).map(x => x.code), u.unit) + '</div>' +
       // No PIN here: new members start on the default PIN (Admin → Default PIN); use Reset PIN to send someone back to it.
       (u.id ? '' : '<p class="meta pin-note">' + icon('key', 14) + ' Signs in with the default PIN, then sets their own.</p>');
   }
@@ -7306,7 +7319,8 @@
   /* ================================================================ */
   // Admin PIN box: readonly until focused so password managers don't autofill the sign-in PIN into it.
   // pointerdown runs before focus, so iPhone still opens the number pad on the first tap; focusin covers keyboard users.
-  const armPasskey = ev => { const t = ev.target; if (t && t.id === 'passkey' && t.readOnly) { t.readOnly = false; t.value = ''; } };
+  // New-PIN boxes (data-arm) work the same way, so iOS never offers a "strong password" for them.
+  const armPasskey = ev => { const t = ev.target; if (t && t.readOnly && (t.id === 'passkey' || (t.hasAttribute && t.hasAttribute('data-arm')))) { t.readOnly = false; if (t.id === 'passkey') t.value = ''; } };
   document.addEventListener('pointerdown', armPasskey, true);
   document.addEventListener('focusin', armPasskey);
   document.addEventListener('click', ev => {
