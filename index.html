@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792598765"></script>
+    <script src="config.js?v=1792599279"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792598765';
+      window.PAL_BUILD = '1792599279';
       (function () {
         function check(launch) {
           try {
@@ -2546,6 +2546,13 @@
   /* Unit × position grid (alerts, report, team admins): badges / positions, check boxes, edit + delete; the row being
      edited is tinted and its unit and position chips open in the line under it. */
   .rtable.ag .rg-u, .rtable.ag .rg-r { white-space: normal; min-width: 56px; }
+  /* Column titles wrap ("New / Requests") so the grid fits its card; on a narrow screen that still scrolls sideways,
+     the edit line (chips + Done) stays pinned to the visible width of the card, so Done is never off-screen. */
+  .rg.ag-wrap { container-type: inline-size; }
+  .rg .rtable.ag { width: 100%; }
+  .rtable.ag thead th { white-space: normal; vertical-align: bottom; line-height: 1.2; }
+  .rtable.ag thead th.ag-k { min-width: 64px; }
+  .rg-box { position: sticky; left: 12px; width: calc(100cqi - 24px); max-width: 100%; box-sizing: border-box; }
   .rg-badges { display: inline-flex; flex-wrap: wrap; gap: 4px; }
   .rg-badges .ub { margin: 0; }
   .rg-acts { display: inline-flex; gap: 4px; justify-content: flex-end; }
@@ -2556,6 +2563,7 @@
   .rg-pick .push-btns { display: flex; flex-wrap: wrap; gap: 6px; }
   .rg-done { display: flex; justify-content: flex-end; margin-top: 10px; }
   .rtable.ag .rg-none { text-align: center; padding: 14px; }
+  .rg .ag-add td > .btn { position: sticky; left: 12px; }
   .ta-acts { display: inline-flex; gap: 6px; margin-left: auto; flex: none; }
   /* Team admin permission grid (member card, Make Admin): unit rows × position columns of check boxes. */
   .pg-wrap { overflow-x: auto; margin: 2px 0 8px; border: 1px solid var(--line); border-radius: 12px; }
@@ -3012,10 +3020,10 @@
           return '<td class="ag-k"><button type="button" class="rsel' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" aria-label="' + esc(c[1]) + '"' + attrs('col', i, c[0]) + '>' + (on ? icon('check', 14) : '') + '</button></td>'; }).join('') +
         '<td class="ag-del"><div class="rg-acts"><button type="button" class="btn sm act' + (i === ed ? ' on' : '') + '"' + attrs('edit', i) + ' aria-label="Edit this row" aria-expanded="' + (i === ed) + '" title="Edit">' + icon('pencil', 14) + '</button>' +
           '<button type="button" class="btn sm del act"' + attrs('del', i) + ' aria-label="Delete this row" title="Delete">' + icon('trash', 14) + '</button></div></td></tr>' +
-      (i === ed ? '<tr class="rg-ed"><td colspan="' + span + '"><div class="rg-pick">' +
+      (i === ed ? '<tr class="rg-ed"><td colspan="' + span + '"><div class="rg-box"><div class="rg-pick">' +
           '<span class="sc-l">Units</span><div class="push-btns">' + (h.any ? chip('anyU', i, null, !x.units.length, 'Any') : '') + units(x).map(c => chip('unit', i, c, x.units.includes(c), c)).join('') + '</div>' +
           '<span class="sc-l">Positions</span><div class="push-btns">' + (h.any ? chip('anyR', i, null, !x.roles.length, 'Any') : '') + roles(x).map(r => chip('role', i, r, x.roles.includes(r), rolePl(r))).join('') + '</div></div>' +
-          '<div class="rg-done"><button type="button" class="btn sm primary"' + attrs('done', i) + '>' + icon('check', 14) + 'Done</button></div></td></tr>' : '')).join('');
+          '<div class="rg-done"><button type="button" class="btn sm primary"' + attrs('done', i) + '>' + icon('check', 14) + 'Done</button></div></div></td></tr>' : '')).join('');
     const add = '<tr class="ag-add"><td colspan="' + span + '"><button type="button" class="btn sm"' + attrs('add', -1) + '>' + icon('plus', 14) + 'Add Row</button></td></tr>';
     return '<div class="tbl-wrap ag-wrap rg"><table class="rtable ag"><thead>' + head + '</thead><tbody>' +
       (rows.length ? body : '<tr><td colspan="' + span + '" class="muted rg-none">Nothing yet.</td></tr>') + add + '</tbody></table></div>';
