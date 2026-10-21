@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792570916"></script>
+    <script src="config.js?v=1792571279"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2049,6 +2049,34 @@
   #admErr:empty { display: none; }
   .pin-err { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px auto 0; padding: 10px 14px; max-width: 320px; border-radius: 12px;
     background: #b42318; color: #ffffff; font-weight: 800; font-size: 15px; text-align: center; }
+  /* Week view = one continuous horizontal strip of days (a day is 1/7 of the screen; snaps to days). */
+  .wk-strip { overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; container-type: inline-size; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+  .wk-strip::-webkit-scrollbar { height: 0; }
+  .wk-inner { width: calc(var(--days) * 100cqw / 7); height: 100%; display: flex; flex-direction: column; }
+  .wg { display: grid; grid-template-columns: repeat(var(--days), calc(100cqw / 7)); }
+  .wk-strip .wk-day { scroll-snap-align: start; }
+  .wk-strip .band-pucks { grid-template-columns: repeat(var(--days), calc(100cqw / 7)); }
+  .wk-strip .band-title { position: relative; }
+  .wk-strip .band-title .bt-in { position: sticky; left: 8px; display: inline-flex; align-items: center; gap: 8px; }
+  .wk-strip .wk-day.wk-sun, .wk-strip .slot.wk-sun { border-left: 2px solid var(--outline); } /* each week starts on a clear line */
+  /* Month drag: the neighbouring month sits right beside the current one and moves with it. */
+  #calBody { position: relative; }
+  .cal-peek { position: absolute; top: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; }
+  .cal-peek > .month { flex: 1; min-height: 0; }
+  /* Request details: a lone Close fills the footer row. */
+  .mf-row .mf-close { flex: 1; }
+  /* Centred dialog on phones (e.g. Admin PIN) instead of a bottom sheet. */
+  @media (max-width: 700px) {
+    .overlay:has(.modal-center) { align-items: center; padding: 16px; }
+    .modal.modal-center { border-radius: 20px; max-height: calc(100dvh - 32px); }
+  }
+  /* Bottom sheets show a small grab handle (pull down to close). */
+  @media (max-width: 700px) {
+    .modal:not(.modal-center) > .modal-h { position: relative; }
+    .modal:not(.modal-center) > .modal-h::before { content: ""; position: absolute; top: 5px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px;
+      background: color-mix(in srgb, var(--on-surface) 25%, transparent); }
+  }
+  .cal-peek { padding-top: 6px; box-sizing: border-box; }
 </style>
 
   </head>
@@ -2761,6 +2789,7 @@
     $('#app').innerHTML = '<main class="main" id="main">' + renderView() + '</main>' + renderNav();
     Object.keys(keep).forEach(id => { const el = document.getElementById(id); if (el) { el.scrollTop = keep[id][0]; el.scrollLeft = keep[id][1]; } });
     if (isCalView() && S.cal === 'month') fitMonth();
+    if (isCalView() && S.cal === 'week') fitWeek();
     paintSel();
     markOpenDay(); fitTables();
     store.set('view', S.view); store.set('cal', S.cal);
@@ -2864,7 +2893,7 @@
       return D.f(c, { month: 'short', year: c.slice(0, 4) === last.slice(0, 4) ? undefined : 'numeric' }) + ' – ' + D.f(last, { month: 'short', year: 'numeric' });
     }
     if (S.cal === 'day') return isCompact() ? D.f(c, { weekday: 'short', month: 'short', day: 'numeric' }) : D.f(c, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-    const ws = D.weekStart(c), we = D.add(ws, 6);
+    const ws = S.cal === 'week' ? weekLeft() : D.weekStart(c), we = D.add(ws, 6);
     const sameMonth = ws.slice(0, 7) === we.slice(0, 7);
     return D.short(ws) + ' – ' + (sameMonth ? D.f(we, { day: 'numeric' }) : D.short(we)) + ', ' + we.slice(0, 4);
   }
@@ -3703,48 +3732,68 @@
     }).join('') + '</div>';
   }
 
+  /* Week view: ONE continuous strip of days you scroll left / right (each day a seventh of the screen, snapping to days),
+     so you can look at any 7 days in a row — Sun–Sat, Mon–Sun, Tue–Mon… It opens on Sunday of the current week and
+     quietly re-centres when you get near either end. Bars run unbroken across the whole strip. */
+  const WK_BACK = 28, WK_DAYS = 91;
+  function weekLeft() { return S.weekLeft || D.weekStart(S.cursor); }
   function renderWeek() {
-    const ws = D.weekStart(S.cursor);
-    const days = Array.from({ length: 7 }, (_, i) => D.add(ws, i));
-    const we = days[6];
+    const left = weekLeft(), ws = D.add(left, -WK_BACK);
+    const days = Array.from({ length: WK_DAYS }, (_, i) => D.add(ws, i));
+    const we = days[WK_DAYS - 1];
     const reqs = calRequests().filter(r => r.start <= we && r.end >= ws);
     const head = days.map(d => {
       const p = countOn(d, 'Pilot'), b = countOn(d, 'Boom'), qp = quota('Pilot'), qb = quota('Boom');
-      return '<div class="wk-day' + (d === S.today ? ' today' : '') + ' ' + dayWarn(d) + boCls(d) + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + ' role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
+      return '<div class="wk-day' + (d === S.today ? ' today' : '') + (D.dow(d) === 0 ? ' wk-sun' : '') + ' ' + dayWarn(d) + boCls(d) + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + ' role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
         '<div class="wk-dow">' + DOW[D.dow(d)] + '</div><div class="wk-num">' + Number(d.slice(8)) + '</div>' +
         '<div class="wk-date">' + D.f(d, { month: 'short' }) + '</div>' +
         (S.priv ? '' : '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">P: ' + p + (qp ? '/' + qp : '') + '</span>' +
         '<span class="' + (qb && b > qb ? 'over' : '') + '">B: ' + b + (qb ? '/' + qb : '') + '</span></div>') + '</div>';
     }).join('');
+    const col = (a, z) => 'grid-column:' + (D.diff(ws, D.max(a, ws)) + 1) + '/' + (D.diff(ws, D.min(z, we)) + 2);
     const bands = [['Pilot', 'PILOTS ACTIVE SCHEDULE'], ['Boom', 'BOOM OPERATORS ACTIVE SCHEDULE'], ['Other', 'OTHER SQUADRON PERSONNEL']]
       .filter(b => S.f.role.includes(b[0]))
       .map(b => {
         const evs = reqs.filter(r => userOf(r.userId).role === b[0]);
-        // Same dates and type share one strip: "[P|MKE|Smith] / [P|MKE|Jones]" (tap a badge for that request).
+        // Same dates and type share one strip (tap a badge for that request).
         const wg = sameDateGroups(evs);
         const items = wg.solo.map(r => ({ r })).concat(wg.groups.map(g => ({ r: g[0], g })))
-          .sort((x, y) => stackRank(x.r) - stackRank(y.r) || (x.r.start < y.r.start ? -1 : x.r.start > y.r.start ? 1 : D.diff(y.r.start, y.r.end) - D.diff(x.r.start, x.r.end)));
+          .sort((x, y) => (x.r.start < y.r.start ? -1 : x.r.start > y.r.start ? 1 : D.diff(y.r.start, y.r.end) - D.diff(x.r.start, x.r.end)) || stackRank(x.r) - stackRank(y.r));
         const pucks = items.map(({ r, g }) => {
-          const a = D.diff(ws, D.max(r.start, ws)) + 1, z = D.diff(ws, D.min(r.end, we)) + 2;
           const same = !g || g.every(x => x.status === r.status);
-          const cls = ['wpuck', g ? 'grp' : '', r.type === 'Leave' ? 'leave' : 'pass', same ? 'st-' + r.status.toLowerCase() : '', r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : '', (g || [r]).some(isNow) ? 'now' : ''].join(' ');
+          const cls = ['wpuck', g ? 'grp' : '', r.type === 'Leave' ? 'leave' : 'pass', same ? 'st-' + r.status.toLowerCase() : '', r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : ''].join(' ');
           const sub = '<span class="s">' + r.type + (same ? ' · ' + r.status : '') + ' · ' + D.short(r.start) + '–' + D.short(r.end) + '</span>';
-          if (g) return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '"><span class="n">' + groupBadges(g, true, D.max(r.start, ws), D.min(r.end, we)) + '</span>' + sub + '</div>';
-          return '<div class="' + cls + '" style="grid-column:' + a + '/' + z + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-            '<span class="n">' + personBadge(r, true, D.max(r.start, ws), D.min(r.end, we)) + '</span>' + sub + '</div>';
+          if (g) return '<div class="' + cls + '" style="' + col(r.start, r.end) + '"><span class="n">' + groupBadges(g, true) + '</span>' + sub + '</div>';
+          return '<div class="' + cls + '" style="' + col(r.start, r.end) + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
+            '<span class="n">' + personBadge(r, true) + '</span>' + sub + '</div>';
         }).join('');
-        const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
-        return '<div class="band band-' + b[0][0].toLowerCase() + '"><div class="band-title"><span class="band-tag">' + b[0][0] + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></div>' +
-          '<div class="band-body"><div class="band-inner"><div class="band-slots g7">' + slots + '</div><div class="band-pucks">' + pucks + '</div></div></div></div>';
+        const slots = days.map(d => '<div class="slot' + (d === S.today ? ' today' : '') + (D.dow(d) === 0 ? ' wk-sun' : '') + boCls(d) + '" data-act="pickDay" data-date="' + d + '"></div>').join('');
+        return '<div class="band band-' + b[0][0].toLowerCase() + '"><div class="band-title"><span class="bt-in"><span class="band-tag">' + b[0][0] + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></span></div>' +
+          '<div class="band-body"><div class="band-inner"><div class="band-slots wg">' + slots + '</div><div class="band-pucks wg">' + pucks + '</div></div></div></div>';
       }).join('');
     // Blackouts band on top (everyone sees it).
     const wbo = blackouts().filter(b => b.start <= we && b.end >= ws);
-    const boBand = wbo.length ? '<div class="band band-bo"><div class="band-title"><span class="band-tag">' + icon('ban', 12) + '</span>BLACKOUT DATES <span class="ct">' + wbo.length + '</span></div>' +
-      '<div class="band-body"><div class="band-inner"><div class="band-slots g7">' + days.map(d => '<div class="slot' + boCls(d) + '"></div>').join('') + '</div><div class="band-pucks">' +
-      wbo.map(b => boBar(b, 'wk-bo' + (b.start >= ws ? ' b-s' : '') + (b.end <= we ? ' b-e' : ''), 'grid-column:' + (D.diff(ws, D.max(b.start, ws)) + 1) + '/' + (D.diff(ws, D.min(b.end, we)) + 2))).join('') +
+    const boBand = wbo.length ? '<div class="band band-bo"><div class="band-title"><span class="bt-in"><span class="band-tag">' + icon('ban', 12) + '</span>BLACKOUT DATES <span class="ct">' + wbo.length + '</span></span></div>' +
+      '<div class="band-body"><div class="band-inner"><div class="band-slots wg">' + days.map(d => '<div class="slot' + boCls(d) + '"></div>').join('') + '</div><div class="band-pucks wg">' +
+      wbo.map(b => boBar(b, 'wk-bo' + (b.start >= ws ? ' b-s' : '') + (b.end <= we ? ' b-e' : ''), col(b.start, b.end))).join('') +
       '</div></div></div></div>' : '';
-    return '<div class="week"><div class="wk-head g7">' + head + '</div><div class="bands">' + boBand + bands + '</div></div>';
+    return '<div class="week wk-strip" id="wkStrip" data-r0="' + ws + '" style="--days:' + WK_DAYS + '"><div class="wk-inner"><div class="wk-head wg">' + head + '</div><div class="bands">' + boBand + bands + '</div></div></div>';
   }
+  /** After drawing the strip: scroll to the left-most day and track scrolling (label, re-centre near the ends). */
+  function fitWeek() {
+    const el = $('#wkStrip'); if (!el) return;
+    const dayW = el.clientWidth / 7, r0 = el.dataset.r0;
+    el.scrollLeft = D.diff(r0, weekLeft()) * dayW;
+    let t = null;
+    el.addEventListener('scroll', () => {
+      const dw = el.clientWidth / 7, idx = Math.round(el.scrollLeft / dw);
+      S.weekLeft = D.add(r0, idx); S.cursor = S.weekLeft;
+      const lb = $('.lbl-date'); if (lb && lb.firstChild) lb.firstChild.nodeValue = calLabel();
+      clearTimeout(t);
+      t = setTimeout(() => { if (idx < 7 || idx > WK_DAYS - 14) { $('#calBody').innerHTML = renderWeek(); fitWeek(); paintSel(); } }, 180);
+    }, { passive: true });
+  }
+
 
   /** Desktop (≥900px): tapping a day opens it in a panel on the left, beside the calendar, instead of switching views. */
   const useDayPanel = () => window.matchMedia('(min-width: 900px)').matches;
@@ -4535,6 +4584,7 @@
       '<div class="err" id="admErr"></div></div>' +
       '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="unlockAdmin" id="admGo">' + icon('unlock', 18) + 'Unlock</button></div>';
     openModal('adminPin', html);
+    $('#modal .modal').classList.add('modal-center'); // phones: in the middle of the screen, not a bottom sheet
     const box = $('#passkey');
     box.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); A.unlockAdmin($('#admGo')); } });
     box.addEventListener('input', () => { box.classList.remove('pin-bad'); $('#admErr').innerHTML = ''; });
@@ -4723,7 +4773,8 @@
       : '';
     const edit = canEdit(r) ? '<button class="btn act act-lbl act-edit" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>' : '';
     const del = canDelete(r) ? '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' : '';
-    const main = del || edit || decide ? '<div class="mf-row">' + del + '<button class="btn act act-lbl" data-act="closeModal" aria-label="Cancel" title="Cancel">' + icon('x', 15) + '<span class="bl">Cancel</span></button>' + edit + '</div>' : '';
+    // Always a Close at the bottom (in the middle of Delete · Close · Edit, or on its own when there's nothing to do).
+    const main = '<div class="mf-row">' + del + '<button class="btn act act-lbl' + (del || edit ? '' : ' mf-close') + '" data-act="closeModal" aria-label="Close" title="Close">' + icon('x', 15) + '<span class="bl">Close</span></button>' + edit + '</div>';
     const foot = (decide ? '<div class="mf-row mf-decide">' + decide + '</div>' : '') + main;
     const bad = [...reqConflicts(r).values()].filter(c => c.bad).length;
     const longDate = d => D.f(d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -5187,6 +5238,10 @@
     o[p[p.length - 1]] = v;
   }
   function moveCursor(dir, quadStep, fromDx) {
+    // Week strip: the arrows glide it a full week (no re-render).
+    const strip = S.cal === 'week' && $('#wkStrip');
+    if (strip) { strip.scrollBy({ left: dir * 7 * (strip.clientWidth / 7), behavior: reduceMotion() ? 'auto' : 'smooth' }); return; }
+    S.weekLeft = null;
     const go = () => {
       if (S.cal === 'month') S.cursor = D.addMonths(S.cursor, dir);
       else if (S.cal === 'quad') S.cursor = D.addMonths(S.cursor, (quadStep || 4) * dir);
@@ -5230,10 +5285,23 @@
     let drag = false; // the calendar is following the finger sideways
     document.addEventListener('touchstart', ev => {
       const t = ev.touches[0];
-      on = ev.touches.length === 1 && isCalView() && !S.modal && !S.openDrop && !!ev.target.closest('#calBody');
+      on = ev.touches.length === 1 && isCalView() && S.cal !== 'week' && !S.modal && !S.openDrop && !!ev.target.closest('#calBody');
       drag = false;
       if (on) { sx = t.clientX; sy = t.clientY; st = Date.now(); }
     }, { passive: true });
+    let peekDir = 0; // Month: the neighbouring month drawn beside the current one while dragging (+1 next, -1 previous)
+    function showPeek(b, dir) {
+      if (peekDir === dir) return;
+      const old = b.querySelector('.cal-peek'); if (old) old.remove();
+      const keep = S.cursor;
+      S.cursor = D.addMonths(keep, dir);
+      const html = renderMonth();
+      S.cursor = keep;
+      const p = document.createElement('div');
+      p.className = 'cal-peek'; p.setAttribute('aria-hidden', 'true'); p.style.left = dir > 0 ? '100%' : '-100%';
+      p.innerHTML = html; b.appendChild(p); peekDir = dir;
+    }
+    function dropPeek() { const p = document.querySelector('#calBody .cal-peek'); if (p) p.remove(); peekDir = 0; }
     document.addEventListener('touchmove', ev => {
       if (!on || reduceMotion()) return;
       const t = ev.touches[0], dx = t.clientX - sx, dy = t.clientY - sy;
@@ -5241,6 +5309,12 @@
       if (!drag) return;
       const b = $('#calBody'); if (!b) return;
       b.style.transition = 'none';
+      if (S.cal === 'month') {
+        // The next / previous month follows right behind, so you can see it as you pull it over.
+        showPeek(b, dx < 0 ? 1 : -1);
+        b.style.transform = 'translateX(' + dx + 'px)';
+        return;
+      }
       b.style.transform = 'translateX(' + dx * 0.85 + 'px)';
       b.style.opacity = String(Math.max(0.55, 1 - Math.abs(dx) / 900));
     }, { passive: true });
@@ -5252,12 +5326,54 @@
       if (!go) {
         // Not far enough: settle back into place.
         const b = $('#calBody');
-        if (drag && b) { b.style.transition = 'transform .2s ease-out, opacity .2s'; b.style.transform = ''; b.style.opacity = ''; }
+        if (drag && b) { b.style.transition = 'transform .2s ease-out, opacity .2s'; b.style.transform = ''; b.style.opacity = ''; setTimeout(dropPeek, 220); }
         drag = false; return;
       }
       hideToast(); S.sel = null;
+      if (S.cal === 'month' && drag && peekDir) {
+        // Finish the pull: the month you're dragging in slides fully into place, then becomes the real calendar.
+        const b = $('#calBody'), dir = peekDir;
+        b.style.transition = 'transform .22s cubic-bezier(.2, .8, .2, 1)';
+        b.style.transform = 'translateX(' + (dir > 0 ? '-100%' : '100%') + ')';
+        drag = false;
+        setTimeout(() => { S.cursor = D.addMonths(S.cursor, dir); S.weekLeft = null; peekDir = 0; render(); }, 230);
+        return;
+      }
       moveCursor(dx < 0 ? 1 : -1, 1, drag ? dx * 0.85 : 0);
       drag = false;
+    }, { passive: true });
+  })();
+  /* Phones: pull a bottom-sheet dialog down to close it — but only when the swipe STARTS with its content already
+     scrolled to the top (a swipe that's scrolling the content up never closes it). */
+  (function () {
+    let sy = 0, sx = 0, on = false, pulling = false, sheet = null;
+    const phone = () => window.matchMedia('(max-width: 700px)').matches;
+    document.addEventListener('touchstart', ev => {
+      on = false; pulling = false; sheet = null;
+      if (!S.modal || !phone() || ev.touches.length !== 1) return;
+      const m = ev.target.closest('#modal .modal'); if (!m || m.classList.contains('modal-center')) return;
+      if (ev.target.closest('input, textarea, select, .who-pop, .wk-strip, #wizMini .mini')) return;
+      const body = m.querySelector('.modal-b');
+      if (body && body.scrollTop > 0) return; // they're scrolled down: this swipe scrolls, it doesn't close
+      on = true; sheet = m; sy = ev.touches[0].clientY; sx = ev.touches[0].clientX;
+    }, { passive: true });
+    document.addEventListener('touchmove', ev => {
+      if (!on || !sheet) return;
+      const dy = ev.touches[0].clientY - sy, dx = ev.touches[0].clientX - sx;
+      if (!pulling) { if (dy > 10 && dy > Math.abs(dx) * 1.5) pulling = true; else if (dy < -4 || Math.abs(dx) > 12) { on = false; return; } else return; }
+      sheet.style.transition = 'none';
+      sheet.style.transform = 'translateY(' + Math.max(0, dy) + 'px)';
+    }, { passive: true });
+    document.addEventListener('touchend', ev => {
+      if (!on || !sheet) return;
+      const dy = ev.changedTouches[0].clientY - sy, m = sheet;
+      on = false; sheet = null;
+      if (!pulling) return;
+      pulling = false;
+      if (dy > 90) {
+        m.style.transition = 'transform .18s ease-in'; m.style.transform = 'translateY(100%)';
+        setTimeout(() => { m.style.transform = ''; m.style.transition = ''; closeModal(); }, 180);
+      } else { m.style.transition = 'transform .2s ease-out'; m.style.transform = ''; }
     }, { passive: true });
   })();
   /* Request form: swipe the small calendar left / right for the next / previous month. */
@@ -5420,7 +5536,7 @@
     dayShift(el) {
       if (S.dayPanel && $('.dpanel')) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); return render(); } S.cursor = D.add(S.cursor, Number(el.dataset.v)); S.sel = null; render(); },
     calNext() { moveCursor(1); },
-    calToday() { S.today = localToday(); S.cursor = S.today; render(); },
+    calToday() { S.today = localToday(); S.cursor = S.today; S.weekLeft = null; render(); },
     dayList(el) { A.pickDay(el); },
     // Day view's Back returns to the view the day was opened from.
     dayBack() { S.cal = S.prevCal || 'month'; S.sel = null; hideToast(); render(); },
@@ -5437,7 +5553,7 @@
       closeModal(); render();
     },
     calMode(el) {
-      S.cal = el.dataset.v;
+      S.cal = el.dataset.v; S.weekLeft = null; // Week opens on Sunday of the week
       // With a day open in the side panel, switching views centres on that day.
       if (S.dayPanel && $('.dpanel')) S.cursor = S.dayPanel;
       if (S.cal === 'quad') S.cursor = D.monthStart(S.cursor);
