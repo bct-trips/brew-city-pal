@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792576825"></script>
+    <script src="config.js?v=1792577245"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2153,6 +2153,15 @@
     .cal > .cal-top .datenav { flex: 1 1 100%; }
     .cal > .calbar .datenav { display: none; }
   }
+  /* Settings: a small ⓘ after a title instead of paragraphs of help (hover = tooltip, tap = toast). */
+  .cfg-tip { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-left: 2px; padding: 0; border: 0; border-radius: 50%;
+    background: none; color: var(--muted); cursor: help; vertical-align: middle; }
+  .cfg-tip:hover, .cfg-tip:focus-visible { color: var(--ink); background: var(--card-2); }
+  .cs-own { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 13.5px; color: var(--muted); }
+  /* Admin tables (Positions, Unit badges): disabled rows are dimmed; Can see shows the letter squares in a row. */
+  .rtable tr.is-off td:not(.acts-cell) { opacity: .55; }
+  .see-sq { display: inline-flex; gap: 4px; }
+  .see-sq .idb { margin-right: 0; }
 </style>
 
   </head>
@@ -2170,6 +2179,7 @@
   /* Icons (Lucide, inlined)                                           */
   /* ================================================================ */
   const ICONS = {
+    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
     calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
     list: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
     clipboard: '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
@@ -2262,7 +2272,8 @@
     list.forEach(r => { ROLE_INFO[r.name] = r; });
   }
   /** Positions this member can see (Admin → Positions → Can see). Admins and "Everyone" positions: all of them. */
-  const seeRoles = () => Array.isArray(S.scope) ? ROLES.filter(r => S.scope.includes(r)) : ROLES;
+  const seeRoles = () => (Array.isArray(S.scope) ? ROLES.filter(r => S.scope.includes(r)) : ROLES)
+    .filter(r => !roleInfo(r).disabled || S.users.some(u => u.role === r)); // a disabled position nobody holds is hidden
   const roleInfo = r => ROLE_INFO[r] || ROLE_DEF[r] || {};
   const roleL = r => roleInfo(r).letter || String(r || 'O')[0].toUpperCase();
   /** Class for the position square: white / black / grey keep the original P / B / O look; others reuse the unit badge colours. */
@@ -2499,7 +2510,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.4'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.5'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -2704,7 +2715,7 @@
   function toast(msg, kind, ms) {
     const el = $('#toast');
     const cls = kind === 'error' ? 'error' : kind === 'hint' ? 'hint-t' : '';
-    const ic = kind === 'busy' ? '<span class="spin"></span>' : kind === 'error' ? icon('alert', 16) : kind === 'hint' ? icon('calendar', 16) : icon('check', 16);
+    const ic = kind === 'busy' ? '<span class="spin"></span>' : kind === 'error' ? icon('alert', 16) : kind === 'hint' ? icon('calendar', 16) : kind === 'info' ? icon('info', 16) : icon('check', 16);
     el.innerHTML = '<div class="' + cls + '">' + ic + '<span>' + esc(msg) + '</span></div>';
     el.classList.add('show');
     clearTimeout(toastTimer);
@@ -4349,17 +4360,22 @@
   }
 
   /** New badge builder: live preview, code, name and colour; Cancel · Add badge. */
-  function openBadgeBuilder() {
-    S.badgeDraft = { code: '' };
-    const html = modalHead('New badge', 'plus') + '<div class="modal-b unit-row badge-builder">' +
-      '<div class="bb-prev"><span class="ub ub-crimson" id="nuPrev">NEW</span></div>' +
-      '<div class="row"><div class="field cfg-code"><label for="nuCode">Code</label><input id="nuCode" maxlength="5" placeholder="GRB" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-model="badgeDraft.code" data-live="badgePrev" autofocus></div>' +
-      '<div class="field"><label for="nuUName">Name</label><input id="nuUName" maxlength="40" placeholder="Green Bay" autocomplete="off"></div></div>' +
-      '<div class="field"><span class="lbl">Colour</span>' + swatches('st-new', 'crimson', '') + '</div>' +
+  function openBadgeBuilder(code) {
+    const un = code ? unitsList().find(x => x.code === code) : null;
+    S.badgeDraft = { code: un ? un.code : '' }; S.badgeEdit = un ? un.code : '';
+    const st = un ? un.style : 'crimson';
+    const html = modalHead(un ? 'Edit ' + un.code + ' badge' : 'New badge', un ? 'pencil' : 'plus') + '<div class="modal-b unit-row badge-builder">' +
+      '<div class="bb-prev"><span class="ub ub-' + st + '" id="nuPrev">' + esc(un ? un.code : 'NEW') + '</span></div>' +
+      '<div class="row"><div class="field cfg-code"><label for="nuCode">Code</label><input id="nuCode" maxlength="5" placeholder="GRB" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-model="badgeDraft.code" data-live="badgePrev"' +
+        (un ? ' value="' + esc(un.code) + '" disabled' : ' autofocus') + '></div>' +
+      '<div class="field"><label for="nuUName">Name</label><input id="nuUName" maxlength="40" placeholder="Green Bay" autocomplete="off" value="' + esc(un ? un.name : '') + '"></div></div>' +
+      '<div class="field"><span class="lbl">Colour</span>' + swatches('st-new', st, '') + '</div>' +
       '<div class="err" id="nuErr"></div></div>' +
-      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="addUnit">' + icon('plus', 18) + 'Add badge</button></div>';
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="addUnit">' + icon(un ? 'check' : 'plus', 18) + (un ? 'Save' : 'Add badge') + '</button></div>';
     openModal('badge', html);
   }
+  /** Small ⓘ beside a setting's title: one short sentence on hover, or as a toast when tapped (phones). */
+  const tip = t => ' <button type="button" class="cfg-tip" data-act="showTip" data-tip="' + esc(t) + '" title="' + esc(t) + '" aria-label="' + esc(t) + '">' + icon('info', 15) + '</button>';
   /** Position colour picker: the position square in each colour. */
   function roleSwatches(name, cur, letter) {
     return '<div class="swatches" role="radiogroup" aria-label="Position colour">' + ROLE_STYLES.map(st =>
@@ -4373,44 +4389,56 @@
     const chip = (val, label, on) => '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="roleView" data-k="' + esc(key) + '" data-v="' + esc(val) + '">' + (on ? icon('check', 16) : '') + esc(label) + '</button>';
     return '<div class="push-btns can-see">' + chip('all', 'Everyone', v === 'all') +
       names.map(n => chip(n, rolePl(n), v === 'all' || (Array.isArray(v) && v.includes(n)))).join('') + '</div>' +
-      (v === 'own' ? '<p class="cfg-help cs-own">' + icon('lock', 14) + ' Nothing picked: members see only their own requests, plus open / overbooked / full days for their position.</p>' : '');
+      (v === 'own' ? '<p class="cs-own">' + icon('lock', 14) + ' Own requests only</p>' : '');
   }
   /** One position's fields (Admin list row and the New position builder share them). */
   function roleFields(r, key) {
     const rv = rowView(key, r);
-    return '<div class="row"><div class="field cfg-code"><label for="rl-' + key + '">Letter</label><input id="rl-' + key + '" class="rl-letter" maxlength="1" value="' + esc(r.letter || '') + '" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-live="rolePrev" data-change="autoRole"></div>' +
-      '<div class="field cfg-code"><label for="rq-' + key + '">Max on leave</label><input id="rq-' + key + '" class="rl-quota" type="number" inputmode="numeric" min="0" max="99" value="' + (Number(r.quota) || 0) + '" data-change="autoRole"></div></div>' +
+    return '<div class="row"><div class="field cfg-code"><label for="rl-' + key + '">Letter</label><input id="rl-' + key + '" class="rl-letter" maxlength="1" value="' + esc(r.letter || '') + '" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-live="rolePrev"></div>' +
+      '<div class="field cfg-code"><label for="rq-' + key + '">Max on leave</label><input id="rq-' + key + '" class="rl-quota" type="number" inputmode="numeric" min="0" max="99" value="' + (Number(r.quota) || 0) + '"></div></div>' +
       '<div class="field"><span class="lbl-sm">Can see</span><div id="cs-' + key + '" data-self="' + esc(r.name || '') + '">' + canSeeHtml(key, r.name, rv) + '</div></div>' +
       '<div class="field"><span class="lbl">Colour</span>' + roleSwatches('rs-' + key, r.style || 'grey', r.letter) + '</div>';
   }
-  /** Positions panel body: built-ins can't be renamed or deleted; added ones can be deleted once nobody holds them. */
+  /** Who a position can see, as small letter squares (or Everyone / Own only). */
+  function seeCell(r) {
+    const v = r.view === 'same' ? [r.name] : r.view || 'all';
+    if (v === 'all') return '<span class="muted">Everyone</span>';
+    if (v === 'own') return '<span class="muted">Own only</span>';
+    return '<span class="see-sq">' + v.filter(n => ROLES.includes(n)).map(n => '<span class="idb"><span class="idb-r ' + roleCls(n) + '" title="' + esc(rolePl(n)) + '">' + esc(roleL(n)) + '</span></span>').join('') + '</span>';
+  }
+  /** Positions table: badge · name · max on leave · can see · members · Edit / Disable / Delete. Tap a row to edit. */
   function adminRoles() {
-    return ROLES.map((name, i) => {
+    const rows = ROLES.map(name => {
       const r = roleInfo(name), used = S.users.filter(u => u.role === name).length, builtIn = !!ROLE_DEF[name];
-      return '<div class="cfg-unit role-row" data-name="' + esc(name) + '" data-k="r' + i + '"><div class="cfg-unit-h"><span class="ub-prev"><span class="idb"><span class="idb-r ' + roleCls(name) + '">' + esc(roleL(name)) + '</span></span></span>' +
-          (builtIn ? '<b class="role-nm">' + esc(roleName(name)) + '</b>' : '<input id="rn-r' + i + '" class="un-name rl-name" value="' + esc(name) + '" aria-label="Position name" maxlength="24" data-change="autoRole">') + '</div>' +
-        roleFields(r, 'r' + i) +
-        '<div class="cfg-foot"><span class="meta">' + plural(used, 'member') + (builtIn ? ' · built in' : '') + '</span>' +
-        (used || builtIn ? '' : '<button class="btn del" data-act="deleteRole" data-name="' + esc(name) + '">' + icon('trash', 18) + ' Delete</button>') + '</div></div>';
-    }).join('') +
-      '<div class="cfg-foot cfg-new-btn"><button class="btn primary" data-act="newRole">' + icon('plus', 18) + 'New position</button></div>';
+      return '<tr class="' + (r.disabled ? 'is-off' : '') + '" data-act="editRole" data-name="' + esc(name) + '" tabindex="0">' +
+        '<td><span class="idb"><span class="idb-r ' + roleCls(name) + '">' + esc(roleL(name)) + '</span></span></td>' +
+        '<td class="strong">' + esc(roleName(name)) + (r.disabled ? ' <span class="badge">Disabled</span>' : '') + '</td>' +
+        '<td class="num">' + (Number(r.quota) ? Number(r.quota) : '<span class="muted">—</span>') + '</td>' +
+        '<td>' + seeCell(Object.assign({ name }, r)) + '</td>' +
+        '<td class="num">' + used + '</td>' +
+        '<td class="acts-cell"><div class="row-acts">' +
+          '<button class="btn sm act" data-act="editRole" data-name="' + esc(name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
+          '<button class="btn sm act" data-act="toggleRole" data-name="' + esc(name) + '" title="' + (r.disabled ? 'Enable' : 'Disable') + '">' + icon(r.disabled ? 'check' : 'ban', 13) + '<span class="bl">' + (r.disabled ? 'Enable' : 'Disable') + '</span></button>' +
+          (used || builtIn ? '' : '<button class="btn sm del act" data-act="deleteRole" data-name="' + esc(name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
+        '</div></td></tr>';
+    }).join('');
+    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Position</th><th scope="col" class="num">Max on leave</th>' +
+      '<th scope="col">Can see</th><th scope="col" class="num">Members</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
-  /** New position builder: name, letter, max on leave, visibility and colour; Cancel · Add position. */
-  function openRoleBuilder() {
-    S.roleView = Object.assign({}, S.roleView, { nr: 'all' });
-    const html = modalHead('New position', 'plus') + '<div class="modal-b role-row badge-builder" data-k="nr">' +
-      '<div class="bb-prev"><span class="idb"><span class="idb-r idb-o" id="nrPrev">?</span></span></div>' +
-      '<div class="field"><label for="nrName">Name</label><input id="nrName" class="rl-name" maxlength="24" placeholder="Maintenance" autocomplete="off" autofocus></div>' +
-      roleFields({ letter: '', style: 'teal', quota: 0, view: 'all' }, 'nr') +
+  /** Position editor (new or existing): name, letter, max on leave, Can see and colour; Cancel · Save. */
+  function openRoleEditor(name) {
+    const r = name ? Object.assign({ name }, roleInfo(name)) : { name: '', letter: '', style: 'teal', quota: 0, view: 'all' };
+    const builtIn = !!ROLE_DEF[name];
+    S.roleView = Object.assign({}, S.roleView, { ed: r.view === 'same' ? [name] : r.view || 'all' });
+    const html = modalHead(name ? 'Edit ' + roleName(name) : 'New position', name ? 'pencil' : 'plus') +
+      '<div class="modal-b role-row badge-builder" data-k="ed" data-old="' + esc(name || '') + '">' +
+      '<div class="bb-prev"><span class="idb"><span class="idb-r ' + (name ? roleCls(name) : styleCls('teal')) + '" id="nrPrev">' + esc(r.letter || '?') + '</span></span></div>' +
+      '<div class="field"><label for="nrName">Name</label>' + (builtIn ? '<input id="nrName" class="rl-name" value="' + esc(name) + '" disabled>'
+        : '<input id="nrName" class="rl-name" maxlength="24" placeholder="Maintenance" autocomplete="off" value="' + esc(r.name) + '"' + (name ? '' : ' autofocus') + '>') + '</div>' +
+      roleFields(r, 'ed') +
       '<div class="err" id="nrErr"></div></div>' +
-      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="addRole">' + icon('plus', 18) + 'Add position</button></div>';
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="saveRoleEdit">' + icon(name ? 'check' : 'plus', 18) + (name ? 'Save' : 'Add position') + '</button></div>';
     openModal('role', html);
-  }
-  /** Read a position row / builder into {name, letter, style, quota, view}. */
-  function readRole(row, name) {
-    const k = row.dataset.k;
-    return { name: name, letter: row.querySelector('.rl-letter').value.trim().toUpperCase(), style: (row.querySelector('.swatches input:checked') || {}).value || 'grey',
-      quota: Number(row.querySelector('.rl-quota').value), view: rowView(k, { name: row.dataset.name || name, view: roleInfo(row.dataset.name || name).view }) };
   }
   function roleError(r, isNew) {
     if (!/^[A-Za-z][A-Za-z0-9 &\/-]{1,23}$/.test(r.name)) return 'Name must be 2–24 letters (e.g. Maintenance).';
@@ -4422,31 +4450,28 @@
   /** Settings: which positions Clear filters goes back to. */
   function viewRolesPanel() {
     const cur = defaultRoles();
-    return '<div class="panel"><h3>' + icon('sliders', 16) + ' Default positions</h3>' +
-      '<p class="cfg-help">The positions the calendar shows when you open the app and when you tap <b>Clear</b> on the filters.</p>' +
+    return '<div class="panel"><h3>' + icon('sliders', 16) + ' Default positions' + tip('What the calendar shows on open and after Clear filters. Admin alerts follow it too.') + '</h3>' +
       '<div class="push-btns">' + seeRoles().map(r => {
         const on = cur.includes(r);
         return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="viewRole" data-v="' + esc(r) + '">' + (on ? icon('check', 18) : '') + esc(rolePl(r)) + '</button>';
       }).join('') + '</div></div>';
   }
   /** Unit badges panel body. Any error shows inline instead of leaving the panel blank. */
+  /** Unit badges table: badge · name · members · Edit / Disable / Delete. Tap a row to edit. */
   function adminUnits() {
-    try {
-      return (
-        unitsList().map(un => {
-          const used = S.users.filter(u => u.unit === un.code).length;
-          return '<div class="cfg-unit unit-row"><div class="cfg-unit-h"><span class="ub-prev">' + unitBadge(un.code) + '</span>' +
-            '<input id="un-' + esc(un.code) + '" class="un-name" data-code="' + esc(un.code) + '" value="' + esc(un.name) + '" aria-label="' + esc(un.code) + ' name" maxlength="40" data-change="saveUnit"></div>' +
-            swatches('st-' + un.code, un.style, un.code) +
-            '<div class="cfg-foot"><span class="meta">' + plural(used, 'member') + '</span>' +
-            (used ? '' : '<button class="btn del" data-act="deleteUnit" data-code="' + esc(un.code) + '">' + icon('trash', 18) + ' Delete</button>') + '</div></div>';
-        }).join('') +
-        // A new badge is made in its own builder (a dialog), not an always-open form.
-        '<div class="cfg-foot cfg-new-btn"><button class="btn primary" data-act="newBadge">' + icon('plus', 18) + 'New badge</button></div>'
-      );
-    } catch (e) {
-      return '<div class="msg e">' + icon('alert', 15) + '<span>Unit badges couldn’t load: ' + esc(String(e && e.message || e)) + '</span></div>';
-    }
+    const rows = unitsList().map(un => {
+      const used = S.users.filter(u => u.unit === un.code).length;
+      return '<tr class="' + (un.disabled ? 'is-off' : '') + '" data-act="editUnit" data-code="' + esc(un.code) + '" tabindex="0">' +
+        '<td>' + unitBadge(un.code) + '</td>' +
+        '<td class="strong">' + esc(un.name) + (un.disabled ? ' <span class="badge">Disabled</span>' : '') + '</td>' +
+        '<td class="num">' + used + '</td>' +
+        '<td class="acts-cell"><div class="row-acts">' +
+          '<button class="btn sm act" data-act="editUnit" data-code="' + esc(un.code) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
+          '<button class="btn sm act" data-act="toggleUnit" data-code="' + esc(un.code) + '" title="' + (un.disabled ? 'Enable' : 'Disable') + '">' + icon(un.disabled ? 'check' : 'ban', 13) + '<span class="bl">' + (un.disabled ? 'Enable' : 'Disable') + '</span></button>' +
+          (used ? '' : '<button class="btn sm del act" data-act="deleteUnit" data-code="' + esc(un.code) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
+        '</div></td></tr>';
+    }).join('');
+    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Name</th><th scope="col" class="num">Members</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
   /* Roster page (admin): add members, edit, reset PINs, deactivate / reactivate. Opened from the Roster tab → Manage. */
@@ -4489,9 +4514,8 @@
           '<button class="btn sm del act" data-act="delBlackout" data-id="' + esc(b.id) + '" aria-label="Delete blackout ' + esc(boSpan(b)) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>' +
         '</div></td></tr>';
     }).join('');
-    return '<div class="panel"><div class="cfg-h"><h3>' + icon('ban', 16) + ' Blackout dates</h3>' +
+    return '<div class="panel"><div class="cfg-h"><h3>' + icon('ban', 16) + ' Blackout dates' + tip('Days leave or passes shouldn’t be taken. Requests on them show a conflict until you allow, move, deny or delete them.') + '</h3>' +
         '<button class="btn primary" data-act="newBlackout">' + icon('plus', 18) + 'Add blackout</button></div>' +
-      '<p class="cfg-help">Days when leave and / or passes shouldn’t be taken. Everyone sees them on the calendar and in their lists. Requests on these days — including approved ones — show a conflict until you allow, move, deny or delete them.</p>' +
       (rows ? '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Dates</th><th scope="col">Blacks out</th><th scope="col">Reason</th><th scope="col" class="num">To review</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<p class="meta">No blackout dates yet.</p>') + '</div>';
   }
@@ -4510,22 +4534,24 @@
       blackoutPanel() +
 
       // Privacy: members see only their own schedule plus day availability. Admins always see everything.
-      '<div class="panel"><div class="cfg-row-tog"><div><h3>' + icon('lock', 16) + ' Hide user schedules</h3>' +
-        '<p class="cfg-help">Members see only their own requests. Other days show just green, orange or red availability for their position, conflicts show how many other leave requests are involved but never who, and All Requests is hidden. Admin mode always shows everything.</p></div>' +
+      '<div class="panel"><div class="cfg-row-tog"><div><h3>' + icon('lock', 16) + ' Hide user schedules' + tip('Members see only their own requests plus day availability. Admin mode always shows everything.') + '</h3>' +
+        '</div>' +
         '<button type="button" class="btn chip-tog' + (st.hideSchedules ? ' on' : '') + '" aria-pressed="' + !!st.hideSchedules + '" data-act="hideSchedules">' + (st.hideSchedules ? icon('check', 18) + 'On' : 'Off') + '</button></div>' +
-        (st.hideSchedules ? '<p class="cfg-help cfg-note">' + icon('alert', 14) + ' You’re in admin mode, so you still see everyone. Lock admin mode (Profile) to see what members see.</p>' : '') + '</div>' +
+        '</div>' +
 
+
+      // Unit badges
+      '<div class="panel"><div class="cfg-h"><h3>' + icon('users', 16) + ' Unit badges' + tip('Disabled units aren’t offered to new members.') + '</h3>' +
+        '<button class="btn primary" data-act="newBadge">' + icon('plus', 18) + 'New badge</button></div>' +
+        adminUnits() + '</div>' +
 
       // Positions: badge, daily leave max and whose schedules each position can see.
-      '<div class="panel"><h3>' + icon('users', 16) + ' Positions</h3>' +
-        '<p class="cfg-help"><b>Max on leave</b>: how many of a position may be on Leave the same day (approved + pending; 0 = no limit, passes never count). ' +
-        '<b>Can see</b>: whose schedules its members see — Everyone, or any mix of positions (e.g. Pilots see Pilots and Booms). With no positions picked they see only their own requests, plus green / orange / red availability for their position. Positions added later are included only where Everyone is on. Members tagged <b>Manager</b> (Roster → their card) always see every position.' +
-        (st.hideSchedules ? ' <b>Hide user schedules is on</b>, so every position sees only its own requests right now.' : '') + '</p>' +
+      '<div class="panel"><div class="cfg-h"><h3>' + icon('users', 16) + ' Positions' + tip('Max on leave: per day, 0 = no limit. Can see: whose schedules that position sees. Managers see everyone. Disabled positions aren’t offered to new members.') + '</h3>' +
+          '<button class="btn primary" data-act="newRole">' + icon('plus', 18) + 'New position</button></div>' +
         adminRoles() + '</div>' +
 
       // Request length rules
-      '<div class="panel"><h3>' + icon('calendar', 16) + ' Request length</h3>' +
-        '<p class="cfg-help">Most days allowed in one request. <b>Limit</b> blocks longer requests; <b>Warn</b> allows them but flags them for leadership.</p>' +
+      '<div class="panel"><h3>' + icon('calendar', 16) + ' Request length' + tip('Most days in one request. Limit blocks longer ones; Warn allows them but flags them.') + '</h3>' +
         ['Leave', 'Pass'].map(t => {
           const r = lenRule(t), m = (S.lenDraft || {})[t] || r.mode;
           return '<div class="cfg-len"><span class="cfg-len-t"><span class="badge t-' + t.toLowerCase() + '">' + t + '</span></span>' +
@@ -4534,18 +4560,11 @@
         }).join('') +
         '</div>' +
 
-      // Unit badges
-      '<div class="panel"><h3>' + icon('users', 16) + ' Unit badges</h3>' +
-        '<p class="cfg-help">Each unit gets its own badge colour so members are easy to tell apart.</p>' +
-        adminUnits() + '</div>' +
-
       // PINs
-      '<div class="panel panel-warn"><h3>' + icon('key', 16) + ' Default PIN</h3>' +
-        '<p class="cfg-help">The temporary PIN for new members and anyone whose PIN you reset. They must replace it at their next sign-in.</p>' +
+      '<div class="panel panel-warn"><h3>' + icon('key', 16) + ' Default PIN' + tip('Temporary PIN for new members and PIN resets. They must change it at next sign-in.') + '</h3>' +
         pinPair('dp1', 'dp2', 'New default PIN', 'Confirm') +
         '<div class="cfg-foot"><button class="btn" data-act="saveDefaultPin">Update default PIN</button></div></div>' +
-      '<div class="panel panel-danger"><h3>' + icon('shield', 16) + ' Admin PIN</h3>' +
-        '<p class="cfg-help">Unlocks admin mode from Profile.</p>' +
+      '<div class="panel panel-danger"><h3>' + icon('shield', 16) + ' Admin PIN' + tip('Unlocks admin mode from Profile.') + '</h3>' +
         pinPair('pk1', 'pk2', 'New admin PIN', 'Confirm') +
         '<div class="cfg-foot"><button class="btn" data-act="savePasskey">Update admin PIN</button></div></div>' +
       '</div></section>';
@@ -4864,7 +4883,7 @@
           const on = S.notePrefs[k[0]] !== false;
           return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="notePref" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>';
         }).join('') + '</div></div>' +
-      (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin alerts</b> — new requests, member edits and deletions, new accounts — only for members in your <b>Default positions</b>.</p><div class="push-btns">' +
+      (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin alerts</b>' + tip('New requests, edits, deletions and sign-ups for members in your Default positions.') + '</p><div class="push-btns">' +
         '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' : '') +
       '';
   }
@@ -5132,8 +5151,8 @@
       '<div class="field"><label for="' + p + 'Last">Last name</label><input id="' + p + 'Last" value="' + esc(nl) + '"></div>' +
       // Rank can be left blank ("—").
       '<div class="row"><div class="field"><label for="' + p + 'Rank">Rank</label>' + sel('Rank', [['', '—']].concat(RANKS.indexOf(u.rank) < 0 && u.rank ? RANKS.concat([u.rank]) : RANKS), u.rank) + '</div>' +
-      '<div class="field"><label for="' + p + 'Role">Position</label>' + sel('Role', ROLES.map(r => [r, roleName(r)]), u.role) + '</div></div>' +
-      '<div class="field"><label for="' + p + 'Unit">Unit</label>' + sel('Unit', unitsList().map(x => x.code), u.unit) + '</div>' +
+      '<div class="field"><label for="' + p + 'Role">Position</label>' + sel('Role', ROLES.filter(r => !roleInfo(r).disabled || r === u.role).map(r => [r, roleName(r)]), u.role) + '</div></div>' +
+      '<div class="field"><label for="' + p + 'Unit">Unit</label>' + sel('Unit', unitsList().filter(x => !x.disabled || x.code === u.unit).map(x => x.code), u.unit) + '</div>' +
       // No PIN here: new members start on the default PIN (Admin → Default PIN); use Reset PIN to send someone back to it.
       (u.id ? '' : '<p class="meta pin-note">' + icon('key', 14) + ' Signs in with the default PIN, then sets their own.</p>');
   }
@@ -6146,7 +6165,6 @@
     previewUnit(el) {
       const prev = el.closest('.unit-row') && el.closest('.unit-row').querySelector('.ub');
       if (prev) prev.className = 'ub ub-' + el.value;
-      if (el.dataset.code) A.saveUnit(el); // an existing badge saves as soon as a colour is picked
     },
     openRoster() { S.view = 'roster'; S.adq = ''; render(); },
     backAdmin() { S.view = 'people'; render(); }, // Manage roster ← Roster tab
@@ -6156,24 +6174,26 @@
       $$('.cfg-row').forEach(r => { r.hidden = !!q && r.dataset.q.indexOf(q) < 0; });
       const none = $('.cfg-none'); if (none) none.hidden = !!$('.cfg-row:not([hidden])');
     },
-    async saveUnit(el) {
-      const code = el.dataset.code, row = el.closest('.unit-row');
-      const unit = { code, name: row.querySelector('.un-name').value, style: (row.querySelector('.swatches input:checked') || {}).value };
-      const cur = unitsList().find(x => x.code === code) || {};
-      if (cur.name === unit.name && cur.style === unit.style) return; // nothing changed
-      save(() => { S.settings.units = unitsList().map(x => x.code === code ? Object.assign({}, x, unit) : x); }, 'apiSaveUnit', S.token, unit);
-      render(); toast(code + ' badge saved', 'ok', 1200);
+    editUnit(el) { openBadgeBuilder(el.dataset.code); },
+    toggleUnit(el) {
+      const code = el.dataset.code, cur = unitsList().find(x => x.code === code); if (!cur) return;
+      const unit = Object.assign({}, cur, { disabled: !cur.disabled });
+      if (unit.disabled && unitsList().every(x => x.code === code || x.disabled)) return toast('Keep at least one unit enabled.', 'error');
+      S.nextSyncTab = 'admin';
+      save(() => { S.settings.units = unitsList().map(x => x.code === code ? unit : x); }, 'apiSaveUnit', S.token, unit);
+      render(); toast(code + (unit.disabled ? ' disabled' : ' enabled'), 'ok', 1500);
     },
-    newBadge() { openBadgeBuilder(); },
+    newBadge() { openBadgeBuilder(''); },
     badgePrev() { const p = $('#nuPrev'), c = $('#nuCode'); if (p && c) p.textContent = c.value.trim().toUpperCase() || 'NEW'; },
     async addUnit() {
-      const code = $('#nuCode').value.trim().toUpperCase(), err = $('#nuErr');
+      const editing = S.badgeEdit, code = editing || $('#nuCode').value.trim().toUpperCase(), err = $('#nuErr');
       if (!/^[A-Z0-9]{2,5}$/.test(code)) { err.textContent = 'The code must be 2–5 letters or numbers.'; return; }
-      if (unitsList().some(x => x.code === code)) { err.textContent = code + ' already exists — edit it in the list instead.'; return; }
-      const unit = { code, name: $('#nuUName').value.trim() || code, style: ($('#modal .swatches input:checked') || {}).value || 'crimson' };
+      if (!editing && unitsList().some(x => x.code === code)) { err.textContent = code + ' already exists — edit it in the list instead.'; return; }
+      const cur = editing ? unitsList().find(x => x.code === code) || {} : {};
+      const unit = { code, name: $('#nuUName').value.trim() || code, style: ($('#modal .swatches input:checked') || {}).value || 'crimson', disabled: !!cur.disabled };
       S.nextSyncTab = 'admin';
-      save(() => { S.settings.units = unitsList().concat([unit]); }, 'apiSaveUnit', S.token, unit);
-      closeModal(); render(); toast(code + ' badge added', 'ok', 1500);
+      save(() => { S.settings.units = editing ? unitsList().map(x => x.code === code ? unit : x) : unitsList().concat([unit]); }, 'apiSaveUnit', S.token, unit);
+      closeModal(); render(); toast(code + (editing ? ' badge saved' : ' badge added'), 'ok', 1500);
     },
     async deleteUnit(el) {
       if (!confirm('Delete the ' + el.dataset.code + ' badge?')) return;
@@ -6211,6 +6231,7 @@
       render(); toast('Length rules saved', 'ok', 1200);
     },
     // Can see: Everyone, or tap positions on / off. With none picked, members see only their own requests.
+    showTip(el) { toast(el.dataset.tip, 'info', 3500); },
     roleView(el) {
       const k = el.dataset.k, box = $('#cs-' + k), self = box.dataset.self, v = el.dataset.v;
       const cur = rowView(k, { name: self, view: roleInfo(self).view });
@@ -6224,48 +6245,41 @@
       }
       S.roleView = Object.assign({}, S.roleView, { [k]: next });
       box.innerHTML = canSeeHtml(k, self, next);
-      A.autoRole(box);
     },
     previewRole(el) {
-      const row = el.closest('.role-row'), sq = row && row.querySelector('.ub-prev .idb-r, .bb-prev .idb-r');
+      const row = el.closest('.role-row'), sq = row && row.querySelector('.bb-prev .idb-r');
       if (sq) sq.className = 'idb-r ' + styleCls(el.value);
-      A.autoRole(el);
-    },
-    /** Positions auto-save: any change in an existing position's row (not the New position builder) saves it. */
-    autoRole(el) {
-      const row = el.closest('.role-row');
-      if (row && row.dataset.name) A.saveRole({ dataset: { name: row.dataset.name }, closest: () => row });
     },
     rolePrev(el) {
       const row = el.closest('.role-row'), L = el.value.trim().toUpperCase() || '?';
       if (!row) return;
-      row.querySelectorAll('.ub-prev .idb-r, .bb-prev .idb-r, .rsw .ub').forEach(x => { x.textContent = L; });
+      row.querySelectorAll('.bb-prev .idb-r, .rsw .ub').forEach(x => { x.textContent = L; });
     },
-    saveRole(el) {
-      const old = el.dataset.name, row = el.closest('.role-row');
-      const nameIn = row.querySelector('.rl-name');
-      const r = readRole(row, nameIn ? nameIn.value.trim().replace(/\s+/g, ' ') : old);
-      const err = roleError(r, false) || (r.name.toLowerCase() !== old.toLowerCase() && ROLES.some(x => x.toLowerCase() === r.name.toLowerCase()) ? r.name + ' already exists.' : '');
-      if (err) { toast(err, 'error'); S.roleView = null; return render(); } // put the saved values back
-      const was = roleInfo(old);
-      if (r.name === old && r.letter === was.letter && r.style === was.style && Number(r.quota) === Number(was.quota) && JSON.stringify(r.view) === JSON.stringify(was.view || 'all')) return;
-      save(() => {
-        S.settings.roles = ROLES.map(n => n === old ? r : roleInfo(n));
-        if (r.name !== old) S.users.forEach(u => { if (u.role === old) u.role = r.name; });
-        setRoles(S.settings.roles); reindex();
-      }, 'apiSaveRole', S.token, r, old);
-      S.roleView = null; // drafts are keyed by row; the saved values now come from the positions list
-      render(); toast(r.name + ' saved', 'ok', 1200);
-    },
-    newRole() { openRoleBuilder(); },
-    addRole() {
-      const row = $('#modal .role-row'), err = $('#nrErr');
-      const r = readRole(row, $('#nrName').value.trim().replace(/\s+/g, ' '));
-      const msg = roleError(r, true);
+    newRole() { openRoleEditor(''); },
+    editRole(el) { openRoleEditor(el.dataset.name); },
+    /** Save the position editor (new or existing). Renaming an added position moves its members with it. */
+    saveRoleEdit() {
+      const row = $('#modal .role-row'), err = $('#nrErr'), old = row.dataset.old;
+      const name = ROLE_DEF[old] ? old : $('#nrName').value.trim().replace(/\s+/g, ' ');
+      const r = { name, letter: row.querySelector('.rl-letter').value.trim().toUpperCase(), style: (row.querySelector('.swatches input:checked') || {}).value || 'grey',
+        quota: Number(row.querySelector('.rl-quota').value), view: rowView('ed', { name: old || name, view: roleInfo(old).view }), disabled: !!roleInfo(old).disabled };
+      const msg = roleError(r, !old) || (old && r.name.toLowerCase() !== old.toLowerCase() && ROLES.some(x => x.toLowerCase() === r.name.toLowerCase()) ? r.name + ' already exists.' : '');
       if (msg) { err.textContent = msg; return; }
       S.nextSyncTab = 'admin';
-      save(() => { S.settings.roles = ROLES.map(roleInfo).concat([r]); setRoles(S.settings.roles); }, 'apiSaveRole', S.token, r, '');
-      closeModal(); render(); toast(r.name + ' added', 'ok', 1500);
+      save(() => {
+        S.settings.roles = old ? ROLES.map(n => n === old ? r : roleInfo(n)) : ROLES.map(roleInfo).concat([r]);
+        if (old && r.name !== old) S.users.forEach(u => { if (u.role === old) u.role = r.name; });
+        setRoles(S.settings.roles); reindex();
+      }, 'apiSaveRole', S.token, r, old || '');
+      S.roleView = null;
+      closeModal(); render(); toast(r.name + (old ? ' saved' : ' added'), 'ok', 1500);
+    },
+    toggleRole(el) {
+      const name = el.dataset.name, r = Object.assign({ name }, roleInfo(name), { disabled: !roleInfo(name).disabled });
+      if (r.disabled && ROLES.every(n => n === name || roleInfo(n).disabled)) return toast('Keep at least one position enabled.', 'error');
+      S.nextSyncTab = 'admin';
+      save(() => { S.settings.roles = ROLES.map(n => n === name ? r : roleInfo(n)); setRoles(S.settings.roles); }, 'apiSaveRole', S.token, r, name);
+      render(); toast(roleName(name) + (r.disabled ? ' disabled' : ' enabled'), 'ok', 1500);
     },
     deleteRole(el) {
       const name = el.dataset.name;
