@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792576729"></script>
+    <script src="config.js?v=1792576825"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -134,10 +134,10 @@
   .calbar .grp { display: flex; align-items: center; gap: 4px; }
   .back-month { font-weight: 800; }
   .view-tag { display: inline-flex; align-items: center; gap: 5px; background: var(--accent); color: var(--on-accent); padding: 2px 8px; border-radius: 999px; letter-spacing: .04em; }
-  .calbar .lbl-date { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--ink); cursor: pointer;
+  .calbar .lbl-date, .cal-top .lbl-date { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--ink); cursor: pointer;
     font-weight: 800; font-size: 17px; letter-spacing: -.01em; padding: 4px 8px; border-radius: 8px; white-space: nowrap; min-width: 0; }
-  .calbar .lbl-date:hover { background: var(--card-2); }
-  .calbar .lbl-date .ic { color: var(--muted); }
+  .calbar .lbl-date:hover, .cal-top .lbl-date:hover { background: var(--card-2); }
+  .calbar .lbl-date .ic, .cal-top .lbl-date .ic { color: var(--muted); }
   .modal.narrow-m { max-width: 360px; }
   .mp-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .mp-y { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -670,8 +670,8 @@
 
   @media (max-width: 640px) {
     .calbar { gap: 5px; padding: 5px 6px; }
-    .calbar .lbl-date { font-size: 16px; flex: 1; }
-    .calbar .lbl-date { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .calbar .lbl-date, .cal-top .lbl-date { font-size: 16px; flex: 1; }
+    .calbar .lbl-date, .cal-top .lbl-date { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .meters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
     .meter { padding: 6px 8px; } .meter .mt span:last-child { display: none; } .meter .mv { font-size: 20px; margin: 0 0 4px; }
     .dayv .top > div:last-child { width: 100%; } .dayv .top .btn { flex: 1; }
@@ -2145,6 +2145,14 @@
   @media (hover: hover) and (pointer: fine) { .wk-strip { cursor: grab; } }
   .wk-strip.dragging { cursor: grabbing; scroll-snap-type: none; scroll-behavior: auto; user-select: none; }
   .wk-strip.dragging * { cursor: grabbing !important; }
+  /* Phones: the date selector is the header above the calendar (shows which month / week you're on);
+     the rest of the controls stay at the bottom above Add Request. */
+  .cal-top { display: none; }
+  @media (max-width: 700px) {
+    .cal > .cal-top { display: flex; flex: none; order: 0; padding: 6px 8px; background: var(--card); border-bottom: 1px solid var(--line); }
+    .cal > .cal-top .datenav { flex: 1 1 100%; }
+    .cal > .calbar .datenav { display: none; }
+  }
 </style>
 
   </head>
@@ -3016,7 +3024,14 @@
     S.dpShown = showPanel;
     const body = S.cal === 'month' ? renderMonth() : S.cal === 'quad' ? renderQuad() : S.cal === 'week' ? renderWeek() : renderDay();
     const confOn = S.f.conf && S.view !== 'mine';
+    // Date navigator [ ‹ | label ⌄ | › ]. Phones show it as a header above the calendar (.cal-top) while the other
+    // controls sit at the bottom; wider screens show it in the bar (the other copy is hidden by CSS).
+    const dateNav = '<div class="datenav" role="group" aria-label="Date">' +
+      '<button class="dn-arrow" data-act="calPrev" aria-label="Previous">' + icon('left', 18) + '</button>' +
+      '<button class="lbl-date" data-act="pickMonth" aria-haspopup="dialog" title="Jump to a month">' + esc(calLabel()) + icon('down', 15) + '</button>' +
+      '<button class="dn-arrow" data-act="calNext" aria-label="Next">' + icon('right', 18) + '</button></div>';
     return '<section class="cal' + (confOn ? ' conf-mode' : '') + (S.cal === 'day' ? ' cal-day' : '') + '">' +
+      '<div class="cal-top">' + dateNav + '</div>' +
       '<div class="calbar">' +
         // Left: view switch, Today, Add Request, then the filters — all together on the left; the date is centred.
         '<div class="cb-start"><div class="cb-left"><div class="cb-views">' +
@@ -3035,10 +3050,7 @@
           (S.view === 'mine' ? mineSwitch() : S.cal === 'month' && !S.priv ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
         '</div>' +
         // Centre: date navigator [ ‹ | label ⌄ | › ]
-        '<div class="cb-center"><div class="datenav" role="group" aria-label="Date">' +
-          '<button class="dn-arrow" data-act="calPrev" aria-label="Previous">' + icon('left', 18) + '</button>' +
-          '<button class="lbl-date" data-act="pickMonth" aria-haspopup="dialog" title="Jump to a month">' + esc(calLabel()) + icon('down', 15) + '</button>' +
-          '<button class="dn-arrow" data-act="calNext" aria-label="Next">' + icon('right', 18) + '</button></div></div>' +
+        '<div class="cb-center">' + dateNav + '</div>' +
       '</div>' +
       (confOn ? confBanner(calRequests().length) : '') +
       '<div class="cal-split"><div class="cal-body" id="calBody">' + body + '</div>' + (showPanel
@@ -3932,7 +3944,7 @@
     el.addEventListener('scroll', () => {
       const dw = el.clientWidth / 7, idx = Math.round(el.scrollLeft / dw);
       S.weekLeft = D.add(r0, idx); S.cursor = S.weekLeft;
-      const lb = $('.lbl-date'); if (lb && lb.firstChild) lb.firstChild.nodeValue = calLabel();
+      $$('.lbl-date').forEach(lb => { if (lb.firstChild) lb.firstChild.nodeValue = calLabel(); });
       clearTimeout(t);
       t = setTimeout(() => { if (!wkDrag && (idx < 7 || idx > WK_DAYS - 14)) { $('#calBody').innerHTML = renderWeek(); fitWeek(); paintSel(); } }, 180);
     }, { passive: true });
