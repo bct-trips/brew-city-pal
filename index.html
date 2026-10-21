@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792583131"></script>
+    <script src="config.js?v=1792583373"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2331,14 +2331,14 @@
   /* Roster quick filters (positions, units): joined on / off toggles like the calendar's Leave | Pass. */
   .stats-bar .seg.qf { display: inline-flex; flex: none; height: 40px; }
   .stats-bar .seg.qf button { padding: 0 14px; white-space: nowrap; }
-  /* Request tables (All Requests, My Requests): the column header bar uses the nav bar's color — navy in light mode,
-     the dark nav gray in dark mode — with white text and a gold underline, so it stands apart from the Leave / Pass bands. */
-  .tbl-wrap[data-table] { --thead-bg: var(--navy); }
-  :root[data-theme="dark"] .tbl-wrap[data-table] { --thead-bg: #1d1e24; }
-  .tbl-wrap[data-table] .rtable thead th { background: var(--thead-bg); color: #ffffff; border-bottom: 2px solid var(--gold); }
-  .tbl-wrap[data-table] .rtable thead .th-sort { color: rgba(255, 255, 255, .82); }
-  .tbl-wrap[data-table] .rtable thead .th-sort:hover, .tbl-wrap[data-table] .rtable thead .th-sort.on, .tbl-wrap[data-table] .rtable thead .th-sort.sub { color: #ffffff; }
-  .tbl-wrap[data-table] .rtable thead .th-sort .lvl { background: rgba(255, 255, 255, .15); border-color: rgba(255, 255, 255, .35); color: #ffffff; }
+  /* Column header bar on All Requests, My Requests and the Roster: the nav bar's color (navy light / dark nav gray dark),
+     a gold underline, and every column name in the same solid white (sorted or not; sort arrows and level badges too). */
+  .tbl-wrap[data-table], #tbl-people { --thead-bg: var(--navy); }
+  :root[data-theme="dark"] .tbl-wrap[data-table], :root[data-theme="dark"] #tbl-people { --thead-bg: #1d1e24; }
+  :is(.tbl-wrap[data-table], #tbl-people) .rtable thead th { background: var(--thead-bg); color: #ffffff; border-bottom: 2px solid var(--gold); }
+  :is(.tbl-wrap[data-table], #tbl-people) .rtable thead :is(.th-sort, .th-sort:hover, .th-sort.on, .th-sort.sub, .th-sort .arr) { color: #ffffff; opacity: 1; }
+  :is(.tbl-wrap[data-table], #tbl-people) .rtable thead .th-sort .lvl { background: rgba(255, 255, 255, .15); border-color: rgba(255, 255, 255, .45); color: #ffffff; }
+  :is(.tbl-wrap[data-table], #tbl-people) .rtable thead .th-sort:hover { text-decoration: underline; text-underline-offset: 3px; }
 </style>
 
   </head>
