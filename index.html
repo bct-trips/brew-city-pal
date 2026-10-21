@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792583373"></script>
+    <script src="config.js?v=1792583474"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2339,6 +2339,9 @@
   :is(.tbl-wrap[data-table], #tbl-people) .rtable thead :is(.th-sort, .th-sort:hover, .th-sort.on, .th-sort.sub, .th-sort .arr) { color: #ffffff; opacity: 1; }
   :is(.tbl-wrap[data-table], #tbl-people) .rtable thead .th-sort .lvl { background: rgba(255, 255, 255, .15); border-color: rgba(255, 255, 255, .45); color: #ffffff; }
   :is(.tbl-wrap[data-table], #tbl-people) .rtable thead .th-sort:hover { text-decoration: underline; text-underline-offset: 3px; }
+  /* Sign-in / loading screens: the strip under the phone's status bar (and any overscroll) is their navy, not white. */
+  #app:has(> .login, > .splash)::before { background: #1d3d6e; }
+  html:has(#app > .login, #app > .splash), html:has(#app > .login, #app > .splash) body { background: #0a1a33; }
 </style>
 
   </head>
@@ -2928,7 +2931,9 @@
     document.documentElement.setAttribute('data-theme', t);
     // Browser / home-screen chrome follows the theme: the status-bar area uses the top bar's color.
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#ffffff');
+    // Sign-in / loading screens: the status-bar strip matches their navy backdrop, not the card color.
+    const auth = !!document.querySelector('#app > .login, #app > .splash');
+    if (meta) meta.setAttribute('content', auth ? '#1d3d6e' : getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#ffffff');
   }
   if (mql) {
     const onScheme = () => { if (S.theme === 'system') applyTheme(); };
@@ -2957,6 +2962,7 @@
   function authShell(inner) {
     $('#app').innerHTML = '<div class="login"><div class="brand-logo" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div><div class="login-card"><h1>Brew City PAL</h1>' +
       inner + '</div></div>';
+    applyTheme(); // status-bar color for the sign-in screen
     const f = $('.login-card input, .login-card select');
     if (f) f.focus();
     renderInstallFab(); // phones: offer Add to Homescreen before signing in too
@@ -3136,6 +3142,7 @@
     // Admin settings auto-save on change, which redraws the page: keep focus on the field the user moved to.
     const ae = document.activeElement, focusId = ae && ae.id && ae.closest && ae.closest('#adminScroll') ? ae.id : '';
     $('#app').innerHTML = '<main class="main" id="main">' + renderView() + '</main>' + renderNav();
+    if (document.querySelector('meta[name="theme-color"][content="#1d3d6e"]')) applyTheme(); // left the sign-in screen: normal status-bar color
     Object.keys(keep).forEach(id => { const el = document.getElementById(id); if (el) { el.scrollTop = keep[id][0]; el.scrollLeft = keep[id][1]; } });
     if (focusId) { const f = document.getElementById(focusId); if (f) try { f.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
     if (isCalView() && S.cal === 'month') fitMonth();
