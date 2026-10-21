@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792580704"></script>
+    <script src="config.js?v=1792580977"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3523,6 +3523,8 @@
     const meFirst = (a, b) => (a.userId === S.me ? 0 : 1) - (b.userId === S.me ? 0 : 1);
     list = list.slice().sort(meFirst);
     const allIds = list.map(r => r.id).join(','); // "… +N" lists everyone on the shared request
+    // A shared puck (more than one person): any tap opens the list of everyone on it; one person: their request.
+    const tapAttr = r => list.length > 1 ? 'data-act="groupList" data-ids="' + esc(allIds) + '"' : 'data-act="openReq" data-id="' + esc(r.id) + '"';
     list.forEach(r => {
       const u = userOf(r.userId), k = (u.role || 'Other') + '|' + u.unit;
       const b = buckets.find(x => x.k === k);
@@ -3531,14 +3533,14 @@
     return buckets.map(b => {
       if (b.list.length === 1) {
         const r = b.list[0];
-        return '<span class="gb" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
+        return '<span class="gb" role="button" tabindex="0" ' + tapAttr(r) + ' title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
           personBadge(r, withStatus, from, to) + '</span>';
       }
       const L = roleL(b.u.role), un = unitsList().find(x => x.code === b.u.unit), r0 = b.list[0];
       const same = b.list.every(r => r.status === r0.status);
       // At most three names, then "… +N" (hover the bar for everyone).
       const shown = b.list.slice(0, 3), extra = b.list.length - shown.length;
-      const names = shown.map(r => '<span class="mn" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
+      const names = shown.map(r => '<span class="mn" role="button" tabindex="0" ' + tapAttr(r) + ' title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
         barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (withStatus && !onNow(r, from, to) ? statusIcon(r.status) : '') + '</span>').join('<span class="rp-dot" aria-hidden="true">·</span>') +
         (extra ? '<span class="rp-dot" aria-hidden="true">·</span><span class="mn mn-more" role="button" tabindex="0" data-act="groupList" data-ids="' + esc(allIds) + '" title="Show all ' + list.length + '" aria-label="Show everyone on this request (' + list.length + ')">… +' + extra + '</span>' : '');
       return '<span class="idb pb gbb' + (same ? ' st-' + r0.status.toLowerCase() : '') + '"><span class="idb-r ' + roleCls(b.u.role) + '" aria-hidden="true">' + L + '</span>' +
@@ -3651,7 +3653,7 @@
         if (p.g) {
           const same = p.g.every(x => x.status === r.status);
           return '<span class="' + ['cs-bar grp', tcls(r.type), same ? 'st-' + r.status.toLowerCase() : '', first ? 'b-s' : '', last ? 'b-e' : '', p.g.some(x => x.userId === S.me) ? 'mine' : ''].join(' ') +
-            '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '">' + groupBadges(p.g, true, D.max(r.start, ws), D.min(r.end, we)) + '</span>';
+            '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '" role="button" tabindex="0" data-act="groupList" data-ids="' + esc(p.g.map(x => x.id).join(',')) + '">' + groupBadges(p.g, true, D.max(r.start, ws), D.min(r.end, we)) + '</span>';
         }
         const cls = ['cs-bar', tcls(r.type), 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : '', r.userId === S.me ? 'mine' : ''].join(' ');
         return '<span class="' + cls + '" style="grid-row:' + (p.l + 1) + ';grid-column:' + (p.a + 1) + '/' + (p.z + 2) + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
@@ -3943,7 +3945,7 @@
     const names = list.length > 3
       ? '<span class="rp-more">4+ ' + esc(rolePl(role)) + '</span>'
       : list.map(r => '<span class="mn' + (dupsOf(r).length ? ' dup' : '') + (r.id === S.focus ? ' focus' : '') + (r.status === 'Denied' ? ' st-denied' : '') +
-          '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' + barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (onNow(r) ? '' : statusIcon(r.status)) + '</span>')
+          '" role="button" tabindex="0" ' + (list.length > 1 ? 'data-act="groupList" data-ids="' + esc(list.map(x => x.id).join(',')) + '"' : 'data-act="openReq" data-id="' + esc(r.id) + '"') + ' aria-label="' + esc(describe(r)) + '">' + barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (onNow(r) ? '' : statusIcon(r.status)) + '</span>')
           .join('<span class="rp-dot" aria-hidden="true">·</span>');
     return '<span class="idb pb rp" title="' + esc(title) + '"><span class="idb-r ' + roleCls(role) + '" aria-hidden="true">' + esc(L) + '</span>' +
       (unit ? '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(unit) + '</span>' : '') +
@@ -3957,6 +3959,7 @@
       // Same-dates bar: one solid bar for everyone on it; each badge opens that person's request.
       const same = sg.people.every(r => r.status === r0.status);
       return '<div class="' + base + ' grp' + (same ? ' st-' + r0.status.toLowerCase() : '') + (sg.people.some(r => r.userId === S.me) ? ' mine' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"' +
+        ' role="button" tabindex="0" data-act="groupList" data-ids="' + esc(sg.people.map(x => x.id).join(',')) + '"' +
         ' title="' + esc(sg.people.map(describe).join('\n')) + '"><span class="evs-t">' + groupBadges(sg.people, true, D.max(r0.start, sg.ws), D.min(r0.end, D.add(sg.ws, 6))) + '</span></div>';
     }
     if (sg.kind === 'mid' && sg.people.length > 1 && !sg.group) {
@@ -4097,7 +4100,7 @@
           const same = !g || g.every(x => x.status === r.status);
           const cls = ['wpuck', g ? 'grp' : '', tcls(r.type), same ? 'st-' + r.status.toLowerCase() : '', r.start < ws ? 'cont-l' : '', r.end > we ? 'cont-r' : ''].join(' ');
           const sub = ''; // just the badge(s): no type / status / dates line under the bar
-          if (g) return '<div class="' + cls + '" style="' + col(r.start, r.end) + '"><span class="n">' + groupBadges(g, true) + '</span>' + sub + '</div>';
+          if (g) return '<div class="' + cls + '" style="' + col(r.start, r.end) + '" role="button" tabindex="0" data-act="groupList" data-ids="' + esc(g.map(x => x.id).join(',')) + '"><span class="n">' + groupBadges(g, true) + '</span>' + sub + '</div>';
           return '<div class="' + cls + '" style="' + col(r.start, r.end) + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
             '<span class="n">' + personBadge(r, true) + '</span>' + sub + '</div>';
         }).join('');
