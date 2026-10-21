@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792582159"></script>
+    <script src="config.js?v=1792582218"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -4459,14 +4459,21 @@
     // plus a "Show N more" row. Tapping the header opens the whole band, then closes it.
     const group = (type, list) => {
       const n = cols.length + 1, band = type !== 'Past';
-      const state = type === 'Past' ? (col.Past === false ? 'open' : 'closed') : band ? (col[type] || 'partial') : (col[type] ? 'closed' : 'open');
+      // My Requests: every band (Past too) starts fully open and lists everything in date order.
+      const mine = key === 'mine';
+      const state = mine ? (col[type] === 'closed' ? 'closed' : 'open')
+        : type === 'Past' ? (col.Past === false ? 'open' : 'closed') : band ? (col[type] || 'partial') : (col[type] ? 'closed' : 'open');
       // Top group = requests whose dates include today, whatever their status — so approving / denying / setting back to
       // pending never moves a row (only its colour and slider change). "N active" counts the approved ones going on now.
       const today = r => r.start <= S.today && r.end >= S.today;
       const act = band ? list.filter(today) : [], rest = band ? list.filter(r => !today(r)) : list, nAct = act.filter(isNow).length;
       // Default order (until a column is clicked): out today = position, last, first; the rest = departure date first.
-      if (band && !st.userSorted) { act.sort(byPosName); rest.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || byPosName(a, b)); }
-      if (band) list = act.concat(rest);
+      const byStart = (a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || byPosName(a, b);
+      if (mine) { if (!st.userSorted) list = list.slice().sort(byStart); }
+      else {
+        if (band && !st.userSorted) { act.sort(byPosName); rest.sort(byStart); }
+        if (band) list = act.concat(rest);
+      }
       const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : '<span class="badge t-' + tcls(type) + '">' + esc(type) + '</span>' +
         (nAct ? '<span class="grp-now"><i class="now-dot" aria-hidden="true"></i>' + nAct + ' active</span>' : '');
       const empty = '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + (type === 'Past' ? 'Nothing past to show.' : 'No ' + esc(type.toLowerCase()) + ' to show.') + '</span></td></tr>';
@@ -6257,7 +6264,8 @@
     mineMode(el) { S.mineMode = el.dataset.v; S.dayPanel = null; if (S.cal === 'day') S.cal = 'month'; render(); },
     grpToggle(el) {
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
-      if (t === 'Past') c.Past = c.Past === false; // Past starts closed: first tap opens it (false = open)
+      if (k === 'mine') c[t] = c[t] === 'closed' ? 'open' : 'closed'; // My Requests bands start open
+      else if (t === 'Past') c.Past = c.Past === false; // Past starts closed: first tap opens it (false = open)
       else if (t !== 'Blackouts') c[t] = c[t] === 'open' ? 'closed' : 'open'; // part-open → open → closed → open
       else c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
     },
