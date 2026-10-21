@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792578160"></script>
+    <script src="config.js?v=1792578255"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2186,6 +2186,10 @@
   .slot.wknd.today { background-color: var(--wknd); }
   .wk-day.wknd.today { background-color: var(--wknd); }
   .slot.today { box-shadow: inset 3px 0 0 var(--primary), inset -3px 0 0 var(--primary); }
+  /* All Requests (admin): Open requests toggle with a count bubble. */
+  .open-btn { flex: none; gap: 6px; }
+  .open-btn .open-ct { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #b45309; color: #fff; font-size: 12.5px; font-weight: 800; }
+  .open-btn.on .open-ct { background: var(--sel-ink); }
 </style>
 
   </head>
@@ -4133,11 +4137,15 @@
   const isTmp = r => String(r.id).indexOf('tmp_') === 0; // shown before the server has saved it
   const canEdit = r => !isTmp(r) && r.status !== 'Cancelled' && (S.isAdmin || (r.userId === S.me && r.status !== 'Approved'));
 
+  /** Needs an admin decision: pending, or in a conflict that isn't resolved yet. */
+  const isOpenReq = r => r.status === 'Pending' || openConflictOf(r);
   function filteredList() {
-    const L = S.list, F = S.f, q = L.q.trim().toLowerCase();
+    const L = S.list, F = S.f, q = L.q.trim().toLowerCase(), open = S.isAdmin && S.openOnly;
     return IDX.live.filter(r => {
       const u = userOf(r.userId);
-      if (!F.status.includes(r.status) || !F.role.includes(u.role) || !F.type.includes(r.type)) return false;
+      // Open requests (admin): only those needing a decision, whatever the status filter says.
+      if (open ? !isOpenReq(r) : !F.status.includes(r.status)) return false;
+      if (!F.role.includes(u.role) || !F.type.includes(r.type)) return false;
       if (!personConfOk(r, F)) return false;
       if (q && (u.rank + ' ' + u.name + ' ' + u.unit + ' ' + u.role + ' ' + r.type + ' ' + r.note).toLowerCase().indexOf(q) < 0) return false;
       return true;
@@ -4308,8 +4316,14 @@
   function listBar(search, filters, sc) {
     return '<div class="lbar">' +
       '<div class="lsearch">' + icon('search', 16) + search + '</div>' +
-      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'mine' ? mineSwitch() : '') + '</div>' +
+      '<div class="filters">' + (sc === 'list' && S.isAdmin ? openBtn() : '') + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'mine' ? mineSwitch() : '') + '</div>' +
       '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
+  }
+  /** Admin: show only open requests (pending, or in an unresolved conflict), with how many there are. */
+  function openBtn() {
+    const F = S.f, n = IDX.live.filter(r => isOpenReq(r) && F.role.includes(userOf(r.userId).role) && F.type.includes(r.type) && personConfOk(r, F)).length, on = !!S.openOnly;
+    return '<button type="button" class="btn chip-tog open-btn' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="openOnly" title="Pending, or in a conflict that isn’t resolved">' +
+      (on ? icon('check', 16) : icon('clock', 16)) + '<span>Open requests</span>' + (n ? '<b class="open-ct">' + n + '</b>' : '') + '</button>';
   }
   const reqBar = () => '<div class="req-bar"><button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
   function renderAll() {
@@ -6195,6 +6209,7 @@
       if (st === S.list) store.set('list', S.list);
       render();
     },
+    openOnly() { S.openOnly = !S.openOnly; render(); },
     listRefresh() { store.set('list', S.list); const b = $('#listBody'); if (b) b.innerHTML = renderListBody(); },
     mineRefresh() { const b = $('#mineBody'); if (!b) return; const at = document.activeElement; render(); const i = $('[data-model="mine.q"]'); if (i && at && at.dataset && at.dataset.model === 'mine.q') { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } },
 
