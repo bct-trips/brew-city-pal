@@ -15,12 +15,12 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792585720"></script>
+    <script src="config.js?v=1792585756"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one. When they
          differ — on launch and whenever the app comes back to the foreground — reload once to a cache-busted copy. */
-      window.PAL_BUILD = '1792585720';
+      window.PAL_BUILD = '1792585756';
       (function () {
         function check() {
           try {
@@ -2391,7 +2391,7 @@
   .stats-bar .rf-btn .manage-ct { margin-left: 2px; }
   @media (max-width: 700px) { .stats-bar .rf-btn { flex: 1 1 0; max-width: none; } }
   /* Band header: which view is showing (tap the header to cycle All → Active → Closed). */
-  .grp-mode { display: inline-flex; align-items: center; vertical-align: middle; margin-left: 10px; height: 22px; padding: 0 9px; border-radius: 11px; background: var(--sel-bg); color: var(--sel-ink); font-size: 12px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+  .grp-mode { display: inline-flex; align-items: center; vertical-align: middle; margin-left: 2px; height: 22px; padding: 0 9px; border-radius: 11px; background: var(--sel-bg); color: var(--sel-ink); font-size: 12px; font-weight: 700; letter-spacing: 0; text-transform: none; }
   /* Roster period: a radio list — title plus the dates it covers. */
   .rf-radio { align-items: center; padding-top: 8px; padding-bottom: 8px; }
   .rf-radio .pp-n { display: flex; flex-direction: column; gap: 1px; }
@@ -4605,9 +4605,10 @@
         : list.map(r => rowHtml(r, type === 'Past')).join('');
       return '<tbody class="grp grp-' + (type === 'Past' ? 'past' : tcls(type)) + (state === 'closed' ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
         '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + (state === 'open') + '">' +
-        icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button>' +
-        // Type bands (not Past, not My Requests): say which of the three views is showing.
-        (band && !mine ? '<span class="grp-mode">' + ({ open: 'All', partial: 'Active', closed: 'Closed' })[state] + '</span>' : '') +
+        icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span>' +
+        // Type bands (not Past, not My Requests): say which of the three views is showing — inside the sticky header button,
+        // so it stays put with the label when the table scrolls sideways.
+        (band && !mine ? '<span class="grp-mode">' + ({ open: 'All', partial: 'Active', closed: 'Closed' })[state] + '</span>' : '') + '</button>' +
         '</th></tr>' + rowsHtml + '</tbody>';
     };
     const cur = rows.filter(r => r.end >= S.today), past = rows.filter(r => r.end < S.today);
