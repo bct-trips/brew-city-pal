@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792608964"></script>
+    <script src="config.js?v=1792609027"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792608964';
+      window.PAL_BUILD = '1792609027';
       (function () {
         function check(launch) {
           try {
@@ -3445,7 +3445,7 @@
      never sees an empty fillable box. No "4–8 digits" placeholder, length limit or pattern on the box either — Safari reads
      those as password rules and offers a strong one; the rule is plain text above the boxes (PIN_HINT) and checked on
      save. Only the sign-in PIN stays a real password field (saved-password fill). */
-  const PIN_HINT = '<p class="pin-hint">4–8 Digits · no 0000 or 1234</p>'; // once, above each pair of new-PIN boxes
+  const PIN_HINT = '<p class="pin-hint">4–8 Digits</p>'; // a too-easy PIN (0000, 1234) is explained only if someone tries one // once, above each pair of new-PIN boxes
   /** Why a new PIN isn't allowed ('' = fine): 4–8 digits, and not one digit repeated (0000) or counting up (1234,
    *  2345). Patterns like 1212 or 2424 are fine. The server checks the same (strongPin_). */
   function pinProblem(p) {
