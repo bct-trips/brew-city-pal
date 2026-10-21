@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792583474"></script>
+    <script src="config.js?v=1792583541"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2959,12 +2959,15 @@
   /* Login                                                              */
   /* ================================================================ */
   /* ---------- Sign in / create account / set PIN ---------- */
+  /** Phones / tablets (touch, no mouse): never put the cursor in a field by ourselves. Focusing a sign-in or PIN field
+   *  makes iOS pop its saved-password prompt every time the app opens; it should only appear when the user taps a field. */
+  const touchOnly = () => !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
+  const autoFocus = el => { if (el && !touchOnly()) el.focus(); };
   function authShell(inner) {
     $('#app').innerHTML = '<div class="login"><div class="brand-logo" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div><div class="login-card"><h1>Brew City PAL</h1>' +
       inner + '</div></div>';
     applyTheme(); // status-bar color for the sign-in screen
-    const f = $('.login-card input, .login-card select');
-    if (f) f.focus();
+    autoFocus($('.login-card input, .login-card select'));
     renderInstallFab(); // phones: offer Add to Homescreen before signing in too
   }
   const pinInput = (id, label, ac) => '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="4–8 digits" autocomplete="' + ac + '"></div>';
@@ -2990,7 +2993,7 @@
       '<div class="err" id="lgErr"></div>' +
       '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('arrow', 16) + ' Sign in</button></form>' +
       '<div class="auth-alt">New here? <button class="linkbtn" id="toRegister">Create an account</button></div>');
-    if ($('#lgLast').value) $('#lgPin').focus();
+    if ($('#lgLast').value) autoFocus($('#lgPin'));
     $('#toRegister').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); showRegister(); });
     $('#loginForm').addEventListener('submit', async ev => {
       ev.preventDefault();
@@ -3018,7 +3021,7 @@
       '<div class="err" id="inErr"></div>' +
       '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('arrow', 16) + ' Continue</button></form>' +
       '<div class="auth-alt"><button class="linkbtn" id="toLogin">Back to sign in</button></div>');
-    const focus = $(mid ? '#inMid' : '#inFirst'); if (focus) focus.focus();
+    autoFocus($(mid ? '#inMid' : '#inFirst'));
     $('#toLogin').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); showLogin(); });
     $('#initForm').addEventListener('submit', async ev => {
       ev.preventDefault();
@@ -3062,7 +3065,7 @@
       '<div class="err" id="rgErr"></div>' +
       '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('userPlus', 16) + ' Create account</button></form>' +
       '<div class="auth-alt">Already have an account? <button class="linkbtn" id="toLogin">Sign in</button></div>';
-    $('#rgFirst').focus();
+    autoFocus($('#rgFirst'));
     $('#rgRank').value = 'SSgt';
     $('#toLogin').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); showLogin(); });
     $('#regForm').addEventListener('submit', async ev => {
@@ -5021,8 +5024,7 @@
       modalOpener = document.activeElement;
       $('#modal').innerHTML = '<div class="overlay" data-overlay="1"><div class="modal' + (wide ? ' modal-wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="modalTitle">' + html + '</div></div>';
     }
-    const first = $('#modal [autofocus]');
-    if (first) first.focus();
+    autoFocus($('#modal [autofocus]')); // phones: no keyboard popping up on its own
   }
   function closeModal() {
     // Closing the person picker returns to whatever opened it (the request form or the Filters sheet).
