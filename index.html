@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792597391"></script>
+    <script src="config.js?v=1792598765"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792597391';
+      window.PAL_BUILD = '1792598765';
       (function () {
         function check(launch) {
           try {
@@ -282,7 +282,7 @@
   .idb-r { width: var(--tag); flex: none; }
   .idb-p { background: #ffffff; color: #0b1730; }
   .idb-b { background: #0b0b0f; color: #ffffff; }
-  .idb-o { background: #a1a1aa; color: #0b0b0f; }
+  .idb-o { background: #d4d4d8; color: #0b0b0f; }
   .idb-u { padding: 0 5px; border-left: 1.5px solid #0b1730; letter-spacing: .04em; }
   /* Person badge: name section is white with dark text on every bar, so names always read the same.
      Bars stay solid; status is a mark after the name on the first day (✓ / clock / ✕); denied grays and strikes the name. */
@@ -915,7 +915,12 @@
   .ds-arrow { flex: none; width: 40px; height: 56px; display: grid; place-items: center; border: 0; border-radius: 12px; background: none; color: var(--on-surface, var(--ink)); cursor: pointer; }
   .ds-arrow:hover { background: var(--card-2); }
   .dstrip { justify-content: center; }
-  .ds-days { flex: 0 1 760px; min-width: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; max-width: 760px; margin: 0 auto; }
+  .ds-days { flex: 0 1 760px; min-width: 0; max-width: 760px; margin: 0 auto; overflow: hidden; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .ds-track { display: flex; transform: translateX(-100%); will-change: transform; }
+  .ds-track.dragging { cursor: grabbing; }
+  .ds-track.dragging .ds-d { pointer-events: none; }
+  .ds-track.ds-go { transition: transform .26s cubic-bezier(.2, 0, 0, 1); }
+  .ds-wk { flex: 0 0 100%; min-width: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
   .ds-d { height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 0; border-radius: 12px; background: none; color: var(--ink); font: inherit; cursor: pointer; }
   .ds-d:hover { background: var(--card-2); }
   .ds-w { font-size: 12.5px; font-weight: 600; color: var(--muted); }
@@ -1333,7 +1338,7 @@
   .st-cell .badge { height: 22px; display: inline-flex; align-items: center; }
   .dayv-panel .dstrip { padding: 4px 4px 10px; gap: 2px; }
   .dayv-panel .ds-arrow { width: 32px; height: 52px; }
-  .dayv-panel .ds-days { gap: 2px; }
+  .dayv-panel .ds-wk { gap: 2px; }
   .dayv-panel .ds-d { height: 56px; border-radius: 10px; }
   .dayv-panel .ds-n { font-size: 18px; }
   /* Day view / panel: Pilots | Booms | Other filter above the meters. */
@@ -2139,7 +2144,7 @@
   .rm-l { display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 3px; box-sizing: border-box; border-radius: 3px; font-size: 11px; font-weight: 900; align-self: center; }
   .rm.lg .rm-l { min-width: 20px; height: 20px; font-size: 13px; }
   .rm-l.idb-p, .band-tag.band-l.idb-p { box-shadow: inset 0 0 0 1.5px #0b1730; }
-  .band-tag.band-l.idb-p { background: #ffffff; color: #0b1730; } .band-tag.band-l.idb-b { background: #0b0b0f; color: #ffffff; } .band-tag.band-l.idb-o { background: #a1a1aa; color: #0b0b0f; }
+  .band-tag.band-l.idb-p { background: #ffffff; color: #0b1730; } .band-tag.band-l.idb-b { background: #0b0b0f; color: #ffffff; } .band-tag.band-l.idb-o { background: #d4d4d8; color: #0b0b0f; }
   .band-tag.band-l.ub-navy { background: #0A2351; color: #fff; } .band-tag.band-l.ub-gold { background: #FFB612; color: #111; }
   .band-tag.band-l.ub-crimson { background: #9f1239; color: #fff; } .band-tag.band-l.ub-teal { background: #0f766e; color: #fff; }
   .band-tag.band-l.ub-purple { background: #6b21a8; color: #fff; } .band-tag.band-l.ub-slate { background: #334155; color: #fff; }
@@ -2538,6 +2543,20 @@
   .rtable.ag .ag-add td { background: var(--surface-low); }
   .rtable.ag .ag-add select { height: 34px; min-height: 34px; padding: 0 6px; font-size: 14px; }
   .alert-rules.is-off .ag-wrap { opacity: .55; }
+  /* Unit × position grid (alerts, report, team admins): badges / positions, check boxes, edit + delete; the row being
+     edited is tinted and its unit and position chips open in the line under it. */
+  .rtable.ag .rg-u, .rtable.ag .rg-r { white-space: normal; min-width: 56px; }
+  .rg-badges { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+  .rg-badges .ub { margin: 0; }
+  .rg-acts { display: inline-flex; gap: 4px; justify-content: flex-end; }
+  .rg-acts .btn.on { background: var(--secondary-container, var(--card-2)); }
+  .rtable.ag tr.rg-on td { background: color-mix(in srgb, var(--primary) 7%, transparent); }
+  .rtable.ag tr.rg-ed td { white-space: normal; background: color-mix(in srgb, var(--primary) 4%, transparent); padding: 10px 12px; }
+  .rg-pick { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; }
+  .rg-pick .push-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .rg-done { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .rtable.ag .rg-none { text-align: center; padding: 14px; }
+  .ta-acts { display: inline-flex; gap: 6px; margin-left: auto; flex: none; }
   /* Team admin permission grid (member card, Make Admin): unit rows × position columns of check boxes. */
   .pg-wrap { overflow-x: auto; margin: 2px 0 8px; border: 1px solid var(--line); border-radius: 12px; }
   .pg { border-collapse: collapse; width: 100%; font-size: 13px; }
@@ -2607,6 +2626,20 @@
     .modal-f.mc-foot > .btn { flex: 1 1 0; }
     .modal-f.mc-foot > .mc-save { flex-basis: 100%; order: -1; margin-left: 0; }
   }
+  /* Single-choice segmented buttons: a pill (the selected color) slides between options, like the status slider. */
+  .seg.seg-slide { position: relative; isolation: isolate; }
+  .seg-slide > .seg-thumb { position: absolute; z-index: 0; top: 0; bottom: 0; left: 0; width: 0; opacity: 0; background: var(--sel-bg); pointer-events: none;
+    transition: left .28s cubic-bezier(.2, .8, .2, 1), width .28s cubic-bezier(.2, .8, .2, 1); }
+  .seg-slide > button { z-index: 1; }
+  .seg-slide[data-placed] > button.on { background: transparent; border-color: transparent; } /* until placed, the plain highlight shows */
+  .seg-slide > button.on + button { border-left-color: transparent; }
+  @media (prefers-reduced-motion: reduce) { .seg-slide > .seg-thumb { transition: none; } }
+  /* Bottom nav: the active tab's gold pill slides between tabs (placeSeg); once placed, the tab's own pill is off. */
+  .nav.seg-slide > .seg-thumb.nav-thumb { position: absolute; bottom: auto; background: var(--gold); border-radius: 16px; border: solid transparent; border-width: 0 1px; background-clip: padding-box; box-sizing: border-box; }
+  .nav.seg-slide[data-placed] > button.on::before { background: transparent; }
+  .nav.seg-slide[data-placed] > button.on:hover::before { background: transparent; }
+  .nav.seg-slide > button { z-index: 1; }
+  .nav.seg-slide { position: relative; } /* the pill's frame of reference */
 </style>
 
   </head>
@@ -2938,16 +2971,55 @@
       scopeUnits(lim).map(c => { const on = (sc.units || []).includes(c); return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="' + act + '" data-k="units" data-v="' + esc(c) + '"' + (extra || '') + '>' + (on ? icon('check', 16) : '') + esc(c) + '</button>'; }).join('') + '</div>' +
     '<span class="sc-l">Positions</span><div class="push-btns">' +
       scopeRoles(lim).map(r => { const on = (sc.roles || []).includes(r); return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="' + act + '" data-k="roles" data-v="' + esc(r) + '"' + (extra || '') + '>' + (on ? icon('check', 16) : '') + esc(rolePl(r)) + '</button>'; }).join('') + '</div></div>';
-  /** Team admin permission grid: units as rows, positions as columns, a check box per pair (button role=checkbox).
-   *  Only pairs inside `lim` (a team admin's own) can be ticked. `act` toggles one: data-cell="UNIT|Position". */
-  const permGrid = (cells, act, extra, lim) => {
-    const units = scopeUnits(lim), roles = scopeRoles(lim);
-    return '<div class="pg-wrap"><table class="pg"><thead><tr><th scope="col"><span class="sr">Unit</span></th>' + roles.map(r => '<th scope="col">' + esc(rolePl(r)) + '</th>').join('') + '</tr></thead><tbody>' +
-      units.map(u => '<tr><th scope="row">' + unitBadge(u) + '</th>' + roles.map(r => { const c = u + '|' + r, ok = !lim || inScope(lim, { unit: u, role: r }), on = cells.includes(c);
-        return '<td>' + (ok ? '<button type="button" class="rsel' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" aria-label="' + esc(u + ' ' + rolePl(r)) + '" data-act="' + act + '" data-cell="' + esc(c) + '"' + (extra || '') + '>' + (on ? icon('check', 14) : '') + '</button>' : '<span class="muted">—</span>') + '</td>'; }).join('') + '</tr>').join('') +
-      '</tbody></table></div>';
-  };
   const toggleIn = (list, v) => list.includes(v) ? list.filter(x => x !== v) : list.concat([v]);
+  /* Unit × position grid — one design for Admin Alerts, Daily Report coverage and Team Admin assignments. Each row
+     covers one or more units and one or more positions (Alerts / Report: none picked = Any), plus an optional check box
+     per column (alert kinds, report types). The pencil opens unit and position chips under the row to edit it; the
+     trash deletes it; Add Row adds one, open for editing. Each grid registers a handler in RG under its id:
+     {rows(), set(rows), cols: [[key, label]], key, any, lim, blank()}. */
+  const RG = {};
+  /** Admin alert kinds: [key, label]. */
+  const ALERT_KINDS = [['new', 'New Requests'], ['edited', 'Changes'], ['deleted', 'Deletions'], ['signup', 'New Members']];
+  const ALL_KINDS = () => ALERT_KINDS.map(k => k[0]);
+  /** A grid row from any saved shape: {units, roles} lists, or older {unit, role} ('' = any). */
+  const gridRow = r => Object.assign({}, r, { units: Array.isArray(r.units) ? r.units.slice() : r.unit ? [r.unit] : [], roles: Array.isArray(r.roles) ? r.roles.slice() : r.role ? [r.role] : [] });
+  /** Team admin rows → the unit + position pairs they grant (inside `lim`, a team admin's own team). */
+  const rowsCells = (rows, lim) => { const out = [];
+    rows.forEach(r => r.units.forEach(u => r.roles.forEach(ro => { const c = u + '|' + ro; if (!out.includes(c) && (!lim || inScope(lim, { unit: u, role: ro }))) out.push(c); })));
+    return out; };
+  /** A team admin scope as grid rows: the rows saved with it, else its pairs grouped (units that share positions). */
+  const scopeRows = sc => {
+    if (!sc) return [];
+    if (Array.isArray(sc.rows) && sc.rows.length) return sc.rows.map(gridRow);
+    const by = {}; scopeCells(sc).forEach(c => { const [u, r] = c.split('|'); (by[u] = by[u] || []).push(r); });
+    const rows = []; Object.keys(by).forEach(u => { const k = by[u].join(','), x = rows.find(y => y.roles.join(',') === k); if (x) x.units.push(u); else rows.push({ units: [u], roles: by[u].slice() }); });
+    return rows;
+  };
+  /** A grid's handler: registered in RG, or a member card's Team Admin grid ('adm:' + member id). */
+  const rgOf = g => RG[g] || (g.startsWith('adm:') ? admGrid(g.slice(4)) : null);
+  function ruleGrid(g) {
+    const h = rgOf(g), rows = h.rows(), cols = h.cols || [], ed = S.rgEdit && S.rgEdit.g === g ? S.rgEdit.i : -1, span = cols.length + 3;
+    const none = t => '<span class="muted">' + (h.any ? 'Any' : t) + '</span>';
+    const attrs = (op, i, v) => ' data-act="rg" data-g="' + esc(g) + '" data-op="' + op + '" data-i="' + i + '"' + (v == null ? '' : ' data-v="' + esc(v) + '"');
+    const chip = (op, i, v, on, label) => '<button type="button" class="btn sm chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '"' + attrs(op, i, v) + '>' + (on ? icon('check', 14) : '') + esc(label) + '</button>';
+    const units = x => scopeUnits(h.lim).concat(x.units.filter(c => !scopeUnits(h.lim).includes(c)));
+    const roles = x => scopeRoles(h.lim).concat(x.roles.filter(r => !scopeRoles(h.lim).includes(r)));
+    const head = '<tr><th scope="col">Units</th><th scope="col">Positions</th>' + cols.map(c => '<th scope="col" class="ag-k">' + esc(c[1]) + '</th>').join('') + '<th scope="col"><span class="sr">Edit or delete</span></th></tr>';
+    const body = rows.map((x, i) => '<tr class="rg-row' + (i === ed ? ' rg-on' : '') + '">' +
+        '<td class="rg-u">' + (x.units.length ? '<span class="rg-badges">' + x.units.map(unitBadge).join('') + '</span>' : none('Pick units')) + '</td>' +
+        '<td class="rg-r">' + (x.roles.length ? esc(x.roles.map(rolePl).join(', ')) : none('Pick positions')) + '</td>' +
+        cols.map(c => { const on = (x[h.key] || []).includes(c[0]);
+          return '<td class="ag-k"><button type="button" class="rsel' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" aria-label="' + esc(c[1]) + '"' + attrs('col', i, c[0]) + '>' + (on ? icon('check', 14) : '') + '</button></td>'; }).join('') +
+        '<td class="ag-del"><div class="rg-acts"><button type="button" class="btn sm act' + (i === ed ? ' on' : '') + '"' + attrs('edit', i) + ' aria-label="Edit this row" aria-expanded="' + (i === ed) + '" title="Edit">' + icon('pencil', 14) + '</button>' +
+          '<button type="button" class="btn sm del act"' + attrs('del', i) + ' aria-label="Delete this row" title="Delete">' + icon('trash', 14) + '</button></div></td></tr>' +
+      (i === ed ? '<tr class="rg-ed"><td colspan="' + span + '"><div class="rg-pick">' +
+          '<span class="sc-l">Units</span><div class="push-btns">' + (h.any ? chip('anyU', i, null, !x.units.length, 'Any') : '') + units(x).map(c => chip('unit', i, c, x.units.includes(c), c)).join('') + '</div>' +
+          '<span class="sc-l">Positions</span><div class="push-btns">' + (h.any ? chip('anyR', i, null, !x.roles.length, 'Any') : '') + roles(x).map(r => chip('role', i, r, x.roles.includes(r), rolePl(r))).join('') + '</div></div>' +
+          '<div class="rg-done"><button type="button" class="btn sm primary"' + attrs('done', i) + '>' + icon('check', 14) + 'Done</button></div></td></tr>' : '')).join('');
+    const add = '<tr class="ag-add"><td colspan="' + span + '"><button type="button" class="btn sm"' + attrs('add', -1) + '>' + icon('plus', 14) + 'Add Row</button></td></tr>';
+    return '<div class="tbl-wrap ag-wrap rg"><table class="rtable ag"><thead>' + head + '</thead><tbody>' +
+      (rows.length ? body : '<tr><td colspan="' + span + '" class="muted rg-none">Nothing yet.</td></tr>') + add + '</tbody></table></div>';
+  }
   /** "PIT · Maintenance", "Pilots · Booms", "PIT: Pilots, Booms · MKE: Booms", or "Everyone". */
   const scopeText = sc => {
     if (sc && sc.cells) {
@@ -3055,7 +3127,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.18'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.20'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -3620,15 +3692,18 @@
       ? [['people', 'Roster', 'users', 'Roster'], ['admin', 'Admin', 'shield', 'Admin']]
       : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
-      '<nav class="nav' + (S.isAdmin ? ' nav-admin' : '') + '" aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '">' + items.map(i =>
+      // The active tab's pill slides between tabs (same as segmented buttons: placeSeg, remembered as "nav").
+      '<nav class="nav seg-slide' + (S.isAdmin ? ' nav-admin' : '') + '" data-sk="nav" aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '"><span class="seg-thumb nav-thumb" aria-hidden="true"></span>' + items.map(i =>
       '<button data-act="nav" data-v="' + i[0] + '"' + (i[0] === 'profile' ? ' aria-haspopup="menu" aria-expanded="' + !!document.getElementById('pmenu') + '"' : '') + ' class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
       '<span class="nav-ic' + (i[0] === syncTab() && S.pending ? ' syncing' : i[0] === syncTab() && S.syncErr ? ' sync-err' : '') + '">' + (i[0] === 'profile' ? '<span class="nav-logo" aria-hidden="true"></span>' : icon(i[2], 20)) + '</span><span class="wide">' + i[1] + caret(i[0]) + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + caret(i[0]) + '</span>' +
       (i[0] === 'all' && S.isAdmin && pending ? '<b class="dot">' + pending + '</b>' : '') +
       (i[0] === 'mine' && myChanged ? '<b class="dot warn" title="Dates changed by an admin">' + myChanged + '</b>' : '') +
       (i[0] === 'profile' && noteCount() ? '<b class="dot" title="' + plural(noteCount(), 'notification') + '">' + noteCount() + '</b>' : '') + '</button>').join('') + '</nav>';
   }
+  /** Single-choice segmented buttons. A pill slides to the chosen one (like the status slider) — see placeSeg. */
   function seg(options, current, act, extra) {
-    return '<div class="seg" role="group">' + options.map(o => {
+    const key = act + ((extra || '').match(/data-id="([^"]*)"/) || ['', ''])[1];
+    return '<div class="seg seg-slide" role="group" data-sk="' + esc(key) + '"><span class="seg-thumb" aria-hidden="true"></span>' + options.map(o => {
       const v = Array.isArray(o) ? o[0] : o, l = Array.isArray(o) ? o[1] : o;
       return '<button type="button" class="' + (v === current ? 'on' : '') + '" aria-pressed="' + (v === current) + '" data-act="' + act + '" data-v="' + esc(v) + '"' + (extra || '') + '>' + l + '</button>';
     }).join('') + '</div>';
@@ -4589,6 +4664,64 @@
     return '<div class="week wk-strip" id="wkStrip" data-r0="' + ws + '" style="--days:' + WK_DAYS + '"><div class="wk-inner"><div class="wk-head wg">' + head + '</div><div class="bands">' + bands + '</div></div></div>';
   }
   /** After drawing the strip: scroll to the left-most day and track scrolling (label, re-center near the ends). */
+  /** The day panel changed day: bring the calendar beside it to that day's month or week. */
+  function syncCalTo(d) {
+    if (S.cal === 'week' ? D.diff(weekLeft(), d) >= 0 && D.diff(weekLeft(), d) < 7 : d.slice(0, 7) === S.cursor.slice(0, 7)) return;
+    S.cursor = d; S.weekLeft = null;
+  }
+  /* Day view week strip: drag it sideways (mouse, pen or finger). The track follows the pointer with the weeks either side
+     showing; let go past a quarter of the width (or flick) and it slides on a week, else it springs back. A drag never
+     counts as a tap on a day. */
+  let dsDrag = null;
+  document.addEventListener('pointerdown', ev => {
+    if (ev.button !== 0) return;
+    const box = ev.target.closest && ev.target.closest('.ds-days');
+    const tr = box && box.querySelector('.ds-track');
+    if (!tr || tr.classList.contains('ds-go')) return;
+    dsDrag = { box, tr, id: ev.pointerId, x: ev.clientX, y: ev.clientY, dx: 0, moved: false, lx: ev.clientX, lt: performance.now(), v: 0 };
+  });
+  document.addEventListener('pointermove', ev => {
+    const g = dsDrag; if (!g || ev.pointerId !== g.id) return;
+    const dx = ev.clientX - g.x;
+    if (!g.moved) {
+      if (Math.abs(dx) < 6) return;
+      if (Math.abs(ev.clientY - g.y) > Math.abs(dx)) { dsDrag = null; return; } // a vertical swipe scrolls the page
+      g.moved = true; g.tr.classList.add('dragging');
+      try { g.box.setPointerCapture(ev.pointerId); } catch (e) {}
+    }
+    const now = performance.now(), dt = Math.max(1, now - g.lt);
+    g.v = (ev.clientX - g.lx) / dt; g.lx = ev.clientX; g.lt = now;
+    const w = g.box.clientWidth;
+    g.dx = Math.max(-w, Math.min(w, dx));
+    g.tr.style.transform = 'translateX(calc(-100% + ' + g.dx + 'px))';
+    ev.preventDefault();
+  });
+  const endDsDrag = ev => {
+    const g = dsDrag; if (!g || (ev && ev.pointerId !== g.id)) return;
+    dsDrag = null;
+    if (!g.moved) return;
+    const w = g.box.clientWidth, fling = Math.abs(g.v) > 0.45 ? Math.sign(g.v) : 0;
+    const dir = Math.abs(g.dx) > w / 4 ? -Math.sign(g.dx) : -fling; // drag right = previous week
+    const tr = g.tr;
+    tr.classList.remove('dragging');
+    const stop = e => { e.stopPropagation(); e.preventDefault(); };
+    document.addEventListener('click', stop, { capture: true, once: true });
+    setTimeout(() => document.removeEventListener('click', stop, { capture: true }), 50);
+    const done = () => {
+      if (!dir) { tr.style.transform = ''; tr.classList.remove('ds-go'); return; }
+      const btn = g.box.parentElement.querySelector('.ds-arrow[data-v="' + (dir * 7) + '"]');
+      if (btn) A.dayShift(btn);
+    };
+    if (reduceMotion()) return done();
+    tr.classList.add('ds-go');
+    tr.style.transform = dir ? 'translateX(' + (dir > 0 ? '-200%' : '0%') + ')' : '';
+    let fired = false;
+    const fin = () => { if (fired) return; fired = true; done(); };
+    tr.addEventListener('transitionend', fin, { once: true });
+    setTimeout(fin, 320);
+  };
+  document.addEventListener('pointerup', endDsDrag);
+  document.addEventListener('pointercancel', endDsDrag);
   /* Desktop: drag the Week strip with the mouse. It follows the pointer, keeps a little momentum, then snaps to the
      nearest day; a drag never counts as a click on a day or a bar. Touch and trackpads keep native scrolling. */
   let wkDrag = null;
@@ -4667,9 +4800,10 @@
       .sort((a, b) => stackRank(a) - stackRank(b) || ROLES.indexOf(userOf(a.userId).role) - ROLES.indexOf(userOf(b.userId).role) || lastName(userOf(a.userId)).localeCompare(lastName(userOf(b.userId))));
     const live = calRequests().filter(countable);
     const roles = ROLES.filter(r => S.f.role.includes(r));
-    // Week strip: tap a date to switch days; arrows move a week. Dots show who is out (leave / pass), red when over the max.
+    // Week strip: tap a date to switch days; arrows or a sideways drag move a week. Dots show who is out (leave / pass),
+    // red when over the max. The weeks either side are drawn off-screen so a drag shows them sliding in.
     const ws = D.weekStart(d);
-    const strip = Array.from({ length: 7 }, (_, i) => D.add(ws, i)).map(x => {
+    const dsWeek = w0 => '<div class="ds-wk">' + Array.from({ length: 7 }, (_, i) => D.add(w0, i)).map(x => {
       const on = live.filter(r => r.start <= x && r.end >= x);
       const c = filteredRoleCounts(x);
       const over = roles.some(role => quota(role) && c[role] > quota(role));
@@ -4677,7 +4811,8 @@
       return '<button class="ds-d' + (x === d ? ' on' : '') + (x === S.today ? ' today' : '') + '" data-act="gotoDay" data-date="' + x + '"' + (x === d ? ' aria-current="date"' : '') +
         ' aria-label="' + esc(D.f(x, { weekday: 'long', month: 'long', day: 'numeric' })) + '">' +
         '<span class="ds-w">' + DOW[D.dow(x)][0] + '</span><span class="ds-n">' + Number(x.slice(8)) + '</span><span class="ds-dots">' + dots + '</span></button>';
-    }).join('');
+    }).join('') + '</div>';
+    const strip = '<div class="ds-track">' + dsWeek(D.add(ws, -7)) + dsWeek(ws) + dsWeek(D.add(ws, 7)) + '</div>';
     const rc = filteredRoleCounts(d);
     // Hide user schedules: one availability line for my position instead of P / B / O counts.
     const av = S.priv ? availClass(d, myRole()) : '';
@@ -4971,14 +5106,41 @@
     th.style.left = on.offsetLeft + 'px'; th.style.width = on.offsetWidth + 'px'; th.style.opacity = '1';
     if (!animate) { void th.offsetWidth; th.style.transition = ''; }
   }
+  /** Segmented buttons (single choice): the highlight pill glides from where it last was to the chosen button —
+   *  even when the group is redrawn (its last spot is remembered per group, data-sk). */
+  const segLast = {};
+  function placeSeg(sg, animate) {
+    const th = sg.querySelector(':scope > .seg-thumb'), on = sg.querySelector(':scope > button.on');
+    sg.dataset.placed = '1';
+    if (!th) return;
+    if (!on) { th.style.opacity = '0'; return; }
+    const to = { l: on.offsetLeft, w: on.offsetWidth, t: on.offsetTop, h: on.offsetHeight }, key = sg.dataset.sk, from = key && segLast[key];
+    th.style.top = to.t + 'px'; th.style.height = to.h + 'px';
+    const go = () => { th.style.left = to.l + 'px'; th.style.width = to.w + 'px'; th.style.opacity = '1'; };
+    if ((animate || from) && from && (from.l !== to.l || from.w !== to.w) && !reduceMotion()) {
+      th.style.transition = 'none'; th.style.left = from.l + 'px'; th.style.width = from.w + 'px'; th.style.opacity = '1';
+      void th.offsetWidth; th.style.transition = ''; go();
+    } else { th.style.transition = 'none'; go(); void th.offsetWidth; th.style.transition = ''; }
+    if (key) segLast[key] = to;
+  }
   // Any slider drawn anywhere (tables, dialogs) gets its pill placed on the next frame.
   (function () {
-    let raf = 0;
+    let raf = 0, tmr = 0;
     new MutationObserver(() => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => { raf = 0; document.querySelectorAll('.stsl:not([data-placed])').forEach(sl => placeThumb(sl, false)); });
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; document.querySelectorAll('.stsl:not([data-placed])').forEach(sl => placeThumb(sl, false)); });
+      // Segmented pills: a timer, not a frame, so they're placed even in a background tab (until then the group keeps
+      // its plain selected highlight).
+      if (!tmr) tmr = setTimeout(() => { tmr = 0; document.querySelectorAll('.seg-slide:not([data-placed])').forEach(sg => placeSeg(sg, false)); }, 0);
     }).observe(document.body, { childList: true, subtree: true });
-    window.addEventListener('resize', () => document.querySelectorAll('.stsl').forEach(sl => placeThumb(sl, false)));
+    // A choice changed in place (no redraw): slide to it.
+    document.addEventListener('click', ev => {
+      const sg = ev.target.closest && ev.target.closest('.seg-slide');
+      if (sg) setTimeout(() => { if (document.contains(sg)) placeSeg(sg, true); }, 0);
+    });
+    window.addEventListener('resize', () => {
+      document.querySelectorAll('.stsl').forEach(sl => placeThumb(sl, false));
+      document.querySelectorAll('.seg-slide').forEach(sg => { delete segLast[sg.dataset.sk]; placeSeg(sg, false); });
+    });
   })();
   /** Admin: show only open requests (pending, or in an unresolved conflict), with how many there are. */
   function openBtn() {
@@ -5139,11 +5301,37 @@
       b('batchAdmin', 'shield', 'Make Admin') + b('batchUnadmin', 'shield', 'Remove Admin') + b('batchDelete', 'trash', 'Delete', 'del') + '</span></div>';
   }
   const renderPeopleOnly = () => A.peopleRefresh();
+  /** Member card → Admin → Team Admin grid for member `id`. Each change saves once the rows grant at least one unit +
+   *  position pair (until then it's a draft on this device); deleting every row removes their admin status. */
+  function admGrid(id) {
+    const lim = S.isOrg ? null : S.adminScope;
+    return { lim, rows: () => (S.admRows && S.admRows[id]) || scopeRows(((S.admins || {})[id] || {}).scope),
+      set: rows => {
+        const cells = rowsCells(rows, lim), a = (S.admins || {})[id];
+        S.admRows = Object.assign({}, S.admRows);
+        if (cells.length) {
+          delete S.admRows[id]; S.admDraft = null;
+          const sc = { cells, rows: rows.filter(r => r.units.length && r.roles.length) };
+          save(() => { S.admins[id] = { level: 'team', scope: sc }; }, 'apiSetAdminStatus', S.token, id, 'team', sc);
+        } else if (!rows.length && a) {
+          delete S.admRows[id]; S.admDraft = null;
+          save(() => { delete S.admins[id]; S.alertIds = (S.alertIds || []).filter(x => x !== id); }, 'apiSetAdminStatus', S.token, id, '', null);
+        } else { S.admRows[id] = rows; S.admDraft = id; }
+        render(); openMemberCard(id);
+      },
+      redraw: () => openMemberCard(id) };
+  }
   /** Admin status picker — one member (uid) from their card, or the selected members (uid = null) from the batch bar.
    *  None · Org Admin (org admins only) · Team Admin with units / positions (team admins: within their own team). */
-  function openAdminPicker(uid) {
+  /** add: a row to add, open for editing ({units: [code]} from Teams → Managers, {roles: [name]} from Positions →
+   *  Managers); back: the Managers list to return to. */
+  function openAdminPicker(uid, add, back) {
     const cur = uid ? (S.admins || {})[uid] : null;
-    S.apDraft = { uid, level: cur ? cur.level : 'team', cells: cur && cur.scope ? scopeCells(cur.scope) : [] };
+    const rows = cur && cur.level === 'team' ? scopeRows(cur.scope) : [];
+    if (add) rows.push({ units: (add.units || []).slice(), roles: (add.roles || []).slice() });
+    else if (!rows.length) rows.push({ units: [], roles: [] });
+    S.apDraft = { uid, level: cur && !add ? cur.level : 'team', rows, back: back || null };
+    S.rgEdit = add || !cur ? { g: 'ap', i: rows.length - 1 } : null;
     renderAdminPicker();
   }
   function renderAdminPicker() {
@@ -5152,11 +5340,12 @@
     openModal('adminPick', modalHead(u ? 'Admin Status · ' + esc(nameText(u)) : 'Make ' + plural(n, 'Admin'), 'shield') + '<div class="modal-b">' +
       '<p class="meta" style="margin:0 0 10px;white-space:normal">A label plus admin alerts. What admin mode can do comes from the PIN they unlock with (the admin PIN or a team PIN).</p>' +
       '<div class="sect"><div class="lbl">Type</div>' + seg(levels, d.level, 'apLevel') + '</div>' +
-      (d.level === 'org' ? '<p class="meta sc-note">Every unit and position.</p>' : d.level === 'team' ? '<div class="sect"><div class="lbl">Manages' + REQ + '</div>' + permGrid(d.cells, 'apCell', '', S.isOrg ? null : S.adminScope) +
-        '<p class="meta sc-note">' + (d.cells.length ? esc(scopeText({ cells: d.cells })) + '.' : 'Tick at least one unit and position.') + '</p></div>' : '') +
+      (d.level === 'org' ? '<p class="meta sc-note">Every unit and position.</p>' : d.level === 'team' ? '<div class="sect"><div class="lbl">Manages' + REQ + '</div>' + ruleGrid('ap') +
+        (rowsCells(d.rows, RG.ap.lim).length ? '' : '<p class="meta sc-note">Pick at least one unit and position.</p>') + '</div>' : '') +
       '<div class="err" id="apErr"></div></div>' +
-      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="apSave">' + icon('check', 18) + 'Save</button></div>');
+      '<div class="modal-f"><button class="btn" data-act="apCancel">Cancel</button><button class="btn primary" data-act="apSave">' + icon('check', 18) + 'Save</button></div>');
   }
+  RG.ap = { get lim() { return S.isOrg ? null : S.adminScope; }, rows: () => S.apDraft.rows, set: rows => { S.apDraft.rows = rows; renderAdminPicker(); }, redraw: () => renderAdminPicker() };
   /** Selected members that are still listed (and on my team). */
   const batchIds = () => { const sel = S.rosterSel || new Set(); return peopleStats().rows.map(m => m.u.id).filter(id => sel.has(id)); };
   /** Optimistic batch: change the local roster now, sync in the background (a failure re-syncs and says so). */
@@ -5350,14 +5539,16 @@
         '<td class="strong">' + esc(roleName(name)) + (r.disabled ? ' <span class="badge">Disabled</span>' : '') + '</td>' +
         '<td>' + seeCell(Object.assign({ name }, r)) + '</td>' +
         '<td class="num">' + used + '</td>' +
+        '<td>' + (managersOf({ role: name }).map(u => esc(nameText(u))).join(', ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
           '<button class="btn sm act" data-act="editRole" data-name="' + esc(name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
+          '<button class="btn sm act" data-act="roleManagers" data-name="' + esc(name) + '" title="Position managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
           '<button class="btn sm act" data-act="toggleRole" data-name="' + esc(name) + '" title="' + (r.disabled ? 'Enable' : 'Disable') + '">' + icon(r.disabled ? 'check' : 'ban', 13) + '<span class="bl">' + (r.disabled ? 'Enable' : 'Disable') + '</span></button>' +
           (used || builtIn ? '' : '<button class="btn sm del act" data-act="deleteRole" data-name="' + esc(name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td></tr>';
     }).join('');
     return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Position</th>' +
-      '<th scope="col">Can See</th><th scope="col" class="num">Members</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      '<th scope="col">Can See</th><th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
   /** Position editor (new or existing): name, letter, max on leave, Can see and color; Cancel · Save. */
   function openRoleEditor(name) {
@@ -5395,26 +5586,29 @@
   }
   /** Unit badges panel body. Any error shows inline instead of leaving the panel blank. */
   /** Unit badges table: badge · name · members · Edit / Disable / Delete. Tap a row to edit. */
-  /** Team admins who manage this unit: team status whose units include it (or no units = every unit, for their positions). */
-  const isUnitAdmin = (id, code) => { const a = (S.admins || {})[id]; return !!a && a.level === 'team' && !!a.scope && scopeCells(a.scope).some(c => c.startsWith(code + '|')); };
-  const teamAdminsOf = code => S.users.filter(u => isUnitAdmin(u.id, code));
-  /** Teams → Admins: the unit's members (and anyone already admin for it), each with a Team Admin switch for THIS team.
-   *  The switch adds / removes this unit from the person's teams, so one manager can run several teams. Positions and
-   *  multiple teams can also be set together in Admin Status on the Roster. Org admins are shown, not switchable. */
-  function openTeamAdmins(code) {
-    const un = unitsList().find(x => x.code === code) || { code, name: code };
+  /** Team admins who manage part of a team or a position: any of their pairs is in that unit (or that position). */
+  const managesPart = (id, w) => { const a = (S.admins || {})[id]; return !!a && a.level === 'team' && !!a.scope && scopeCells(a.scope).some(c => { const [u, r] = c.split('|'); return w.unit ? u === w.unit : r === w.role; }); };
+  const managersOf = w => S.users.filter(u => managesPart(u.id, w));
+  /** Teams → Managers and Positions → Managers (w = {unit} or {role}): the team admins covering it, each with Edit
+   *  (their unit × position grid) and Remove (drops just this team / position from their grid), then Add Manager: pick
+   *  a member and their grid opens with a new row already filled with this team (any position yet) or this position
+   *  (no team yet). */
+  function openManagers(w) {
+    const title = w.unit ? w.unit : rolePl(w.role);
     const byLast = (a, b) => lastName(a).localeCompare(lastName(b));
-    const active = S.users.filter(u => u.active);
-    const mgrs = active.filter(u => isUnitAdmin(u.id, code)).sort(byLast);
-    const own = active.filter(u => u.unit === code && !isUnitAdmin(u.id, code)).sort(byLast);
-    const others = active.filter(u => u.unit !== code && !isUnitAdmin(u.id, code)).sort(byLast);
-    const row = u => { const a = (S.admins || {})[u.id], on = isUnitAdmin(u.id, code), self = u.id === S.me;
-      return '<div class="ta-row">' + idBadge(u) + '<span class="pp-n">' + nameHtml(u) + (a ? ' <span class="badge adm-b">' + (a.level === 'org' ? 'Org Admin' : 'Team Admin · ' + esc(scopeText(a.scope))) + '</span>' : '') + '</span>' +
-        (a && a.level === 'org' || self ? '' : '<button type="button" class="btn sm chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="teamAdminTog" data-id="' + esc(u.id) + '" data-code="' + esc(code) + '">' + (on ? icon('check', 14) : '') + 'Manager</button>') + '</div>'; };
-    const sect = (title, list, empty) => '<div class="ta-sect"><div class="lbl">' + title + ' <span class="ct">' + list.length + '</span></div>' + (list.length ? '<div class="ta-list">' + list.map(row).join('') + '</div>' : '<p class="meta">' + empty + '</p>') + '</div>';
-    openModal('teamAdmins', modalHead(esc(un.code) + ' Managers', 'shield') + '<div class="modal-b">' +
-      '<p class="meta" style="margin:0 0 10px;white-space:normal">Managers are team admins: they unlock Admin Mode with the Team Admin PIN and run this team (approve / deny, blackouts, roster). One person can manage several teams. To also limit them to certain positions, use Admin Status on the Roster.</p>' +
-      sect('Managers', mgrs, 'No managers yet.') + sect(esc(un.code) + ' Members', own, 'No other members.') + sect('Other Teams', others, 'No one else.') + '</div>' +
+    const mgrs = managersOf(w).sort(byLast);
+    const lim = S.isOrg ? null : S.adminScope;
+    const pool = S.users.filter(u => u.active && u.id !== S.me && !managesPart(u.id, w) && ((S.admins || {})[u.id] || {}).level !== 'org' && (!lim || inScope(lim, u))).sort(byLast);
+    const row = u => { const a = S.admins[u.id];
+      return '<div class="ta-row">' + idBadge(u) + '<span class="pp-n">' + nameHtml(u) + ' <span class="badge adm-b">' + esc(scopeText(a.scope)) + '</span></span>' +
+        '<span class="ta-acts"><button type="button" class="btn sm" data-act="mgrEdit" data-id="' + esc(u.id) + '">' + icon('pencil', 14) + 'Edit</button>' +
+        '<button type="button" class="btn sm del" data-act="mgrRemove" data-id="' + esc(u.id) + '">' + icon('x', 14) + 'Remove</button></span></div>'; };
+    S.mgrFor = w;
+    openModal('managers', modalHead(esc(title) + ' Managers', 'shield') + '<div class="modal-b">' +
+      '<p class="meta" style="margin:0 0 10px;white-space:normal">Managers are team admins: they unlock Admin Mode with the Team Admin PIN and run the units and positions in their grid (approve / deny, blackouts, roster). One person can manage several.</p>' +
+      '<div class="ta-sect"><div class="lbl">Managers <span class="ct">' + mgrs.length + '</span></div>' + (mgrs.length ? '<div class="ta-list">' + mgrs.map(row).join('') + '</div>' : '<p class="meta">No managers yet.</p>') + '</div>' +
+      '<div class="ta-sect"><div class="lbl">Add Manager</div><div class="field"><select data-change="mgrAdd" aria-label="Add a manager"><option value="">Choose a member…</option>' +
+        pool.map(u => '<option value="' + esc(u.id) + '">' + esc(nameText(u) + ' · ' + u.unit + ' · ' + roleName(u.role)) + '</option>').join('') + '</select></div></div></div>' +
       '<div class="modal-f"><button class="btn primary block" data-act="closeModal">Done</button></div>', true);
   }
   function adminUnits() {
@@ -5424,7 +5618,7 @@
         '<td>' + unitBadge(un.code) + '</td>' +
         '<td class="strong">' + esc(un.name) + (un.disabled ? ' <span class="badge">Disabled</span>' : '') + '</td>' +
         '<td class="num">' + used + '</td>' +
-        '<td>' + (teamAdminsOf(un.code).map(u => esc(nameText(u))).join(', ') || '<span class="muted">None</span>') + '</td>' +
+        '<td>' + (managersOf({ unit: un.code }).map(u => esc(nameText(u))).join(', ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
           '<button class="btn sm act" data-act="editUnit" data-code="' + esc(un.code) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
           '<button class="btn sm act" data-act="teamAdmins" data-code="' + esc(un.code) + '" title="Team managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
@@ -5468,26 +5662,18 @@
   function reportPanel() {
     const devTz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } })();
     const rTypes = typeNames().concat(['Blackout']); // every event type, plus blackouts
-    const r = S.rpDraft || (S.rpDraft = Object.assign({ on: false, email: '', hour: 6, tz: devTz, rules: [{ unit: '', role: '', types: rTypes.slice() }] },
+    const r = S.rpDraft || (S.rpDraft = Object.assign({ on: false, email: '', hour: 6, tz: devTz, rules: [{ units: [], roles: [], types: rTypes.slice() }] },
       S.report ? JSON.parse(JSON.stringify(S.report)) : {}));
+    r.rules = (r.rules || []).map(gridRow);
     const zones = REPORT_TZ.some(z => z[0] === r.tz) ? REPORT_TZ : REPORT_TZ.concat([[r.tz, r.tz.replace(/_/g, ' ')]]);
     const hour = h => (h % 12 || 12) + ':00 ' + (h < 12 ? 'AM' : 'PM');
     const opt = (v, l, cur) => '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(l) + '</option>';
-    // Coverage rows (same as admin alert rows): unit · position (from what I manage) and the types to include.
-    const lim = myScope(), units = x => scopeUnits(lim).concat(x.unit && !scopeUnits(lim).includes(x.unit) ? [x.unit] : []), roles = x => scopeRoles(lim).concat(x.role && !scopeRoles(lim).includes(x.role) ? [x.role] : []);
-    const rows = (r.rules || []).map((x, i) => '<div class="ar-row">' +
-      '<div class="ar-who"><select aria-label="Unit" data-change="rpUnit" data-i="' + i + '">' + opt('', 'Any unit', x.unit) + units(x).map(c => opt(c, c, x.unit)).join('') + '</select>' +
-        '<select aria-label="Position" data-change="rpRole" data-i="' + i + '">' + opt('', 'Any position', x.role) + roles(x).map(y => opt(y, roleName(y), x.role)).join('') + '</select>' +
-        '<button type="button" class="btn sm del act ar-del" data-act="rpDel" data-i="' + i + '" aria-label="Delete this row" title="Delete">' + icon('trash', 14) + '</button></div>' +
-      '<div class="push-btns ar-kinds">' + rTypes.map(t => { const on = (x.types || []).includes(t);
-        return '<button type="button" class="btn sm chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="rpType" data-i="' + i + '" data-v="' + esc(t) + '">' + (on ? icon('check', 14) : '') + esc(t) + '</button>'; }).join('') + '</div></div>').join('');
     return '<div class="panel" id="reportPanel"><div class="cfg-row-tog"><div><h3>' + icon('bell', 16) + ' Daily Email Report' + tip('Your own report, every morning: who is out today and the next 7 days (and any blackouts), for the groups and types you pick. Pending requests are marked.') + '</h3></div>' +
         '<button type="button" class="btn chip-tog' + (r.on ? ' on' : '') + '" aria-pressed="' + r.on + '" data-act="rpOn">' + (r.on ? icon('check', 18) + 'On' : 'Off') + '</button></div>' +
       (r.on ? '<div class="field"><label for="rpEmail">Email' + REQ + '</label><input id="rpEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="' + esc(r.email) + '" data-model="rpDraft.email"></div>' +
         '<div class="row rp-row"><div class="field rp-hour"><label for="rpHour">Time</label><select id="rpHour" data-change="rpHour">' + Array.from({ length: 24 }, (_, h) => opt(h, hour(h), Number(r.hour))).join('') + '</select></div>' +
           '<div class="field"><label for="rpTz">Time Zone</label><select id="rpTz" data-change="rpTz">' + zones.map(z => opt(z[0], z[1], r.tz)).join('') + '</select></div></div>' +
-        '<div class="sect"><div class="lbl">Covers</div>' + (rows ? '<div class="ar-list">' + rows + '</div>' : '<p class="meta">Nothing yet.</p>') +
-          '<div class="cfg-foot ar-add"><button type="button" class="btn" data-act="rpAdd">' + icon('plus', 16) + 'Add</button></div></div>' : '') +
+        '<div class="sect"><div class="lbl">Covers</div>' + ruleGrid('report') + '</div>' : '') +
       '<div class="err" id="rpErr"></div><div class="cfg-foot">' + (r.on && S.report && S.report.on && S.report.email ? '<button class="btn" data-act="rpTest">' + icon('bell', 16) + 'Send Test Now</button>' : '') +
         '<button class="btn primary" data-act="rpSave">' + icon('check', 16) + 'Save Report</button></div></div>';
   }
@@ -5497,6 +5683,9 @@
     ['Europe/London', 'London'], ['Europe/Paris', 'Paris'], ['Europe/Berlin', 'Germany (Berlin)'], ['Europe/Istanbul', 'Turkey (Istanbul)'], ['Asia/Qatar', 'Qatar'],
     ['Asia/Dubai', 'UAE (Dubai)'], ['Asia/Riyadh', 'Saudi Arabia (Riyadh)'], ['Asia/Kuwait', 'Kuwait'], ['Asia/Seoul', 'Korea (Seoul)'], ['Asia/Tokyo', 'Japan (Tokyo)'], ['Pacific/Guam', 'Guam']];
   const redrawReport = () => { const p = $('#reportPanel'); if (p) p.outerHTML = reportPanel(); };
+  // Report coverage grid: the draft's rows; saved with Save Report.
+  RG.report = { key: 'types', any: true, get lim() { return myScope(); }, get cols() { return typeNames().concat(['Blackout']).map(t => [t, t]); },
+    blank: () => ({ types: typeNames().concat(['Blackout']) }), rows: () => S.rpDraft.rules, set: rows => { S.rpDraft.rules = rows; redrawReport(); }, redraw: redrawReport };
   /** Which admin mode is unlocked: "Org Admin", or "Team Admin" (its team in the tooltip). */
   const adminModeBadge = () => '<span class="unlocked" title="' + esc(S.adminScope ? 'Team admin for ' + scopeText(S.adminScope) : 'Org admin: every team') + '">' + icon('unlock', 13) + (S.adminScope ? ' Team Admin' : ' Org Admin') + '</span>';
   /** Team admins change only blackouts that stay within their team; org admins change any. */
@@ -5553,7 +5742,7 @@
         adminUnits() + '</div>' +
 
       // Positions: badge, daily leave max and whose schedules each position can see.
-      '<div class="panel"><div class="cfg-h"><h3>' + icon('users', 16) + ' Positions' + tip('Max on leave: per day, 0 = no limit. Can see: whose schedules that position sees. Managers see everyone. Disabled positions aren’t offered to new members.') + '</h3>' +
+      '<div class="panel"><div class="cfg-h"><h3>' + icon('users', 16) + ' Positions' + tip('Max on leave: per day, 0 = no limit. Can see: whose schedules that position sees. Admins also see everyone they manage. Disabled positions aren’t offered to new members.') + '</h3>' +
           '<button class="btn primary" data-act="newRole">' + icon('plus', 18) + 'New Position</button></div>' +
         adminRoles() + '</div>' +
 
@@ -5835,7 +6024,7 @@
         '<span class="bh-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(me.unit) + '</span>' +
         '<span class="bh-n" aria-hidden="true">' + esc(calName(me)) + '</span></div>' +
       '<div class="pm-notes" id="pmNotes">' + pmNotesHtml() + '</div>' +
-      '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full" role="group" aria-label="Appearance">' +
+      '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full seg-slide" role="group" aria-label="Appearance" data-sk="theme"><span class="seg-thumb" aria-hidden="true"></span>' +
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
           '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '">' + icon(t[2], 15) + t[1] + '</button>').join('') + '</div></div>' +
       (S.isAdmin ? row('menuLockAdmin', 'lock', 'Lock Admin Mode') : row('openAdminPin', 'shield', 'Admin Mode')) +
@@ -5942,29 +6131,15 @@
         alertRulesHtml() : '') +
       '';
   }
-  /** Admin alert kinds: [key, label]. */
-  const ALERT_KINDS = [['new', 'New Requests'], ['edited', 'Changes'], ['deleted', 'Deletions'], ['signup', 'New Members']];
-  const ALL_KINDS = () => ALERT_KINDS.map(k => k[0]);
-  /** My alert rows: [{unit, role, kinds}] (unit / role '' = any). Nothing saved yet: one row per Default Filter Position. */
-  const alertRules = () => (S.alertScope && Array.isArray(S.alertScope.rules)) ? S.alertScope.rules.map(r => ({ unit: r.unit || '', role: r.role || '', kinds: Array.isArray(r.kinds) ? r.kinds : r.kind ? [r.kind] : ALL_KINDS() }))
-    : (() => { const me = userOf(S.me) || {}; return [{ unit: me.unit || '', role: me.role || '', kinds: ALL_KINDS() }]; })(); // default: my own unit and position
+  /** My alert rows: [{units, roles, kinds}] (an empty list = any). Nothing saved yet: my own unit and position. */
+  const alertRules = () => (S.alertScope && Array.isArray(S.alertScope.rules)) ? S.alertScope.rules.map(r => Object.assign(gridRow(r), { kinds: Array.isArray(r.kinds) ? r.kinds.slice() : r.kind ? [r.kind] : ALL_KINDS() }))
+    : (() => { const me = userOf(S.me) || {}; return [Object.assign(gridRow({ unit: me.unit, role: me.role }), { kinds: ALL_KINDS() })]; })();
+  RG.alerts = { cols: ALERT_KINDS, key: 'kinds', any: true, get lim() { return myScope(); }, blank: () => ({ kinds: ALL_KINDS() }),
+    rows: alertRules, set: rows => saveAlertRules(rows), redraw: () => { const p = $('#notesPanel'); if (p) p.innerHTML = notesPanelHtml(); } };
   /** Admin alerts: one editable row per unit · position (each can be Any) with the alerts it sends as on / off chips,
    *  a Delete per row and Add Alert. Shown in admin mode even while alerts are off (dimmed), so they can be set up first. */
   function alertRulesHtml() {
-    // A grid: one row per unit · position I added (only the ones I care about), a check box per alert type, a delete;
-    // the last row adds one (unit and position pickers — what I manage; Any = all of mine).
-    const rules = alertRules(), lim = myScope(), any = '<span class="muted">Any</span>';
-    const opt = (v, l) => '<option value="' + esc(v) + '">' + esc(l) + '</option>';
-    const head = '<tr><th scope="col">Unit</th><th scope="col">Position</th>' + ALERT_KINDS.map(k => '<th scope="col" class="ag-k">' + esc(k[1]) + '</th>').join('') + '<th scope="col"><span class="sr">Delete</span></th></tr>';
-    const rows = rules.map((r, i) => '<tr><td>' + (r.unit ? unitBadge(r.unit) : any) + '</td><td>' + (r.role ? esc(rolePl(r.role)) : any) + '</td>' +
-      ALERT_KINDS.map(k => { const on = r.kinds.includes(k[0]);
-        return '<td class="ag-k"><button type="button" class="rsel' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" aria-label="' + esc(k[1]) + '" data-act="alertKind" data-i="' + i + '" data-v="' + k[0] + '">' + (on ? icon('check', 14) : '') + '</button></td>'; }).join('') +
-      '<td class="ag-del"><button type="button" class="btn sm del act" data-act="alertDel" data-i="' + i + '" aria-label="Delete this row" title="Delete">' + icon('trash', 14) + '</button></td></tr>').join('');
-    const add = '<tr class="ag-add"><td><select id="agUnit" aria-label="Unit">' + opt('', 'Any') + scopeUnits(lim).map(c => opt(c, c)).join('') + '</select></td>' +
-      '<td><select id="agRole" aria-label="Position">' + opt('', 'Any') + scopeRoles(lim).map(r => opt(r, rolePl(r))).join('') + '</select></td>' +
-      '<td colspan="' + (ALERT_KINDS.length + 1) + '"><button type="button" class="btn sm" data-act="alertAdd">' + icon('plus', 14) + 'Add</button></td></tr>';
-    return '<div class="push-row alert-rules' + (S.adminAlerts ? '' : ' is-off') + '"><div class="tbl-wrap ag-wrap"><table class="rtable ag">' +
-      '<thead>' + head + '</thead><tbody>' + rows + add + '</tbody></table></div></div>';
+    return '<div class="push-row alert-rules' + (S.adminAlerts ? '' : ' is-off') + '">' + ruleGrid('alerts') + '</div>';
   }
   function saveAlertRules(rules) {
     save(() => { S.alertScope = { rules }; }, 'apiSetAlertScope', S.token, { rules });
@@ -6242,9 +6417,6 @@
         '<div id="mcPinRow" hidden>' + PIN_HINT + '<div class="mc-pin"><input id="mcPin1" ' + NEW_PIN + ' placeholder="PIN" aria-label="PIN">' +
           '<input id="mcPin2" ' + NEW_PIN + ' placeholder="Again" aria-label="PIN again">' +
           '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div></div><div class="err" id="mcPinErr"></div>' +
-        '<div class="mc-li"><div class="mc-li-t"><b>Manager</b><span>' + (u.manager ? 'Sees every position’s schedule' : 'Sees what their position can see') + '</span></div>' +
-          '<div class="mc-li-a"><button type="button" class="btn sm chip-tog' + (u.manager ? ' on' : '') + '" aria-pressed="' + !!u.manager + '" data-act="setManager" data-id="' + esc(uid) + '">' +
-            (u.manager ? icon('check', 15) + 'On' : 'Off') + '</button></div></div>' +
         // Admin: Org Admin | Team Admin | None (team admins: Team Admin | None), then — for a team admin — the grid of
         // unit + position pairs they manage. Every change saves at once.
         (uid !== S.me ? (() => {
@@ -6252,7 +6424,7 @@
           const opts = (S.isOrg ? [['org', 'Org Admin']] : []).concat([['team', 'Team Admin'], ['', 'None']]);
           return '<div class="mc-li mc-adm"><div class="mc-li-t"><b>Admin</b><span>' + (lvl === 'org' ? 'Every team' : lvl === 'team' ? (cells.length ? esc(scopeText({ cells })) : 'Tick what they manage') : 'Not an admin') + ((S.alertIds || []).includes(uid) ? ' · gets alerts' : '') + '</span></div>' +
             (canSetAdm ? '<div class="mc-li-a">' + seg(opts, lvl, 'admLevel', ' data-id="' + esc(uid) + '"') + '</div>' : '') + '</div>' +
-            (lvl === 'team' && canSetAdm ? permGrid(cells, 'admCell', ' data-id="' + esc(uid) + '"', S.isOrg ? null : S.adminScope) : '');
+            (lvl === 'team' && canSetAdm ? ruleGrid('adm:' + uid) : '');
         })() : '') +
       '</div></section>' +
       // Details: Last · First · Middle, then Rank · Position · Unit (a tight grid; two columns on phones).
@@ -6672,7 +6844,7 @@
     let sx = 0, sy = 0, st = 0, on = false, mouse = false;
     let drag = false; // the calendar is following the finger / pointer sideways
     function begin(x, y, target) {
-      on = isCalView() && S.cal !== 'week' && !S.modal && !S.openDrop && !!target.closest('#calBody') && !target.closest('.dpanel');
+      on = isCalView() && S.cal !== 'week' && !S.modal && !S.openDrop && !!target.closest('#calBody') && !target.closest('.dpanel') && !target.closest('.ds-days');
       drag = false;
       if (on) { sx = x; sy = y; st = Date.now(); }
     }
@@ -6906,11 +7078,6 @@
     rpOn() { S.rpDraft.on = !S.rpDraft.on; redrawReport(); },
     rpHour(el) { S.rpDraft.hour = Number(el.value); },
     rpTz(el) { S.rpDraft.tz = el.value; },
-    rpUnit(el) { S.rpDraft.rules[Number(el.dataset.i)].unit = el.value; },
-    rpRole(el) { S.rpDraft.rules[Number(el.dataset.i)].role = el.value; },
-    rpType(el) { const x = S.rpDraft.rules[Number(el.dataset.i)]; x.types = toggleIn(x.types || [], el.dataset.v); redrawReport(); },
-    rpDel(el) { S.rpDraft.rules.splice(Number(el.dataset.i), 1); redrawReport(); },
-    rpAdd() { (S.rpDraft.rules = S.rpDraft.rules || []).push({ unit: '', role: '', types: typeNames().concat(['Blackout']) }); redrawReport(); },
     async rpSave(el) {
       const r = S.rpDraft, err = $('#rpErr'), e = $('#rpEmail');
       if (e) r.email = e.value.trim();
@@ -6986,7 +7153,7 @@
     calPrev() { moveCursor(-1); },
     closeDayPanel() { S.dayPanel = null; store.set('dpClosed', true); render(); },
     dayShift(el) {
-      if (S.dayPanel && $('.dpanel')) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); return render(); } S.cursor = D.add(S.cursor, Number(el.dataset.v)); S.sel = null; render(); },
+      if (S.dayPanel && $('.dpanel')) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); syncCalTo(S.dayPanel); return render(); } S.cursor = D.add(S.cursor, Number(el.dataset.v)); S.sel = null; render(); },
     calNext() { moveCursor(1); },
     calToday() { S.today = localToday(); S.cursor = S.today; S.weekLeft = null; render(); },
     dayList(el) { A.pickDay(el); },
@@ -7112,7 +7279,7 @@
     },
     fDrop(el) { const k = (el.dataset.scope || 'cal') + ':' + el.dataset.g; S.openDrop = S.openDrop === k ? null : k; render(); },
     gotoDay(el) {
-      if (isCalView() && S.cal !== 'day' && useDayPanel() && !el.closest('#modal')) { S.dayPanel = el.dataset.date; store.set('dpClosed', false); S.sel = null; hideToast(); return render(); }
+      if (isCalView() && S.cal !== 'day' && useDayPanel() && !el.closest('#modal')) { S.dayPanel = el.dataset.date; syncCalTo(S.dayPanel); store.set('dpClosed', false); S.sel = null; hideToast(); return render(); }
       if (S.cal !== 'day') S.prevCal = S.cal; S.cursor = el.dataset.date; S.cal = 'day'; S.sel = null; hideToast(); if (!isCalView()) S.view = 'calendar'; closeModal(); render(); },
     /* Clicking a day lists who is out. While a range is being picked, the click sets the return day. */
     /* Tapping a day opens Day view. New requests start from the request buttons, not from tapping days. */
@@ -7239,13 +7406,6 @@
     },
     srvRefresh() { S.updateLater = false; S.update = () => goFresh(); askUpdate(); },
     mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; $('#mcPin1').focus(); } },
-    setManager(el) {
-      const u = S.users.find(x => x.id === el.dataset.id); if (!u) return;
-      const on = !u.manager;
-      save(() => { u.manager = on; }, 'apiSetManager', S.token, u.id, on);
-      if (S.modal === 'member') openMemberCard(u.id);
-      toast(nameText(u) + (on ? ' is now a Manager' : ' is no longer a Manager'), 'ok', 1600);
-    },
     // Optimistic, like every Roster action: the card updates now and the server catches up in the background.
     revokeAdmin(el) {
       const id = el.dataset.id, u = userOf(id);
@@ -7258,17 +7418,14 @@
     // Member card: Org Admin | Team Admin | None. Team Admin waits for the first ticked pair before saving.
     admLevel(el) {
       const id = el.dataset.id, v = el.dataset.v, a = (S.admins || {})[id];
-      if (v === 'team') { if (!a || a.level !== 'team') { S.admDraft = id; openMemberCard(id); } return; }
-      S.admDraft = null;
+      if (v === 'team') {
+        // Start with one empty row, open, so they can pick units and positions straight away.
+        if (!a || a.level !== 'team') { S.admDraft = id; S.admRows = Object.assign({}, S.admRows, { [id]: [{ units: [], roles: [] }] }); S.rgEdit = { g: 'adm:' + id, i: 0 }; openMemberCard(id); }
+        return;
+      }
+      S.admDraft = null; if (S.admRows) delete S.admRows[id];
       if (!v && a && !confirm('Remove admin status from ' + nameText(userOf(id)) + '? Any admin mode they have open ends and their alerts stop.')) { openMemberCard(id); return; }
       save(() => { if (v) S.admins[id] = { level: v, scope: null }; else delete S.admins[id]; }, 'apiSetAdminStatus', S.token, id, v, null);
-      render(); openMemberCard(id);
-    },
-    admCell(el) {
-      const id = el.dataset.id, a = (S.admins || {})[id];
-      const cells = toggleIn(a && a.level === 'team' ? scopeCells(a.scope) : [], el.dataset.cell);
-      S.admDraft = cells.length ? null : id; // unticking the last pair: back to "tick what they manage"
-      save(() => { if (cells.length) S.admins[id] = { level: 'team', scope: { cells } }; else delete S.admins[id]; }, 'apiSetAdminStatus', S.token, id, cells.length ? 'team' : '', cells.length ? { cells } : null);
       render(); openMemberCard(id);
     },
     memberYear(el) { S.yearFrom = el.dataset.id; openPersonYear(el.dataset.id); },
@@ -7351,6 +7508,23 @@
     },
 
     closeModal() { closeModal(); },
+    // Unit × position grids (ruleGrid): edit / done / add / delete a row, a column check box, a unit or position chip.
+    rg(el) {
+      const g = el.dataset.g, h = rgOf(g); if (!h) return;
+      const op = el.dataset.op, i = Number(el.dataset.i), v = el.dataset.v;
+      const rows = h.rows().map(r => Object.assign({}, r, { units: r.units.slice(), roles: r.roles.slice() })), x = rows[i];
+      const same = S.rgEdit && S.rgEdit.g === g && S.rgEdit.i === i;
+      if (op === 'edit' || op === 'done') { S.rgEdit = op === 'edit' && !same ? { g, i } : null; return h.redraw(); }
+      if (op === 'add') { rows.push(Object.assign({ units: [], roles: [] }, h.blank ? h.blank() : {})); S.rgEdit = { g, i: rows.length - 1 }; }
+      else if (op === 'del') { rows.splice(i, 1); if (S.rgEdit && S.rgEdit.g === g) S.rgEdit = null; }
+      else if (!x) return;
+      else if (op === 'col') x[h.key] = toggleIn(x[h.key] || [], v);
+      else if (op === 'unit') x.units = toggleIn(x.units, v);
+      else if (op === 'role') x.roles = toggleIn(x.roles, v);
+      else if (op === 'anyU') x.units = [];
+      else if (op === 'anyR') x.roles = [];
+      h.set(rows);
+    },
 
     /* Profile */
     async savePin(el) {
@@ -7634,23 +7808,18 @@
       if (ids.length && ids.every(id => s.has(id))) ids.forEach(id => s.delete(id)); else ids.forEach(id => s.add(id));
       renderPeopleOnly();
     },
-    alertAdd() {
-      const r = { unit: ($('#agUnit') || {}).value || '', role: ($('#agRole') || {}).value || '', kinds: ALL_KINDS() }, rules = alertRules();
-      if (rules.some(x => x.unit === r.unit && x.role === r.role)) { toast('That row is already there', 'info'); return; }
-      saveAlertRules(rules.concat([r]));
-    },
-    alertKind(el) { const r = alertRules(), x = r[Number(el.dataset.i)]; x.kinds = toggleIn(x.kinds, el.dataset.v); saveAlertRules(r); },
-    alertDel(el) { saveAlertRules(alertRules().filter((_, i) => i !== Number(el.dataset.i))); },
     apLevel(el) { S.apDraft.level = el.dataset.v; renderAdminPicker(); },
-    apCell(el) { S.apDraft.cells = toggleIn(S.apDraft.cells, el.dataset.cell); renderAdminPicker(); },
+    apCancel() { const b = S.apDraft && S.apDraft.back; S.rgEdit = null; if (b) openManagers(b); else closeModal(); },
     apSave() {
-      const d = S.apDraft, err = $('#apErr');
-      if (d.level === 'team' && !d.cells.length) { err.textContent = 'Tick at least one unit and position.'; return; }
-      const st = d.level ? { level: d.level, scope: d.level === 'team' ? { cells: d.cells.slice() } : null } : null;
+      const d = S.apDraft, err = $('#apErr'), cells = rowsCells(d.rows, RG.ap.lim);
+      if (d.level === 'team' && !cells.length) { err.textContent = 'Pick at least one unit and position.'; return; }
+      const st = d.level ? { level: d.level, scope: d.level === 'team' ? { cells, rows: d.rows.filter(r => r.units.length && r.roles.length) } : null } : null;
+      S.rgEdit = null;
       const set = id => { if (id === S.me) return; if (st) S.admins[id] = { level: st.level, scope: st.scope }; else delete S.admins[id]; };
       if (d.uid) {
         save(() => set(d.uid), 'apiSetAdminStatus', S.token, d.uid, d.level, st && st.scope);
-        closeModal(); render(); openMemberCard(d.uid);
+        if (S.admRows) delete S.admRows[d.uid];
+        closeModal(); render(); if (d.back) openManagers(d.back); else openMemberCard(d.uid);
         toast(st ? 'Admin status saved' : 'Admin status removed', 'ok', 1800);
       } else runBatch('admin', { level: d.level, scope: st && st.scope }, list => list.forEach(u => set(u.id)), n => plural(n - (batchIds().includes(S.me) ? 1 : 0), 'member') + ' made ' + (d.level === 'org' ? 'org' : 'team') + ' admin');
     },
@@ -7710,16 +7879,18 @@
       render(); if (S.modal === 'member') openMemberCard(u.id);
       toast(u.name + (on ? ' reactivated' : ' deactivated'), 'ok', 1500);
     },
-    teamAdmins(el) { openTeamAdmins(el.dataset.code); },
-    // Add / remove this unit from the person's team admin units (their positions, if any, stay).
-    teamAdminTog(el) {
-      const id = el.dataset.id, code = el.dataset.code, a = (S.admins || {})[id];
-      // Manager on = every position in this unit added to their pairs; off = this unit's pairs removed.
-      let cells = a && a.level === 'team' && a.scope ? scopeCells(a.scope) : [];
-      cells = cells.some(c => c.startsWith(code + '|')) ? cells.filter(c => !c.startsWith(code + '|')) : cells.concat(ROLES.map(r => code + '|' + r));
-      const cur = { cells }, none = !cells.length;
-      save(() => { if (none) delete S.admins[id]; else S.admins[id] = { level: 'team', scope: cur }; }, 'apiSetAdminStatus', S.token, id, none ? '' : 'team', none ? null : cur);
-      render(); openTeamAdmins(code);
+    teamAdmins(el) { openManagers({ unit: el.dataset.code }); },
+    roleManagers(el) { openManagers({ role: el.dataset.name }); },
+    mgrEdit(el) { openAdminPicker(el.dataset.id, null, S.mgrFor); },
+    mgrAdd(el) { if (el.value) openAdminPicker(el.value, S.mgrFor.unit ? { units: [S.mgrFor.unit] } : { roles: [S.mgrFor.role] }, S.mgrFor); },
+    mgrRemove(el) {
+      const id = el.dataset.id, w = S.mgrFor, a = S.admins[id];
+      const rows = scopeRows(a.scope).map(r => w.unit ? Object.assign({}, r, { units: r.units.filter(c => c !== w.unit) }) : Object.assign({}, r, { roles: r.roles.filter(x => x !== w.role) })).filter(r => r.units.length && r.roles.length);
+      const cells = scopeCells(a.scope).filter(c => { const [u, r] = c.split('|'); return w.unit ? u !== w.unit : r !== w.role; });
+      if (!cells.length && !confirm(nameText(userOf(id)) + ' manages nothing else, so this removes their admin status. Continue?')) return;
+      const sc = { cells, rows };
+      save(() => { if (cells.length) S.admins[id] = { level: 'team', scope: sc }; else delete S.admins[id]; }, 'apiSetAdminStatus', S.token, id, cells.length ? 'team' : '', cells.length ? sc : null);
+      render(); openManagers(w);
     },
     async saveTeamPin(el) {
       const a = $('#tk1').value.trim(), b = $('#tk2').value.trim();
