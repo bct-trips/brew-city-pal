@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792569997"></script>
+    <script src="config.js?v=1792570493"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2029,6 +2029,13 @@
     .calbar .cb-right { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; margin-left: 0; flex-wrap: nowrap; }
     .calbar .cb-views .seg button { padding: 0 12px; }
   }
+  /* Filters sit at the left of their row in every layout. */
+  .calbar .cb-right { justify-content: flex-start; }
+  /* View switch icons (Week · Month · Qtr). */
+  .calbar .cb-views .seg button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; padding: 0 12px; }
+  /* Smooth paging between weeks / months: the calendar body slides; its frame clips it. */
+  .cal-split { overflow: hidden; }
+  #calBody { will-change: transform; }
 </style>
 
   </head>
@@ -2053,6 +2060,8 @@
     shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
     left: '<path d="m15 18-6-6 6-6"/>',
     share: '<path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>',
+    columns: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/>',
+    grid4: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 12h18"/><path d="M12 3v18"/>',
     plusSquare: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/>',
     more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
     right: '<path d="m9 18 6-6-6-6"/>',
@@ -2868,7 +2877,9 @@
         // Left: view switch, Today, Add Request
         '<div class="cb-left"><div class="cb-views">' +
           (S.cal === 'day' ? '<button class="btn back-month" data-act="backMonth">' + icon('left', 18) + 'Month</button>' : '') +
-          seg([['week', 'Week'], ['month', 'Month'], ['quad', 'Qtr']], S.cal, 'calMode') +
+          // View switch as icons: Week (columns) · Month (calendar) · Qtr (four blocks); the name is the tooltip / label.
+          seg([['week', icon('columns', 18) + '<span class="sr">Week</span>'], ['month', icon('calendar', 18) + '<span class="sr">Month</span>'], ['quad', icon('grid4', 18) + '<span class="sr">Quarter</span>']], S.cal, 'calMode')
+            .replace(/data-v="(week|month|quad)"/g, (m, v) => m + ' title="' + ({ week: 'Week', month: 'Month', quad: 'Quarter' })[v] + '"') +
           '<button class="btn today-btn' + (showsToday() ? ' on' : '') + '" data-act="calToday"' + (showsToday() ? ' aria-pressed="true"' : '') + '>Today</button></div>' +
           '<button class="btn req-btn" data-act="newReq" title="Start a new leave or pass request">' + icon('plus', 16) + 'Add Request</button>' +
         '</div>' +
@@ -5128,11 +5139,33 @@
     for (let i = 0; i < p.length - 1; i++) o = o[p[i]];
     o[p[p.length - 1]] = v;
   }
-  function moveCursor(dir, quadStep) {
-    if (S.cal === 'month') S.cursor = D.addMonths(S.cursor, dir);
-    else if (S.cal === 'quad') S.cursor = D.addMonths(S.cursor, (quadStep || 4) * dir);
-    else S.cursor = D.add(S.cursor, S.cal === 'week' ? 7 * dir : dir);
-    render();
+  function moveCursor(dir, quadStep, fromDx) {
+    const go = () => {
+      if (S.cal === 'month') S.cursor = D.addMonths(S.cursor, dir);
+      else if (S.cal === 'quad') S.cursor = D.addMonths(S.cursor, (quadStep || 4) * dir);
+      else S.cursor = D.add(S.cursor, S.cal === 'week' ? 7 * dir : dir);
+      render();
+    };
+    slideCal(dir, go, fromDx);
+  }
+  /* Smooth paging: the calendar slides out the way you're going and the next week / month slides in from the other
+     side (a swipe that's been following your finger continues from where you let go). Off with reduced motion. */
+  const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function slideCal(dir, change, fromDx) {
+    const b = $('#calBody');
+    if (!b || reduceMotion()) { change(); return; }
+    b.style.transition = 'transform .16s ease-in, opacity .16s ease-in';
+    if (fromDx) { b.style.transform = 'translateX(' + fromDx + 'px)'; void b.offsetWidth; }
+    b.style.transform = 'translateX(' + (-dir * 35) + '%)'; b.style.opacity = '0';
+    setTimeout(() => {
+      change();
+      const n = $('#calBody'); if (!n) return;
+      n.style.transition = 'none'; n.style.transform = 'translateX(' + (dir * 35) + '%)'; n.style.opacity = '0';
+      void n.offsetWidth;
+      n.style.transition = 'transform .22s cubic-bezier(.2, .8, .2, 1), opacity .22s ease-out';
+      n.style.transform = ''; n.style.opacity = '';
+      setTimeout(() => { n.style.transition = ''; }, 260);
+    }, 150);
   }
 
   /** Brief ‹ / › at the screen edge after a swipe, so it's clear the calendar moved. */
@@ -5147,19 +5180,37 @@
   /* Swipe left / right on the calendar: next / previous day, week or month; Qtr shifts by one month. */
   (function () {
     let sx = 0, sy = 0, st = 0, on = false;
+    let drag = false; // the calendar is following the finger sideways
     document.addEventListener('touchstart', ev => {
       const t = ev.touches[0];
       on = ev.touches.length === 1 && isCalView() && !S.modal && !S.openDrop && !!ev.target.closest('#calBody');
+      drag = false;
       if (on) { sx = t.clientX; sy = t.clientY; st = Date.now(); }
+    }, { passive: true });
+    document.addEventListener('touchmove', ev => {
+      if (!on || reduceMotion()) return;
+      const t = ev.touches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      if (!drag && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) drag = true;
+      if (!drag) return;
+      const b = $('#calBody'); if (!b) return;
+      b.style.transition = 'none';
+      b.style.transform = 'translateX(' + dx * 0.85 + 'px)';
+      b.style.opacity = String(Math.max(0.55, 1 - Math.abs(dx) / 900));
     }, { passive: true });
     document.addEventListener('touchend', ev => {
       if (!on) return;
       on = false;
       const t = ev.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
-      if (Date.now() - st > 700 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      const go = Math.abs(dx) >= 60 && (drag || (Date.now() - st <= 700 && Math.abs(dx) >= Math.abs(dy) * 1.5));
+      if (!go) {
+        // Not far enough: settle back into place.
+        const b = $('#calBody');
+        if (drag && b) { b.style.transition = 'transform .2s ease-out, opacity .2s'; b.style.transform = ''; b.style.opacity = ''; }
+        drag = false; return;
+      }
       hideToast(); S.sel = null;
-      moveCursor(dx < 0 ? 1 : -1, 1);
-      swipeCue(dx < 0 ? 'right' : 'left');
+      moveCursor(dx < 0 ? 1 : -1, 1, drag ? dx * 0.85 : 0);
+      drag = false;
     }, { passive: true });
   })();
   /* Request form: swipe the small calendar left / right for the next / previous month. */
