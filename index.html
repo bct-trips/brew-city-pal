@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792580538"></script>
+    <script src="config.js?v=1792580704"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2273,6 +2273,8 @@
   /* Badges on bars: the dark border is drawn just inside the badge edge, so a tight bar can never clip it (shared badges too). */
   :is(.evs, .wpuck, .cs-bar, .qbar) .idb.pb { outline: 1.5px solid #0b1730; outline-offset: -1.5px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .7); }
   .mn-more { font-weight: 700; color: #3f3f46; white-space: nowrap; cursor: default; }
+  .mn-more { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .mn-more:hover { color: var(--navy); }
 </style>
 
   </head>
@@ -3520,6 +3522,7 @@
     // You first: your own request leads its badge, and the badge that includes you comes first.
     const meFirst = (a, b) => (a.userId === S.me ? 0 : 1) - (b.userId === S.me ? 0 : 1);
     list = list.slice().sort(meFirst);
+    const allIds = list.map(r => r.id).join(','); // "… +N" lists everyone on the shared request
     list.forEach(r => {
       const u = userOf(r.userId), k = (u.role || 'Other') + '|' + u.unit;
       const b = buckets.find(x => x.k === k);
@@ -3537,11 +3540,26 @@
       const shown = b.list.slice(0, 3), extra = b.list.length - shown.length;
       const names = shown.map(r => '<span class="mn" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
         barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (withStatus && !onNow(r, from, to) ? statusIcon(r.status) : '') + '</span>').join('<span class="rp-dot" aria-hidden="true">·</span>') +
-        (extra ? '<span class="rp-dot" aria-hidden="true">·</span><span class="mn mn-more" title="' + esc(b.list.slice(3).map(r => calName(userOf(r.userId))).join(', ')) + '">… +' + extra + '</span>' : '');
+        (extra ? '<span class="rp-dot" aria-hidden="true">·</span><span class="mn mn-more" role="button" tabindex="0" data-act="groupList" data-ids="' + esc(allIds) + '" title="Show all ' + list.length + '" aria-label="Show everyone on this request (' + list.length + ')">… +' + extra + '</span>' : '');
       return '<span class="idb pb gbb' + (same ? ' st-' + r0.status.toLowerCase() : '') + '"><span class="idb-r ' + roleCls(b.u.role) + '" aria-hidden="true">' + L + '</span>' +
         '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(b.u.unit) + '</span>' +
         '<span class="idb-n">' + names + '</span></span>';
     }).join('<span class="gsl" aria-hidden="true">·</span>');
+  }
+  /** Everyone on a shared request (same dates and type): you first, then position and name. Tap a person for their request. */
+  function openGroupList(ids) {
+    const list = ids.map(findReq).filter(Boolean).sort((a, b) => (a.userId === S.me ? 0 : 1) - (b.userId === S.me ? 0 : 1) || byPosName(a, b));
+    if (!list.length) return;
+    const r0 = list[0];
+    const html = modalHead(esc(r0.type) + ' · ' + plural(list.length, 'person').replace('persons', 'people'), 'users') +
+      '<div class="modal-b"><p class="meta" style="margin:0 0 8px">' + esc(D.short(r0.start)) + ' → ' + esc(D.short(r0.end)) + ' · ' + plural(D.days(r0.start, r0.end), 'day') + '</p>' +
+      '<ul class="dl-list">' + list.map(r => { const u = userOf(r.userId);
+        return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
+          '<span class="dl-who">' + idBadge(u) + nameHtml(u) + '</span>' +
+          '<span class="dl-meta">' + esc(roleName(u.role)) + '</span>' +
+          '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>'; }).join('') + '</ul></div>' +
+      '<div class="modal-f"><button class="btn block" data-act="closeModal">Close</button></div>';
+    openModal('group', html);
   }
   /** Month bars for one week row. Every request is ONE unbroken bar across its days in this row (its badge at the left).
    *  Requests with the same dates and type share one slashed bar. Bars are never split into shared middle stretches. */
@@ -6577,6 +6595,7 @@
       render(); toast('Length rules saved', 'ok', 1200);
     },
     // Can see: Everyone, or tap positions on / off. With none picked, members see only their own requests.
+    groupList(el) { openGroupList(String(el.dataset.ids || '').split(',').filter(Boolean)); },
     showTip(el) { toast(el.dataset.tip, 'info', 3500); },
     roleView(el) {
       const k = el.dataset.k, box = $('#cs-' + k), self = box.dataset.self, v = el.dataset.v;
