@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792581297"></script>
+    <script src="config.js?v=1792581424"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2285,6 +2285,12 @@
   .cc-p .idb { margin-right: 0; }
   .cc-p-d { font-weight: 500; color: var(--muted); font-size: 13px; }
   .cc-tbl { margin: 0; } .cc-tbl .rtable td, .cc-tbl .rtable th { white-space: nowrap; }
+  /* Shared (multi-person) pucks: hovering never underlines one name (a tap opens everyone on it); instead the whole puck
+     lights up with a ring and a slight lift. */
+  .mn[data-act="groupList"]:hover { text-decoration: none; }
+  .mn-more, .mn-more:hover { text-decoration: none; }
+  :is(.evs, .wpuck, .cs-bar).grp { transition: box-shadow .12s, filter .12s; }
+  :is(.evs, .wpuck, .cs-bar).grp:hover { outline: none; box-shadow: 0 0 0 2px var(--card), 0 0 0 4.5px var(--ink), 0 4px 10px rgba(0, 0, 0, .25); filter: brightness(1.06); z-index: 6; }
 </style>
 
   </head>
