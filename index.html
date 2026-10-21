@@ -15,12 +15,12 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792584702"></script>
+    <script src="config.js?v=1792584890"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one. When they
          differ — on launch and whenever the app comes back to the foreground — reload once to a cache-busted copy. */
-      window.PAL_BUILD = '1792584702';
+      window.PAL_BUILD = '1792584890';
       (function () {
         function check() {
           try {
@@ -2380,6 +2380,8 @@
   @media (prefers-reduced-motion: reduce) { .blocker { animation: none; } }
   /* Home-screen app PIN boxes: plain text inputs shown as dots (see App.html — avoids iOS "Use Strong Password"). */
   input.pin-mask { -webkit-text-security: disc; text-security: disc; font-family: inherit; letter-spacing: .12em; }
+  /* Sign-in: room for the on-screen keyboard (--kb, set while typing) so the whole card can scroll above it. */
+  .login { padding-bottom: calc(16px + var(--kb, 0px)); scroll-padding-bottom: var(--kb, 0px); }
 </style>
 
   </head>
@@ -3004,6 +3006,28 @@
    *  makes iOS pop its saved-password prompt every time the app opens; it should only appear when the user taps a field. */
   const touchOnly = () => !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
   const autoFocus = el => { if (el && !touchOnly()) el.focus(); };
+  /* Sign-in screens on phones: when the keyboard opens, show the WHOLE card (fields + Sign in button) above it, not just the
+     field being typed in. The keyboard's height is added as room under the card (--kb), then the screen scrolls so the
+     card's bottom sits just above the keyboard. Works for every field, whichever one you tap first. */
+  (function () {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    let t = 0;
+    function fit() {
+      const login = document.querySelector('#app > .login'), card = login && login.querySelector('.login-card');
+      if (!login || !card) return;
+      const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      const typing = kb > 80 && card.contains(document.activeElement);
+      login.style.setProperty('--kb', (typing ? kb : 0) + 'px');
+      if (!typing) return;
+      const over = card.getBoundingClientRect().bottom - (vv.offsetTop + vv.height) + 12; // px of card hidden under the keyboard
+      if (over > 0) login.scrollBy({ top: over, behavior: 'smooth' });
+    }
+    const soon = () => { clearTimeout(t); t = setTimeout(fit, 120); };
+    vv.addEventListener('resize', soon);
+    document.addEventListener('focusin', e => { if (e.target.closest && e.target.closest('.login-card')) { soon(); setTimeout(fit, 450); } });
+    document.addEventListener('focusout', () => setTimeout(fit, 150));
+  })();
   function authShell(inner) {
     $('#app').innerHTML = '<div class="login"><div class="brand-logo" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div><div class="login-card"><h1>Brew City PAL</h1>' +
       inner + '</div></div>';
