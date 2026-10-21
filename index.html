@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792618189"></script>
+    <script src="config.js?v=1792618773"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792618189';
+      window.PAL_BUILD = '1792618773';
       (function () {
         function check(launch) {
           try {
@@ -1629,6 +1629,8 @@
   .month:not(.compact) .cell.av-over, .month.compact .cell.cc.av-over, .wk-day.av-over { background-color: var(--av-over); }
   .month:not(.compact) .cell.av-full, .month.compact .cell.cc.av-full, .wk-day.av-full { background-color: var(--av-full); }
   .cell.out.av-open, .cell.out.av-over, .cell.out.av-full { opacity: .75; }
+  /* Month Stats: the availability color wins over the weekend wash, like Qtr. */
+  .month.compact .cell.cc.wknd.av-open { background: var(--av-open); } .month.compact .cell.cc.wknd.av-over { background: var(--av-over); } .month.compact .cell.cc.wknd.av-full { background: var(--av-full); }
   .day-avail { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; padding: 2px 0; }
   .day-avail i { width: 14px; height: 14px; border-radius: 4px; }
   .day-avail.av-open i { background: var(--av-open-dot, #22c55e); } .day-avail.av-over i { background: var(--av-over-dot, #f59e0b); } .day-avail.av-full i { background: var(--av-full-dot, #ef4444); }
@@ -2572,6 +2574,9 @@
   .rtable.ag .rg-none { text-align: center; padding: 14px; }
   .rg .ag-add td > .btn { position: sticky; left: 12px; }
   .ta-acts { display: inline-flex; gap: 6px; margin-left: auto; flex: none; }
+  /* Offline: a yellow pill at the top while the app shows data saved on this device (the server can't be reached). */
+  .offline-bar { flex: none; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 5px 12px;
+    background: var(--gold); color: var(--navy); font-size: 13px; font-weight: 800; }
   /* First-run Setup: a guided flow on the sign-in card (wider). Step text, three option cards (M3 outlined list
      items: tonal icon, title + supporting text, chevron), titled sections, and a footer with Back left and the main
      action right. On phones the big logo shows only on step 1. */
@@ -3189,7 +3194,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.30'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.31'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -3205,7 +3210,7 @@
     // screen that was waiting shows "try again". A garbled reply (Google sometimes sends an error page) says the same.
     return new Promise((resolve, reject) => {
       let done = false;
-      const ok = v => { if (!done) { done = true; clearTimeout(timer); resolve(v); } };
+      const ok = v => { if (!done) { done = true; clearTimeout(timer); if (S.offline) setOffline(false); resolve(v); } };
       const no = e => { if (!done) { done = true; clearTimeout(timer); fail(e, reject); } };
       const ctl = window.AbortController ? new AbortController() : null;
       const timer = setTimeout(() => { if (ctl) ctl.abort(); no(new Error(TIMED_OUT)); }, CALL_TIMEOUT);
@@ -3225,6 +3230,28 @@
     });
   }
   const CALL_TIMEOUT = 25000;
+  /** A call that failed because the server couldn't be reached (not because it said no). */
+  const isNetErr = e => !!e && (e.message === TIMED_OUT || /No connection to the server|server had a hiccup|could not be reached|Failed to fetch|NetworkError|Load failed|HTTP 0|network/i.test(e.message));
+  /* Offline: the server can't be reached, so the app shows the data saved on this device under a yellow "Viewing Cached
+     Data" bar, and nothing that adds or changes requests runs until a call gets through again (then the bar goes). */
+  const OFFLINE_ACTS = new Set(['newReq', 'newReqOn', 'editReq', 'setStatus', 'cancelReq', 'cfEdit', 'cfApproveAll', 'ackChange', 'wizSubmit', 'wizEdit',
+    'newBlackout', 'addBlackout', 'editBlackout', 'delBlackout', 'boAllow', 'boDeny', 'boEdit', 'boResolveOpen', 'allowBlackout']);
+  function setOffline(on) {
+    if (!!S.offline === !!on) return;
+    S.offline = !!on;
+    const bar = $('#offlineBar');
+    if (on && !bar && $('#app .main')) $('#app').insertAdjacentHTML('afterbegin', offlineBar());
+    if (!on && bar) bar.remove();
+    markOffline();
+    if (!on && S.token) refreshData();
+  }
+  /** While offline, the buttons that add or change requests are disabled (grayed like any disabled button). */
+  function markOffline() {
+    $$('[data-act]').forEach(b => { if (!OFFLINE_ACTS.has(b.dataset.act) || !('disabled' in b)) return;
+      if (S.offline) { if (!b.disabled) { b.disabled = true; b.dataset.offOff = '1'; } } else if (b.dataset.offOff) { b.disabled = false; delete b.dataset.offOff; } });
+  }
+  const offlineBar = () => S.offline ? '<div class="offline-bar" id="offlineBar" role="status">' + icon('alert', 16) + 'Viewing Cached Data</div>' : '';
+  const offlineNote = () => toast('Offline · viewing cached data', 'info', 2400);
   const TIMED_OUT = 'The server didn’t answer in time. Check your connection and try again.';
   /* ---------- Button spinners ----------
      busy(btn, work): while a server call runs, the button that started it shows a spinner in place of its icon and
@@ -3257,7 +3284,7 @@
   }
   /** Call the server with a spinner on btn; returns null on failure (error is toasted). */
   async function run(btn, fn) {
-    if (S.busy) return null;
+    if (S.busy) { toast('Still working on the last change…', 'info', 1800); return null; }
     const args = Array.prototype.slice.call(arguments, 1);
     S.busy = true;
     try { return await busy(btn, () => call.apply(null, args)); }
@@ -3272,6 +3299,7 @@
   let saveChain = Promise.resolve(), lastSaved = null, resync = false;
   function save(mutate, fn) {
     const args = Array.prototype.slice.call(arguments, 1);
+    if (S.offline) { offlineNote(); return Promise.resolve(null); } // nothing changes while the server can't be reached
     if (mutate) { mutate(); reindex(); }
     if (!S.pending) S.syncTab = S.nextSyncTab || 'profile';
     S.nextSyncTab = null;
@@ -3371,7 +3399,9 @@
     S.scope = data.scope || 'all';
     // Notifications: unread count (Profile badge + home-screen badge), push key, admin alert preference.
     // A change in the server's unread count means new notifications: refresh the list in the background (keep showing the old one meanwhile).
-    if (typeof data.unread === 'number' && data.unread !== S.serverUnread) { S.serverUnread = data.unread; if (S.notes != null) setTimeout(loadNotes, 0); }
+    // The startup data carries the latest notifications (apiBootstrap); other replies just the unread count.
+    if (data.notes) { takeNotes(data.notes); S.serverUnread = data.unread; setTimeout(() => { redrawNotes(); }, 0); }
+    else if (typeof data.unread === 'number' && data.unread !== S.serverUnread) { S.serverUnread = data.unread; if (S.notes != null) setTimeout(loadNotes, 0); }
     S.vapid = data.vapidPublicKey || S.vapid || ''; S.adminAlerts = !!data.adminAlerts;
     // Hide user schedules (members only): the server sent just my requests, day availability for my position, and my
     // conflicts as counts. Everyone else's names and requests aren't on this device at all.
@@ -3549,11 +3579,12 @@
        1. Setup passcode, checked right away (same lockout as the last step). The page never hints at what it is.
        2. How do you want to start? — three option cards: Upload a Roster · Restore a Backup · Start Blank.
        3. That option's form in titled sections, with Back (left) and the main action (right).
-     Upload a Roster / Start Blank: your account, then the default PIN and a new org admin PIN; you're signed in as an
-     org admin. Restore a Backup: everything comes back; everyone signs in with their old PIN. */
+     Upload a Roster: the roster file, the default PIN and a new org admin PIN; then everyone (you too) signs in with
+     the default PIN and sets their own. Start Blank: your account plus those PINs; you're signed in as an org admin.
+     Restore a Backup: everything comes back; everyone signs in with their old PIN. */
   const SU = { step: 'code', code: '', mode: '', roster: null, rosterName: '', backup: null, backupName: '' };
   const SU_OPTS = [
-    ['roster', 'users', 'Upload a Roster', 'Add everyone from a CSV or JSON file, then create your own account.'],
+    ['roster', 'users', 'Upload a Roster', 'Add everyone (you too) from a CSV or JSON file. Everyone then signs in with the default PIN and sets their own.'],
     ['restore', 'upload', 'Restore a Backup', 'Moving from another Google account? Everything comes back, and everyone keeps their PIN.'],
     ['blank', 'userPlus', 'Start Blank', 'Create your own account now and add people later.']
   ];
@@ -3592,17 +3623,17 @@
           '<p class="auth-note">A CSV (save it from Excel or Google Sheets) or JSON file, one member per row: <b>' + ROSTER_COLS.join(', ') + '</b>. Last, Position and Unit are required. Everyone signs in with the default PIN, then sets their own.</p>' +
           file('suRoster', 'Choose Roster File', SU.rosterName, '.csv,.json,text/csv,application/json') +
           '<button type="button" class="btn ghost su-tpl" id="suTpl">' + icon('download', 16) + 'Download Template</button><div class="su-sum" id="suRSum"></div></section>' : '') +
-        '<section class="su-sec"><h3 class="setup-h">Your Account</h3>' +
+        (SU.mode === 'roster' ? '' : '<section class="su-sec"><h3 class="setup-h">Your Account</h3>' +
           '<div class="field"><label for="suLast">Last Name' + REQ + '</label><input id="suLast" autocomplete="family-name"></div>' +
           '<div class="row"><div class="field"><label for="suFirst">First Name</label><input id="suFirst" autocomplete="given-name"></div>' +
           '<div class="field"><label for="suMid">Middle</label><input id="suMid" autocomplete="additional-name"></div></div>' +
           '<div class="row"><div class="field"><label for="suRank">Rank</label>' + sel('suRank', [['', '—']].concat(RANKS.map(r => [r, r]))) + '</div>' +
           '<div class="field"><label for="suRole">Position' + REQ + '</label>' + sel('suRole', [['', 'Choose…']].concat(roles.map(r => [r.name, roleName(r.name)]))) + '</div></div>' +
           '<div class="field"><label for="suUnit">Unit' + REQ + '</label>' + sel('suUnit', [['', 'Choose…']].concat((cfg.units || []).map(u => [u.code, u.code + (u.name && u.name !== u.code ? ' — ' + u.name : '')]))) + '</div>' +
-          PIN_HINT + pair('suMe', 'Your PIN') + '</section>' +
-        '<section class="su-sec"><h3 class="setup-h">PINs</h3>' + pair('suDef', 'Default PIN') +
-          '<p class="auth-note su-help">New members sign in with this, then choose their own.</p>' + pair('suOrg', 'New Org Admin PIN') +
-          '<p class="auth-note su-help">Unlocks Org Admin mode. Your PIN, the default PIN and this must all be different. Set the team admin PIN later on the Admin page.</p></section>' +
+          PIN_HINT + pair('suMe', 'Your PIN') + '</section>') +
+        '<section class="su-sec"><h3 class="setup-h">PINs</h3>' + (SU.mode === 'roster' ? PIN_HINT : '') + pair('suDef', 'Default PIN') +
+          '<p class="auth-note su-help">' + (SU.mode === 'roster' ? 'Everyone on the roster, you included, signs in with this the first time, then chooses their own PIN.' : 'New members sign in with this, then choose their own.') + '</p>' + pair('suOrg', 'New Org Admin PIN') +
+          '<p class="auth-note su-help">Unlocks Org Admin mode (Profile → Admin Mode). It must be different from the default PIN' + (SU.mode === 'roster' ? '' : ' and your PIN') + '. Set the team admin PIN later on the Admin page.</p></section>' +
         '<div class="err" id="suErr"></div><div class="su-foot"><button type="button" class="btn" data-back="choose">' + icon('left', 18) + 'Back</button>' +
           '<button class="btn primary" type="submit">' + icon('check', 18) + 'Finish Setup</button></div>';
     }
@@ -3642,7 +3673,9 @@
         err.textContent = '';
         return authBusy(btn, async () => {
           try { await call('apiSetupVerify', code); SU.code = code; showSetup('choose'); }
-          catch (e) { err.textContent = e.message; const b = $('#suCode'); if (b) b.value = ''; }
+          catch (e) {
+            if (/already set up/i.test(e.message)) { S.setupNeeded = false; showLogin(); toast('PAL is already set up. Sign in.', 'info', 4000); return; }
+            err.textContent = e.message; const b = $('#suCode'); if (b) b.value = ''; }
         });
       }
       if (SU.mode === 'restore') {
@@ -3656,28 +3689,34 @@
           } catch (e) { err.textContent = e.message; }
         });
       }
-      if (SU.mode === 'roster' && !SU.roster) return (err.textContent = 'Choose a roster file with at least one member.');
-      if (!v('suLast').trim()) return (err.textContent = 'Enter your last name.');
-      if (!v('suRole')) return (err.textContent = 'Choose your position.');
-      if (!v('suUnit')) return (err.textContent = 'Choose your unit.');
-      for (const [id, label] of [['suMe', 'Your PIN'], ['suDef', 'Default PIN'], ['suOrg', 'Org admin PIN']]) {
+      const roster = SU.mode === 'roster';
+      if (roster && !SU.roster) return (err.textContent = 'Choose a roster file with at least one member.');
+      if (!roster && !v('suLast').trim()) return (err.textContent = 'Enter your last name.');
+      if (!roster && !v('suRole')) return (err.textContent = 'Choose your position.');
+      if (!roster && !v('suUnit')) return (err.textContent = 'Choose your unit.');
+      for (const [id, label] of (roster ? [] : [['suMe', 'Your PIN']]).concat([['suDef', 'Default PIN'], ['suOrg', 'Org admin PIN']])) {
         if (pinProblem(v(id + '1'))) return (err.textContent = label + ': ' + pinProblem(v(id + '1')));
         if (v(id + '1') !== v(id + '2')) return (err.textContent = label + ': the two entries don’t match.');
       }
       if (v('suOrg1') === SU.code) return (err.textContent = 'Choose a new org admin PIN, not the setup passcode.');
-      if (new Set([v('suMe1'), v('suDef1'), v('suOrg1')]).size < 3) return (err.textContent = 'Your PIN, the default PIN and the org admin PIN must all be different.');
+      if (roster ? v('suDef1') === v('suOrg1') : new Set([v('suMe1'), v('suDef1'), v('suOrg1')]).size < 3)
+        return (err.textContent = roster ? 'The default PIN and the org admin PIN must be different.' : 'Your PIN, the default PIN and the org admin PIN must all be different.');
       err.textContent = '';
-      const me = { name: [v('suFirst'), v('suMid'), v('suLast')].map(x => x.trim()).filter(Boolean).join(' '), rank: v('suRank'), role: v('suRole'), unit: v('suUnit'), pin: v('suMe1') };
+      const me = roster ? null : { name: [v('suFirst'), v('suMid'), v('suLast')].map(x => x.trim()).filter(Boolean).join(' '), rank: v('suRank'), role: v('suRole'), unit: v('suUnit'), pin: v('suMe1') };
       await authBusy(btn, async () => {
         try {
-          const res = await call('apiSetup', SU.code, { me, defaultPin: v('suDef1'), orgPin: v('suOrg1'), roster: SU.mode === 'roster' ? SU.roster : [] });
-          const mode = SU.mode;
+          const res = await call('apiSetup', SU.code, { me, defaultPin: v('suDef1'), orgPin: v('suOrg1'), roster: roster ? SU.roster : [] });
           Object.assign(SU, { step: 'code', code: '', mode: '', roster: null, rosterRead: null, rosterName: '', backup: null, backupName: '' });
+          if (roster) {
+            // Everyone, the person who set up included, now signs in with their last name and the default PIN.
+            showLogin();
+            toast('Setup done · ' + plural(res.added, 'member') + ' added' + (res.skippedCount ? ', ' + res.skippedCount + ' skipped' : '') + '. Sign in with your last name and the default PIN.', 'ok', 7000);
+            return;
+          }
           store.set('lastName', me.name.split(' ').pop());
           afterAuth(res);
-          S.view = mode === 'roster' ? 'people' : 'admin'; render();
-          if (mode === 'roster') toast('Setup done · ' + plural(res.added, 'member') + ' added' + (res.skippedCount ? ', ' + res.skippedCount + ' skipped (already on the roster or a problem)' : ''), 'ok', 5000);
-          else openRosterImport(true);
+          S.view = 'admin'; render();
+          openRosterImport(true);
         } catch (e) { err.textContent = e.message; }
       });
     });
@@ -3833,14 +3872,14 @@
     $$('.scroll, .dayv, .tbl-wrap').forEach(el => { if (el.id) keep[el.id] = [el.scrollTop, el.scrollLeft]; });
     // Admin settings auto-save on change, which redraws the page: keep focus on the field the user moved to.
     const ae = document.activeElement, focusId = ae && ae.id && ae.closest && ae.closest('#adminScroll') ? ae.id : '';
-    $('#app').innerHTML = '<main class="main" id="main">' + renderView() + '</main>' + renderNav();
+    $('#app').innerHTML = offlineBar() + '<main class="main" id="main">' + renderView() + '</main>' + renderNav();
     if (document.querySelector('meta[name="theme-color"][content="#1d3d6e"]')) applyTheme(); // left the sign-in screen: normal status-bar color
     Object.keys(keep).forEach(id => { const el = document.getElementById(id); if (el) { el.scrollTop = keep[id][0]; el.scrollLeft = keep[id][1]; } });
     if (focusId) { const f = document.getElementById(focusId); if (f) try { f.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
     if (isCalView() && S.cal === 'month') fitMonth();
     if (isCalView() && S.cal === 'week') fitWeek();
     paintSel();
-    markOpenDay(); fitTables();
+    markOpenDay(); fitTables(); if (S.offline) markOffline();
     store.set('view', S.view); store.set('cal', S.cal);
     renderInstallFab();
   }
@@ -4370,10 +4409,10 @@
   /** Leave slots used per position on a day: Leave only (passes have no daily max), honoring the
    *  status and person filters but not the Leave/Pass toggle, so the meters always show slot usage. */
   function filteredRoleCounts(d) {
-    const out = { Pilot: 0, Boom: 0, Other: 0 };
+    const out = {}; ROLES.forEach(r => { out[r] = 0; }); // every position, custom ones too
     IDX.live.forEach(r => {
       if (r.type !== 'Leave' || r.start > d || r.end < d || !countable(r) || !S.f.status.includes(r.status) || (S.f.person && !personIds(S.f).includes(r.userId))) return;
-      out[userOf(r.userId).role]++;
+        out[userOf(r.userId).role] = (out[userOf(r.userId).role] || 0) + 1;
     });
     return out;
   }
@@ -8516,6 +8555,7 @@
     if (el.tagName === 'A') return;
     ev.preventDefault();
     ev.stopPropagation();
+    if (S.offline && OFFLINE_ACTS.has(el.dataset.act)) { offlineNote(); return; }
     fn(el, ev);
   });
   document.addEventListener('click', ev => {
@@ -8583,6 +8623,7 @@
      The page behind an open dialog re-renders; an open person picker is rebuilt in place with the new list. */
   let refreshing = false;
   let saveGen = 0;   // bumped by every save(); lets a background refresh detect it raced a save
+  let lastBoot = '';
   async function refreshData() {
     if (!S.token || !S.me || S.busy || S.sel || S.pending || refreshing) return;
     const a = document.activeElement;
@@ -8593,6 +8634,10 @@
       const data = await call('apiBootstrap', S.token);
       // A save started while this was in flight: its result is newer than this snapshot, so drop the snapshot.
       if (S.pending || gen !== saveGen) return;
+      // Nothing changed since the last refresh: no re-apply, no redraw.
+      const sig = JSON.stringify(data);
+      if (sig === lastBoot) return;
+      lastBoot = sig;
       apply(data);
       if (!S.modal) render();
       else if (S.modal === 'person') {
@@ -8600,7 +8645,7 @@
         const q = S.ppq; openPersonPicker(S.ppScope, S.ppMode);
         const box = $('#modal .pp-search input'); if (q && box) { box.value = q; S.ppq = q; A.ppFilter(); }
       }
-    } catch (e) { /* transient; the next refresh retries */ }
+    } catch (e) { if (isNetErr(e)) setOffline(true); /* otherwise transient; the next refresh retries */ }
     finally { refreshing = false; }
   }
   setInterval(() => { if (!document.hidden) refreshData(); }, 60000);
@@ -8716,7 +8761,7 @@
       } catch (e) {
         if (/new PIN/.test(e.message)) return;
         // Signed out on the server (expired, deactivated…): back to Sign In. Offline: keep showing the saved copy.
-        if (quick && !/AUTH|sign in/i.test(e.message)) { toast('Can’t reach the server. Showing what was saved on this device.', 'error', 5000); return; }
+        if (quick && isNetErr(e)) { setOffline(true); return; }
         S.token = null; store.del('token'); dropSnap();
         if (S.setupNeeded) return showSetup();
       }
