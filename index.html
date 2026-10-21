@@ -15,12 +15,12 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792584385"></script>
+    <script src="config.js?v=1792584702"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one. When they
          differ — on launch and whenever the app comes back to the foreground — reload once to a cache-busted copy. */
-      window.PAL_BUILD = '1792584385';
+      window.PAL_BUILD = '1792584702';
       (function () {
         function check() {
           try {
@@ -2378,6 +2378,8 @@
   .blocker-s { color: rgba(255, 255, 255, .82); text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
   @keyframes blockerIn { from { background-color: rgba(4, 12, 28, 0); } to { background-color: rgba(4, 12, 28, .58); } }
   @media (prefers-reduced-motion: reduce) { .blocker { animation: none; } }
+  /* Home-screen app PIN boxes: plain text inputs shown as dots (see App.html — avoids iOS "Use Strong Password"). */
+  input.pin-mask { -webkit-text-security: disc; text-security: disc; font-family: inherit; letter-spacing: .12em; }
 </style>
 
   </head>
@@ -5145,6 +5147,22 @@
   // Push needs the GitHub Pages build (service worker on our own origin) and, on iPhone, the home-screen app.
   const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  /* Home-screen app (iOS standalone): iOS gives these apps no access to saved passwords, so on ANY password-type field its
+     only offer is "Use Strong Password" — even on sign-in. So in the home-screen app no field is a password field: PIN
+     boxes become plain number boxes masked as dots (same look, number keypad), and iOS has nothing to offer. In Safari
+     (and on desktop) they stay real password fields, so saved-password AutoFill keeps working there. */
+  (function () {
+    if (!isStandalone()) return;
+    const mask = root => (root.querySelectorAll ? root.querySelectorAll('input[type="password"]') : []).forEach(i => {
+      i.type = 'text'; i.classList.add('pin-mask');
+      i.setAttribute('autocomplete', 'off'); i.setAttribute('autocorrect', 'off'); i.setAttribute('autocapitalize', 'off'); i.spellcheck = false;
+      if (!i.getAttribute('inputmode')) i.setAttribute('inputmode', 'numeric');
+      i.setAttribute('data-1p-ignore', ''); i.setAttribute('data-lpignore', 'true');
+    });
+    mask(document);
+    new MutationObserver(list => list.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) { if (n.matches && n.matches('input[type="password"]')) mask(n.parentNode); else mask(n); } })))
+      .observe(document.documentElement, { childList: true, subtree: true });
+  })();
   const pushCapable = () => !!(window.PAL_API_URL && window.isSecureContext && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
   let swReg = null;
   function setBadge() {
