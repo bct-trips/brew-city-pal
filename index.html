@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792586100"></script>
+    <script src="config.js?v=1792586246"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792586100';
+      window.PAL_BUILD = '1792586246';
       (function () {
         function check(launch) {
           try {
@@ -2393,7 +2393,7 @@
   .stats-bar .rf-btn { flex: 0 1 auto; min-width: 0; max-width: 360px; }
   .stats-bar .rf-btn .manage-ct { margin-left: 2px; }
   @media (max-width: 700px) { .stats-bar .rf-btn { flex: 1 1 0; max-width: none; } }
-  /* Band header: which view is showing (tap the header to cycle All → Active → Closed), pinned to the right edge. */
+  /* Band header: which view is showing (tap the header to cycle Active → All → Closed), pinned to the right edge. */
   .grp-side { float: right; position: sticky; right: 0; height: 36px; display: flex; align-items: center; padding: 0 14px; }
   .grp-mode { display: inline-flex; align-items: center; margin: 0; height: 22px; padding: 0 9px; border-radius: 11px; background: var(--sel-bg); color: var(--sel-ink); font-size: 12px; font-weight: 700; letter-spacing: 0; text-transform: none; }
   /* Roster period: a radio list — title plus the dates it covers. */
@@ -4590,7 +4590,7 @@
     const key = table || 'queue', col = (S.grpCol = S.grpCol || {})[key] || {};
     // Current (ending today or later) leave and passes in their own bands; finished ones go to a Past band, collapsed by default.
     // Leave and Pass open part-way by default: only the requests going on today (always at the top of their band),
-    // plus a "Show N more" row. Tapping the header cycles All → Active → Closed; Active and Closed keep a "Show N more" row.
+    // plus a "Show N more" row. Tapping the header cycles Active → All → Closed; Active and Closed keep a "Show N more" row.
     const group = (type, list) => {
       const n = cols.length + 1, band = type !== 'Past';
       // My Requests: current bands start fully open and list everything in date order; Past starts collapsed.
@@ -6488,7 +6488,7 @@
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
       if (k === 'mine') c[t] = t === 'Past' ? (c.Past === 'open' ? 'closed' : 'open') : c[t] === 'closed' ? 'open' : 'closed'; // My Requests: bands open, Past collapsed
       else if (t === 'Past') { const open = c.Past === false || (c.Past === undefined && S.f.conf && k === 'list'); c.Past = open; } // flip: open → closed (true), closed → open (false)
-      else if (t !== 'Blackouts') { const cur = c[t] || (S.f.conf && k === 'list' ? 'open' : 'partial'); c[t] = ({ open: 'partial', partial: 'closed', closed: 'open' })[cur]; } // All → Active → Closed → All
+      else if (t !== 'Blackouts') { const cur = c[t] || (S.f.conf && k === 'list' ? 'open' : 'partial'); c[t] = ({ partial: 'open', open: 'closed', closed: 'partial' })[cur]; } // Active → All → Closed → Active
       else c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
     },
     updateYes() { const f = S.update; if (!f) { hideUpdateBar(); return; } hideUpdateBar(); showBlocker('Updating…', ''); f(); },
