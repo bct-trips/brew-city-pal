@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792599437"></script>
+    <script src="config.js?v=1792599610"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792599437';
+      window.PAL_BUILD = '1792599610';
       (function () {
         function check(launch) {
           try {
@@ -5606,7 +5606,7 @@
     const byLast = (a, b) => lastName(a).localeCompare(lastName(b));
     const mgrs = managersOf(w).sort(byLast);
     const lim = S.isOrg ? null : S.adminScope;
-    const pool = S.users.filter(u => u.active && u.id !== S.me && !managesPart(u.id, w) && ((S.admins || {})[u.id] || {}).level !== 'org' && (!lim || inScope(lim, u))).sort(byLast);
+    const pool = S.mgrPool = S.users.filter(u => u.active && u.id !== S.me && !managesPart(u.id, w) && ((S.admins || {})[u.id] || {}).level !== 'org' && (!lim || inScope(lim, u))).sort(byLast);
     const row = u => { const a = S.admins[u.id];
       return '<div class="ta-row">' + idBadge(u) + '<span class="pp-n">' + nameHtml(u) + ' <span class="badge adm-b">' + esc(scopeText(a.scope)) + '</span></span>' +
         '<span class="ta-acts"><button type="button" class="btn sm" data-act="mgrEdit" data-id="' + esc(u.id) + '">' + icon('pencil', 14) + 'Edit</button>' +
@@ -5615,8 +5615,9 @@
     openModal('managers', modalHead(esc(title) + ' Managers', 'shield') + '<div class="modal-b">' +
       '<p class="meta" style="margin:0 0 10px;white-space:normal">Managers are team admins: they unlock Admin Mode with the Team Admin PIN and run the units and positions in their grid (approve / deny, blackouts, roster). One person can manage several.</p>' +
       '<div class="ta-sect"><div class="lbl">Managers <span class="ct">' + mgrs.length + '</span></div>' + (mgrs.length ? '<div class="ta-list">' + mgrs.map(row).join('') + '</div>' : '<p class="meta">No managers yet.</p>') + '</div>' +
-      '<div class="ta-sect"><div class="lbl">Add Manager</div><div class="field"><select data-change="mgrAdd" aria-label="Add a manager"><option value="">Choose a member…</option>' +
-        pool.map(u => '<option value="' + esc(u.id) + '">' + esc(nameText(u) + ' · ' + u.unit + ' · ' + roleName(u.role)) + '</option>').join('') + '</select></div></div></div>' +
+      // Add Manager: the same member chooser as Request For (search + name pucks by position); a tap opens their grid.
+      '<div class="ta-sect"><div class="lbl">Add Manager</div><div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who" data-act="mgrDrop" aria-haspopup="listbox" aria-expanded="false" aria-label="Add a manager">' +
+        icon('userPlus', 16) + '<span>Choose a member…</span>' + icon('down', 14) + '</button><div class="who-pop" id="whoPop" hidden></div></div></div></div>' +
       '<div class="modal-f"><button class="btn primary block" data-act="closeModal">Done</button></div>', true);
   }
   function adminUnits() {
@@ -6588,9 +6589,14 @@
       : icon('userPlus', 16) + '<span>Choose members…</span>') + icon('down', 14);
   }
   function whoPopHtml() {
-    const w = S.wiz, picked = new Set(wizPickList());
+    const w = S.wiz;
     const people = S.users.filter(u => u.active && !(w.editId && u.id === w.assigneeId) && manages(u)); // team admins: only their team
-    const row = u => '<button type="button" class="who-row' + (picked.has(u.id) ? ' on' : '') + '" role="option" aria-selected="' + picked.has(u.id) + '" data-act="whoPick" data-id="' + esc(u.id) + '"' +
+    return whoListHtml(people, new Set(wizPickList()), 'whoPick', w.editId ? '' : '<button type="button" class="who-row who-new" data-act="wizCreate">' + icon('userPlus', 18) + '<span class="pp-n"><b>Add New Member</b></span></button>');
+  }
+  /** The member chooser list (search box, then Me and each position's members as name pucks): Request For and
+   *  Managers → Add Manager. act: the action a tap runs (data-id = member); top: rows shown above the groups. */
+  function whoListHtml(people, picked, act, top) {
+    const row = u => '<button type="button" class="who-row' + (picked.has(u.id) ? ' on' : '') + '" role="option" aria-selected="' + picked.has(u.id) + '" data-act="' + act + '" data-id="' + esc(u.id) + '"' +
       ' data-q="' + esc((lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit + (u.id === S.me ? ' me' : '')).toLowerCase()) + '">' +
       '<span class="who-ck">' + (picked.has(u.id) ? icon('check', 16) : '') + '</span>' + idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span></button>';
     const meU = people.find(u => u.id === S.me);
@@ -6599,12 +6605,13 @@
       return list.length ? '<div class="who-h">' + esc(roleGroup(role)) + '</div>' + list.map(row).join('') : '';
     }).join('');
     return '<div class="who-search">' + icon('search', 15) + '<input type="search" id="whoQ" placeholder="Type a name…" autocomplete="off" aria-label="Search members" data-model="whoq" data-live="whoFilter"></div>' +
-      '<div class="who-list" role="listbox" aria-multiselectable="true">' + (w.editId ? '' : '<button type="button" class="who-row who-new" data-act="wizCreate">' + icon('userPlus', 18) + '<span class="pp-n"><b>Add New Member</b></span></button>') +
+      '<div class="who-list" role="listbox"' + (act === 'whoPick' ? ' aria-multiselectable="true"' : '') + '>' + (top || '') +
       groups + '<div class="who-none" hidden>No one matches.</div></div>';
   }
   function closeWhoDrop() {
     const p = $('#whoPop'); if (!p || p.hidden) return;
     p.hidden = true; p.innerHTML = '';
+    const m = $('#modal [data-act="mgrDrop"]'); if (m) { m.setAttribute('aria-expanded', 'false'); return; } // Managers → Add Manager
     const b = $('#modal [data-act="whoDrop"]'); if (b) { b.setAttribute('aria-expanded', 'false'); b.innerHTML = whoBtnInner(); }
     if (!S.wiz.editId) S.wiz.assigneeId = (S.wiz.assignees || [])[0] || '';
     refreshWizDates(); // slot colors depend on who it's for
@@ -7899,7 +7906,13 @@
     teamAdmins(el) { openManagers({ unit: el.dataset.code }); },
     roleManagers(el) { openManagers({ role: el.dataset.name }); },
     mgrEdit(el) { openAdminPicker(el.dataset.id, null, S.mgrFor); },
-    mgrAdd(el) { if (el.value) openAdminPicker(el.value, S.mgrFor.unit ? { units: [S.mgrFor.unit] } : { roles: [S.mgrFor.role] }, S.mgrFor); },
+    mgrDrop(el) {
+      const p = $('#whoPop'); if (!p) return;
+      if (!p.hidden) { closeWhoDrop(); return; }
+      S.whoq = ''; p.innerHTML = whoListHtml(S.mgrPool || [], new Set(), 'mgrPick'); p.hidden = false; el.setAttribute('aria-expanded', 'true');
+      const q = $('#whoQ'); if (q) q.focus();
+    },
+    mgrPick(el) { openAdminPicker(el.dataset.id, S.mgrFor.unit ? { units: [S.mgrFor.unit] } : { roles: [S.mgrFor.role] }, S.mgrFor); },
     mgrRemove(el) {
       const id = el.dataset.id, w = S.mgrFor, a = S.admins[id];
       const rows = scopeRows(a.scope).map(r => w.unit ? Object.assign({}, r, { units: r.units.filter(c => c !== w.unit) }) : Object.assign({}, r, { roles: r.roles.filter(x => x !== w.role) })).filter(r => r.units.length && r.roles.length);
