@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792592120"></script>
+    <script src="config.js?v=1792592715"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792592120';
+      window.PAL_BUILD = '1792592715';
       (function () {
         function check(launch) {
           try {
@@ -1872,7 +1872,7 @@
   .nav button[aria-expanded="true"] .nav-caret { transform: rotate(180deg); }
   /* Drop-up: a notch on the menu points down at the Profile tab it came from. */
   .pm-pop { overflow: visible; }
-  .pm-pop .pm-bh { border-radius: 16px 16px 0 0; overflow: hidden; }
+  .pm-pop .pm-bh { border-radius: 14.5px 14.5px 0 0; overflow: hidden; } /* = the menu's 16px corner minus its 1.5px border, so a colored position block fills the corner */
   .pm-pop .pm-row:last-child { border-radius: 0 0 16px 16px; }
   .pm-pop::after { content: ""; position: absolute; bottom: -7px; left: calc(var(--notch, 85%) - 7px); width: 14px; height: 14px; background: var(--card);
     border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: rotate(45deg); box-shadow: 4px 4px 8px rgba(0, 0, 0, .18); }
@@ -2386,7 +2386,7 @@
   /* Sign-in: room for the on-screen keyboard (--kb, set while typing) so the whole card can scroll above it. */
   .login { padding-bottom: calc(16px + var(--kb, 0px)); scroll-padding-bottom: var(--kb, 0px); }
   /* Roster filter sheet: position / unit checklists like the multi-name picker (full-width rows, names never cut off). */
-  .rf-list { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .rf-list { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; padding: 0; } /* no inner padding: the selected row's shading reaches the edges */
   .rf-list .who-row { min-height: 48px; border-top: 1px solid var(--line); }
   .rf-list .who-row:first-child { border-top: 0; }
   .rf-list .who-row .idb, .rf-list .who-row .ub { margin-right: 0; }
@@ -2462,9 +2462,11 @@
   .pm-ago { margin-top: 2px; }
   .pm-nempty { padding: 10px 12px; margin: 0; background: var(--card); border: 1px dashed var(--outline-variant); border-radius: 12px; text-align: center; }
   .pm-more { margin-top: 6px; padding: 6px 6px 0; background: none; }
-  /* Settings → Start-up: two radio lists side by side when there's room. */
-  .su-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-  .su-l { display: block; margin-bottom: 6px; }
+  /* Settings → Start-Up: two dropdown fields side by side. */
+  .su-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .su-f { margin-bottom: 0; }
+  .su-f select { width: 100%; }
+  .su-note { margin: 8px 0 0; white-space: normal; }
   /* Required fields: a red * after the label (labels are uppercase; the * keeps its own look), "* Required" note on top. */
   .req { color: var(--bad); margin-left: 3px; font-weight: 800; letter-spacing: 0; }
   .req-note { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
@@ -2897,7 +2899,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.13'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.14'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -4918,7 +4920,7 @@
   function rosterActs(u) {
     const act = (a, ic, short, cls) => '<button class="btn sm act' + (cls ? ' ' + cls : '') + '" data-act="' + a + '" data-id="' + esc(u.id) + '" aria-label="' + esc(short + ' ' + u.name) + '" title="' + esc(short + ' ' + u.name) + '">' + icon(ic, 13) + '<span class="bl">' + short + '</span></button>';
     return '<td class="acts-cell"><div class="row-acts">' + act('editUser', 'pencil', 'Edit') + act('resetPin', 'key', 'Reset PIN') +
-      (u.id === S.me ? '' : u.active ? act('toggleUser', 'ban', 'Deactivate', 'del') : act('toggleUser', 'check', u.pending ? 'Approve' : 'Reactivate', u.pending ? 'ok' : '')) + '</div></td>';
+      (u.id === S.me ? '' : u.active ? act('toggleUser', 'ban', 'Deactivate', 'del') : act('toggleUser', 'check', u.pending ? 'Approve' : 'Reactivate', u.pending ? 'ok' : '') + act('deleteUser', 'trash', 'Delete', 'del')) + '</div></td>';
   }
   function renderPeopleBody() {
     const P = S.people, st = peopleStats(), rows = st.rows;
@@ -5684,14 +5686,15 @@
   }
   /** Settings → Start-up (this device): the page the app opens to and the calendar view it starts in. */
   function startupPanel() {
-    const pick = (k, cur, opts) => '<div class="who-list rf-list" role="radiogroup">' + opts.map(o => { const on = cur === o[0];
-      return '<button type="button" class="who-row rf-radio' + (on ? ' on' : '') + '" role="radio" aria-checked="' + on + '" data-act="startPick" data-k="' + k + '" data-v="' + o[0] + '">' +
-        '<span class="rf-dot" aria-hidden="true"></span><span class="pp-n"><b>' + o[1] + '</b>' + (o[2] ? '<span class="rf-sub">' + o[2] + '</span>' : '') + '</span></button>'; }).join('') + '</div>';
-    const pages = [['last', 'Last Used', 'Where you left off'], ['calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'All Requests']], [['mine', 'My Requests']]);
+    // Two Material 3 dropdown fields side by side (native picker on phones); the choice saves as soon as it changes.
+    const pick = (k, label, cur, opts) => '<div class="field su-f"><label for="su-' + k + '">' + label + '</label>' +
+      '<select id="su-' + k + '" data-change="startPick" data-k="' + k + '">' + opts.map(o => '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div>';
+    const pages = [['last', 'Last Used'], ['calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'All Requests']], [['mine', 'My Requests']]);
     let pv = store.get('startView', 'last'); if (!pages.some(o => o[0] === pv)) pv = 'last';
-    return '<div class="panel"><h3>' + icon('home', 16) + ' Start-Up</h3><p class="meta" style="margin:0 0 10px">Saved on this device.</p>' +
-      '<div class="su-grid"><div><span class="lbl su-l">Open To</span>' + pick('startView', pv, pages) + '</div>' +
-      '<div><span class="lbl su-l">Calendar View</span>' + pick('startCal', store.get('startCal', 'last'), [['last', 'Last Used', 'The view you had open'], ['week', 'Week'], ['month', 'Month'], ['quad', 'Quarter', '4 months']]) + '</div></div></div>';
+    return '<div class="panel"><h3>' + icon('home', 16) + ' Start-Up</h3>' +
+      '<div class="su-grid">' + pick('startView', 'Open To', pv, pages) +
+        pick('startCal', 'Calendar View', store.get('startCal', 'last'), [['last', 'Last Used'], ['week', 'Week'], ['month', 'Month'], ['quad', 'Quarter (4 Months)']]) + '</div>' +
+      '<p class="meta su-note">Saved on this device.</p></div>';
   }
   /** Settings → About: is the deployed Apps Script running the Code.gs this page expects? */
   async function checkServer() {
@@ -5905,7 +5908,8 @@
         '<div class="mc-btns"><button class="btn sm del" data-act="revokeAdmin" data-id="' + esc(uid) + '">' + icon('shield', 15) + 'Remove Admin</button></div></section>' : '') +
       '<section class="mc-sec"><h4>Details</h4>' + userFields('ue', u, false).replace(' autofocus', '') + '<div class="err" id="ueErr"></div>' +
         '<div class="mc-actions">' +
-        '<button class="btn sm ' + (u.active ? 'del' : '') + '" data-act="toggleUser" data-id="' + esc(uid) + '">' + (u.active ? icon('ban', 15) + 'Deactivate' : icon('check', 15) + 'Reactivate') + '</button>' +
+        (uid === S.me ? '' : '<button class="btn sm ' + (u.active ? 'del' : '') + '" data-act="toggleUser" data-id="' + esc(uid) + '">' + (u.active ? icon('ban', 15) + 'Deactivate' : icon('check', 15) + 'Reactivate') + '</button>' +
+          '<button class="btn sm del" data-act="deleteUser" data-id="' + esc(uid) + '">' + icon('trash', 15) + 'Delete Member</button>') +
         '<button class="btn primary" data-act="saveUser" data-id="' + esc(uid) + '">' + icon('check', 16) + 'Save Details</button></div></section>' +
       '</div><div class="modal-f"><button class="btn block" data-act="closeModal">Close</button></div>';
     openModal('member', html, true);
@@ -6620,7 +6624,7 @@
       } else S.cursor = m;
       closeModal(); render();
     },
-    startPick(el) { store.set(el.dataset.k, el.dataset.v); const sc = $('#profileScroll'), y = sc ? sc.scrollTop : 0; render(); const sc2 = $('#profileScroll'); if (sc2) sc2.scrollTop = y; },
+    startPick(el) { store.set(el.dataset.k, el.value); toast('Start-Up saved', 'ok', 1400); },
     calMode(el) {
       const from = S.cal;
       S.cal = el.dataset.v; S.weekLeft = null; // Week opens on Sunday of the week
@@ -7226,6 +7230,25 @@
       // From a member's profile card the card stays open with the new details.
       if (S.modal === 'member' && u.id) { render(); openMemberCard(u.id); } else { closeModal(); render(); }
       toast(u.id ? 'Member updated' : 'Adding ' + u.name + '…', 'ok', 1500);
+    },
+    // Delete a member for good (two steps, like Reset All Account PINs: tick the warning, then OK).
+    deleteUser(el) {
+      const u = S.users.find(x => x.id === el.dataset.id);
+      if (!u || u.id === S.me) return;
+      const n = S.requests.filter(r => r.userId === u.id && r.status !== 'Cancelled').length;
+      S.delUserId = u.id;
+      openModal('delUser', modalHead('Delete ' + esc(fullName(u)), 'trash') + '<div class="modal-b">' +
+        '<div class="ra-warn"><b>Warning</b><p>This permanently deletes <b>' + esc(fullName(u)) + '</b>: their account and <b>' + plural(n, 'request') + '</b>, plus their notifications. ' +
+          'It can’t be undone. To keep their history, use <b>Deactivate</b> instead.</p></div>' +
+        '<label class="fchk ra-chk"><input type="checkbox" id="raOk" data-change="raCheck"> I have read this warning</label></div>' +
+        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn ra-go" id="raGo" data-act="deleteUserGo" disabled>OK</button></div>');
+    },
+    async deleteUserGo(el) {
+      if (!($('#raOk') || {}).checked || !S.delUserId) return;
+      const u = S.users.find(x => x.id === S.delUserId), name = u ? fullName(u) : 'Member';
+      const d = await run(el, 'apiDeleteUser', S.token, S.delUserId, 'DELETE');
+      if (!d) return;
+      S.delUserId = null; apply(d); closeModal(); render(); toast(name + ' deleted', 'ok', 2500);
     },
     async toggleUser(el) {
       const u = S.users.find(x => x.id === el.dataset.id);
