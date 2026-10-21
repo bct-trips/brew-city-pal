@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792534426"></script>
+    <script src="config.js?v=1792569997"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -244,7 +244,7 @@
   .mo.has-focus .mseg:not(.focus) { opacity: .45; }
   .mseg.focus { font-weight: 800; }
   .evs.leave.multi { background: repeating-linear-gradient(135deg, var(--leave) 0 6px, var(--leave-2) 6px 12px); }
-  .evs.pass.multi { background: repeating-linear-gradient(135deg, var(--gold) 0 6px, var(--gold-3) 6px 12px); }
+  .evs.pass.multi { background: repeating-linear-gradient(135deg, var(--gold) 0 6px, var(--gold-2) 6px 12px); }
   .evs.denied.multi { background: repeating-linear-gradient(135deg, var(--denied-bg) 0 6px, var(--denied-2) 6px 12px); color: var(--denied-ink); }
   /* Duplicate (same member, overlapping requests): thick red underline on the bar or name. */
   .badge.dup { margin-left: 4px; background: #b42318; border-color: #b42318; color: #fff; }
@@ -818,7 +818,7 @@
 
   /* Shared middle-day bar (2+ people): diagonal slash pattern in the type colour; badges stay solid on top. */
   .evs.mid.shared.leave { background: repeating-linear-gradient(135deg, var(--leave) 0 6px, var(--leave-2) 6px 12px); }
-  .evs.mid.shared.pass { background: repeating-linear-gradient(135deg, var(--gold) 0 6px, var(--gold-3) 6px 12px); }
+  .evs.mid.shared.pass { background: repeating-linear-gradient(135deg, var(--gold) 0 6px, var(--gold-2) 6px 12px); }
   .evs.mid.shared.denied { background: repeating-linear-gradient(135deg, var(--denied-bg) 0 6px, var(--denied-2) 6px 12px) !important; }
 
 
@@ -856,8 +856,8 @@
     .cb-left, .cb-right, .cb-center { display: contents; }
     .calbar .datenav { order: 1; flex: 1 1 100%; }
     .calbar .back-month { order: 2; }
-    .calbar .cb-left > .seg { order: 3; flex: 1 1 auto; }
-    .calbar .cb-left > .seg button { flex: 1; padding: 0 8px; }
+    .calbar .cb-views > .seg { order: 3; flex: 1 1 auto; }
+    .calbar .cb-views > .seg button { flex: 1; padding: 0 8px; }
     .calbar .today-btn { order: 4; }
     .calbar .filters > * { order: 5; }
   }
@@ -879,8 +879,8 @@
     /* Filters get their own full-width row that never wraps; view switch + Today share the row above. */
     .calbar .cb-right.filters { display: flex; order: 5; flex: 1 1 100%; flex-wrap: nowrap; gap: 6px; min-width: 0; }
     .calbar .filters > * { order: 0; }
-    .calbar .cb-left > .seg { min-width: 0; }
-    .calbar .cb-left > .seg button { min-width: 0; padding: 0 6px; }
+    .calbar .cb-views > .seg { min-width: 0; }
+    .calbar .cb-views > .seg button { min-width: 0; padding: 0 6px; }
     .calbar .back-month, .calbar .today-btn { flex: none; }
   }
 
@@ -1966,7 +1966,7 @@
   /* A bar for more than one person always gets the shared (slashed) pattern — same-dates bars included — in
      Month (desktop and phone) and Week. */
   .evs.grp.leave, .cs-bar.grp.leave, .wpuck.grp.leave { background: repeating-linear-gradient(135deg, var(--leave) 0 6px, var(--leave-2) 6px 12px); }
-  .evs.grp.pass, .cs-bar.grp.pass, .wpuck.grp.pass { background: repeating-linear-gradient(135deg, var(--gold) 0 6px, var(--gold-3) 6px 12px); }
+  .evs.grp.pass, .cs-bar.grp.pass, .wpuck.grp.pass { background: repeating-linear-gradient(135deg, var(--gold) 0 6px, var(--gold-2) 6px 12px); }
   /* Request form "Request for" / "Add members": an inline multi-select dropdown under the button. */
   .who-wrap { position: relative; }
   .who-wrap .wiz-who { width: 100%; }
@@ -2000,6 +2000,35 @@
   .evs.mid .evs-t .gsl { flex: none; font-weight: 900; color: #ffffff; opacity: .85; } .evs.mid.pass .evs-t .gsl { color: var(--navy); }
   /* Separator between badges on a shared bar: a dot (not a slash). */
   .gsl { font-size: 20px; line-height: 1; margin: 0 1px; }
+  /* Request dialogs: the length is a big solid pill in the header — "4 days" — Leave navy / Pass yellow. */
+  .hd-days { flex: none; display: inline-flex; align-items: baseline; gap: 5px; padding: 4px 14px; border-radius: 999px; font-size: 15px; font-weight: 700; white-space: nowrap; }
+  .hd-days b { font-size: 22px; font-weight: 900; line-height: 1; }
+  .hd-days.hd-leave { background: var(--leave); color: #ffffff; }
+  .hd-days.hd-pass { background: var(--gold); color: var(--navy); }
+  :root[data-theme="dark"] .hd-days.hd-leave { box-shadow: inset 0 0 0 1.5px var(--navy-edge); }
+  .modal-h .hd-days + .btn { margin-left: 4px; }
+  /* Requests table: marks sit with the status in the first column; the pinned Name column is narrow (long names "…"). */
+  .rtable th.st-ic-h, .rtable td.st-ic-c { width: auto; min-width: 28px; padding: 0 2px 0 10px; text-align: left; }
+  .rtable td.st-ic-c .st-in { display: flex; align-items: center; gap: 6px; }
+  .rtable td.st-ic-c .cfl { margin: 0; flex: none; }
+  .rtable td.stk { max-width: 9.5em; }
+  .rtable td.stk .stk-in { min-width: 0; }
+  .rtable td.stk .stk-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  /* Requests tables size to their content (no forced 1240px), so on phones no column gets padded with spare space. */
+  .rtable:not(.ptable) { min-width: 100%; width: max-content; }
+  /* View switch + Today travel together (.cb-views); a plain pass-through except on tablets. */
+  .cb-views { display: contents; }
+  /* Tablets (iPad, 701–1100px): row 1 [Week|Month|Qtr · Today]  [ ‹ date › ] centred  [Add Request];
+     row 2 the filters, left-aligned. Nothing gets pushed onto a stray right-aligned line. */
+  @media (min-width: 701px) and (max-width: 1100px) {
+    .calbar { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 8px; }
+    .calbar .cb-left { display: contents; }
+    .calbar .cb-views { display: flex; align-items: center; gap: 8px; grid-column: 1; grid-row: 1; justify-self: start; }
+    .calbar .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
+    .calbar .req-btn { grid-column: 3; grid-row: 1; justify-self: end; }
+    .calbar .cb-right { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; margin-left: 0; flex-wrap: nowrap; }
+    .calbar .cb-views .seg button { padding: 0 12px; }
+  }
 </style>
 
   </head>
@@ -2837,10 +2866,10 @@
     return '<section class="cal' + (confOn ? ' conf-mode' : '') + '">' +
       '<div class="calbar">' +
         // Left: view switch, Today, Add Request
-        '<div class="cb-left">' +
+        '<div class="cb-left"><div class="cb-views">' +
           (S.cal === 'day' ? '<button class="btn back-month" data-act="backMonth">' + icon('left', 18) + 'Month</button>' : '') +
           seg([['week', 'Week'], ['month', 'Month'], ['quad', 'Qtr']], S.cal, 'calMode') +
-          '<button class="btn today-btn' + (showsToday() ? ' on' : '') + '" data-act="calToday"' + (showsToday() ? ' aria-pressed="true"' : '') + '>Today</button>' +
+          '<button class="btn today-btn' + (showsToday() ? ' on' : '') + '" data-act="calToday"' + (showsToday() ? ' aria-pressed="true"' : '') + '>Today</button></div>' +
           '<button class="btn req-btn" data-act="newReq" title="Start a new leave or pass request">' + icon('plus', 16) + 'Add Request</button>' +
         '</div>' +
         // Centre: date navigator [ ‹ | label ⌄ | › ]
@@ -3155,45 +3184,18 @@
         '<span class="idb-n">' + names + '</span></span>';
     }).join('<span class="gsl" aria-hidden="true">·</span>');
   }
-  /** split = true: every request that starts this week is its own continuous bar. Requests carried over from the
-   *  previous week are always merged into one shared middle bar per type (Leave / Pass) at the start of the row. */
-  function monthSegments(ws, reqs, split) {
+  /** Month bars for one week row. Every request is ONE unbroken bar across its days in this row (its badge at the left).
+   *  Requests with the same dates and type share one slashed bar. Bars are never split into shared middle stretches. */
+  function monthSegments(ws, reqs) {
     const we = D.add(ws, 6);
-    const days = Array.from({ length: 7 }, (_, i) => D.add(ws, i));
     const all = reqs.filter(r => r.start <= we && r.end >= ws);
-    const segs = [];
-    // Same dates and type: one bar for the whole stretch this week, labelled with everyone on it.
-    const { groups, solo: evs } = sameDateGroups(all);
-    groups.forEach(g => {
-      const r0 = g[0], first = r0.start >= ws, last = r0.end <= we;
-      segs.push({ kind: first && last ? 'single' : first ? 'start' : last ? 'end' : 'mid', group: true, cat: stackCat(r0), type: r0.type,
-        a: D.diff(ws, D.max(r0.start, ws)), b: D.diff(ws, D.min(r0.end, we)), people: g });
-    });
-    evs.forEach(r => {
-      const cat = stackCat(r);
-      if (r.start === r.end) segs.push({ kind: 'single', cat, type: r.type, a: D.diff(ws, r.start), b: D.diff(ws, r.start), people: [r] });
-      else {
-        if (r.start >= ws) segs.push({ kind: 'start', cat, type: r.type, a: D.diff(ws, r.start), b: D.diff(ws, r.start), people: [r] });
-        if (r.end <= we) segs.push({ kind: 'end', cat, type: r.type, a: D.diff(ws, r.end), b: D.diff(ws, r.end), people: [r] });
-      }
-    });
-    // Pinned requests (or every request, when split) get their own middle segment instead of joining a shared bar.
-    evs.filter(r => ((split && r.start >= ws) || isPinned(r)) && D.days(r.start, r.end) > 2).forEach(r => {
-      const a = D.max(D.add(r.start, 1), ws), b = D.min(D.add(r.end, -1), we);
-      if (a <= b) segs.push({ kind: 'mid', cat: stackCat(r), type: r.type, a: D.diff(ws, a), b: D.diff(ws, b), people: [r] });
-    });
-    STACK.forEach(t => {
-      let cur = null;
-      days.forEach((d, i) => {
-        const set = evs.filter(r => stackCat(r) === t && r.start < d && r.end > d && (!split || r.start < ws)).sort(byLast);
-        const key = set.map(r => r.id).join('|');
-        if (cur && key && key === cur.key) { cur.b = i; return; }
-        cur = key ? { kind: 'mid', cat: t, type: set[0].type, a: i, b: i, people: set, key } : null;
-        if (cur) segs.push(cur);
-      });
-    });
-    segs.forEach(sg => { sg.ws = ws; });
-    return segs;
+    const { groups, solo } = sameDateGroups(all);
+    const seg = (list, group) => {
+      const r0 = list[0], first = r0.start >= ws, last = r0.end <= we;
+      return { kind: first && last ? 'single' : first ? 'start' : last ? 'end' : 'mid', group, cat: stackCat(r0), type: r0.type,
+        a: D.diff(ws, D.max(r0.start, ws)), b: D.diff(ws, D.min(r0.end, we)), people: list, ws };
+    };
+    return groups.map(g => seg(g, true)).concat(solo.map(r => seg([r], false)));
   }
 
   /* Phone month view: no names (they can't fit) — each day shows a blue Leave count and a gold Pass count.
@@ -3361,14 +3363,9 @@
     const m = monthMetrics();
     const lineH = m.barH + 2, moreH = 16;
     const avail = m.rowH - m.headH - 2;
-    // Prefer one unbroken bar per person. Only when those don't all fit in the row are middle days
-    // merged into shared (hatched) bars per type.
-    let { segs, lanes } = packMonthWeek(monthSegments(ws, reqs, true));
-    if (lanes.length * lineH > avail) ({ segs, lanes } = packMonthWeek(monthSegments(ws, reqs, false)));
+    // One unbroken bar per request (or per same-dates group); rows that don't fit show "+N more".
+    const { segs, lanes } = packMonthWeek(monthSegments(ws, reqs));
     if (weekCarry) { weekCarry.clear(); segs.forEach(sg => sg.people.forEach(r => { const l = weekCarry.get(r.id); if (l === undefined || sg.lane < l) weekCarry.set(r.id, sg.lane); })); }
-    // A one-person middle bar whose start puck is in this row doesn't repeat the name.
-    const startIds = new Set(segs.filter(sg => sg.kind === 'start').map(sg => sg.people[0].id));
-    segs.forEach(sg => { sg.quiet = sg.kind === 'mid' && sg.people.length === 1 && startIds.has(sg.people[0].id); });
 
     // Blackouts take the top lanes of the week (everyone sees them, even with Hide user schedules on).
     const we = days[6], wbo = blackouts().filter(b => b.start <= we && b.end >= ws);
@@ -3576,7 +3573,7 @@
       return '<div class="' + base + ' grp' + (same ? ' st-' + r0.status.toLowerCase() : '') + (sg.people.some(r => r.userId === S.me) ? ' mine' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"' +
         ' title="' + esc(sg.people.map(describe).join('\n')) + '"><span class="evs-t">' + groupBadges(sg.people, true, D.max(r0.start, sg.ws), D.min(r0.end, D.add(sg.ws, 6))) + '</span></div>';
     }
-    if (sg.kind === 'mid') {
+    if (sg.kind === 'mid' && sg.people.length > 1 && !sg.group) {
       // One badge per position + unit ([P|MKE|…] / [P|PIT|…] / [B|MKE|…]), separated by "/".
       const pucks = sg.quiet ? '' : ROLES.map(role => {
         const list = sg.people.filter(r => userOf(r.userId).role === role);
@@ -3587,7 +3584,7 @@
       return '<div class="' + base + (sg.people.length > 1 ? ' shared' : '') + (sg.people.length === 1 && r0.id === S.focus ? ' focus' : '') + (sg.cat === 'Denied' ? ' st-denied' : '') + (sg.people.some(isNow) ? ' now' : '') + '" style="' + pos + '"' +
         (sg.people.length === 1 ? ' role="button" tabindex="0" data-act="openReq" data-id="' + esc(r0.id) + '" aria-label="' + esc(describe(r0)) + '"' : '') + '><span class="evs-t">' + pucks + '</span></div>';
     }
-    // First / last / single day: the shaped event bar holding the person's [P|MKE|Name] badge.
+    // One request: the shaped event bar across its days in this row, holding the person's [P|MKE|Name] badge.
     const cls = base + ' st-' + r0.status.toLowerCase() + (r0.id === S.focus ? ' focus' : '') + (r0.userId === S.me ? ' mine' : '') + (dupsOf(r0).length ? ' dup' : '') + (isNow(r0) ? ' now' : '');
     return '<div class="' + cls + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r0.id) + '" style="' + pos + '"' +
       ' title="' + esc(describe(r0)) + '" aria-label="' + esc(describe(r0)) + '"><span class="evs-t">' + personBadge(r0, true, D.max(r0.start, sg.ws), D.min(r0.end, D.add(sg.ws, 6))) + '</span></div>';
@@ -3921,9 +3918,11 @@
       if (canEdit(r)) acts += '<button class="btn sm act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit request for ' + esc(u.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>';
       if (canDelete(r)) acts += '<button class="btn sm del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete request for ' + esc(u.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>';
       return '<tr class="t-' + r.type.toLowerCase() + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + (isNow(r) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
-        '<td class="st-ic-c">' + stIcon(r) + '</td>' +
+        // Status mark plus the ⚠ / overlap / changed marks live in the first column, so the pinned Name column is only
+        // as wide as the L / P badge and the name (no dead space on phones).
+        '<td class="st-ic-c"><div class="st-in">' + stIcon(r) + conflictBadge(r, true) + marks(r) + '</div></td>' +
         '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '<span class="sr"> ' + r.type.slice(1) + '</span></span>' : '') +
-          '<span class="stk-n">' + esc(lastName(u)) + '</span>' + conflictBadge(r, true) + marks(r) + '</div></td>' +
+          '<span class="stk-n">' + esc(lastName(u)) + '</span></div></td>' +
         '<td>' + unitBadge(u.unit) + '</td>' +
         '<td>' + esc(firstName(u)) + '</td>' +
         '<td>' + esc(u.rank) + '</td>' +
@@ -4290,9 +4289,12 @@
     if (modalOpener && document.contains(modalOpener) && modalOpener.focus) modalOpener.focus({ preventScroll: true });
     modalOpener = null;
   }
-  function modalHead(title, ic) {
-    return '<div class="modal-h">' + (ic ? icon(ic, 18) : '') + '<h2 id="modalTitle">' + title + '</h2><button class="btn ghost icon-btn" data-act="closeModal" aria-label="Close">' + icon('x', 18) + '</button></div>';
+  function modalHead(title, ic, extra) {
+    return '<div class="modal-h">' + (ic ? icon(ic, 18) : '') + '<h2 id="modalTitle">' + title + '</h2>' + (extra || '') + '<button class="btn ghost icon-btn" data-act="closeModal" aria-label="Close">' + icon('x', 18) + '</button></div>';
   }
+  /** Request length in the dialog header: a big, solid pill ("4 days") in the Leave / Pass colour. */
+  const dayPill = (n, type) => '<span class="hd-days hd-' + (type === 'Pass' ? 'pass' : 'leave') + '" id="hdDays" aria-live="polite">' +
+    (n ? '<b>' + n + '</b> ' + (n === 1 ? 'day' : 'days') : 'Pick dates') + '</span>';
 
   /* ---------- Day list: everyone out on a date, by category ---------- */
   /** Everyone out on a date, grouped On leave / On pass (and Denied when present). */
@@ -4700,7 +4702,7 @@
     const bad = [...reqConflicts(r).values()].filter(c => c.bad).length;
     const longDate = d => D.f(d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     // Same layout as the request form (DESIGN.md §Request details): who, type, calendar, dates, notes — read-only.
-    const html = modalHead(esc(r.type), r.type === 'Leave' ? 'calendar' : 'clipboard') +
+    const html = modalHead(esc(r.type), r.type === 'Leave' ? 'calendar' : 'clipboard', dayPill(n, r.type)) +
       '<div class="modal-b req-view">' +
       '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request for</div>' +
         '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(nameText(u)) + '</span>' +
@@ -4720,12 +4722,10 @@
         ? '<div class="cc-sum ' + (bad ? 'bad' : 'ok') + '">' + icon(bad ? 'alert' : 'check', 15) + (bad ? plural(bad, 'day') + ' in conflict — tap a red day to see with whom' : 'No conflicts on any requested day') + '</div>' +
           reqCalendar(r) +
           '<div class="mini-key"><span class="mk-i"><span class="mk mk-ok"></span>No conflict</span><span class="mk-i"><span class="mk mk-full"></span>Conflict</span></div>' +
-          leaveTally(r.userId, r.type, r.start, r.end, r.id) +
           '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>'
         : '') +
       '<div class="wiz-dates"><div class="field"><span class="lbl">Departure</span><div class="ro-val">' + longDate(r.start) + '</div></div>' +
         '<div class="field"><span class="lbl">Return</span><div class="ro-val">' + longDate(r.end) + '</div></div></div>' +
-      '<div class="ro-days">' + plural(n, 'day') + '</div>' +
       // Notes are private to the member and admins (the server doesn't send other members' notes at all).
       (S.isAdmin || r.userId === S.me ? '<div class="field"><span class="lbl">Trip reason &amp; notes</span><div class="ro-val ro-note">' + (r.note ? esc(r.note) : '<span class="muted">No note provided.</span>') + '</div></div>' : '') +
       '</div>' + (foot ? '<div class="modal-f modal-f-rows">' + foot + '</div>' : '');
@@ -4999,7 +4999,9 @@
     const w = S.wiz;
     if (w.step !== 3) w.step = 'form';
     const isBo = w.type === 'Blackout';
-    const head = modalHead(isBo ? (w.editBoId ? 'Edit Blackout' : 'New Blackout') : w.editId ? 'Edit Request' : 'New Request', w.editId || w.editBoId ? 'pencil' : isBo ? 'ban' : 'plus');
+    const wn = D.valid(w.start) && D.valid(w.end) && w.end >= w.start ? D.days(w.start, w.end) : 0;
+    const head = modalHead(isBo ? (w.editBoId ? 'Edit Blackout' : 'New Blackout') : w.editId ? 'Edit Request' : 'New Request', w.editId || w.editBoId ? 'pencil' : isBo ? 'ban' : 'plus',
+      isBo ? '' : dayPill(wn, w.type)); // the request's length, big, in the header
     let body = '', foot = '';
     if (w.step === 'form') {
       if (isBo) {
@@ -5092,7 +5094,7 @@
     const anyBo = blackouts().some(b => b.id !== w.editBoId && (w.type === 'Blackout' || b.types === 'Both' || b.types === w.type) && b.end >= gs && b.start <= D.add(gs, 41));
     // The request's length sits at the end of the colour key (no separate leave-days box: the form must fit without scrolling).
     const n = D.valid(w.start) && D.valid(w.end) && w.end >= w.start ? D.days(w.start, w.end) : 0;
-    const len = '<span class="mk-days" aria-live="polite">' + (n ? plural(n, 'day') : D.valid(w.start) ? 'Pick return' : 'Pick dates') + '</span>';
+    const len = ''; // the length shows in the header pill (#hdDays), not here
     return html + '</div><div class="mini-key">' + (q ? '<span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-over"></span>Overbooks</span><span class="mk-i"><span class="mk mk-full"></span>Full</span>' : '') +
       (anyBo ? '<span class="mk-i"><span class="mk mk-bo"></span>Blackout</span>' : '') + len + '</div></div>';
   }
@@ -5108,7 +5110,8 @@
     return dur + (msgs.length ? '<div class="msgs">' + msgs.join('') + '</div>' : '');
   }
   function refreshWizDates() {
-    const m = $('#wizMini'), s = $('#wizStatus');
+    const m = $('#wizMini'), s = $('#wizStatus'), hd = $('#hdDays'), w0 = S.wiz;
+    if (hd) hd.outerHTML = dayPill(D.valid(w0.start) && D.valid(w0.end) && w0.end >= w0.start ? D.days(w0.start, w0.end) : 0, w0.type);
     if (m) m.innerHTML = renderMini();
     if (s) s.innerHTML = renderWizStatus();
     const a = $('#wzS'), b = $('#wzE');
