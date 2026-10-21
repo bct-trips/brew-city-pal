@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792571829"></script>
+    <script src="config.js?v=1792572242"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3860,16 +3860,7 @@
     return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top.replace('<div class="dsum">', roleBar + '<div class="dsum">') +
         meters + '</div></div>' +
       '<div class="dayv-in">' + blackoutsOn(d).map(b => '<div class="msg e bo-day">' + icon('ban', 15) + '<span><b>' + esc(boLabel(b)) + '</b>' + (b.note ? ' — ' + esc(b.note) : '') + '</span></div>').join('') +
-      // Overlap conflicts: one member with leave and a pass (or two requests) on this day.
-      [...new Set(IDX.live.filter(r => r.status !== 'Denied' && r.start <= d && r.end >= d && dupsOf(r).length).map(r => r.userId))].map(uid => {
-        const mine = IDX.live.filter(r => r.userId === uid && r.status !== 'Denied' && r.start <= d && r.end >= d);
-        return '<button class="cf-note cf-bad" data-act="openReq" data-id="' + esc(mine[0].id) + '">' + icon('alert', 16) + esc(fullName(userOf(uid))) + ' has ' +
-          mine.map(r => r.type === 'Leave' ? 'leave' : 'a pass').join(' and ') + ' on this day — overlap</button>';
-      }).join('') +
-      // Over-the-max notes only when there's something to decide (an "all approved" note is just noise).
-      dayConflicts(d).filter(c => conflictState(d, c.role) !== 'ok').map(c => '<button class="cf-note cf-' + conflictState(d, c.role) + '" data-act="openConflict" data-date="' + d + '" data-role="' + c.role + '">' +
-        icon(conflictState(d, c.role) === 'ok' ? 'check' : 'alert', 16) + ({ Pilot: 'Pilots', Boom: 'Booms', Other: 'Other' })[c.role] + ' on leave over the daily max (' + c.list.length + ' of ' + c.q + ')' +
-        (conflictState(d, c.role) === 'ok' ? ' — all approved' : ' — review conflict') + '</button>').join('') +
+      // No overlap / over-the-max notes here: conflicts are handled by the conflict resolver.
       '</div><div class="day-groups">' + (reqs.length ? dayGroupsHtml(reqs) : '<div class="empty">No one is scheduled out on this day.</div>') +
       '</div></div>';
   }
