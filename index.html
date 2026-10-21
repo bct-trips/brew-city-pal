@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792591521"></script>
+    <script src="config.js?v=1792591756"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792591521';
+      window.PAL_BUILD = '1792591756';
       (function () {
         function check(launch) {
           try {
@@ -2468,6 +2468,17 @@
   /* Required fields: a red * after the label (labels are uppercase; the * keeps its own look), "* Required" note on top. */
   .req { color: var(--bad); margin-left: 3px; font-weight: 800; letter-spacing: 0; }
   .req-note { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+  /* New-PIN rule as plain text above the boxes, once per pair (never a placeholder inside them — see NEW_PIN). */
+  .pin-hint { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  #mcPinRow { margin-top: 8px; } #mcPinRow[hidden] { display: none; } #mcPinRow .mc-pin { margin-top: 0; }
+  /* Loading screen and the dimmed cover (Signing out…, Unlocking…, Updating…, Submitting…): same optical center as the
+     sign-in screen — the space below is ~1.4× the space above, so the logo and words don't look low. */
+  .splash { justify-content: flex-start; }
+  .splash::before, .splash::after { content: ""; flex: 1 1 0; min-height: 8px; }
+  .splash::after { flex-grow: 1.4; }
+  .blocker { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+  .blocker::before, .blocker::after { content: ""; flex: 1 1 0; }
+  .blocker::after { flex-grow: 1.4; }
 </style>
 
   </head>
@@ -3130,15 +3141,18 @@
   /* Every box where a NEW PIN is typed (Settings, set-PIN screen, Admin default / admin PIN, a member's PIN): a plain
      text box masked as dots with the number keypad — not a password field — so no browser or password manager offers a
      "strong password" or to save it. It also stays read-only until tapped (data-arm, like the Admin PIN box), so iOS
-     never sees an empty fillable box. Only the sign-in PIN stays a real password field (saved-password fill). */
+     never sees an empty fillable box. No "4–8 digits" placeholder, length limit or pattern on the box either — Safari reads
+     those as password rules and offers a strong one; the rule is plain text above the boxes (PIN_HINT) and checked on
+     save. Only the sign-in PIN stays a real password field (saved-password fill). */
+  const PIN_HINT = '<p class="pin-hint">4–8 Digits</p>'; // once, above each pair of new-PIN boxes
   /** Required-field marker after a label (red *), with a "* Required" note at the top of the form. */
   const REQ = '<span class="req" aria-hidden="true">*</span>', REQ_NOTE = '<p class="req-note"><span class="req">*</span> Required</p>';
-  const NEW_PIN = 'type="text" class="pin-mask" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" readonly data-arm';
+  const NEW_PIN = 'type="text" class="pin-mask" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" readonly data-arm';
   const pinInput = (id, label, ac) => ac === 'current-password'
     // Signing in: no "4–8 digits" hint, length limit or pattern — Safari reads those as new-password rules and offers a
     // "strong password". Just an existing password (numeric keypad) paired with the username field.
     ? '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" name="password" type="password" inputmode="numeric" autocomplete="current-password"></div>'
-    : '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" ' + NEW_PIN + ' placeholder="4–8 digits"></div>';
+    : '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" ' + NEW_PIN + '></div>';
   /** Handle any sign-in style result: choose-who, must-set-PIN, or straight into the app. */
   function afterAuth(res, lastName, pin, first) {
     if (res.pending) {
@@ -3290,7 +3304,7 @@
     // No <form> and no "pin" in the box names: iOS reads a form with two new-secret boxes as "create a password" and
     // offers a strong one. Enter in either box saves, like a form would.
     authShell('<div id="setPinBox"><h2 class="auth-h">Please Set Your PIN!</h2>' +
-      '<div class="row">' + pinInput('spA', 'New PIN', 'new') + pinInput('spB', 'Confirm New PIN', 'new') + '</div>' +
+      PIN_HINT + '<div class="row">' + pinInput('spA', 'New PIN', 'new') + pinInput('spB', 'Confirm New PIN', 'new') + '</div>' +
       '<div class="err" id="spErr"></div>' +
       '<button class="btn primary block" type="button" id="spGo" style="margin-top:8px">' + icon('check', 16) + ' Save PIN and Continue</button></div>' +
       '<div class="auth-alt"><button class="linkbtn" id="spOut">Sign Out</button></div>');
@@ -5198,8 +5212,8 @@
   function renderAdmin() {
     const st = S.settings;
     // New PIN · Confirm · button on one line when there's room (wraps: the button drops to its own line on phones).
-    const pinPair = (id1, id2, l1, l2, btn) => '<div class="pin-row">' +
-      '<div class="field"><label for="' + id1 + '">' + l1 + '</label><input id="' + id1 + '" ' + NEW_PIN + ' placeholder="4–8 digits"></div>' +
+    const pinPair = (id1, id2, l1, l2, btn) => PIN_HINT + '<div class="pin-row">' +
+      '<div class="field"><label for="' + id1 + '">' + l1 + '</label><input id="' + id1 + '" ' + NEW_PIN + '></div>' +
       '<div class="field"><label for="' + id2 + '">' + l2 + '</label><input id="' + id2 + '" ' + NEW_PIN + '></div>' + btn + '</div>';
     return '<section class="page admin-page"><div class="toolbar"><span class="title">Admin</span>' +
       '<span class="unlocked">' + icon('unlock', 13) + ' Unlocked</span>' +
@@ -5642,8 +5656,8 @@
 
       startupPanel() +
 
-      '<div class="panel"><h3>' + icon('key', 16) + ' Change PIN</h3><div class="row">' +
-        '<div class="field"><label for="np1">New PIN</label><input id="np1" ' + NEW_PIN + ' placeholder="4–8 digits"></div>' +
+      '<div class="panel"><h3>' + icon('key', 16) + ' Change PIN</h3>' + PIN_HINT + '<div class="row">' +
+        '<div class="field"><label for="np1">New PIN</label><input id="np1" ' + NEW_PIN + '></div>' +
         '<div class="field"><label for="np2">Confirm New PIN</label><input id="np2" ' + NEW_PIN + '></div></div>' +
         '<div class="err" id="pinErr"></div><div class="row" style="margin-top:4px"><button class="btn primary" data-act="savePin">Save PIN</button><button class="btn" data-act="clearPin">Cancel</button></div></div>' +
 
@@ -5863,9 +5877,9 @@
       '<section class="mc-sec"><h4>PIN <span class="meta">' + (u.mustChange ? 'default — sets their own at next sign-in' : 'their own') + '</span></h4>' +
         '<div class="mc-btns"><button class="btn sm" data-act="resetPin" data-id="' + esc(uid) + '">' + icon('key', 15) + 'Reset to Default</button>' +
         '<button class="btn sm" data-act="mcPinShow">' + icon('pencil', 15) + 'Set a PIN</button></div>' +
-        '<div class="mc-pin" id="mcPinRow" hidden><input id="mcPin1" ' + NEW_PIN + ' placeholder="New PIN" aria-label="New PIN">' +
-        '<input id="mcPin2" ' + NEW_PIN + ' placeholder="Confirm" aria-label="Confirm New PIN">' +
-        '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div><div class="err" id="mcPinErr"></div></section>' +
+        '<div id="mcPinRow" hidden>' + PIN_HINT + '<div class="mc-pin"><input id="mcPin1" ' + NEW_PIN + ' placeholder="PIN" aria-label="PIN">' +
+        '<input id="mcPin2" ' + NEW_PIN + ' placeholder="Again" aria-label="PIN again">' +
+        '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div></div><div class="err" id="mcPinErr"></div></section>' +
       '<section class="mc-sec mc-mgr"><h4>Manager <span class="meta">' + (u.manager ? 'sees every position’s schedule' : 'sees what their position can see') + '</span></h4>' +
         '<div class="mc-btns"><button type="button" class="btn chip-tog' + (u.manager ? ' on' : '') + '" aria-pressed="' + !!u.manager + '" data-act="setManager" data-id="' + esc(uid) + '">' +
           (u.manager ? icon('check', 16) + 'Manager' : 'Not a Manager') + '</button></div></section>' +
