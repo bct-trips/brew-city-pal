@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792600638"></script>
+    <script src="config.js?v=1792603072"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792600638';
+      window.PAL_BUILD = '1792603072';
       (function () {
         function check(launch) {
           try {
@@ -2565,6 +2565,13 @@
   .rtable.ag .rg-none { text-align: center; padding: 14px; }
   .rg .ag-add td > .btn { position: sticky; left: 12px; }
   .ta-acts { display: inline-flex; gap: 6px; margin-left: auto; flex: none; }
+  /* First-run Setup (sign-in card): Start Fresh | Restore a Backup, then section titles. */
+  .setup-seg { display: flex; width: 100%; margin: 4px 0 6px; }
+  .setup-seg > button { flex: 1; }
+  .login-card .setup-h { margin: 14px 0 4px; font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  /* Import Roster: what the file holds, and any rows that can't be added. */
+  .ri-sum p { margin: 6px 0; } .ri-sum ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+  .modal-f .grow { flex: 1; }
   /* Team admin permission grid (member card, Make Admin): unit rows × position columns of check boxes. */
   .pg-wrap { overflow-x: auto; margin: 2px 0 8px; border: 1px solid var(--line); border-radius: 12px; }
   .pg { border-collapse: collapse; width: 100%; font-size: 13px; }
@@ -3144,7 +3151,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.23'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.24'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -3480,6 +3487,96 @@
           store.set('lastName', ln);
           afterAuth(res, ln, pin);
         } catch (e) { $('#lgErr').textContent = e.message; $('#lgPin').select(); }
+      });
+    });
+  }
+  /* ---------- First-run setup (a new copy with no members) ----------
+     Needs the setup code from the Apps Script editor (showSetupCode). Start Fresh: org admin, team admin and default
+     PINs, then your own account — you're signed in as an org admin and Import Roster opens. Restore a Backup: choose a
+     backup file; everything comes back and everyone signs in with their old PIN. */
+  async function showSetup(mode) {
+    mode = mode || 'fresh';
+    let cfg = { units: [], roles: [] };
+    if (mode === 'fresh') { try { cfg = await call('apiPublicConfig'); } catch (e) { /* defaults below */ } }
+    const sel = (id, opts) => '<select id="' + id + '">' + opts.map(o => '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>').join('') + '</select>';
+    const pair = (id, label) => '<div class="row"><div class="field"><label for="' + id + '1">' + label + REQ + '</label><input id="' + id + '1" ' + NEW_PIN + '></div>' +
+      '<div class="field"><label for="' + id + '2">Confirm' + REQ + '</label><input id="' + id + '2" ' + NEW_PIN + '></div></div>';
+    const roles = cfg.roles && cfg.roles.length ? cfg.roles.map(r => r.name) : ['Pilot', 'Boom', 'Other'];
+    authShell('<form id="setupForm" autocomplete="off"><h2 class="auth-h">Set Up PAL</h2>' +
+      '<p class="auth-note">This copy of PAL is new. Enter the setup code from Apps Script (run <b>showSetupCode</b> and read the Execution log).</p>' +
+      '<div class="field"><label for="suCode">Setup Code' + REQ + '</label><input id="suCode" autocapitalize="characters" autocomplete="off" spellcheck="false"></div>' +
+      '<div class="seg setup-seg" role="group"><button type="button" class="' + (mode === 'fresh' ? 'on' : '') + '" data-mode="fresh" aria-pressed="' + (mode === 'fresh') + '">Start Fresh</button>' +
+        '<button type="button" class="' + (mode === 'restore' ? 'on' : '') + '" data-mode="restore" aria-pressed="' + (mode === 'restore') + '">Restore a Backup</button></div>' +
+      (mode === 'fresh'
+        ? '<h3 class="setup-h">PINs</h3>' + PIN_HINT + pair('suOrg', 'Org Admin PIN') + pair('suTeam', 'Team Admin PIN') + pair('suDef', 'Default PIN') +
+          '<p class="auth-note">Org admins unlock everything with the org admin PIN; team admins use the team admin PIN; new members sign in with the default PIN, then choose their own. All three must be different.</p>' +
+          '<h3 class="setup-h">Your Account</h3>' +
+          '<div class="field"><label for="suLast">Last Name' + REQ + '</label><input id="suLast" autocomplete="family-name"></div>' +
+          '<div class="row"><div class="field"><label for="suFirst">First Name</label><input id="suFirst" autocomplete="given-name"></div>' +
+          '<div class="field"><label for="suMid">Middle</label><input id="suMid" autocomplete="additional-name"></div></div>' +
+          '<div class="row"><div class="field"><label for="suRank">Rank</label>' + sel('suRank', [['', '—']].concat(RANKS.map(r => [r, r]))) + '</div>' +
+          '<div class="field"><label for="suRole">Position' + REQ + '</label>' + sel('suRole', [['', 'Choose…']].concat(roles.map(r => [r, roleName(r)]))) + '</div></div>' +
+          '<div class="field"><label for="suUnit">Unit' + REQ + '</label>' + sel('suUnit', [['', 'Choose…']].concat((cfg.units || []).map(u => [u.code, u.code + (u.name && u.name !== u.code ? ' — ' + u.name : '')]))) + '</div>' +
+          pair('suMe', 'Your PIN') +
+          '<div class="err" id="suErr"></div><button class="btn primary block" type="submit" style="margin-top:8px">' + icon('check', 16) + ' Finish Setup</button>'
+        : '<p class="auth-note">Moving PAL from another Google account? Choose the backup file you downloaded there (Admin → Backup &amp; Restore). Everything comes back, and everyone signs in with their old PIN.</p>' +
+          '<div class="field"><label for="suFile">Backup File' + REQ + '</label><input id="suFile" type="file" accept=".json,application/json"></div><p class="auth-note" id="suSum"></p>' +
+          '<div class="err" id="suErr"></div><button class="btn primary block" type="submit" style="margin-top:8px">' + icon('upload', 16) + ' Restore</button>') +
+      '</form>');
+    $$('.setup-seg [data-mode]').forEach(b => b.addEventListener('click', ev => {
+      ev.preventDefault(); ev.stopPropagation();
+      const code = $('#suCode').value; showSetup(b.dataset.mode).then(() => { $('#suCode').value = code; });
+    }));
+    let backup = null;
+    const f = $('#suFile');
+    if (f) f.addEventListener('change', () => {
+      backup = null; $('#suErr').textContent = ''; $('#suSum').textContent = '';
+      const file = f.files && f.files[0]; if (!file) return;
+      const rd = new FileReader();
+      rd.onload = () => {
+        let b = null; try { b = JSON.parse(rd.result); } catch (e) { b = null; }
+        if (!b || b.app !== 'brew-city-pal' || !b.tables || !Array.isArray(b.tables.Users)) { $('#suErr').textContent = 'That file isn’t a PAL backup.'; return; }
+        backup = b;
+        $('#suSum').textContent = 'Backup from ' + new Date(b.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) +
+          ' · ' + plural(b.tables.Users.length, 'member') + ' · ' + plural((b.tables.Requests || []).length, 'request') + '.';
+      };
+      rd.readAsText(file);
+    });
+    $('#setupForm').addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const err = $('#suErr'), v = id => ($('#' + id) || {}).value || '', code = v('suCode').trim();
+      if (!code) return (err.textContent = 'Enter the setup code.');
+      const btn = ev.target.querySelector('button[type=submit]');
+      if (mode === 'restore') {
+        if (!backup) return (err.textContent = 'Choose a backup file.');
+        err.textContent = '';
+        return authBusy(btn, async () => {
+          try {
+            const res = await call('apiSetupRestore', code, backup);
+            showLogin();
+            toast('Restored ' + plural(res.users, 'member') + ' and ' + plural(res.requests, 'request') + '. Sign in with your PIN from the backup.', 'ok', 6000);
+          } catch (e) { err.textContent = e.message; }
+        });
+      }
+      const pins = [['suOrg', 'Org admin PIN'], ['suTeam', 'Team admin PIN'], ['suDef', 'Default PIN'], ['suMe', 'Your PIN']];
+      for (const [id, label] of pins) {
+        if (pinProblem(v(id + '1'))) return (err.textContent = label + ': ' + pinProblem(v(id + '1')));
+        if (v(id + '1') !== v(id + '2')) return (err.textContent = label + ': the two entries don’t match.');
+      }
+      if (new Set(pins.map(x => v(x[0] + '1'))).size < 4) return (err.textContent = 'The org admin, team admin, default and your own PIN must all be different.');
+      if (!v('suLast').trim()) return (err.textContent = 'Enter your last name.');
+      if (!v('suRole')) return (err.textContent = 'Choose your position.');
+      if (!v('suUnit')) return (err.textContent = 'Choose your unit.');
+      err.textContent = '';
+      const me = { name: [v('suFirst'), v('suMid'), v('suLast')].map(x => x.trim()).filter(Boolean).join(' '), rank: v('suRank'), role: v('suRole'), unit: v('suUnit'), pin: v('suMe1') };
+      await authBusy(btn, async () => {
+        try {
+          const res = await call('apiSetup', code, { orgPin: v('suOrg1'), teamPin: v('suTeam1'), defaultPin: v('suDef1'), me });
+          store.set('lastName', v('suLast').trim());
+          afterAuth(res);
+          S.view = 'admin'; render();
+          openRosterImport(true);
+        } catch (e) { err.textContent = e.message; }
       });
     });
   }
@@ -5750,6 +5847,60 @@
       (rows ? '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Dates</th><th scope="col">Blacks Out</th><th scope="col">Applies To</th><th scope="col">Reason</th><th scope="col" class="num">To Review</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<p class="meta">No blackout dates yet.</p>') + '</div>';
   }
+  /* ---------- Import Roster (org admins; opens by itself right after Setup) ----------
+     A CSV (from a spreadsheet) or JSON file, one member per row: Rank, First, Middle, Last, Position, Unit — Last,
+     Position and Unit required. Position can be the name (Pilot / Boom Operator / Booms) or the badge letter; Unit is
+     the unit code. Rows are checked here first (problems listed), then added on the default PIN. Anyone already on the
+     roster (same name and unit) is skipped. */
+  const ROSTER_COLS = ['Rank', 'First', 'Middle', 'Last', 'Position', 'Unit'];
+  function parseCsv(text) {
+    const rows = []; let row = [], cell = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+      else if (c === '"') q = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += c;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(r => r.some(x => String(x).trim()));
+  }
+  /** File text → {rows: [{name, rank, role, unit}], problems: ['Row 4: …']}. */
+  function readRoster(text, fileName) {
+    let list = [];
+    if (/\.json$/i.test(fileName) || /^\s*[\[{]/.test(text)) {
+      let j = null; try { j = JSON.parse(text); } catch (e) { return { rows: [], problems: ['That JSON file can’t be read.'] }; }
+      list = Array.isArray(j) ? j : Array.isArray(j && j.members) ? j.members : [];
+    } else {
+      const t = parseCsv(text.replace(/^\ufeff/, '')); if (!t.length) return { rows: [], problems: ['That file is empty.'] };
+      const head = t[0].map(h => String(h).trim().toLowerCase());
+      list = t.slice(1).map(r => { const o = {}; head.forEach((h, i) => { o[h] = r[i]; }); return o; });
+    }
+    const pick = (o, keys) => { for (const k of keys) { const hit = Object.keys(o).find(x => x.toLowerCase().replace(/[\s_]/g, '') === k); if (hit != null && String(o[hit]).trim()) return String(o[hit]).trim(); } return ''; };
+    const roleOf = v => { const x = v.toLowerCase(); return ROLES.find(r => [r, roleName(r), rolePl(r), roleL(r)].some(n => String(n).toLowerCase() === x)) || ''; };
+    const rows = [], problems = [];
+    list.forEach((o, i) => {
+      o = o || {};
+      const last = pick(o, ['last', 'lastname']), full = pick(o, ['name']);
+      const name = last ? [pick(o, ['first', 'firstname']), pick(o, ['middle', 'middlename', 'mi']), last].filter(Boolean).join(' ') : full;
+      const posIn = pick(o, ['position', 'role']), role = roleOf(posIn), unitIn = pick(o, ['unit']).toUpperCase(), unit = unitsList().some(u => u.code === unitIn) ? unitIn : '';
+      const why = !name ? 'no last name' : !role ? (posIn ? 'unknown position “' + posIn + '”' : 'no position') : !unit ? (unitIn ? 'unknown unit “' + unitIn + '” (add it in Teams first)' : 'no unit') : '';
+      if (why) problems.push('Row ' + (i + 2) + (name ? ' (' + name + ')' : '') + ': ' + why);
+      else rows.push({ name, rank: pick(o, ['rank']), role, unit, line: i + 2 }); // line: the file's row, for messages
+    });
+    return { rows, problems };
+  }
+  function openRosterImport(first) {
+    S.rosterFile = null;
+    openModal('rosterImport', modalHead(first ? 'Setup Done · Import Your Roster' : 'Import Roster', 'userPlus') + '<div class="modal-b">' +
+      (first ? '<p class="meta" style="white-space:normal;margin:0 0 10px">You’re signed in as an org admin. Add everyone else from a roster file now, or skip and add people later on the Roster page.</p>' : '') +
+      '<p class="meta" style="white-space:normal;margin:0 0 10px">A CSV (save from Excel or Google Sheets) or JSON file with one member per row: <b>' + ROSTER_COLS.join(', ') + '</b>. Last, Position and Unit are required. Everyone signs in with the default PIN, then sets their own.</p>' +
+      '<div class="field"><label for="riFile">Roster File</label><input id="riFile" type="file" accept=".csv,.json,text/csv,application/json" data-change="rosterPick"></div>' +
+      '<div id="riSum" class="ri-sum"></div><div class="err" id="riErr"></div></div>' +
+      '<div class="modal-f"><button class="btn" data-act="rosterTemplate">' + icon('download', 16) + 'Template</button><span class="grow"></span>' +
+        '<button class="btn" data-act="closeModal">' + (first ? 'Skip' : 'Cancel') + '</button><button class="btn primary" id="riGo" data-act="rosterGo" disabled>' + icon('check', 16) + 'Import</button></div>');
+  }
   function renderAdmin() {
     const st = S.settings;
     // New PIN · Confirm · button on one line when there's room (wraps: the button drops to its own line on phones).
@@ -5797,10 +5948,12 @@
         '<button class="btn primary" data-act="forceReload">' + icon('refresh', 18) + 'Update All Devices</button></div>' +
         '<p class="meta">' + (S.reloadAt ? 'Last pushed ' + esc(new Date(S.reloadAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })) : 'Not pushed yet') + '</p></div>' +
 
-      // Backup & Restore (org admins): a file with everything, to move the app to another Google account.
+      // Backup & Restore (org admins): a file with everything, to move the app to another Google account; Import Roster
+      // adds members from a CSV / JSON file.
       (S.isOrg ? '<div class="panel"><div class="cfg-h"><h3>' + icon('download', 16) + ' Backup &amp; Restore' + tip('A backup is one file with every member, request, setting and PIN, so everyone keeps their PIN. To move PAL to another Google account: Download Backup here, set up PAL in the new account, then Restore From Backup there.') + '</h3></div>' +
         '<p class="meta">Keep backup files private: they hold the roster and everyone’s PIN data.</p>' +
-        '<div class="cfg-foot bk-acts"><button class="btn" data-act="bkRestore">' + icon('upload', 18) + 'Restore From Backup…</button>' +
+        '<div class="cfg-foot bk-acts"><button class="btn" data-act="rosterImport">' + icon('userPlus', 18) + 'Import Roster…</button>' +
+        '<button class="btn" data-act="bkRestore">' + icon('upload', 18) + 'Restore From Backup…</button>' +
         '<button class="btn primary" data-act="bkDownload">' + icon('download', 18) + 'Download Backup</button></div></div>' : '') +
 
       // PINs
@@ -6502,7 +6655,7 @@
       return '<option value="' + esc(v) + '"' + (v === (cur || '') ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join('') + '</select>';
     // First / middle / last. Admins can adjust these so members who share a last name read clearly on the calendar.
     const t = String(u.name || '').trim().split(/\s+/).filter(Boolean);
-    // A one-word name (the seeded roster is last names only) is the last name; the admin fills in the first name.
+    // A one-word name (an imported roster may be last names only) is the last name; the admin fills in the first name.
     const nf = t.length > 1 ? t[0] : '', nl = t.length ? t[t.length - 1] : '', nm = t.slice(1, -1).join(' ');
     return REQ_NOTE + '<div class="row"><div class="field"><label for="' + p + 'First">First Name</label><input id="' + p + 'First" value="' + esc(nf) + '" autofocus></div>' +
       '<div class="field"><label for="' + p + 'Mid">Middle</label><input id="' + p + 'Mid" value="' + esc(nm) + '"></div></div>' +
@@ -7733,6 +7886,36 @@
     },
     // Every member's PIN back to the default (not your own). Two steps to confirm: tick "I have read this warning",
     // then OK (OK stays off until the box is ticked).
+    rosterImport() { openRosterImport(false); },
+    rosterTemplate() {
+      const csv = ROSTER_COLS.join(',') + '\n' + ['Capt,Jane,A,Doe,Pilot,' + ((unitsList()[0] || {}).code || 'MKE'), ',John,,Smith,Boom,' + ((unitsList()[0] || {}).code || 'MKE')].join('\n') + '\n';
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), a = document.createElement('a');
+      a.href = url; a.download = 'pal-roster-template.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+    },
+    rosterPick(el) {
+      const f = el.files && el.files[0], sum = $('#riSum'), err = $('#riErr'), go = $('#riGo');
+      S.rosterFile = null; sum.innerHTML = ''; err.textContent = ''; go.disabled = true;
+      if (!f) return;
+      const rd = new FileReader();
+      rd.onload = () => {
+        const r = readRoster(String(rd.result || ''), f.name);
+        S.rosterFile = r.rows.length ? r.rows : null; go.disabled = !r.rows.length;
+        sum.innerHTML = '<p><b>' + plural(r.rows.length, 'member') + '</b> ready to add' + (r.problems.length ? ' · <b>' + plural(r.problems.length, 'row') + '</b> with problems (skipped):' : '.') + '</p>' +
+          (r.problems.length ? '<ul>' + r.problems.slice(0, 8).map(x => '<li>' + esc(x) + '</li>').join('') + (r.problems.length > 8 ? '<li>…and ' + (r.problems.length - 8) + ' more</li>' : '') + '</ul>' : '');
+      };
+      rd.readAsText(f);
+    },
+    async rosterGo(el) {
+      if (!S.rosterFile) return;
+      const res = await run(el, 'apiImportRoster', S.token, S.rosterFile);
+      if (!res) return;
+      apply(res.data); S.rosterFile = null;
+      if (res.skippedCount) {
+        $('#riSum').innerHTML = '<p><b>' + plural(res.added, 'member') + '</b> added · <b>' + res.skippedCount + '</b> skipped:</p><ul>' + res.skipped.slice(0, 8).map(x => '<li>Row ' + x.row + (x.name ? ' (' + esc(x.name) + ')' : '') + ': ' + esc(x.why) + '</li>').join('') + '</ul>';
+        $('#riGo').disabled = true; render();
+      } else { closeModal(); render(); }
+      toast(plural(res.added, 'member') + ' added to the roster', 'ok', 2600);
+    },
     // Backup: type the org admin PIN, then the file downloads (brew-city-pal-backup-YYYY-MM-DD.json).
     bkDownload() {
       openModal('backup', modalHead('Download Backup', 'download') + '<div class="modal-b">' +
@@ -8401,6 +8584,8 @@
       try { apply(await call('apiBootstrap', S.token)); render(); if (location.hash) openLink(location.hash); return; }
       catch (e) { if (/new PIN/.test(e.message)) return; S.token = null; store.del('token'); }
     }
+    // A brand-new copy (no members yet): Setup instead of Sign In. An older server without Setup just signs in.
+    try { if ((await call('apiSetupState')).needed) return showSetup(); } catch (e) { /* older server */ }
     showLogin();
   }
   boot();
