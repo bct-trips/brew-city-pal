@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792572437"></script>
+    <script src="config.js?v=1792572517"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2089,6 +2089,15 @@
   }
   .cal-peek { padding-top: 6px; box-sizing: border-box; }
   :root[data-theme="dark"] .nav.nav-admin { border-top-color: #f04438; } /* admin red line, brighter on dark */
+  /* Calendar bar: view switch, Today, Add Request and the filters share one group on the left (.cb-start); the date is
+     centred. Phones / tablets keep their own layouts (.cb-start passes its children through). */
+  .cb-start { display: contents; }
+  @media (min-width: 1101px) {
+    .calbar { grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr); }
+    .calbar .cb-start { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; grid-column: 1; grid-row: 1; justify-self: start; }
+    .calbar .cb-start .cb-right { margin-left: 0; justify-self: auto; }
+    .calbar .cb-center { grid-column: 2; grid-row: 1; }
+  }
 </style>
 
   </head>
@@ -2928,8 +2937,8 @@
     const confOn = S.f.conf && S.view !== 'mine';
     return '<section class="cal' + (confOn ? ' conf-mode' : '') + '">' +
       '<div class="calbar">' +
-        // Left: view switch, Today, Add Request
-        '<div class="cb-left"><div class="cb-views">' +
+        // Left: view switch, Today, Add Request, then the filters — all together on the left; the date is centred.
+        '<div class="cb-start"><div class="cb-left"><div class="cb-views">' +
           (S.cal === 'day' ? '<button class="btn back-month" data-act="backMonth">' + icon('left', 18) + 'Month</button>' : '') +
           // View switch as icons: Week (columns) · Month (calendar) · Qtr (four blocks); the name is the tooltip / label.
           seg([['week', icon('columns', 18) + '<span class="sr">Week</span>'], ['month', icon('calendar', 18) + '<span class="sr">Month</span>'], ['quad', icon('grid4', 18) + '<span class="sr">Quarter</span>']], S.cal, 'calMode')
@@ -2937,17 +2946,18 @@
           '<button class="btn today-btn' + (showsToday() ? ' on' : '') + '" data-act="calToday"' + (showsToday() ? ' aria-pressed="true"' : '') + '>Today</button></div>' +
           '<button class="btn req-btn" data-act="newReq" title="Start a new leave or pass request">' + icon('plus', 16) + 'Add Request</button>' +
         '</div>' +
-        // Centre: date navigator [ ‹ | label ⌄ | › ]
-        '<div class="cb-center"><div class="datenav" role="group" aria-label="Date">' +
-          '<button class="dn-arrow" data-act="calPrev" aria-label="Previous">' + icon('left', 18) + '</button>' +
-          '<button class="lbl-date" data-act="pickMonth" aria-haspopup="dialog" title="Jump to a month">' + esc(calLabel()) + icon('down', 15) + '</button>' +
-          '<button class="dn-arrow" data-act="calNext" aria-label="Next">' + icon('right', 18) + '</button></div></div>' +
-        // Right: status, position, then Leave / Pass at the far right
+        // Filters: status, position, Leave / Pass
         '<div class="cb-right filters">' + (S.view === 'mine'
           ? FILTERS.filter(F => F.g !== 'role').map(F => filterGroup(F, 'mine')).join('') + filterButton('mine')
           : FILTERS.map(F => filterGroup(F, 'cal')).join('') + filterButton('cal')) +
           // Phone Month: switch between name strips and P / B / O stats, next to the Filters button.
           (S.view === 'mine' ? mineSwitch() : S.cal === 'month' && !S.priv ? '<div class="mmode">' + seg([['events', 'Events'], ['stats', 'Stats']], S.monthMode || 'events', 'monthMode') + '</div>' : '') + '</div>' +
+        '</div>' +
+        // Centre: date navigator [ ‹ | label ⌄ | › ]
+        '<div class="cb-center"><div class="datenav" role="group" aria-label="Date">' +
+          '<button class="dn-arrow" data-act="calPrev" aria-label="Previous">' + icon('left', 18) + '</button>' +
+          '<button class="lbl-date" data-act="pickMonth" aria-haspopup="dialog" title="Jump to a month">' + esc(calLabel()) + icon('down', 15) + '</button>' +
+          '<button class="dn-arrow" data-act="calNext" aria-label="Next">' + icon('right', 18) + '</button></div></div>' +
       '</div>' +
       (confOn ? confBanner(calRequests().length) : '') +
       '<div class="cal-split"><div class="cal-body" id="calBody">' + body + '</div>' + (showPanel
