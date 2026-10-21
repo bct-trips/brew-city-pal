@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792582904"></script>
+    <script src="config.js?v=1792583028"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -4466,9 +4466,9 @@
     // plus a "Show N more" row. Tapping the header opens the whole band, then closes it.
     const group = (type, list) => {
       const n = cols.length + 1, band = type !== 'Past';
-      // My Requests: every band (Past too) starts fully open and lists everything in date order.
+      // My Requests: current bands start fully open and list everything in date order; Past starts collapsed.
       const mine = key === 'mine';
-      const state = mine ? (col[type] === 'closed' ? 'closed' : 'open')
+      const state = mine ? (type === 'Past' ? (col.Past === 'open' ? 'open' : 'closed') : col[type] === 'closed' ? 'closed' : 'open')
         : type === 'Past' ? (col.Past === false ? 'open' : 'closed') : band ? (col[type] || 'partial') : (col[type] ? 'closed' : 'open');
       // Top group = requests whose dates include today, whatever their status — so approving / denying / setting back to
       // pending never moves a row (only its color and slider change). "N active" counts the approved ones going on now.
@@ -4597,7 +4597,8 @@
       (changedMine.length ? '<div class="chg-note" role="alert">' + icon('alert', 18) + '<div><b>' + plural(changedMine.length, 'request') + ' changed by an admin.</b> ' +
         changedMine.map(r => '<button class="linkbtn" data-act="openReq" data-id="' + esc(r.id) + '">' + r.type + ' ' + D.short(r.start) + ' → ' + D.short(r.end) + '</button>').join(' · ') +
         '<div class="meta" style="white-space:normal">Open each one to see what changed, then tap “Got it”.</div></div></div>' : '') +
-      '<div class="tbl-page" id="mineBody"><div class="tbl-count">' + plural(shown.length, 'request') + ' · Leave taken ' + t.Leave + 'd · Pass taken ' + t.Pass + 'd this year' + sortNote(S.mine, 'mine') + '</div>' +
+      // No count / days-taken summary line; only the "Default order" link when a column sort is on.
+      '<div class="tbl-page" id="mineBody">' + (S.mine.userSorted ? '<div class="tbl-count">' + sortNote(S.mine, 'mine').replace(/^ · /, '') + '</div>' : '') +
       reqTable(shown, 'mine') + '</div>' + reqBar() + '</section>';
   }
 
@@ -6282,7 +6283,7 @@
     mineMode(el) { S.mineMode = el.dataset.v; S.dayPanel = null; if (S.cal === 'day') S.cal = 'month'; render(); },
     grpToggle(el) {
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
-      if (k === 'mine') c[t] = c[t] === 'closed' ? 'open' : 'closed'; // My Requests bands start open
+      if (k === 'mine') c[t] = t === 'Past' ? (c.Past === 'open' ? 'closed' : 'open') : c[t] === 'closed' ? 'open' : 'closed'; // My Requests: bands open, Past collapsed
       else if (t === 'Past') c.Past = c.Past === false; // Past starts closed: first tap opens it (false = open)
       else if (t !== 'Blackouts') c[t] = c[t] === 'open' ? 'closed' : 'open'; // part-open → open → closed → open
       else c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
