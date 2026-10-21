@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792591354"></script>
+    <script src="config.js?v=1792591521"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792591354';
+      window.PAL_BUILD = '1792591521';
       (function () {
         function check(launch) {
           try {
@@ -3225,9 +3225,10 @@
     // Required: last name, position, unit and the squadron default PIN. First name, middle and rank are optional (rank
     // starts blank). Position and unit start on "Choose…" so they're picked on purpose.
     $('#rgBody').outerHTML = '<form id="regForm" autocomplete="on"><h2 class="auth-h">Create an Account</h2>' + REQ_NOTE +
+      // Last name first (it's what signs you in), then first and middle on one row.
+      '<div class="field"><label for="rgLast">Last Name' + REQ + '</label><input id="rgLast" autocomplete="family-name" aria-required="true"></div>' +
       '<div class="row"><div class="field"><label for="rgFirst">First Name</label><input id="rgFirst" autocomplete="given-name"></div>' +
       '<div class="field"><label for="rgMid">Middle</label><input id="rgMid" autocomplete="additional-name"></div></div>' +
-      '<div class="field"><label for="rgLast">Last Name' + REQ + '</label><input id="rgLast" autocomplete="family-name" aria-required="true"></div>' +
       '<div class="row"><div class="field"><label for="rgRank">Rank</label>' + sel('rgRank', [['', '—']].concat(RANKS.map(r => [r, r]))) + '</div>' +
       '<div class="field"><label for="rgRole">Position' + REQ + '</label>' + sel('rgRole', [['', 'Choose…']].concat((cfg.roles && cfg.roles.length ? cfg.roles.map(r => r.name) : ['Pilot', 'Boom', 'Other']).map(r => [r, roleName(r)]))) + '</div></div>' +
       '<div class="field"><label for="rgUnit">Unit' + REQ + '</label>' + sel('rgUnit', [['', 'Choose…']].concat(cfg.units.map(u => [u.code, u.code + (u.name && u.name !== u.code ? ' — ' + u.name : '')]))) + '</div>' +
@@ -3236,7 +3237,7 @@
       '<div class="err" id="rgErr"></div>' +
       '<button class="btn primary block" type="submit" style="margin-top:8px">' + icon('userPlus', 16) + ' Create Account</button></form>' +
       '<div class="auth-alt">Already have an account? <button class="linkbtn" id="toLogin">Sign In</button></div>';
-    autoFocus($('#rgFirst'));
+    autoFocus($('#rgLast'));
     $('#toLogin').addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); showLogin(); });
     $('#regForm').addEventListener('submit', async ev => {
       ev.preventDefault();
