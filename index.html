@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792581508"></script>
+    <script src="config.js?v=1792581751"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2298,6 +2298,9 @@
   :root[data-theme="light"] .mseg.pass, :root[data-theme="light"] .rv-type.rv-pass { box-shadow: inset 0 0 0 1.5px var(--gold-edge); }
   :root[data-theme="light"] .wpuck.pass { box-shadow: inset 0 0 0 1.5px var(--gold-edge), var(--shadow-sm); }
   :root[data-theme="light"] .day-groups .dl-h.pass, :root[data-theme="light"] .badge.t-pass { box-shadow: inset 0 0 0 1.5px var(--gold-edge); }
+  /* "+N more" never covers the selected-day or today ring: no background of its own, and inside the ring's border. */
+  .more { background: transparent; }
+  .cell:is(.today, .is-open) .more { left: 6px; right: 6px; bottom: 5px; }
 </style>
 
   </head>
