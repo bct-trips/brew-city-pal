@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792577909"></script>
+    <script src="config.js?v=1792578160"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2178,6 +2178,14 @@
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --wknd: #23262e; } }
   .cell.wknd, .month.compact .cell.cc.wknd, .wk-day.wknd, .slot.wknd, .qd.wknd { background-color: var(--wknd); }
   .slot.wknd.today, .wk-day.wknd.today { background-color: color-mix(in srgb, var(--primary) 8%, var(--wknd)); }
+  /* Today vs weekends: today is shown by outline, not colour — a bold full-navy ring (no tint), so it never blends with
+     the weekend wash. In Week view the whole column is outlined: header ring plus left / right rules down every band. */
+  :root { --today-ring: var(--primary); }
+  :is(.cell, .wk-day, .qd, .ds-d).today:not(.is-open)::before { border-width: 3px; background: none; }
+  .slot.today, .slot.wknd.today, .wk-day.wknd.today { background-color: transparent; }
+  .slot.wknd.today { background-color: var(--wknd); }
+  .wk-day.wknd.today { background-color: var(--wknd); }
+  .slot.today { box-shadow: inset 3px 0 0 var(--primary), inset -3px 0 0 var(--primary); }
 </style>
 
   </head>
