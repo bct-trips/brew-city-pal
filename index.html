@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792570717"></script>
+    <script src="config.js?v=1792570916"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -6088,15 +6088,31 @@
     finally { refreshing = false; }
   }
   setInterval(() => { if (!document.hidden) refreshData(); }, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshData(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshData(); syncWithServer(); } });
   window.addEventListener('focus', () => refreshData());
 
   /* ================================================================ */
   /* Boot                                                               */
   /* ================================================================ */
+  /* Keep the page in step with the server. If the deployed Code.gs is NEWER than this page was built for, this copy of
+     the page is stale (browser / Home Screen cache): reload it, bypassing the cache, to get the matching page. Only once per
+     server version, so it can never loop. (An OLDER server can't be fixed from here — Settings → About says so.) */
+  async function syncWithServer() {
+    let b = '';
+    try { b = (await call('apiServerInfo')).build || ''; } catch (e) { return; } // old server without the check, or offline
+    if (!b || b <= EXPECTED_SERVER) return;
+    let tried = '';
+    try { tried = sessionStorage.getItem('pal.reloadedFor') || ''; } catch (e) { /* storage unavailable */ }
+    if (tried === b) return;
+    try { sessionStorage.setItem('pal.reloadedFor', b); } catch (e) { /* storage unavailable */ }
+    if (S.pending) return; // never drop unsaved changes; the next check reloads
+    showBlocker('Updating…', '');
+    location.replace(location.pathname + '?v=' + Date.now() + location.hash);
+  }
   async function boot() {
     applyTheme();
     initPush();
+    syncWithServer();
     if (S.token) {
       try { apply(await call('apiBootstrap', S.token)); render(); if (location.hash) openLink(location.hash); return; }
       catch (e) { if (/new PIN/.test(e.message)) return; S.token = null; store.del('token'); }
