@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792581950"></script>
+    <script src="config.js?v=1792582159"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2316,6 +2316,18 @@
   .bb-prev .evs.demo-puck { --bar-h: 34px; --tag: 22px; --pill-fs: 13px; display: inline-flex; align-items: center; width: 260px; max-width: 100%; border-radius: 10px; }
   .bb-prev .evs.demo-puck .idb { height: var(--tag); }
   .bb-prev .evs.demo-puck .idb-r { width: var(--tag); font-size: 13px; }
+  /* ---------- Labels (Material 3 type roles) ----------
+     Section titles = Title small: sentence case, 15px bold, primary colour, room above — they name a group of controls.
+     Field labels  = Label large: sentence case, 13.5px semibold, muted — they name one input.
+     List subheaders (people pickers) = primary, sentence case. Table headers and coloured band titles keep their caps. */
+  .sect > .lbl, .rv > .lbl, .field > .lbl, .lbl-sm, .fs-h, .cfg-sub-h, .cc-with-h, .mc-sec h4 {
+    display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: .005em;
+    font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--primary); margin: 14px 0 8px; }
+  .sect > .lbl:first-child, .modal-b > .field:first-child > .lbl { margin-top: 2px; }
+  .field > label, .row .field > .lbl-sm, .wiz-dates .field > .lbl {
+    text-transform: none; letter-spacing: .005em; font-size: 13.5px; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
+  .pp-h, .who-h, .fdrop-sep { text-transform: none; letter-spacing: .005em; font-size: 14px; font-weight: 700; color: var(--primary); }
+  .lbl-sm .cfg-tip, .lbl .cfg-tip { margin-left: 0; }
 </style>
 
   </head>
