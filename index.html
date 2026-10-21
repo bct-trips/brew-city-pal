@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792570493"></script>
+    <script src="config.js?v=1792570717"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2036,6 +2036,19 @@
   /* Smooth paging between weeks / months: the calendar body slides; its frame clips it. */
   .cal-split { overflow: hidden; }
   #calBody { will-change: transform; }
+  /* Blackout conflict resolver. */
+  .bor-intro { margin: 0 0 12px; }
+  .bor-row { padding: 12px 0; border-top: 1px solid var(--line); }
+  .bor-who { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .bor-row .meta { margin: 4px 0 8px; }
+  .bor-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* Admin PIN: a wrong PIN shakes the box, turns it red and shows a clear message. */
+  #modal #passkey.pin-bad { border-color: #d92d20; box-shadow: 0 0 0 3px color-mix(in srgb, #d92d20 30%, transparent); animation: pinShake .35s ease-in-out; }
+  @keyframes pinShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+  @media (prefers-reduced-motion: reduce) { #modal #passkey.pin-bad { animation: none; } }
+  #admErr:empty { display: none; }
+  .pin-err { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px auto 0; padding: 10px 14px; max-width: 320px; border-radius: 12px;
+    background: #b42318; color: #ffffff; font-weight: 800; font-size: 15px; text-align: center; }
 </style>
 
   </head>
@@ -4295,6 +4308,7 @@
     S.backToNotes = false;
     if (S.modal === 'year' && S.yearFrom) { const id = S.yearFrom; S.yearFrom = null; openMemberCard(id); return; }
     if (S.modal === 'person' && S.ppFromSheet) { S.ppFromSheet = false; openFilterSheet(S.ppScope); return; }
+    if (S.modal === 'wizard' && S.boReturn) { const b = S.boReturn; S.boReturn = null; S.wiz = null; openBoResolve(b); return; } // edited from the blackout resolver
     if (S.modal === 'wizard' && S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; S.wiz = null; openConflict(cd, S.cfRole); return; }
     hideTip(); S.modal = null; S.wiz = null; $('#modal').innerHTML = '';
     if (modalOpener && document.contains(modalOpener) && modalOpener.focus) modalOpener.focus({ preventScroll: true });
@@ -4523,6 +4537,7 @@
     openModal('adminPin', html);
     const box = $('#passkey');
     box.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); A.unlockAdmin($('#admGo')); } });
+    box.addEventListener('input', () => { box.classList.remove('pin-bad'); $('#admErr').innerHTML = ''; });
     setTimeout(() => box.focus(), 50); // focusing arms it (see armPasskey)
   }
   /** Notifications inside the Profile menu: the newest few, each with a ✕; "+N more" opens the whole list; Clear all. */
@@ -4878,6 +4893,37 @@
     };
     renderWizard();
   }
+  /* ---------- Blackout conflict resolver ----------
+     After a blackout is saved, every approved / pending request on those days (of the blocked type) is listed with:
+     Curtail (trim it so it no longer touches the blackout), Deny, Approve anyway (allowed over the blackout) or Edit dates.
+     Each choice saves at once and the request drops off the list; "Decide later" leaves the rest flagged as conflicts. */
+  /** Dates the request keeps if it's curtailed to stay clear of blackout b (the part before it, else the part after). */
+  function curtailRange(r, b) {
+    if (r.start < b.start) return { start: r.start, end: D.min(r.end, D.add(b.start, -1)) };
+    if (r.end > b.end) return { start: D.max(r.start, D.add(b.end, 1)), end: r.end };
+    return null; // entirely inside the blackout
+  }
+  function openBoResolve(b) {
+    S.boResolve = b;
+    const hits = boFlagged(b);
+    if (!hits.length) { if (S.modal === 'boResolve') closeModal(); toast('Blackout conflicts resolved', 'ok', 2000); return; }
+    const rows = hits.map(r => {
+      const u = userOf(r.userId), cr = curtailRange(r, b);
+      return '<div class="bor-row"><div class="bor-who">' + idBadge(u) + '<b>' + esc(nameText(u)) + '</b>' +
+          '<span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '</span><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></div>' +
+        '<div class="meta">' + D.short(r.start) + ' – ' + D.short(r.end) + ' · ' + plural(D.days(r.start, r.end), 'day') + '</div>' +
+        '<div class="bor-acts">' +
+          '<button class="btn sm" data-act="boCurtail" data-id="' + esc(r.id) + '"' + (cr ? ' title="Curtail to ' + esc(D.short(cr.start) + ' – ' + D.short(cr.end)) + '"' : ' disabled title="It is entirely inside the blackout"') + '>' + icon('sort', 14) + 'Curtail' + (cr ? ' to ' + esc(D.short(cr.start) + '–' + D.short(cr.end)) : '') + '</button>' +
+          '<button class="btn sm bad" data-act="boDeny" data-id="' + esc(r.id) + '">' + icon('ban', 14) + 'Deny</button>' +
+          '<button class="btn sm ok" data-act="boAllow" data-id="' + esc(r.id) + '">' + icon('check', 14) + 'Approve anyway</button>' +
+          '<button class="btn sm" data-act="boEdit" data-id="' + esc(r.id) + '">' + icon('pencil', 14) + 'Edit dates</button>' +
+        '</div></div>';
+    }).join('');
+    const html = modalHead('Blackout conflicts', 'ban') + '<div class="modal-b"><p class="bor-intro"><b>' + plural(hits.length, 'request') + '</b> fall' + (hits.length === 1 ? 's' : '') +
+      ' on the blackout <b>' + esc(boSpan(b)) + '</b> (' + esc(boLabel(b)) + '). Choose what to do with each.</p>' + rows + '</div>' +
+      '<div class="modal-f"><button class="btn block" data-act="closeModal">Decide later</button></div>';
+    openModal('boResolve', html, true);
+  }
   /** Blackout details: dates, what it blocks, reason, requests it flags. Admins: Delete · Cancel · Edit. */
   function openBlackout(id) {
     const b = blackouts().find(x => x.id === id);
@@ -4896,7 +4942,8 @@
       (S.isAdmin ? '<div class="rv"><span class="lbl">Requests to review</span>' + (hits.length
         ? '<ul class="dl-list">' + hits.map(r => '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '"><span class="dl-who">' + idBadge(userOf(r.userId)) + nameHtml(userOf(r.userId)) + '</span>' +
             '<span class="dl-meta">' + r.type + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + '</span><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>').join('') + '</ul>'
-        : '<div class="note muted">None — nothing on these days needs a decision.</div>') + '</div>' : '') +
+        : '<div class="note muted">None — nothing on these days needs a decision.</div>') +
+        (hits.length ? '<button class="btn primary sm" data-act="boResolveOpen" data-id="' + esc(b.id) + '" style="margin-top:8px">' + icon('alert', 14) + 'Resolve conflicts</button>' : '') + '</div>' : '') +
       '</div></div><div class="modal-f">' + foot + '</div>';
     openModal('blackout', html);
   }
@@ -5288,6 +5335,25 @@
       render(); toast('Blackout deleted');
     },
     openBlackout(el) { openBlackout(el.dataset.id); },
+    boResolveOpen(el) { const b = blackouts().find(x => x.id === el.dataset.id); if (b) openBoResolve(b); },
+    boCurtail(el) {
+      const r = findReq(el.dataset.id), b = S.boResolve, cr = r && b && curtailRange(r, b); if (!cr) return;
+      save(() => { Object.assign(r, cr); }, 'apiUpdateRequest', S.token, r.id, { type: r.type, start: cr.start, end: cr.end, note: r.note || '' });
+      render(); openBoResolve(b); toast(nameText(userOf(r.userId)) + ' curtailed to ' + D.short(cr.start) + '–' + D.short(cr.end), 'ok', 1800);
+    },
+    boDeny(el) {
+      const r = findReq(el.dataset.id), b = S.boResolve; if (!r) return;
+      save(() => { Object.assign(r, { status: 'Denied', decidedBy: S.me, decidedAt: nowIso() }); }, 'apiSetStatus', S.token, r.id, 'Denied');
+      render(); openBoResolve(b); toast(nameText(userOf(r.userId)) + ' denied', 'ok', 1500);
+    },
+    boAllow(el) {
+      const r = findReq(el.dataset.id), b = S.boResolve; if (!r) return;
+      // Pending → approve (the server marks it allowed over the blackout); already approved → just allow it.
+      if (r.status === 'Pending') save(() => { Object.assign(r, { status: 'Approved', boOk: 'true', decidedBy: S.me, decidedAt: nowIso() }); }, 'apiSetStatus', S.token, r.id, 'Approved');
+      else save(() => { r.boOk = 'true'; }, 'apiAllowBlackout', S.token, r.id);
+      render(); openBoResolve(b); toast(nameText(userOf(r.userId)) + ' approved over the blackout', 'ok', 1500);
+    },
+    boEdit(el) { S.boReturn = S.boResolve; openEditWizard(el.dataset.id); },
     editBlackout(el) { if (S.isAdmin) openBlackoutWizard(el.dataset.id); },
     newBlackout() { if (S.isAdmin) openBlackoutWizard(); },
     allowBlackout(el) {
@@ -5667,7 +5733,13 @@
         try {
           const data = await call('apiUnlockAdmin', S.token, k);
           apply(data); if (S.modal === 'adminPin') closeModal(); render(); toast('Admin mode unlocked');
-        } catch (e) { box.disabled = false; err.textContent = e.message; box.value = ''; box.focus(); } // show the real reason (wrong PIN, too many tries…)
+        } catch (e) {
+          // Wrong PIN (or too many tries): the box shakes and turns red, with a clear message under it.
+          box.disabled = false; box.value = '';
+          box.classList.remove('pin-bad'); void box.offsetWidth; box.classList.add('pin-bad');
+          err.innerHTML = '<div class="pin-err" role="alert">' + icon('alert', 18) + '<span>' + esc(/isn.t right/i.test(e.message) ? 'Wrong admin PIN. Try again.' : e.message) + '</span></div>';
+          box.focus();
+        }
       });
       hideBlocker();
     },
@@ -5693,12 +5765,18 @@
       $$('[data-act="theme"]').forEach(b => b.classList.toggle('on', b.dataset.v === S.theme));
       if (isCalView() && S.cal === 'month') fitMonth();
     },
-    async signOut(el) {
-      // Remove this device's push subscription while the session is still valid, then end the session.
-      await busy(el, async () => {
-        try { const sub = swReg && await swReg.pushManager.getSubscription(); if (sub) { await call('apiPushUnsubscribe', S.token, sub.endpoint); await sub.unsubscribe(); } } catch (e) { /* best effort */ }
-        try { await call('apiLogout', S.token); } catch (e) { /* session may already be gone */ }
-      });
+    async signOut() {
+      // Full-screen logo ring + "Signing out…". Tell the server (drop this device's push subscription, end the session)
+      // but never wait more than ~2.5s: signing out always works, even offline or when the server is slow.
+      closeProfileMenu();
+      showBlocker('Signing out…', '');
+      const tok = S.token;
+      const tidy = (async () => {
+        try { const sub = swReg && await swReg.pushManager.getSubscription(); if (sub) { await call('apiPushUnsubscribe', tok, sub.endpoint); await sub.unsubscribe(); } } catch (e) { /* best effort */ }
+        try { await call('apiLogout', tok); } catch (e) { /* session may already be gone */ }
+      })();
+      await Promise.race([tidy, new Promise(r => setTimeout(r, 2500))]);
+      hideBlocker();
       signOutLocal();
     },
 
@@ -5856,6 +5934,8 @@
           S.settings.blackouts = list.concat([Object.assign({}, b, { id: b.id || 'tmp_' + Date.now() })]).sort((x, y) => x.start < y.start ? -1 : 1);
         }, 'apiSaveBlackout', S.token, b);
         closeModal(); render();
+        // Leave / passes already on those days (approved or pending): decide what to do with each right away.
+        if (boFlagged(b).length) { openBoResolve(b); return; }
         toast(w.editBoId ? 'Blackout updated' : 'Blackout added', 'ok', 2200);
         return;
       }
