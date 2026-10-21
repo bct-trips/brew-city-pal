@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792592888"></script>
+    <script src="config.js?v=1792592974"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792592888';
+      window.PAL_BUILD = '1792592974';
       (function () {
         function check(launch) {
           try {
@@ -4927,7 +4927,8 @@
   function rosterActs(u) {
     const act = (a, ic, short, cls) => '<button class="btn sm act' + (cls ? ' ' + cls : '') + '" data-act="' + a + '" data-id="' + esc(u.id) + '" aria-label="' + esc(short + ' ' + u.name) + '" title="' + esc(short + ' ' + u.name) + '">' + icon(ic, 13) + '<span class="bl">' + short + '</span></button>';
     return '<td class="acts-cell"><div class="row-acts">' + act('editUser', 'pencil', 'Edit') + act('resetPin', 'key', 'Reset PIN') +
-      (u.id === S.me ? '' : u.active ? act('toggleUser', 'ban', 'Deactivate', 'del') : act('toggleUser', 'check', u.pending ? 'Approve' : 'Reactivate', u.pending ? 'ok' : '') + act('deleteUser', 'trash', 'Delete', 'del')) + '</div></td>';
+      // Every member but you: Deactivate / Reactivate (or Approve), then Delete (asks twice before removing them for good).
+      (u.id === S.me ? '' : (u.active ? act('toggleUser', 'ban', 'Deactivate', 'del') : act('toggleUser', 'check', u.pending ? 'Approve' : 'Reactivate', u.pending ? 'ok' : '')) + act('deleteUser', 'trash', 'Delete', 'del')) + '</div></td>';
   }
   function renderPeopleBody() {
     const P = S.people, st = peopleStats(), rows = st.rows;
