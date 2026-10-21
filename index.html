@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792599279"></script>
+    <script src="config.js?v=1792599336"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792599279';
+      window.PAL_BUILD = '1792599336';
       (function () {
         function check(launch) {
           try {
@@ -5682,7 +5682,7 @@
         '<div class="row rp-row"><div class="field rp-hour"><label for="rpHour">Time</label><select id="rpHour" data-change="rpHour">' + Array.from({ length: 24 }, (_, h) => opt(h, hour(h), Number(r.hour))).join('') + '</select></div>' +
           '<div class="field"><label for="rpTz">Time Zone</label><select id="rpTz" data-change="rpTz">' + zones.map(z => opt(z[0], z[1], r.tz)).join('') + '</select></div></div>' +
         '<div class="sect"><div class="lbl">Covers</div>' + ruleGrid('report') + '</div>' : '') +
-      '<div class="err" id="rpErr"></div><div class="cfg-foot">' + (r.on && S.report && S.report.on && S.report.email ? '<button class="btn" data-act="rpTest">' + icon('bell', 16) + 'Send Test Now</button>' : '') +
+      '<div class="err" id="rpErr"></div><div class="cfg-foot">' + (r.on ? '<button class="btn" data-act="rpTest">' + icon('bell', 16) + 'Send Test Now</button>' : '') +
         '<button class="btn primary" data-act="rpSave">' + icon('check', 16) + 'Save Report</button></div></div>';
   }
   /** Report time zones: UTC, US, Europe, and the regions the wing deploys to (the device's own zone is added if missing). */
@@ -7086,16 +7086,25 @@
     rpOn() { S.rpDraft.on = !S.rpDraft.on; redrawReport(); },
     rpHour(el) { S.rpDraft.hour = Number(el.value); },
     rpTz(el) { S.rpDraft.tz = el.value; },
-    async rpSave(el) {
+    async rpSave(el, quiet) {
       const r = S.rpDraft, err = $('#rpErr'), e = $('#rpEmail');
       if (e) r.email = e.value.trim();
-      if (r.on && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email)) return (err.textContent = 'Enter the email address for the report.');
-      if (r.on && !(r.rules || []).some(x => (x.types || []).length)) return (err.textContent = 'Add at least one row with a type.');
+      if (r.on && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email)) { err.textContent = 'Enter the email address for the report.'; return false; }
+      if (r.on && !(r.rules || []).some(x => (x.types || []).length)) { err.textContent = 'Add at least one row with a type.'; return false; }
       err.textContent = '';
       const res = await run(el, 'apiSaveReport', S.token, { on: r.on, email: r.email, hour: r.hour, tz: r.tz, rules: r.rules || [] });
-      if (res) { apply(res); S.rpDraft = null; redrawReport(); toast(r.on ? 'Daily report saved' : 'Daily report off', 'ok', 2000); }
+      if (!res) return false;
+      apply(res); S.rpDraft = null; redrawReport();
+      if (!quiet) toast(r.on ? 'Daily report saved' : 'Daily report off', 'ok', 2000);
+      return true;
     },
-    async rpTest(el) { const res = await run(el, 'apiSendReportNow', S.token); if (res) toast('Report sent to ' + res.sent, 'ok', 2600); },
+    // Send Test Now: saves what's on screen first (so the test matches it), then sends today's report right away.
+    async rpTest(el) {
+      if (!(await A.rpSave(el, true))) return;
+      const b = $('[data-act="rpTest"]') || el;
+      const res = await run(b, 'apiSendReportNow', S.token);
+      if (res) toast('Saved · test report sent to ' + res.sent, 'ok', 3000);
+    },
     editBlackout(el) { const b = blackouts().find(x => x.id === el.dataset.id); if (b && canEditBo(b)) openBlackoutWizard(el.dataset.id); },
     newBlackout() { if (S.isAdmin) openBlackoutWizard(); },
     allowBlackout(el) {
