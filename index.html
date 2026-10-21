@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792582723"></script>
+    <script src="config.js?v=1792582904"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2328,6 +2328,9 @@
     text-transform: none; letter-spacing: .005em; font-size: 13.5px; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
   .pp-h, .who-h, .fdrop-sep { text-transform: none; letter-spacing: .005em; font-size: 14px; font-weight: 700; color: var(--primary); }
   .lbl-sm .cfg-tip, .lbl .cfg-tip { margin-left: 0; }
+  /* Roster quick filters (positions, units): joined on / off toggles like the calendar's Leave | Pass. */
+  .stats-bar .seg.qf { display: inline-flex; flex: none; height: 40px; }
+  .stats-bar .seg.qf button { padding: 0 14px; white-space: nowrap; }
 </style>
 
   </head>
@@ -4649,7 +4652,9 @@
   ];
   function peopleStats() {
     const P = S.people, rng = periodRange(P.period), q = P.q.trim().toLowerCase();
-    const rows = S.users.filter(u => (P.inactive || u.active) && (!q || (u.rank + ' ' + u.name + ' ' + u.unit + ' ' + u.role).toLowerCase().indexOf(q) >= 0)).map(u => {
+    // Quick filters: positions and units (null = all of them).
+    const okRole = u => !P.roles || P.roles.includes(u.role), okUnit = u => !P.units || P.units.includes(u.unit);
+    const rows = S.users.filter(u => (P.inactive || u.active) && okRole(u) && okUnit(u) && (!q || (u.rank + ' ' + u.name + ' ' + u.unit + ' ' + u.role).toLowerCase().indexOf(q) >= 0)).map(u => {
       const m = { u, count: 0, req: 0, appr: 0, den: 0, pend: 0, leave: 0, pass: 0 };
       S.requests.forEach(r => {
         if (r.userId !== u.id || r.status === 'Cancelled' || r.start < rng[0] || r.start > rng[1]) return;
@@ -4691,6 +4696,12 @@
     return (note ? '<div class="tbl-count">' + note + '</div>' : '') +
       '<div class="tbl-wrap" id="tbl-people"><table class="rtable ptable"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody>' + foot + '</table></div>';
   }
+  /** Roster quick filter: a joined group of on / off toggles (like the calendar's Leave | Pass). */
+  function rosterChips(key, opts, label) {
+    const cur = S.people[key];
+    return '<div class="seg qf" role="group" aria-label="' + label + '">' + opts.map(o => { const on = !cur || cur.includes(o[0]);
+      return '<button type="button" class="' + (on ? 'on' : '') + '" aria-pressed="' + on + '" data-act="rosterChip" data-k="' + key + '" data-v="' + esc(o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>';
+  }
   /** Period picker on the Roster bar: one dropdown button instead of a row of segments. */
   function periodDrop(opts, cur) {
     const lbl = (opts.find(o => o[0] === cur) || opts[0])[1];
@@ -4706,6 +4717,9 @@
     return '<section class="page"><div class="lbar stats-bar">' +
       '<div class="lsearch">' + icon('search', 16) + '<input type="search" placeholder="Search name, rank, unit…" value="' + esc(P.q) + '" data-model="people.q" data-live="peopleRefresh" aria-label="Search members"></div>' +
       periodDrop([['12m', 'Last 12 months'], ['fy', fy], ['cy', cy], ['all', 'All time']], P.period) +
+      // Quick filters, like the calendar's: tap a position or unit on / off.
+      rosterChips('roles', ROLES.filter(r => !roleInfo(r).disabled || S.users.some(u => u.role === r)).map(r => [r, rolePl(r)]), 'Positions') +
+      rosterChips('units', unitsList().map(un => [un.code, un.code]), 'Units') +
       // Inactive includes sign-ups waiting for approval (their count shows on the toggle).
       '<button type="button" class="btn chip-tog' + (P.inactive ? ' on' : '') + '" aria-pressed="' + !!P.inactive + '" data-act="peopleInactive">' + (P.inactive ? icon('check', 18) : '') + 'Inactive' +
         (S.users.some(u => u.pending) ? ' <b class="manage-ct" title="Waiting for approval">' + S.users.filter(u => u.pending).length + '</b>' : '') + '</button>' +
@@ -6426,6 +6440,14 @@
     peopleRefresh() { const b = $('#peopleBody'); if (b) b.innerHTML = renderPeopleBody(); },
     peopleInactive() { S.people.inactive = !S.people.inactive; render(); },
     peoplePeriod(el) { S.people.period = el.dataset.v; S.periodOpen = false; render(); },
+    rosterChip(el) {
+      const k = el.dataset.k, v = el.dataset.v, P = S.people;
+      const all = k === 'roles' ? ROLES.slice() : unitsList().map(u => u.code);
+      const cur = P[k] || all.slice();
+      const next = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat([v]);
+      P[k] = all.every(x => next.includes(x)) ? null : next; // all on = no filter
+      render();
+    },
     periodDrop() { S.periodOpen = !S.periodOpen; render(); },
     personYear(el) { openPersonYear(el.dataset.id); },
     memberCard(el) { openMemberCard(el.dataset.id); },
