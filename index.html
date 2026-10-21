@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792575866"></script>
+    <script src="config.js?v=1792576317"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -438,7 +438,7 @@
   .band-body { flex: 1; min-height: 0; overflow-y: auto; }
   .band-inner { position: relative; min-height: 100%; }
   .band-slots { position: absolute; inset: 0; }
-  .slot { border-left: 1px solid var(--line); cursor: pointer; background-image: repeating-linear-gradient(135deg, var(--hatch) 0 2px, transparent 2px 9px); }
+  .slot { border-left: 1px solid var(--line); cursor: pointer; } /* plain: only blackout days (.slot.bo) are slashed */
   .slot:first-child { border-left: 0; }
   .slot:hover { background-color: color-mix(in srgb, var(--gold) 8%, transparent); }
   .slot.sel { background-color: color-mix(in srgb, var(--gold) 24%, transparent); }
@@ -2134,6 +2134,13 @@
   .rtable td.st-ic-c .st-ic { width: 18px; }
   .rtable th.st-ic-h, .rtable td.st-ic-c { min-width: 18px; padding-right: 0; }
   .rtable tbody td.stk { padding-left: 8px; }
+  /* Phones: the calendar controls (date, views, Today, filters) sit at the bottom, just above Add Request,
+     within thumb reach. The calendar fills the space above them. */
+  @media (max-width: 700px) {
+    .cal > .cal-split { order: 1; }
+    .cal > .calbar { order: 2; border-bottom: 0; border-top: 1px solid var(--line); }
+    .cal > .req-bar { order: 3; border-top: 0; padding-top: 2px; }
+  }
 </style>
 
   </head>
