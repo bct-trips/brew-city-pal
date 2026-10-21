@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792591756"></script>
+    <script src="config.js?v=1792592120"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792591756';
+      window.PAL_BUILD = '1792592120';
       (function () {
         function check(launch) {
           try {
@@ -2479,6 +2479,23 @@
   .blocker { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
   .blocker::before, .blocker::after { content: ""; flex: 1 1 0; }
   .blocker::after { flex-grow: 1.4; }
+  /* Create an Account on phones: no logo, and a tighter form, so the whole sign-up form fits on screen. */
+  @media (max-width: 600px) {
+    .login:has(#regForm) > .brand-logo { display: none; }
+    .login:has(#regForm) { padding-top: 10px; padding-bottom: 10px; gap: 0; }
+    .login:has(#regForm)::before, .login:has(#regForm)::after { min-height: 0; }
+    .login:has(#regForm) .login-card h1 { font-size: 22px; }
+    .login:has(#regForm) .login-card { padding: 14px 16px; }
+    .login:has(#regForm) .login-card h1 { margin-bottom: 0; }
+    #regForm .auth-h { margin-bottom: 4px; }
+    #regForm .req-note { margin-bottom: 4px; }
+    #regForm .field { margin-bottom: 6px; gap: 3px; }
+    #regForm input, #regForm select { height: 40px; min-height: 40px; }
+    #regForm .auth-note { margin: 2px 0 6px; font-size: 13px; line-height: 1.35; }
+    .login:has(#regForm) .auth-alt { margin-top: 8px; }
+  }
+  /* New-PIN boxes draw their own dots (dotPin in App.html): a little letter spacing so they read like the sign-in PIN. */
+  input.pin-dots { letter-spacing: .18em; font-family: inherit; }
 </style>
 
   </head>
@@ -3139,15 +3156,16 @@
   // Sign-in PIN: name="password" + autocomplete="current-password" next to a username field, so iOS / password managers
   // treat it as a login (offer the saved PIN) — never as a new account ("use strong password").
   /* Every box where a NEW PIN is typed (Settings, set-PIN screen, Admin default / admin PIN, a member's PIN): a plain
-     text box masked as dots with the number keypad — not a password field — so no browser or password manager offers a
-     "strong password" or to save it. It also stays read-only until tapped (data-arm, like the Admin PIN box), so iOS
+     number box (number keypad) that draws its own dots — see dotPin(). Not a password field and not dot-styled with
+     -webkit-text-security: iOS treats either as a secure field, and a secure box labeled New / Confirm gets "Use Strong
+     Password" no matter what autocomplete says. So no browser or password manager offers a password or to save it. It also stays read-only until tapped (data-arm, like the Admin PIN box), so iOS
      never sees an empty fillable box. No "4–8 digits" placeholder, length limit or pattern on the box either — Safari reads
      those as password rules and offers a strong one; the rule is plain text above the boxes (PIN_HINT) and checked on
      save. Only the sign-in PIN stays a real password field (saved-password fill). */
   const PIN_HINT = '<p class="pin-hint">4–8 Digits</p>'; // once, above each pair of new-PIN boxes
   /** Required-field marker after a label (red *), with a "* Required" note at the top of the form. */
   const REQ = '<span class="req" aria-hidden="true">*</span>', REQ_NOTE = '<p class="req-note"><span class="req">*</span> Required</p>';
-  const NEW_PIN = 'type="text" class="pin-mask" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" readonly data-arm';
+  const NEW_PIN = 'type="text" class="pin-dots" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other" readonly data-arm';
   const pinInput = (id, label, ac) => ac === 'current-password'
     // Signing in: no "4–8 digits" hint, length limit or pattern — Safari reads those as new-password rules and offers a
     // "strong password". Just an existing password (numeric keypad) paired with the username field.
@@ -7334,8 +7352,33 @@
   /* ================================================================ */
   // Admin PIN box: readonly until focused so password managers don't autofill the sign-in PIN into it.
   // pointerdown runs before focus, so iPhone still opens the number pad on the first tap; focusin covers keyboard users.
-  // New-PIN boxes (data-arm) work the same way, so iOS never offers a "strong password" for them.
-  const armPasskey = ev => { const t = ev.target; if (t && t.readOnly && (t.id === 'passkey' || (t.hasAttribute && t.hasAttribute('data-arm')))) { t.readOnly = false; if (t.id === 'passkey') t.value = ''; } };
+  // New-PIN boxes (data-arm) work the same way, and start drawing their own dots (dotPin) when first touched.
+  const armPasskey = ev => {
+    const t = ev.target;
+    if (t && t.hasAttribute && t.hasAttribute('data-arm')) dotPin(t);
+    if (t && t.readOnly && (t.id === 'passkey' || (t.hasAttribute && t.hasAttribute('data-arm')))) { t.readOnly = false; if (t.id === 'passkey') t.value = ''; }
+  };
+  /** New-PIN box: shows • for each digit while the digits stay in JS. el.value reads / writes the digits (so every save
+   *  and clear works unchanged); the box itself only ever holds dots, so iOS sees a plain number field. Digits only,
+   *  max 8; deleting removes from the end. */
+  const NATIVE_VALUE = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  function dotPin(el) {
+    if (el._dots) return;
+    el._dots = true;
+    let raw = String(NATIVE_VALUE.get.call(el) || '').replace(/\D/g, '').slice(0, 8);
+    const show = () => {
+      const d = '•'.repeat(raw.length);
+      NATIVE_VALUE.set.call(el, d);
+      if (document.activeElement === el) { try { el.setSelectionRange(d.length, d.length); } catch (e) { /* ignore */ } }
+    };
+    Object.defineProperty(el, 'value', { configurable: true, get: () => raw, set: v => { raw = String(v == null ? '' : v).replace(/\D/g, '').slice(0, 8); show(); } });
+    el.addEventListener('input', () => {
+      const shown = NATIVE_VALUE.get.call(el), kept = (shown.match(/•/g) || []).length, typed = shown.replace(/[^0-9]/g, '');
+      raw = (raw.slice(0, kept) + typed).slice(0, 8);
+      show();
+    });
+    show();
+  }
   document.addEventListener('pointerdown', armPasskey, true);
   document.addEventListener('focusin', armPasskey);
   document.addEventListener('click', ev => {
