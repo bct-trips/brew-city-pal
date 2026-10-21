@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792586591"></script>
+    <script src="config.js?v=1792586736"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792586591';
+      window.PAL_BUILD = '1792586736';
       (function () {
         function check(launch) {
           try {
@@ -2425,10 +2425,16 @@
   #tbl-people tbody tr.ro-off:hover > td { background: color-mix(in srgb, var(--bad) 18%, var(--card)); }
   .badge.ro-off-b { background: var(--bad); color: #ffffff; border-color: transparent; }
   :root[data-theme="dark"] .badge.ro-off-b { color: #1f0b0b; }
-  /* Reset all PINs: the confirm tick box, and the red button it unlocks. */
-  .ra-chk { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid var(--bad); border-radius: 12px; background: var(--bad-bg); font-weight: 600; cursor: pointer; }
-  .ra-chk input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--bad); }
-  .btn.primary.ra-go { background: var(--error, #b42318); border-color: transparent; color: #ffffff; }
+  /* Reset All Account Pins: a solid red button alone at the bottom of Admin; its dialog has a red warning box, the
+     "I have read this warning" tick and a red OK that only turns on once ticked. */
+  .ra-wrap { display: flex; justify-content: center; padding: 8px 0 24px; }
+  .btn.ra-btn, .btn.ra-go { background: #b42318; border-color: #b42318; color: #ffffff; }
+  .btn.ra-btn:hover, .btn.ra-go:not(:disabled):hover { background: #912018; border-color: #912018; }
+  .ra-warn { border: 1px solid var(--bad); border-left-width: 4px; border-radius: 12px; background: var(--bad-bg); padding: 10px 12px; margin-bottom: 12px; }
+  .ra-warn > b { color: var(--bad); text-transform: uppercase; letter-spacing: .06em; font-size: 13px; }
+  .ra-warn p { margin: 4px 0 0; }
+  .ra-chk { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--outline); border-radius: 12px; font-weight: 600; cursor: pointer; }
+  .ra-chk input { width: 20px; height: 20px; margin: 0; flex: none; accent-color: #b42318; }
 </style>
 
   </head>
@@ -5181,11 +5187,12 @@
       // PINs
       '<div class="panel panel-warn"><h3>' + icon('key', 16) + ' Default PIN' + tip('Temporary PIN for new members and PIN resets. They must change it at next sign-in.') + '</h3>' +
         pinPair('dp1', 'dp2', 'New default PIN', 'Confirm') +
-        '<div class="cfg-foot"><button class="btn del" data-act="resetAllPins">' + icon('key', 18) + 'Reset all account PINs to default</button>' +
-          '<button class="btn" data-act="saveDefaultPin">Update default PIN</button></div></div>' +
+        '<div class="cfg-foot"><button class="btn" data-act="saveDefaultPin">Update default PIN</button></div></div>' +
       '<div class="panel panel-danger"><h3>' + icon('shield', 16) + ' Admin PIN' + tip('Unlocks admin mode from Profile.') + '</h3>' +
         pinPair('pk1', 'pk2', 'New admin PIN', 'Confirm') +
         '<div class="cfg-foot"><button class="btn" data-act="savePasskey">Update admin PIN</button></div></div>' +
+      // Last on the page, on its own: every member back to the default PIN (asks twice — tick the warning, then OK).
+      '<div class="ra-wrap"><button class="btn ra-btn" data-act="resetAllPins">' + icon('key', 18) + 'Reset All Account Pins</button></div>' +
       '</div></section>';
   }
 
@@ -6926,14 +6933,15 @@
       render(); if (S.modal === 'member') openMemberCard(u.id);
       toast(u.name + '’s PIN reset to the default', 'ok', 2000);
     },
-    // Every member's PIN back to the default (not your own). A confirm dialog: the red button stays off until you tick
-    // the box saying you understand everyone will have to choose a new PIN.
+    // Every member's PIN back to the default (not your own). Two steps to confirm: tick "I have read this warning",
+    // then OK (OK stays off until the box is ticked).
     resetAllPins() {
       const n = S.users.filter(u => u.id !== S.me).length;
-      openModal('resetAll', modalHead('Reset all account PINs', 'key') + '<div class="modal-b">' +
-        '<p style="margin:0 0 10px">This resets the PIN of <b>every member (' + n + ')</b> to the current default PIN. Each of them will have to choose a new PIN at their next sign-in. Your own PIN doesn’t change.</p>' +
-        '<label class="fchk ra-chk"><input type="checkbox" id="raOk" data-change="raCheck"> I understand: reset everyone’s PIN to the default</label></div>' +
-        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary ra-go" id="raGo" data-act="resetAllGo" disabled>' + icon('key', 18) + 'Reset all PINs</button></div>');
+      openModal('resetAll', modalHead('Reset All Account Pins', 'alert') + '<div class="modal-b">' +
+        '<div class="ra-warn"><b>Warning</b><p>This resets <b>every single account (' + n + ' members)</b> to the default PIN. ' +
+          'All of them will have to set a new PIN the next time they sign in. This can’t be undone. Your own PIN doesn’t change.</p></div>' +
+        '<label class="fchk ra-chk"><input type="checkbox" id="raOk" data-change="raCheck"> I have read this warning</label></div>' +
+        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn ra-go" id="raGo" data-act="resetAllGo" disabled>OK</button></div>');
     },
     async resetAllGo(el) {
       if (!($('#raOk') || {}).checked) return;
