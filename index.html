@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792573562"></script>
+    <script src="config.js?v=1792574069"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -3835,13 +3835,8 @@
         return '<div class="band band-' + roleKey(b[0]) + '"' + roleVar(b[0]) + '><div class="band-title"><span class="bt-in"><span class="band-tag">' + esc(roleL(b[0])) + '</span>' + b[1] + ' <span class="ct">' + evs.length + '</span></span></div>' +
           '<div class="band-body"><div class="band-inner"><div class="band-slots wg">' + slots + '</div><div class="band-pucks wg">' + pucks + '</div></div></div></div>';
       }).join('');
-    // Blackouts band on top (everyone sees it).
-    const wbo = blackouts().filter(b => b.start <= we && b.end >= ws);
-    const boBand = wbo.length ? '<div class="band band-bo"><div class="band-title"><span class="bt-in"><span class="band-tag">' + icon('ban', 12) + '</span>BLACKOUT DATES <span class="ct">' + wbo.length + '</span></span></div>' +
-      '<div class="band-body"><div class="band-inner"><div class="band-slots wg">' + days.map(d => '<div class="slot' + boCls(d) + '"></div>').join('') + '</div><div class="band-pucks wg">' +
-      wbo.map(b => boBar(b, 'wk-bo' + (b.start >= ws ? ' b-s' : '') + (b.end <= we ? ' b-e' : ''), col(b.start, b.end))).join('') +
-      '</div></div></div></div>' : '';
-    return '<div class="week wk-strip" id="wkStrip" data-r0="' + ws + '" style="--days:' + WK_DAYS + '"><div class="wk-inner"><div class="wk-head wg">' + head + '</div><div class="bands">' + boBand + bands + '</div></div></div>';
+    // No blackout band: blackout days are already red-slashed in the day headers and lanes.
+    return '<div class="week wk-strip" id="wkStrip" data-r0="' + ws + '" style="--days:' + WK_DAYS + '"><div class="wk-inner"><div class="wk-head wg">' + head + '</div><div class="bands">' + bands + '</div></div></div>';
   }
   /** After drawing the strip: scroll to the left-most day and track scrolling (label, re-centre near the ends). */
   function fitWeek() {
