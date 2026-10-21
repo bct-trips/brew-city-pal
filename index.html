@@ -15,26 +15,29 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792585826"></script>
+    <script src="config.js?v=1792586100"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
-         reloading). This page knows its build; version.json (fetched past every cache) holds the latest one. When they
-         differ — on launch and whenever the app comes back to the foreground — reload once to a cache-busted copy. */
-      window.PAL_BUILD = '1792585826';
+         reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
+         - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
+         - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
+           so nothing half-typed is lost. */
+      window.PAL_BUILD = '1792586100';
       (function () {
-        function check() {
+        function check(launch) {
           try {
             fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (v) {
               if (!v || !v.build || v.build === window.PAL_BUILD) return;
               var k = 'pal.freshFor';
-              if (sessionStorage.getItem(k) === v.build) return; // already tried this build in this session: no loop
+              if (sessionStorage.getItem(k) === v.build) return; // already loaded this build once in this session
+              if (!launch) { document.dispatchEvent(new CustomEvent('pal-update', { detail: v.build })); return; }
               sessionStorage.setItem(k, v.build);
               location.replace(location.pathname + '?v=' + v.build + location.hash);
             }).catch(function () {});
           } catch (e) {}
         }
-        check();
-        document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+        check(true);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) check(false); });
       })();
     </script>
     <style>
@@ -2403,6 +2406,19 @@
   .lbar .filters > .open-btn { order: 9; }
   /* Event types table: the Blackout tag lines up with the other tags (no side margin). */
   .ty-bo .bo-badge.t-ltr { margin-left: 0; }
+  /* Update snackbar (Material 3): inverse surface above the nav bar, text + Not now · Update. Non-blocking. */
+  #updBar { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom));
+    width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 16px; min-height: 48px;
+    background: var(--navy); color: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.3); font-size: 15px; font-weight: 600; animation: ubIn .25s ease-out; }
+  #updBar > .ic { flex: none; color: var(--gold); }
+  #updBar .ub-t { flex: 1 1 auto; min-width: 0; }
+  #updBar .ub-b { flex: none; border: 0; background: none; color: #ffffff; font: inherit; font-size: 14px; font-weight: 700; padding: 0 12px; min-height: 40px; border-radius: 20px; cursor: pointer; }
+  #updBar .ub-b:hover { background: rgba(255,255,255,.12); }
+  #updBar .ub-go { color: var(--gold); }
+  #updBar .ub-b:focus-visible { outline: 3px solid var(--gold); outline-offset: -3px; }
+  body.has-upd #toast { bottom: calc(var(--nav-h) + 74px + env(safe-area-inset-bottom)); }
+  @keyframes ubIn { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @media (prefers-reduced-motion: reduce) { #updBar { animation: none; } }
 </style>
 
   </head>
@@ -2960,7 +2976,8 @@
     S.notePrefs = data.notePrefs || S.notePrefs || { approved: true, denied: true, edited: true };
     S.nameNeed = data.nameNeed || '';
     S.reloadAt = Number(data.reloadAt) || 0;
-    if (checkForceReload(S.reloadAt)) return;
+    if (checkForceReload(S.reloadAt, !S.booted)) return;
+    S.booted = true;
     S.adminIds = data.adminIds || []; S.alertIds = data.alertIds || []; // shares a last name: must add a first / middle initial before using the app
     if (S.priv) { S.f.role = ROLES.slice(); S.f.person = ''; S.f.conf = false; S.mineMode = 'list'; if (S.view === 'all') S.view = 'mine'; }
     S.today = localToday();
@@ -3308,7 +3325,7 @@
   function noteCount() {
     // Only ever count what the list would show (never the server's raw unread number, which includes hidden ones).
     if (S.notes == null) { if (S.token) setTimeout(loadNotes, 0); return 0; }
-    return visibleNotes().length;
+    return visibleNotes().length + (S.updateLater && S.update ? 1 : 0);
   }
   function renderNav() {
     const pending = IDX.live.filter(r => r.status === 'Pending').length;
@@ -5431,10 +5448,13 @@
   const PM_NOTES = 3;
   function pmNotesHtml() {
     if (S.notes == null) { setTimeout(loadNotes, 0); return '<div class="pm-nh"><span>' + icon('bell', 18) + 'Notifications</span></div><div class="pm-nempty">Loading…</div>'; }
-    const notes = visibleNotes();
-    const head = '<div class="pm-nh"><span>' + icon('bell', 18) + 'Notifications' + (notes.length ? ' <b class="pm-ct">' + notes.length + '</b>' : '') + '</span>' +
+    const notes = visibleNotes(), upd = S.updateLater && S.update, n = notes.length + (upd ? 1 : 0);
+    const head = '<div class="pm-nh"><span>' + icon('bell', 18) + 'Notifications' + (n ? ' <b class="pm-ct">' + n + '</b>' : '') + '</span>' +
       (notes.length ? '<button type="button" class="linkbtn pm-clear" data-act="notesClear">Clear all</button>' : '') + '</div>';
-    if (!notes.length) return head + '<div class="pm-nempty">You’re all caught up.</div>';
+    // A declined update stays pinned at the top until the app updates (Clear all doesn't remove it).
+    const updRow = upd ? '<div class="pm-n unread pm-upd"><button type="button" class="pm-nb" data-act="updateAsk">' +
+      '<span class="note-ic note-info">' + icon('refresh', 14) + '</span><span class="pm-nt"><b>Update available</b><span>Tap to update the app.</span></span></button></div>' : '';
+    if (!notes.length) return head + (upd ? updRow : '<div class="pm-nempty">You’re all caught up.</div>');
     const rows = notes.slice(0, PM_NOTES).map(n => {
       const k = NOTE_IC[n.kind] || ['bell', 'info'];
       return '<div class="pm-n' + (n.read ? '' : ' unread') + '"><button type="button" class="pm-nb" data-act="noteOpen" data-id="' + esc(n.id) + '" data-req="' + esc(n.requestId || '') + '">' +
@@ -5443,7 +5463,7 @@
         '<button type="button" class="pm-nx" data-act="noteDel" data-id="' + esc(n.id) + '" aria-label="Clear notification: ' + esc(n.title) + '" title="Clear">' + icon('x', 16) + '</button></div>';
     }).join('');
     const more = notes.length > PM_NOTES ? '<button type="button" class="pm-more" data-act="openNotes">+' + (notes.length - PM_NOTES) + ' more</button>' : '';
-    return head + rows + more;
+    return head + updRow + rows + more;
   }
   /** Notifications drawer: the list, with Mark all read / Clear all and a ✕ on each. */
   function openNotesDrawer() {
@@ -6471,6 +6491,9 @@
       else if (t !== 'Blackouts') { const cur = c[t] || (S.f.conf && k === 'list' ? 'open' : 'partial'); c[t] = ({ open: 'partial', partial: 'closed', closed: 'open' })[cur]; } // All → Active → Closed → All
       else c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
     },
+    updateYes() { const f = S.update; if (!f) { hideUpdateBar(); return; } hideUpdateBar(); showBlocker('Updating…', ''); f(); },
+    updateNo() { hideUpdateBar(); S.updateLater = true; renderNavOnly(); redrawNotes(); },
+    updateAsk() { closeProfileMenu(); askUpdate(); },
     grpMore(el) { const c = (S.grpCol = S.grpCol || {})[el.dataset.table] = S.grpCol[el.dataset.table] || {}; c[el.dataset.v] = 'open'; render(); },
     dayRole(el) {
       const cur = S.dayRoles || seeRoles().slice(), v = el.dataset.v;
@@ -7261,7 +7284,7 @@
     finally { refreshing = false; }
   }
   setInterval(() => { if (!document.hidden) refreshData(); }, 60000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshData(); syncWithServer(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshData(); syncWithServer(false); } });
   window.addEventListener('focus', () => refreshData());
 
   /* ================================================================ */
@@ -7270,39 +7293,73 @@
   /* Keep the page in step with the server. If the deployed Code.gs is NEWER than this page was built for, this copy of
      the page is stale (browser / Home Screen cache): reload it, bypassing the cache, to get the matching page. Only once per
      server version, so it can never loop. (An OLDER server can't be fixed from here — Settings → About says so.) */
-  /** Admin → Update all devices: the server's FORCE_RELOAD time. A device reloads once for each new push it hasn't seen
+  /* ---------- Updates ----------
+     Opening or refreshing the app takes an update straight away (nothing typed yet to lose). While the app is open —
+     including coming back to it from another app — an update never reloads on its own. Like most web apps, it shows a
+     snackbar above the nav bar: "A new version is available" · Not now · Update. It doesn't block anything, so a
+     half-typed entry is never lost. Not now leaves "Update available" at the top of Profile → Notifications; tapping
+     it brings the snackbar back. */
+  /** An update is ready. launch = the page is just opening: reload now. Otherwise remember how to reload and offer it. */
+  function offerUpdate(reload, launch) {
+    if (launch) { if (S.pending) return false; showBlocker('Updating…', ''); reload(); return true; } // never drop unsaved changes
+    S.update = reload;
+    if (S.updateLater) { renderNavOnly(); redrawNotes(); return false; } // said Not now: only the notification offers it again
+    askUpdate();
+    return false;
+  }
+  function askUpdate() {
+    if (!S.update) return;
+    let bar = document.getElementById('updBar');
+    if (!bar) {
+      bar = document.createElement('div'); bar.id = 'updBar'; bar.setAttribute('role', 'status'); bar.setAttribute('aria-live', 'polite');
+      bar.innerHTML = icon('refresh', 18) + '<span class="ub-t">A new version is available</span>' +
+        '<button type="button" class="ub-b" data-act="updateNo">Not now</button><button type="button" class="ub-b ub-go" data-act="updateYes">Update</button>';
+      document.body.appendChild(bar);
+    }
+    document.body.classList.add('has-upd');
+  }
+  function hideUpdateBar() { const b = document.getElementById('updBar'); if (b) b.remove(); document.body.classList.remove('has-upd'); }
+  /** Admin → Update all devices: the server's FORCE_RELOAD time. A device updates once for each new push it hasn't seen
    *  (remembered on the device); the first time a device meets the setting it just records it. */
-  function checkForceReload(at) {
+  function checkForceReload(at, launch) {
     at = Number(at) || 0;
     let seen = 0;
     try { seen = Number(localStorage.getItem('pal.reloadSeen') || 0); } catch (e) { return false; }
-    // Never pushed yet: mark this device as ready (1), so the first push reloads it too.
+    // Never pushed yet: mark this device as ready (1), so the first push updates it too.
     if (!at) { if (!seen) try { localStorage.setItem('pal.reloadSeen', '1'); } catch (e) { /* storage unavailable */ } return false; }
     // A device meeting an existing push for the first time just loaded the newest page: record it, no reload.
     if (!seen) { try { localStorage.setItem('pal.reloadSeen', String(at)); } catch (e) { /* storage unavailable */ } return false; }
-    if (at <= seen || S.pending) return false; // never drop unsaved changes; the next check reloads
-    try { localStorage.setItem('pal.reloadSeen', String(at)); } catch (e) { return false; }
-    showBlocker('Updating…', '');
-    location.replace(location.pathname + '?v=' + Date.now() + location.hash);
-    return true;
+    if (at <= seen) return false;
+    return offerUpdate(() => {
+      try { localStorage.setItem('pal.reloadSeen', String(at)); } catch (e) { /* storage unavailable */ }
+      location.replace(location.pathname + '?v=' + Date.now() + location.hash);
+    }, launch);
   }
-  async function syncWithServer() {
+  /* Keep the page in step with the server. If the deployed Code.gs is NEWER than this page was built for, this copy of
+     the page is stale (browser / Home Screen cache) and needs the matching page — once per server version, so it can never
+     loop. (An OLDER server can't be fixed from here — Settings → About says so.) */
+  async function syncWithServer(launch) {
     let b = '', info = null;
     try { info = await call('apiServerInfo'); b = info.build || ''; } catch (e) { return; } // old server without the check, or offline
-    if (checkForceReload(info.reloadAt)) return;
+    if (checkForceReload(info.reloadAt, launch)) return;
     if (!b || b <= EXPECTED_SERVER) return;
     let tried = '';
     try { tried = sessionStorage.getItem('pal.reloadedFor') || ''; } catch (e) { /* storage unavailable */ }
     if (tried === b) return;
-    try { sessionStorage.setItem('pal.reloadedFor', b); } catch (e) { /* storage unavailable */ }
-    if (S.pending) return; // never drop unsaved changes; the next check reloads
-    showBlocker('Updating…', '');
-    location.replace(location.pathname + '?v=' + Date.now() + location.hash);
+    offerUpdate(() => {
+      try { sessionStorage.setItem('pal.reloadedFor', b); } catch (e) { /* storage unavailable */ }
+      location.replace(location.pathname + '?v=' + Date.now() + location.hash);
+    }, launch);
   }
+  // GitHub Pages copy: its head script found a newer page build while the app was open (see build-pages.py).
+  document.addEventListener('pal-update', e => offerUpdate(() => {
+    try { sessionStorage.setItem('pal.freshFor', e.detail); } catch (err) { /* storage unavailable */ }
+    location.replace(location.pathname + '?v=' + e.detail + location.hash);
+  }, false));
   async function boot() {
     applyTheme();
     initPush();
-    syncWithServer();
+    syncWithServer(true);
     if (S.token) {
       try { apply(await call('apiBootstrap', S.token)); render(); if (location.hash) openLink(location.hash); return; }
       catch (e) { if (/new PIN/.test(e.message)) return; S.token = null; store.del('token'); }
