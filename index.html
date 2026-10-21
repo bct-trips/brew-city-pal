@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792571279"></script>
+    <script src="config.js?v=1792571313"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -5725,6 +5725,8 @@
     whoDrop(el) {
       const p = $('#whoPop'); if (!p) return;
       if (!p.hidden) { closeWhoDrop(); return; }
+      // Opened with nobody picked yet: the first name you choose closes it. Opened again: it stays open for more names.
+      S.whoFirst = !wizPickList().length;
       S.whoq = ''; p.innerHTML = whoPopHtml(); p.hidden = false; el.setAttribute('aria-expanded', 'true');
       const q = $('#whoQ'); if (q) q.focus();
     },
@@ -5735,6 +5737,7 @@
       el.classList.toggle('on', on); el.setAttribute('aria-selected', on);
       el.querySelector('.who-ck').innerHTML = on ? icon('check', 16) : '';
       const b = $('#modal [data-act="whoDrop"]'); if (b) b.innerHTML = whoBtnInner();
+      if (S.whoFirst && on) { S.whoFirst = false; closeWhoDrop(); }
     },
     whoFilter(el) {
       const pop = el.closest('.who-pop'); if (!pop) return;
