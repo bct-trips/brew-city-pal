@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792579034"></script>
+    <script src="config.js?v=1792579635"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2215,15 +2215,15 @@
     .page > .lbar:last-child { padding-bottom: 10px; }
     :root[data-theme="dark"] .page > .lbar, :root[data-theme="dark"] .cal > .calbar { box-shadow: 0 -6px 16px -4px rgba(0, 0, 0, .7); }
   }
-  /* Status slider (admin): Denied | Pending | Approved. A solid thumb (red / amber / green, white text ≥ 4.5:1) sits under
+  /* Status slider (admin): Approved | Pending | Denied. A solid thumb (red / amber / green, white text ≥ 4.5:1) sits under
      the current status and slides to the one you pick. */
   .stsl { position: relative; display: inline-grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex: none; height: 34px; padding: 2px;
     border: 1px solid var(--outline); border-radius: 17px; background: var(--card-2); isolation: isolate; }
   .stsl-thumb { position: absolute; z-index: 0; top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / 3); border-radius: 15px;
     transition: transform .2s cubic-bezier(.2, .8, .2, 1), background-color .2s; }
-  .stsl.st-denied .stsl-thumb { transform: translateX(0); background: #b42318; }
+  .stsl.st-denied .stsl-thumb { transform: translateX(200%); background: #b42318; }
   .stsl.st-pending .stsl-thumb { transform: translateX(100%); background: #b45309; }
-  .stsl.st-approved .stsl-thumb { transform: translateX(200%); background: #15803d; }
+  .stsl.st-approved .stsl-thumb { transform: translateX(0); background: #15803d; }
   .stsl.st-cancelled .stsl-thumb { display: none; }
   .stsl-o { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; padding: 0 10px;
     border: 0; border-radius: 15px; background: none; color: var(--muted); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -4377,10 +4377,10 @@
       '<div class="filters">' + (sc === 'list' && S.isAdmin ? openBtn() : '') + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'mine' ? mineSwitch() : '') + '</div>' +
       '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
   }
-  /** Admin status control: a three-way slider Denied | Pending | Approved. The current status has a solid red / amber /
+  /** Admin status control: a three-way slider Approved | Pending | Denied. The current status has a solid red / amber /
    *  green thumb that slides to the option you pick. Used in the request tables, request details and the conflict screen. */
   function statusSlider(r, act, extra, lg) {
-    const opts = [['Denied', 'ban'], ['Pending', 'clock'], ['Approved', 'check']];
+    const opts = [['Approved', 'check'], ['Pending', 'clock'], ['Denied', 'ban']];
     return '<div class="stsl st-' + r.status.toLowerCase() + (lg ? ' lg' : '') + '" role="radiogroup" aria-label="Status">' +
       '<span class="stsl-thumb" aria-hidden="true"></span>' + opts.map(([v, ic]) =>
         '<button type="button" role="radio" aria-checked="' + (r.status === v) + '" class="stsl-o' + (r.status === v ? ' on' : '') + '" data-act="' + act + '" data-v="' + v + '" data-id="' + esc(r.id) + '"' + (extra || '') +
