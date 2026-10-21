@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792599950"></script>
+    <script src="config.js?v=1792600638"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792599950';
+      window.PAL_BUILD = '1792600638';
       (function () {
         function check(launch) {
           try {
@@ -2687,6 +2687,9 @@
     right: '<path d="m9 18 6-6-6-6"/>',
     plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
     check: '<path d="M20 6 9 17l-5-5"/>',
+    download: '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>',
+    upload: '<path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>',
+    mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
     bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
     x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
@@ -3141,7 +3144,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.21'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-21.23'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -3313,6 +3316,7 @@
     // conflicts as counts. Everyone else's names and requests aren't on this device at all.
     S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
     S.notePrefs = data.notePrefs || S.notePrefs || { approved: true, denied: true, edited: true };
+    if (data.emailPrefs) S.emailPrefs = data.emailPrefs;
     S.nameNeed = data.nameNeed || '';
     S.reloadAt = Number(data.reloadAt) || 0;
     if (checkForceReload(S.reloadAt, !S.booted)) return;
@@ -5698,6 +5702,28 @@
     ['Europe/London', 'London'], ['Europe/Paris', 'Paris'], ['Europe/Berlin', 'Germany (Berlin)'], ['Europe/Istanbul', 'Turkey (Istanbul)'], ['Asia/Qatar', 'Qatar'],
     ['Asia/Dubai', 'UAE (Dubai)'], ['Asia/Riyadh', 'Saudi Arabia (Riyadh)'], ['Asia/Kuwait', 'Kuwait'], ['Asia/Seoul', 'Korea (Seoul)'], ['Asia/Tokyo', 'Japan (Tokyo)'], ['Pacific/Guam', 'Guam']];
   const redrawReport = () => { const p = $('#reportPanel'); if (p) p.outerHTML = reportPanel(); };
+  /** Settings → Email Notifications (every member): Email, then a chip per kind — Approved, Denied, Admin Edits,
+   *  Start Day, End Day (all off until picked) — and, with Start / End Day on, the Time and Time Zone those go out.
+   *  Send Test Email (saves first) · Save. */
+  const EMAIL_KINDS = [['approved', 'Approved'], ['denied', 'Denied'], ['edited', 'Admin Edits'], ['start', 'Start Day'], ['end', 'End Day']];
+  function emailPanel() {
+    const devTz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } })();
+    const saved = S.emailPrefs || {};
+    const e = S.emDraft || (S.emDraft = Object.assign({ email: '', hour: 6, tz: devTz }, JSON.parse(JSON.stringify(saved)), saved.email ? {} : { tz: devTz }));
+    const zones = REPORT_TZ.some(z => z[0] === e.tz) ? REPORT_TZ : REPORT_TZ.concat([[e.tz, e.tz.replace(/_/g, ' ')]]);
+    const hour = h => (h % 12 || 12) + ':00 ' + (h < 12 ? 'AM' : 'PM');
+    const opt = (v, l, cur) => '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(l) + '</option>';
+    const any = EMAIL_KINDS.some(k => e[k[0]]), day = e.start || e.end;
+    return '<div class="panel" id="emailPanel"><h3>' + icon('mail', 16) + ' Email Notifications' + tip('Emails about your own requests. Pick the ones you want. Start Day and End Day come the morning your approved leave or pass begins or ends.') + '</h3>' +
+      '<div class="field"><label for="emEmail">Email' + (any ? REQ : '') + '</label><input id="emEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="' + esc(e.email || '') + '" data-model="emDraft.email"></div>' +
+      '<div class="sect"><div class="lbl">Email Me When</div><div class="push-btns">' + EMAIL_KINDS.map(k => { const on = !!e[k[0]];
+        return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="emKind" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>'; }).join('') + '</div></div>' +
+      (day ? '<div class="row rp-row"><div class="field rp-hour"><label for="emHour">Start / End Day Time</label><select id="emHour" data-change="emHour">' + Array.from({ length: 24 }, (_, h) => opt(h, hour(h), Number(e.hour))).join('') + '</select></div>' +
+        '<div class="field"><label for="emTz">Time Zone</label><select id="emTz" data-change="emTz">' + zones.map(z => opt(z[0], z[1], e.tz)).join('') + '</select></div></div>' : '') +
+      '<div class="err" id="emErr"></div><div class="cfg-foot">' + (any ? '<button class="btn" data-act="emTest">' + icon('mail', 16) + 'Send Test Email</button>' : '') +
+        '<button class="btn primary" data-act="emSave">' + icon('check', 16) + 'Save</button></div></div>';
+  }
+  const redrawEmail = () => { const p = $('#emailPanel'); if (p) p.outerHTML = emailPanel(); };
   // Report coverage grid: the draft's rows; saved with Save Report.
   RG.report = { key: 'types', any: true, get lim() { return myScope(); }, get cols() { return typeNames().concat(['Blackout']).map(t => [t, t]); },
     blank: () => ({ types: typeNames().concat(['Blackout']) }), rows: () => S.rpDraft.rules, set: rows => { S.rpDraft.rules = rows; redrawReport(); }, redraw: redrawReport };
@@ -5770,6 +5796,12 @@
       '<div class="panel"><div class="cfg-h"><h3>' + icon('refresh', 16) + ' App Updates' + tip('After you deploy a new version, tap this so every phone and computer reloads to it the next time it opens or syncs — even if already signed in.') + '</h3>' +
         '<button class="btn primary" data-act="forceReload">' + icon('refresh', 18) + 'Update All Devices</button></div>' +
         '<p class="meta">' + (S.reloadAt ? 'Last pushed ' + esc(new Date(S.reloadAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })) : 'Not pushed yet') + '</p></div>' +
+
+      // Backup & Restore (org admins): a file with everything, to move the app to another Google account.
+      (S.isOrg ? '<div class="panel"><div class="cfg-h"><h3>' + icon('download', 16) + ' Backup &amp; Restore' + tip('A backup is one file with every member, request, setting and PIN, so everyone keeps their PIN. To move PAL to another Google account: Download Backup here, set up PAL in the new account, then Restore From Backup there.') + '</h3></div>' +
+        '<p class="meta">Keep backup files private: they hold the roster and everyone’s PIN data.</p>' +
+        '<div class="cfg-foot bk-acts"><button class="btn" data-act="bkRestore">' + icon('upload', 18) + 'Restore From Backup…</button>' +
+        '<button class="btn primary" data-act="bkDownload">' + icon('download', 18) + 'Download Backup</button></div></div>' : '') +
 
       // PINs
       '<div class="panel panel-warn"><h3>' + icon('key', 16) + ' Default PIN' + tip('Temporary PIN for new members and PIN resets. They must change it at next sign-in.') + '</h3>' +
@@ -6194,6 +6226,9 @@
         '<div style="display:flex;gap:6px;margin-top:4px"><span class="badge">' + esc(roleName(me.role)) + '</span>' + unitBadge(me.unit) + '</div></div></div></div>' +
 
       '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' +
+
+      // Everyone: emails about my own requests (each kind on / off), right under notifications.
+      emailPanel() +
 
       // Admins (by status — admin mode doesn't need to be unlocked): my own daily email report, under notifications.
       (S.myAdmin ? reportPanel() : '') +
@@ -7097,6 +7132,28 @@
     },
     boEdit(el) { S.boReturn = S.boResolve; openEditWizard(el.dataset.id); },
     rpOn() { S.rpDraft.on = !S.rpDraft.on; redrawReport(); },
+    emKind(el) { const e = S.emDraft, i = $('#emEmail'); if (i) e.email = i.value.trim(); e[el.dataset.v] = !e[el.dataset.v]; redrawEmail(); },
+    emHour(el) { S.emDraft.hour = Number(el.value); },
+    emTz(el) { S.emDraft.tz = el.value; },
+    async emSave(el, quiet) {
+      const e = S.emDraft, err = $('#emErr'), i = $('#emEmail');
+      if (i) e.email = i.value.trim();
+      const any = EMAIL_KINDS.some(k => e[k[0]]);
+      if (any && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e.email)) { err.textContent = 'Enter the email address for your notifications.'; return false; }
+      err.textContent = '';
+      const prefs = { email: e.email, hour: e.hour, tz: e.tz }; EMAIL_KINDS.forEach(k => { prefs[k[0]] = !!e[k[0]]; });
+      const res = await run(el, 'apiSetEmailPrefs', S.token, prefs);
+      if (!res) return false;
+      apply(res); S.emDraft = null; redrawEmail();
+      if (!quiet) toast(any ? 'Email notifications saved' : 'Email notifications off', 'ok', 2000);
+      return true;
+    },
+    // Send Test Email: saves what's on screen first, then sends a test to that address.
+    async emTest(el) {
+      if (!(await A.emSave(el, true))) return;
+      const res = await run($('[data-act="emTest"]') || el, 'apiSendEmailTest', S.token);
+      if (res) toast('Saved · test email sent to ' + res.sent, 'ok', 3000);
+    },
     rpHour(el) { S.rpDraft.hour = Number(el.value); },
     rpTz(el) { S.rpDraft.tz = el.value; },
     async rpSave(el, quiet) {
@@ -7676,6 +7733,60 @@
     },
     // Every member's PIN back to the default (not your own). Two steps to confirm: tick "I have read this warning",
     // then OK (OK stays off until the box is ticked).
+    // Backup: type the org admin PIN, then the file downloads (brew-city-pal-backup-YYYY-MM-DD.json).
+    bkDownload() {
+      openModal('backup', modalHead('Download Backup', 'download') + '<div class="modal-b">' +
+        '<p class="meta" style="white-space:normal;margin:0 0 10px">One file with every member, request, notification, setting and PIN. Keep it private.</p>' +
+        '<div class="field"><label for="bkPin">Org Admin PIN</label><input id="bkPin" ' + NEW_PIN + ' aria-label="Org admin PIN"></div><div class="err" id="bkErr"></div></div>' +
+        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="bkGo">' + icon('download', 18) + 'Download</button></div>');
+    },
+    async bkGo(el) {
+      const pin = ($('#bkPin') || {}).value || '', err = $('#bkErr');
+      if (!pin) { err.textContent = 'Enter the org admin PIN.'; return; }
+      const b = await run(el, 'apiBackup', S.token, pin);
+      if (!b) return;
+      const blob = new Blob([JSON.stringify(b)], { type: 'application/json' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = 'brew-city-pal-backup-' + S.today + '.json'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      closeModal(); toast('Backup downloaded · ' + plural(b.tables.Users.length, 'member') + ', ' + plural(b.tables.Requests.length, 'request'), 'ok', 3000);
+    },
+    // Restore: choose a backup file, read the warning and tick it, type the org admin PIN, then Restore.
+    bkRestore() {
+      S.bkFile = null;
+      openModal('restore', modalHead('Restore From Backup', 'alert') + '<div class="modal-b">' +
+        '<div class="ra-warn"><b>Warning</b><p>Restoring <b>replaces everything</b> in this copy of PAL — every member, request, notification, setting and PIN — with the backup. This can’t be undone. Everyone (you too) signs in again afterward with their PIN from the backup; the org admin PIN becomes the backup’s.</p></div>' +
+        '<div class="field"><label for="bkFile">Backup File</label><input id="bkFile" type="file" accept=".json,application/json" data-change="bkPick"></div>' +
+        '<p class="meta" id="bkSum" style="white-space:normal"></p>' +
+        '<div class="field"><label for="bkPin2">Org Admin PIN (this copy)</label><input id="bkPin2" ' + NEW_PIN + ' aria-label="Org admin PIN"></div>' +
+        '<label class="fchk ra-chk"><input type="checkbox" id="bkOk" data-change="bkCheck"> I have read this warning</label><div class="err" id="bkErr"></div></div>' +
+        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn ra-go" id="bkGo2" data-act="bkRestoreGo" disabled>Restore</button></div>');
+    },
+    bkPick(el) {
+      const f = el.files && el.files[0], sum = $('#bkSum'), err = $('#bkErr');
+      S.bkFile = null; err.textContent = ''; sum.textContent = '';
+      if (!f) return A.bkCheck();
+      const rd = new FileReader();
+      rd.onload = () => {
+        let b = null; try { b = JSON.parse(rd.result); } catch (e) { b = null; }
+        if (!b || b.app !== 'brew-city-pal' || !b.tables || !Array.isArray(b.tables.Users)) { err.textContent = 'That file isn’t a PAL backup.'; return A.bkCheck(); }
+        S.bkFile = b;
+        sum.textContent = 'Backup from ' + new Date(b.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) +
+          ' · ' + plural(b.tables.Users.length, 'member') + ' · ' + plural((b.tables.Requests || []).length, 'request') + '.';
+        A.bkCheck();
+      };
+      rd.readAsText(f);
+    },
+    bkCheck() { const b = $('#bkGo2'); if (b) b.disabled = !(S.bkFile && ($('#bkOk') || {}).checked); },
+    async bkRestoreGo(el) {
+      const pin = ($('#bkPin2') || {}).value || '', err = $('#bkErr');
+      if (!S.bkFile || !($('#bkOk') || {}).checked) return;
+      if (!pin) { err.textContent = 'Enter the org admin PIN.'; return; }
+      const res = await run(el, 'apiRestore', S.token, pin, S.bkFile);
+      if (!res) return;
+      S.bkFile = null;
+      signOutLocal();
+      toast('Restored ' + plural(res.users, 'member') + ' and ' + plural(res.requests, 'request') + '. Sign in with your PIN from the backup.', 'ok', 6000);
+    },
     resetAllPins() {
       const n = S.users.filter(u => u.id !== S.me).length;
       openModal('resetAll', modalHead('Reset All Account PINs', 'alert') + '<div class="modal-b">' +
