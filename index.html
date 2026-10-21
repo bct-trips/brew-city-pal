@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792580128"></script>
+    <script src="config.js?v=1792580444"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -1335,10 +1335,7 @@
   .st-ic .ic { stroke-width: 2.6; }
   .st-ic-ok { color: #15803d; } .st-ic-pend { color: #b45309; } .st-ic-no { color: #c9302c; }
   :root[data-theme="dark"] .st-ic-ok { color: #86d99a; } :root[data-theme="dark"] .st-ic-pend { color: #fbbf24; } :root[data-theme="dark"] .st-ic-no { color: #fca5a5; }
-  /* Approved rows: a soft green tint (pinned name cell too). */
-  .rtable tbody tr.st-approved td, .rtable tbody tr.st-approved:nth-child(even) td, .rtable tbody tr.st-approved td.stk, .rtable tbody tr.st-approved:nth-child(even) td.stk {
-    background: color-mix(in srgb, #22c55e 9%, var(--card)); }
-  .rtable tbody tr.st-approved:hover td, .rtable tbody tr.st-approved:hover td.stk { background: color-mix(in srgb, #22c55e 15%, var(--card)); }
+  /* Approved rows have no tint: the status slider and ✓ already say so (rows keep the normal striping). */
   /* Name cell: name and its small marks centred on one line. */
   .rtable td.stk .stk-in { display: flex; align-items: center; gap: 6px; }
   .rtable td.stk .cfl { margin-left: 0; flex: none; }
@@ -2269,6 +2266,10 @@
   .wpuck .n > * { will-change: transform; }
   .wpuck .n { overflow: visible; }
   .wpuck { overflow: hidden; }
+  /* Status slider keeps one size whatever is selected: the word slot is always as wide as "Approved", icon slots are fixed. */
+  .stsl:not(.lg) .stsl-o { justify-content: center; }
+  .stsl:not(.lg) .stsl-o.on { width: 6.9em; padding: 0; }
+  .stsl:not(.lg) .stsl-o:not(.on) { width: 36px; padding: 0; }
 </style>
 
   </head>
@@ -5298,15 +5299,16 @@
     if (!r) return;
     S.reqOpen = id;
     const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r);
-    // Footer (DESIGN.md): admins get a decision row on top (Deny · Approve), then Delete · Cancel · Edit —
+    // Footer (DESIGN.md): admins get a decision row on top (the status slider), then Delete · Edit · Close —
     // destructive on the left, Cancel in the middle, the main action on the far right.
     const decide = S.isAdmin && r.status !== 'Cancelled'
       ? statusSlider(r, 'setStatus', '', true)
       : '';
     const edit = canEdit(r) ? '<button class="btn act act-lbl act-edit" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>' : '';
     const del = canDelete(r) ? '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' : '';
-    // Always a Close at the bottom (in the middle of Delete · Close · Edit, or on its own when there's nothing to do).
-    const main = '<div class="mf-row">' + del + '<button class="btn act act-lbl' + (del || edit ? '' : ' mf-close') + '" data-act="closeModal" aria-label="Close" title="Close">' + icon('x', 15) + '<span class="bl">Close</span></button>' + edit + '</div>';
+    // Always a Close at the bottom (Delete · Edit · Close, or on its own when there is nothing to do).
+    // Delete · Edit · Close (Close last, on the right).
+    const main = '<div class="mf-row">' + del + edit + '<button class="btn act act-lbl' + (del || edit ? '' : ' mf-close') + '" data-act="closeModal" aria-label="Close" title="Close">' + icon('x', 15) + '<span class="bl">Close</span></button></div>';
     const foot = (decide ? '<div class="mf-row mf-decide">' + decide + '</div>' : '') + main;
     const bad = [...reqConflicts(r).values()].filter(c => c.bad).length;
     const longDate = d => D.f(d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
