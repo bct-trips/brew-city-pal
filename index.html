@@ -15,12 +15,12 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792585078"></script>
+    <script src="config.js?v=1792585302"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one. When they
          differ — on launch and whenever the app comes back to the foreground — reload once to a cache-busted copy. */
-      window.PAL_BUILD = '1792585078';
+      window.PAL_BUILD = '1792585302';
       (function () {
         function check() {
           try {
@@ -2390,6 +2390,12 @@
   .stats-bar .rf-btn { flex: 0 1 auto; min-width: 0; max-width: 360px; }
   .stats-bar .rf-btn .manage-ct { margin-left: 2px; }
   @media (max-width: 700px) { .stats-bar .rf-btn { flex: 1 1 0; max-width: none; } }
+  /* Request-table type bands: three-position switch Closed · Active · All in the band header. */
+  .grp-seg { display: inline-flex; vertical-align: middle; margin-left: 12px; height: 28px; border: 1px solid var(--outline); border-radius: 14px; overflow: hidden; background: var(--card); }
+  .grp-seg button { border: 0; background: none; padding: 0 11px; font: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--muted); cursor: pointer; }
+  .grp-seg button + button { border-left: 1px solid var(--outline); }
+  .grp-seg button.on { background: var(--sel-bg); color: var(--sel-ink); }
+  .grp-seg button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 </style>
 
   </head>
@@ -4566,7 +4572,10 @@
       // My Requests: current bands start fully open and list everything in date order; Past starts collapsed.
       const mine = key === 'mine';
       const state = mine ? (type === 'Past' ? (col.Past === 'open' ? 'open' : 'closed') : col[type] === 'closed' ? 'closed' : 'open')
-        : type === 'Past' ? (col.Past === false ? 'open' : 'closed') : band ? (col[type] || 'partial') : (col[type] ? 'closed' : 'open');
+        // Conflict mode (All Requests): every band (Past too) opens fully so every request in a conflict shows; turning it
+        // off goes back to the usual part-open bands. Bands you opened / closed yourself keep that.
+        : type === 'Past' ? (col.Past === false ? 'open' : col.Past === true ? 'closed' : S.f.conf ? 'open' : 'closed')
+        : band ? (col[type] || (S.f.conf ? 'open' : 'partial')) : (col[type] ? 'closed' : 'open');
       // Top group = requests whose dates include today, whatever their status — so approving / denying / setting back to
       // pending never moves a row (only its color and slider change). "N active" counts the approved ones going on now.
       const today = r => r.start <= S.today && r.end >= S.today;
@@ -4588,7 +4597,11 @@
         : list.map(r => rowHtml(r, type === 'Past')).join('');
       return '<tbody class="grp grp-' + (type === 'Past' ? 'past' : tcls(type)) + (state === 'closed' ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
         '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + (state === 'open') + '">' +
-        icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button></th></tr>' + rowsHtml + '</tbody>';
+        icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button>' +
+        // Type bands (not Past, not My Requests): a three-position switch — Closed · Active (out today) · All.
+        (band && !mine ? '<span class="grp-seg" role="group" aria-label="Show">' + [['closed', 'Closed'], ['partial', 'Active'], ['open', 'All']].map(o =>
+          '<button type="button" class="' + (state === o[0] ? 'on' : '') + '" aria-pressed="' + (state === o[0]) + '" data-act="grpSet" data-table="' + key + '" data-v="' + type + '" data-s="' + o[0] + '">' + o[1] + '</button>').join('') + '</span>' : '') +
+        '</th></tr>' + rowsHtml + '</tbody>';
     };
     const cur = rows.filter(r => r.end >= S.today), past = rows.filter(r => r.end < S.today);
     // Leave, then Pass (each with today's active ones first), then Past.
@@ -6433,10 +6446,11 @@
     grpToggle(el) {
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
       if (k === 'mine') c[t] = t === 'Past' ? (c.Past === 'open' ? 'closed' : 'open') : c[t] === 'closed' ? 'open' : 'closed'; // My Requests: bands open, Past collapsed
-      else if (t === 'Past') c.Past = c.Past === false; // Past starts closed: first tap opens it (false = open)
-      else if (t !== 'Blackouts') c[t] = c[t] === 'open' ? 'closed' : 'open'; // part-open → open → closed → open
+      else if (t === 'Past') { const open = c.Past === false || (c.Past === undefined && S.f.conf && k === 'list'); c.Past = open; } // flip: open → closed (true), closed → open (false)
+      else if (t !== 'Blackouts') { const cur = c[t] || (S.f.conf && k === 'list' ? 'open' : 'partial'); c[t] = ({ partial: 'open', open: 'closed', closed: 'partial' })[cur]; } // Active → All → Closed → Active
       else c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
     },
+    grpSet(el) { const c = (S.grpCol = S.grpCol || {})[el.dataset.table] = S.grpCol[el.dataset.table] || {}; c[el.dataset.v] = el.dataset.s; render(); },
     grpMore(el) { const c = (S.grpCol = S.grpCol || {})[el.dataset.table] = S.grpCol[el.dataset.table] || {}; c[el.dataset.v] = 'open'; render(); },
     dayRole(el) {
       const cur = S.dayRoles || seeRoles().slice(), v = el.dataset.v;
