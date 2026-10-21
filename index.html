@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792581832"></script>
+    <script src="config.js?v=1792581908"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2307,6 +2307,11 @@
   .cap-f:first-child { border-top: 0; }
   .cap-f .cap-n { flex: 1; min-width: 0; overflow: visible; white-space: normal; font-weight: 700; }
   .cap-f input { flex: none; width: 76px; height: 40px; text-align: center; }
+  /* Position editor: Letter (narrow) then Name filling the rest of the row. */
+  .row.role-top { display: flex; gap: 10px; flex-wrap: nowrap; }
+  .row.role-top .field.cfg-code { flex: 0 0 76px; min-width: 0; }
+  .row.role-top .field.cfg-code input { text-align: center; }
+  .row.role-top .role-name { flex: 1 1 auto; min-width: 0; }
 </style>
 
   </head>
@@ -4721,10 +4726,11 @@
       (v === 'own' ? '<p class="cs-own">' + icon('lock', 14) + ' Own requests only</p>' : '');
   }
   /** One position's fields (Admin list row and the New position builder share them). */
-  function roleFields(r, key) {
+  /** nameField: the Name input, placed to the right of Letter on the same row (Letter narrow, Name fills the rest). */
+  function roleFields(r, key, nameField) {
     const rv = rowView(key, r);
-    return '<div class="row"><div class="field cfg-code"><label for="rl-' + key + '">Letter</label><input id="rl-' + key + '" class="rl-letter" maxlength="1" value="' + esc(r.letter || '') + '" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-live="rolePrev"></div>' +
-      '</div>' +
+    return '<div class="row role-top"><div class="field cfg-code"><label for="rl-' + key + '">Letter</label><input id="rl-' + key + '" class="rl-letter" maxlength="1" value="' + esc(r.letter || '') + '" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-live="rolePrev"></div>' +
+      (nameField || '') + '</div>' +
       // Most of this position on each event type the same day (0 = no limit), e.g. Leave 2, Pass 0.
       '<div class="field"><span class="lbl-sm">Max per day' + tip('How many of this position may be on each event type the same day. 0 = no limit.') + '</span><div class="cap-grid">' +
         TYPE_LIST.filter(t => !t.disabled || Number((r.caps || {})[t.name])).map(t => {
@@ -4807,9 +4813,8 @@
     const html = modalHead(name ? 'Edit ' + roleName(name) : 'New position', name ? 'pencil' : 'plus') +
       '<div class="modal-b role-row badge-builder" data-k="ed" data-old="' + esc(name || '') + '">' +
       '<div class="bb-prev"><span class="idb"><span class="idb-r ' + (name ? roleCls(name) : styleCls('teal')) + '" id="nrPrev">' + esc(r.letter || '?') + '</span></span></div>' +
-      '<div class="field"><label for="nrName">Name</label>' + (builtIn ? '<input id="nrName" class="rl-name" value="' + esc(name) + '" disabled>'
-        : '<input id="nrName" class="rl-name" maxlength="24" placeholder="Maintenance" autocomplete="off" value="' + esc(r.name) + '"' + (name ? '' : ' autofocus') + '>') + '</div>' +
-      roleFields(r, 'ed') +
+      roleFields(r, 'ed', '<div class="field role-name"><label for="nrName">Name</label>' + (builtIn ? '<input id="nrName" class="rl-name" value="' + esc(name) + '" disabled>'
+        : '<input id="nrName" class="rl-name" maxlength="24" placeholder="Maintenance" autocomplete="off" value="' + esc(r.name) + '"' + (name ? '' : ' autofocus') + '>') + '</div>') +
       '<div class="err" id="nrErr"></div></div>' +
       '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="saveRoleEdit">' + icon(name ? 'check' : 'plus', 18) + (name ? 'Save' : 'Add position') + '</button></div>';
     openModal('role', html);
