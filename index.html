@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792589878"></script>
+    <script src="config.js?v=1792589940"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792589878';
+      window.PAL_BUILD = '1792589940';
       (function () {
         function check(launch) {
           try {
@@ -1967,9 +1967,8 @@
   .srv-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-weight: 700; }
   .srv-st { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; border: 0; font: inherit; font-size: 14px; font-weight: 800; color: #ffffff; }
   .srv-ok { background: #15803d; }
-  .srv-bad { background: #b42318; cursor: pointer; }
-  .srv-help { flex-basis: 100%; margin: 8px 0 0; font-size: 14px; font-weight: 500; color: var(--ink); }
-  .srv-help[hidden] { display: none; }
+  .srv-bad { background: #b42318; cursor: default; }
+  .srv-upd { background: var(--gold); color: var(--navy); cursor: pointer; }
   /* A shared bar carried over from last week starts exactly where other carried-over bars do (badges line up). */
   .evs.grp.end, .evs.grp.mid { padding-left: 11px !important; }
   /* Request review: the type is a big colored banner (Leave navy, Pass yellow), not a small badge. */
@@ -5654,11 +5653,14 @@
     let b = '';
     try { b = (await call('apiServerInfo')).build; } catch (e) { b = ''; }
     const el = $('#srvInfo'); if (!el) return;
-    // Just a status: green "Up to Date" or red "Out of Date". Tapping "Out of Date" shows how to fix it.
+    // Up to Date (green). Update Available (gold, GitHub Pages only): the server is newer than this copy of the page, so
+    // a refresh fixes it — tapping it offers the update like any other (Not Now · Update). Out of Date (red, does
+    // nothing): the server is behind the page; only an admin deploying Code.gs can fix that, so members get no steps.
+    const pageStale = !!window.PAL_API_URL && !!b && b > EXPECTED_SERVER;
     el.innerHTML = b === EXPECTED_SERVER
-      ? '<span class="srv-st srv-ok" title="Server ' + esc(b) + '">' + icon('check', 14) + 'Up to Date</span>'
-      : '<button type="button" class="srv-st srv-bad" data-act="srvHelp" title="Server ' + esc(b || 'unknown') + ', needs ' + EXPECTED_SERVER + '">' + icon('alert', 14) + 'Out of Date</button>' +
-        '<p class="srv-help" id="srvHelp" hidden>In Apps Script, paste the latest Code.gs, then <b>Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy</b>.</p>';
+      ? '<span class="srv-st srv-ok">' + icon('check', 14) + 'Up to Date</span>'
+      : pageStale ? '<button type="button" class="srv-st srv-upd" data-act="srvRefresh">' + icon('refresh', 14) + 'Update Available</button>'
+      : '<span class="srv-st srv-bad">' + icon('alert', 14) + 'Out of Date</span>';
   }
 
   /* ---------- Request detail ---------- */
@@ -6805,7 +6807,7 @@
       pop.querySelectorAll('.who-h').forEach(h => { let n = h.nextElementSibling, vis = false; while (n && !n.classList.contains('who-h')) { if (n.classList.contains('who-row') && !n.hidden) vis = true; n = n.nextElementSibling; } h.hidden = !vis; });
       const none = pop.querySelector('.who-none'); if (none) none.hidden = any;
     },
-    srvHelp() { const h = $('#srvHelp'); if (h) h.hidden = !h.hidden; },
+    srvRefresh() { S.updateLater = false; S.update = () => goFresh(); askUpdate(); },
     mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; $('#mcPin1').focus(); } },
     setManager(el) {
       const u = S.users.find(x => x.id === el.dataset.id); if (!u) return;
