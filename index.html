@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792579635"></script>
+    <script src="config.js?v=1792579800"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2244,6 +2244,27 @@
   body.cal-grabbing, body.cal-grabbing * { cursor: grabbing !important; user-select: none !important; }
   .cal-split { overflow: hidden; }
   .cal-split > .dpanel { position: relative; z-index: 2; background: var(--card); }
+  /* Status slider, final: the selected option shows its word ("Approved" / "Pending" / "Denied") on its colour; the other
+     two show only their icon (✓ / clock / ⊘). The selected one is wider; the change animates. */
+  .stsl { display: inline-flex; grid-template-columns: none; gap: 2px; }
+  .stsl .stsl-thumb { display: none; }
+  .stsl-o { flex: 0 0 auto; padding: 0 10px; transition: background-color .2s, color .2s, flex-grow .2s; }
+  .stsl-o:not(.on) .stsl-t { display: none; }
+  .stsl-o.on .ic { display: none; }
+  .stsl-o.on { padding: 0 14px; }
+  .stsl.st-approved .stsl-o.on { background: #15803d; }
+  .stsl.st-pending .stsl-o.on { background: #b45309; }
+  .stsl.st-denied .stsl-o.on { background: #b42318; }
+  .stsl.lg { display: flex; }
+  .stsl.lg .stsl-o { flex: 1 1 0; } .stsl.lg .stsl-o.on { flex-grow: 2.4; }
+  @media (max-width: 700px) { .rtable .stsl-o.on .stsl-t { display: inline; } }
+  @media (prefers-reduced-motion: reduce) { .stsl-o { transition: none; } }
+  /* Status slider motion: one coloured pill behind the selected option glides (left + width) to the option you pick. */
+  .stsl .stsl-thumb { display: block; left: 0; width: 0; transform: none !important; opacity: 0;
+    transition: left .28s cubic-bezier(.3, .8, .25, 1), width .28s cubic-bezier(.3, .8, .25, 1), background-color .28s; }
+  .stsl.st-approved .stsl-o.on, .stsl.st-pending .stsl-o.on, .stsl.st-denied .stsl-o.on { background: transparent; }
+  .stsl-o { transition: color .2s; }
+  @media (prefers-reduced-motion: reduce) { .stsl .stsl-thumb { transition: none; } }
 </style>
 
   </head>
@@ -4378,7 +4399,7 @@
       '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
   }
   /** Admin status control: a three-way slider Approved | Pending | Denied. The current status has a solid red / amber /
-   *  green thumb that slides to the option you pick. Used in the request tables, request details and the conflict screen. */
+   *  green fill and shows its word; the other two show only their icon. Used in the request tables, request details and the conflict screen. */
   function statusSlider(r, act, extra, lg) {
     const opts = [['Approved', 'check'], ['Pending', 'clock'], ['Denied', 'ban']];
     return '<div class="stsl st-' + r.status.toLowerCase() + (lg ? ' lg' : '') + '" role="radiogroup" aria-label="Status">' +
@@ -4386,13 +4407,33 @@
         '<button type="button" role="radio" aria-checked="' + (r.status === v) + '" class="stsl-o' + (r.status === v ? ' on' : '') + '" data-act="' + act + '" data-v="' + v + '" data-id="' + esc(r.id) + '"' + (extra || '') +
         ' title="' + (v === 'Pending' ? 'Pending' : v === 'Approved' ? 'Approve' : 'Deny') + '">' + icon(ic, 14) + '<span class="stsl-t">' + v + '</span></button>').join('') + '</div>';
   }
-  /** Slide the thumb at once (the page redraws a moment later, after the animation). */
+  /** Switch the selected option at once (the page redraws a moment later, after the animation). */
   function slideStatus(el, v) {
     const sl = el.closest('.stsl'); if (!sl) return 0;
     sl.className = sl.className.replace(/\bst-\w+/, 'st-' + v.toLowerCase());
     sl.querySelectorAll('.stsl-o').forEach(b => { const on = b.dataset.v === v; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
-    return reduceMotion() ? 0 : 200;
+    placeThumb(sl, true); // the coloured pill glides to the new option (and resizes to its word)
+    return reduceMotion() ? 0 : 280;
   }
+  /** Put a slider's coloured pill under its selected option (animated when it moves, instant on first draw). */
+  function placeThumb(sl, animate) {
+    const on = sl.querySelector('.stsl-o.on'), th = sl.querySelector('.stsl-thumb');
+    if (!th) return;
+    sl.dataset.placed = '1';
+    if (!on) { th.style.opacity = '0'; return; }
+    if (!animate) th.style.transition = 'none';
+    th.style.left = on.offsetLeft + 'px'; th.style.width = on.offsetWidth + 'px'; th.style.opacity = '1';
+    if (!animate) { void th.offsetWidth; th.style.transition = ''; }
+  }
+  // Any slider drawn anywhere (tables, dialogs) gets its pill placed on the next frame.
+  (function () {
+    let raf = 0;
+    new MutationObserver(() => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; document.querySelectorAll('.stsl:not([data-placed])').forEach(sl => placeThumb(sl, false)); });
+    }).observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('resize', () => document.querySelectorAll('.stsl').forEach(sl => placeThumb(sl, false)));
+  })();
   /** Admin: show only open requests (pending, or in an unresolved conflict), with how many there are. */
   function openBtn() {
     const F = S.f, n = IDX.live.filter(r => isOpenReq(r) && F.role.includes(userOf(r.userId).role) && F.type.includes(r.type) && personConfOk(r, F)).length, on = !!S.openOnly;
