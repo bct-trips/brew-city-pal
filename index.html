@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792581103"></script>
+    <script src="config.js?v=1792581245"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2275,6 +2275,15 @@
   .mn-more { font-weight: 700; color: #3f3f46; white-space: nowrap; cursor: default; }
   .mn-more { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
   .mn-more:hover { color: var(--navy); }
+  /* Request details: "Conflicts with" — the people this request clashes with, as tappable badges. */
+  .cc-with { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 10px; }
+  .cc-with-h { font-size: 12.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .cc-with-l { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cc-p { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px 0 6px; border: 1px solid var(--line); border-radius: 17px;
+    background: var(--card); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+  .cc-p:hover { border-color: var(--ink); }
+  .cc-p .idb { margin-right: 0; }
+  .cc-p-d { font-weight: 500; color: var(--muted); font-size: 13px; }
 </style>
 
   </head>
@@ -5283,6 +5292,18 @@
   /* ---------- Approval conflict calendar ---------- */
   /** Per day of r: who else of the same position is out (approved/pending), whether the daily max is exceeded,
    *  and any of the member's own overlapping requests (duplicates). */
+  /** "Conflicts with": everyone this request clashes with on any of its days (over the daily max, or the member's own
+   *  overlapping requests) — each a tappable badge that opens their request. Hide user schedules: just how many. */
+  function conflictsWithHtml(r) {
+    const cs = [...reqConflicts(r).values()].filter(c => c.bad), seen = new Set(), who = [];
+    cs.forEach(c => c.peers.concat(c.dups).forEach(x => { if (!seen.has(x.id)) { seen.add(x.id); who.push(x); } }));
+    if (S.priv && !who.length) { const n = Math.max(0, ...cs.map(c => c.n)); return n ? '<div class="cc-with"><span class="cc-with-h">Conflicts with</span><span class="muted">' + plural(n, 'other request') + '</span></div>' : ''; }
+    if (!who.length) return cs.some(c => c.bo) ? '<div class="cc-with"><span class="cc-with-h">Conflicts with</span><span class="muted">blackout days</span></div>' : '';
+    who.sort((a, b) => byPosName(a, b));
+    return '<div class="cc-with"><span class="cc-with-h">Conflicts with</span><div class="cc-with-l">' + who.map(x => { const u = userOf(x.userId);
+      return '<button type="button" class="cc-p" data-act="openReq" data-id="' + esc(x.id) + '" title="' + esc(describe(x)) + '">' + idBadge(u) + '<span>' + esc(calName(u)) + '</span>' +
+        '<span class="cc-p-d">' + esc(D.short(x.start)) + '–' + esc(D.short(x.end)) + '</span></button>'; }).join('') + '</div></div>';
+  }
   function reqConflicts(r) {
     const u = userOf(r.userId), q = quota(u.role, r.type), out = new Map();
     for (let d = r.start; d <= r.end; d = D.add(d, 1)) {
@@ -5369,7 +5390,8 @@
         (r.userId === S.me ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('check', 13) + ' Got it</button>' : ' The member hasn’t acknowledged this yet.' + (S.isAdmin ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('x', 13) + ' Clear notice</button>' : '')) + '</span></div>' : '') +
       (dupsOf(r).length ? '<div class="msg e">' + icon('alert', 15) + '<span>Overlap: this member also has ' + esc(dupText(r)) + '. A member can’t be on leave and a pass (or two requests) at the same time.</span></div>' : '') +
       (r.status !== 'Cancelled' && n <= 92
-        ? '<div class="cc-sum ' + (bad ? 'bad' : 'ok') + '">' + icon(bad ? 'alert' : 'check', 15) + (bad ? plural(bad, 'day') + ' in conflict — tap a red day to see with whom' : 'No conflicts on any requested day') + '</div>' +
+        ? '<div class="cc-sum ' + (bad ? 'bad' : 'ok') + '">' + icon(bad ? 'alert' : 'check', 15) + (bad ? plural(bad, 'day') + ' in conflict' : 'No conflicts on any requested day') + '</div>' +
+          (bad ? conflictsWithHtml(r) : '') +
           reqCalendar(r) +
           '<div class="mini-key"><span class="mk-i"><span class="mk mk-ok"></span>No conflict</span><span class="mk-i"><span class="mk mk-full"></span>Conflict</span></div>' +
           '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>'
