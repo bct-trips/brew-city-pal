@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792595679"></script>
+    <script src="config.js?v=1792596188"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792595679';
+      window.PAL_BUILD = '1792596188';
       (function () {
         function check(launch) {
           try {
@@ -2539,8 +2539,11 @@
   .alert-rules .cfg-foot { margin-top: 8px; }
   .alert-rules.is-off .ar-list { opacity: .55; }
   .rp-row { align-items: flex-end; }
-  .rp-row .rp-hour { flex: 0 0 140px; }
-  #rpTz { width: 100%; }
+  .rp-row { align-items: flex-end; }
+  .rp-row .rp-hour { flex: 0 0 130px; }
+  .rp-row .field { min-width: 0; }
+  #rpTz, #rpHour, #rpEmail { width: 100%; }
+  #reportPanel .ar-add { margin-top: 8px; justify-content: flex-start; }
   /* "Saving, please wait…" snackbar: sits above the update bar when both show; toasts move up above it. */
   .snackbar.save-bar { padding-right: 18px; gap: 12px; }
   .save-bar .spin { flex: none; width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.3); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
@@ -2863,13 +2866,16 @@
   const scopeWithin = (inner, outer) => !outer || (!!inner && (!(outer.units || []).length || ((inner.units || []).length > 0 && inner.units.every(x => outer.units.includes(x))))
     && (!(outer.roles || []).length || ((inner.roles || []).length > 0 && inner.roles.every(x => outer.roles.includes(x)))));
   /** Units / positions a team admin may pick from (their own), or all of them for an org admin. */
-  const scopeUnits = () => unitsList().filter(x => !x.disabled).map(x => x.code).filter(c => !S.adminScope || !(S.adminScope.units || []).length || S.adminScope.units.includes(c));
-  const scopeRoles = () => ROLES.filter(r => !roleInfo(r).disabled).filter(r => !S.adminScope || !(S.adminScope.roles || []).length || S.adminScope.roles.includes(r));
-  /** Unit + position chips for picking a scope (k = 'units' | 'roles'); `act` toggles one. None picked = any. */
-  const scopeChips = (sc, act, extra) => '<div class="sc-pick"><span class="sc-l">Units</span><div class="push-btns">' +
-      scopeUnits().map(c => { const on = (sc.units || []).includes(c); return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="' + act + '" data-k="units" data-v="' + esc(c) + '"' + (extra || '') + '>' + (on ? icon('check', 16) : '') + esc(c) + '</button>'; }).join('') + '</div>' +
+  const scopeUnits = (lim = S.adminScope) => unitsList().filter(x => !x.disabled).map(x => x.code).filter(c => !lim || !(lim.units || []).length || lim.units.includes(c));
+  const scopeRoles = (lim = S.adminScope) => ROLES.filter(r => !roleInfo(r).disabled).filter(r => !lim || !(lim.roles || []).length || lim.roles.includes(r));
+  /** My own team (from my admin status, not the PIN I unlocked with): what my alerts and daily report can cover. */
+  const myScope = () => S.myAdmin && S.myAdmin.level === 'team' ? S.myAdmin.scope : null;
+  /** Unit + position chips for picking a scope (k = 'units' | 'roles'); `act` toggles one. None picked = any.
+   *  lim: the scope they must stay within (default: this admin mode's team). */
+  const scopeChips = (sc, act, extra, lim = S.adminScope) => '<div class="sc-pick"><span class="sc-l">Units</span><div class="push-btns">' +
+      scopeUnits(lim).map(c => { const on = (sc.units || []).includes(c); return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="' + act + '" data-k="units" data-v="' + esc(c) + '"' + (extra || '') + '>' + (on ? icon('check', 16) : '') + esc(c) + '</button>'; }).join('') + '</div>' +
     '<span class="sc-l">Positions</span><div class="push-btns">' +
-      scopeRoles().map(r => { const on = (sc.roles || []).includes(r); return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="' + act + '" data-k="roles" data-v="' + esc(r) + '"' + (extra || '') + '>' + (on ? icon('check', 16) : '') + esc(rolePl(r)) + '</button>'; }).join('') + '</div></div>';
+      scopeRoles(lim).map(r => { const on = (sc.roles || []).includes(r); return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="' + act + '" data-k="roles" data-v="' + esc(r) + '"' + (extra || '') + '>' + (on ? icon('check', 16) : '') + esc(rolePl(r)) + '</button>'; }).join('') + '</div></div>';
   const toggleIn = (list, v) => list.includes(v) ? list.filter(x => x !== v) : list.concat([v]);
   /** "PIT · Maintenance", "Pilots · Booms", or "Everyone". */
   const scopeText = sc => { const p = sc ? (sc.units || []).concat((sc.roles || []).map(r => rolePl(r))) : []; return p.length ? p.join(' · ') : 'Everyone'; };
@@ -3128,6 +3134,7 @@
     if (!data) return;
     S.me = data.me; S.isAdmin = !!data.isAdmin; S.adminScope = data.isAdmin ? (data.adminScope || null) : null; S.isOrg = S.isAdmin && !S.adminScope;
     S.teamPins = data.teamPins || []; S.admins = data.admins || {}; S.alertScope = data.alertScope || null; S.report = data.report || null;
+    S.myAdmin = data.myAdmin || null; // my admin status: alerts and daily report are mine to set in Settings, admin mode or not
     S.users = (data.users || []).map(cleanUser); S.requests = (data.requests || []).map(cleanReq);
     S.settings = Object.assign(S.settings, data.settings || {}); S.sheetUrl = data.sheetUrl || '';
     setRoles(S.settings.roles); setTypes(S.settings.types);
@@ -5351,17 +5358,27 @@
    *  units, positions and types this admin picks (team admins: within their team). Saved on the server per admin. */
   function reportPanel() {
     const devTz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } })();
-    const r = S.rpDraft || (S.rpDraft = Object.assign({ on: false, email: '', hour: 6, tz: devTz, units: [], roles: [], types: typeNames() }, S.report || {}));
+    const rTypes = typeNames().concat(['Blackout']); // every event type, plus blackouts
+    const r = S.rpDraft || (S.rpDraft = Object.assign({ on: false, email: '', hour: 6, tz: devTz, rules: [{ unit: '', role: '', types: rTypes.slice() }] },
+      S.report ? JSON.parse(JSON.stringify(S.report)) : {}));
     const zones = REPORT_TZ.some(z => z[0] === r.tz) ? REPORT_TZ : REPORT_TZ.concat([[r.tz, r.tz.replace(/_/g, ' ')]]);
     const hour = h => (h % 12 || 12) + ':00 ' + (h < 12 ? 'AM' : 'PM');
-    const types = typeNames().map(t => { const on = r.types.includes(t); return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="rpType" data-v="' + esc(t) + '">' + (on ? icon('check', 16) : '') + esc(t) + '</button>'; }).join('');
-    return '<div class="panel" id="reportPanel"><div class="cfg-row-tog"><div><h3>' + icon('bell', 16) + ' Daily Email Report' + tip('Every morning: who is on leave and on pass today, and the next 7 days, for the members you pick. Pending requests are marked.') + '</h3></div>' +
+    const opt = (v, l, cur) => '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(l) + '</option>';
+    // Coverage rows (same as admin alert rows): unit · position (from what I manage) and the types to include.
+    const lim = myScope(), units = x => scopeUnits(lim).concat(x.unit && !scopeUnits(lim).includes(x.unit) ? [x.unit] : []), roles = x => scopeRoles(lim).concat(x.role && !scopeRoles(lim).includes(x.role) ? [x.role] : []);
+    const rows = (r.rules || []).map((x, i) => '<div class="ar-row">' +
+      '<div class="ar-who"><select aria-label="Unit" data-change="rpUnit" data-i="' + i + '">' + opt('', 'Any unit', x.unit) + units(x).map(c => opt(c, c, x.unit)).join('') + '</select>' +
+        '<select aria-label="Position" data-change="rpRole" data-i="' + i + '">' + opt('', 'Any position', x.role) + roles(x).map(y => opt(y, roleName(y), x.role)).join('') + '</select>' +
+        '<button type="button" class="btn sm del act ar-del" data-act="rpDel" data-i="' + i + '" aria-label="Delete this row" title="Delete">' + icon('trash', 14) + '</button></div>' +
+      '<div class="push-btns ar-kinds">' + rTypes.map(t => { const on = (x.types || []).includes(t);
+        return '<button type="button" class="btn sm chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="rpType" data-i="' + i + '" data-v="' + esc(t) + '">' + (on ? icon('check', 14) : '') + esc(t) + '</button>'; }).join('') + '</div></div>').join('');
+    return '<div class="panel" id="reportPanel"><div class="cfg-row-tog"><div><h3>' + icon('bell', 16) + ' Daily Email Report' + tip('Your own report, every morning: who is out today and the next 7 days (and any blackouts), for the groups and types you pick. Pending requests are marked.') + '</h3></div>' +
         '<button type="button" class="btn chip-tog' + (r.on ? ' on' : '') + '" aria-pressed="' + r.on + '" data-act="rpOn">' + (r.on ? icon('check', 18) + 'On' : 'Off') + '</button></div>' +
-      (r.on ? '<div class="row rp-row"><div class="field"><label for="rpEmail">Email' + REQ + '</label><input id="rpEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="' + esc(r.email) + '" data-model="rpDraft.email"></div>' +
-          '<div class="field rp-hour"><label for="rpHour">Time</label><select id="rpHour" data-change="rpHour">' + Array.from({ length: 24 }, (_, h) => '<option value="' + h + '"' + (h === Number(r.hour) ? ' selected' : '') + '>' + hour(h) + '</option>').join('') + '</select></div></div>' +
-        '<div class="field"><label for="rpTz">Time Zone</label><select id="rpTz" data-change="rpTz">' + zones.map(z => '<option value="' + esc(z[0]) + '"' + (z[0] === r.tz ? ' selected' : '') + '>' + esc(z[1]) + '</option>').join('') + '</select></div>' +
-        '<div class="sect"><div class="lbl">Covers</div>' + scopeChips(r, 'rpScope') + '<p class="meta sc-note">' + esc(r.units.length || r.roles.length ? scopeText(r) : S.adminScope ? 'Your whole team: ' + scopeText(S.adminScope) : 'Everyone') + '.</p></div>' +
-        '<div class="sect"><div class="lbl">Types</div><div class="push-btns">' + types + '</div></div>' : '') +
+      (r.on ? '<div class="field"><label for="rpEmail">Email' + REQ + '</label><input id="rpEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="' + esc(r.email) + '" data-model="rpDraft.email"></div>' +
+        '<div class="row rp-row"><div class="field rp-hour"><label for="rpHour">Time</label><select id="rpHour" data-change="rpHour">' + Array.from({ length: 24 }, (_, h) => opt(h, hour(h), Number(r.hour))).join('') + '</select></div>' +
+          '<div class="field"><label for="rpTz">Time Zone</label><select id="rpTz" data-change="rpTz">' + zones.map(z => opt(z[0], z[1], r.tz)).join('') + '</select></div></div>' +
+        '<div class="sect"><div class="lbl">Covers</div>' + (rows ? '<div class="ar-list">' + rows + '</div>' : '<p class="meta">Nothing yet.</p>') +
+          '<div class="cfg-foot ar-add"><button type="button" class="btn" data-act="rpAdd">' + icon('plus', 16) + 'Add</button></div></div>' : '') +
       '<div class="err" id="rpErr"></div><div class="cfg-foot">' + (r.on && S.report && S.report.on && S.report.email ? '<button class="btn" data-act="rpTest">' + icon('bell', 16) + 'Send Test Now</button>' : '') +
         '<button class="btn primary" data-act="rpSave">' + icon('check', 16) + 'Save Report</button></div></div>';
   }
@@ -5431,7 +5448,7 @@
     if (S.adminScope) return '<section class="page admin-page"><div class="toolbar"><span class="title">Admin</span>' +
       adminModeBadge() +
       '<div class="cfg-tools"><button class="btn act" data-act="lockAdmin" aria-label="Lock admin" title="Lock admin">' + icon('lock', 18) + '<span class="bl">Lock</span></button></div></div>' +
-      '<div class="scroll" id="adminScroll">' + blackoutPanel() + reportPanel() + '</div></section>';
+      '<div class="scroll" id="adminScroll">' + blackoutPanel() + '</div></section>';
     return '<section class="page admin-page"><div class="toolbar"><span class="title">Admin</span>' +
       adminModeBadge() +
       '<div class="cfg-tools">' +
@@ -5440,8 +5457,6 @@
       '<div class="scroll" id="adminScroll">' +
 
       blackoutPanel() +
-
-      reportPanel() +
 
       teamPinsPanel() +
 
@@ -5834,7 +5849,7 @@
           const on = S.notePrefs[k[0]] !== false;
           return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="notePref" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>';
         }).join('') + '</div></div>' +
-      (S.isAdmin ? '<div class="push-row admin-alerts"><p><b>Admin Alerts</b>' + tip('New requests, edits, deletions and sign-ups for the members picked below (team admins: only their team).') + '</p><div class="push-btns">' +
+      (S.myAdmin ? '<div class="push-row admin-alerts"><p><b>Admin Alerts</b>' + tip('New requests, edits, deletions and sign-ups for the members picked below (team admins: only their team).') + '</p><div class="push-btns">' +
         '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' +
         // Which members: positions (default: my Default Filter Positions) and units (none picked = every unit).
         // Alert rules: one row per alert (unit · position · alert), Add Alert and a delete per row. Shown in admin mode
@@ -5852,7 +5867,7 @@
    *  a Delete per row and Add Alert. Shown in admin mode even while alerts are off (dimmed), so they can be set up first. */
   function alertRulesHtml() {
     const rules = alertRules(), opt = (v, l, cur) => '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(l) + '</option>';
-    const units = r => scopeUnits().concat(r.unit && !scopeUnits().includes(r.unit) ? [r.unit] : []), roles = r => scopeRoles().concat(r.role && !scopeRoles().includes(r.role) ? [r.role] : []);
+    const lim = myScope(), units = r => scopeUnits(lim).concat(r.unit && !scopeUnits(lim).includes(r.unit) ? [r.unit] : []), roles = r => scopeRoles(lim).concat(r.role && !scopeRoles(lim).includes(r.role) ? [r.role] : []);
     return '<div class="push-row alert-rules' + (S.adminAlerts ? '' : ' is-off') + '">' +
       (rules.length ? '<div class="ar-list">' + rules.map((r, i) => '<div class="ar-row">' +
         '<div class="ar-who"><select aria-label="Unit" data-change="alertUnit" data-i="' + i + '">' + opt('', 'Any unit', r.unit) + units(r).map(c => opt(c, c, r.unit)).join('') + '</select>' +
@@ -5905,6 +5920,9 @@
       (S.priv ? '' : viewRolesPanel()) +
 
       startupPanel() +
+
+      // Admins (by status — admin mode doesn't need to be unlocked): my own daily email report.
+      (S.myAdmin ? reportPanel() : '') +
 
       '<div class="panel"><h3>' + icon('key', 16) + ' Change PIN</h3>' + PIN_HINT + '<div class="row">' +
         '<div class="field"><label for="np1">New PIN</label><input id="np1" ' + NEW_PIN + '></div>' +
@@ -6790,15 +6808,18 @@
     rpOn() { S.rpDraft.on = !S.rpDraft.on; redrawReport(); },
     rpHour(el) { S.rpDraft.hour = Number(el.value); },
     rpTz(el) { S.rpDraft.tz = el.value; },
-    rpScope(el) { const r = S.rpDraft; r[el.dataset.k] = toggleIn(r[el.dataset.k], el.dataset.v); redrawReport(); },
-    rpType(el) { const r = S.rpDraft; r.types = toggleIn(r.types, el.dataset.v); redrawReport(); },
+    rpUnit(el) { S.rpDraft.rules[Number(el.dataset.i)].unit = el.value; },
+    rpRole(el) { S.rpDraft.rules[Number(el.dataset.i)].role = el.value; },
+    rpType(el) { const x = S.rpDraft.rules[Number(el.dataset.i)]; x.types = toggleIn(x.types || [], el.dataset.v); redrawReport(); },
+    rpDel(el) { S.rpDraft.rules.splice(Number(el.dataset.i), 1); redrawReport(); },
+    rpAdd() { (S.rpDraft.rules = S.rpDraft.rules || []).push({ unit: '', role: '', types: typeNames().concat(['Blackout']) }); redrawReport(); },
     async rpSave(el) {
       const r = S.rpDraft, err = $('#rpErr'), e = $('#rpEmail');
       if (e) r.email = e.value.trim();
       if (r.on && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email)) return (err.textContent = 'Enter the email address for the report.');
-      if (!r.types.length) return (err.textContent = 'Pick at least one type.');
+      if (r.on && !(r.rules || []).some(x => (x.types || []).length)) return (err.textContent = 'Add at least one row with a type.');
       err.textContent = '';
-      const res = await run(el, 'apiSaveReport', S.token, { on: r.on, email: r.email, hour: r.hour, tz: r.tz, units: r.units, roles: r.roles, types: r.types });
+      const res = await run(el, 'apiSaveReport', S.token, { on: r.on, email: r.email, hour: r.hour, tz: r.tz, rules: r.rules || [] });
       if (res) { apply(res); S.rpDraft = null; redrawReport(); toast(r.on ? 'Daily report saved' : 'Daily report off', 'ok', 2000); }
     },
     async rpTest(el) { const res = await run(el, 'apiSendReportNow', S.token); if (res) toast('Report sent to ' + res.sent, 'ok', 2600); },
