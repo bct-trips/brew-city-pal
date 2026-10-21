@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792575617"></script>
+    <script src="config.js?v=1792575866"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2127,6 +2127,13 @@
   :root[data-theme="dark"] .band-tag.band-l.ub-black, :root[data-theme="dark"] .rm-l.ub-black, :root[data-theme="dark"] .rm-l.idb-b, :root[data-theme="dark"] .band-tag.band-l.idb-b { box-shadow: inset 0 0 0 1.5px #71717a; }
   /* Approve / Deny on a request already in that state: shown pressed; tapping it again sets the request back to Pending. */
   .btn.ok[data-undo], .btn.bad[data-undo] { box-shadow: inset 0 0 0 2px currentColor; }
+  /* Name column: always as wide as the full badge (no clipping), right next to the status mark. */
+  .rtable td.stk { max-width: none; white-space: nowrap; }
+  .rtable td.stk .stk-in { min-width: max-content; }
+  /* Status mark sits right beside the badge: the mark's box is only as wide as the icon, with no extra cell padding. */
+  .rtable td.st-ic-c .st-ic { width: 18px; }
+  .rtable th.st-ic-h, .rtable td.st-ic-c { min-width: 18px; padding-right: 0; }
+  .rtable tbody td.stk { padding-left: 8px; }
 </style>
 
   </head>
@@ -3998,7 +4005,8 @@
   const COLS = [
     // The pinned Name comes right after the status mark, drawn as the calendar badge [P|MKE|Name ●] (so no Unit column).
     // Short headers, so the column is only as wide as the names in it.
-    ['st', ''], ['last', 'Name'], ['first', 'First'], ['rank', 'Rank'], ['role', 'Position'],
+    // First name, rank and position are on the badge / in its tooltip, so they have no columns of their own.
+    ['st', ''], ['last', 'Name'],
     ['start', 'Start'], ['end', 'End'], ['days', 'Days'], ['note', 'Notes'], ['status', 'Status']
   ];
   const SORT_KEYS = {
@@ -4078,9 +4086,6 @@
         '<td class="st-ic-c"><div class="st-in">' + stIcon(r) + conflictBadge(r, true) + marks(r) + '</div></td>' +
         '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '<span class="sr"> ' + r.type.slice(1) + '</span></span>' : '') +
           personBadge(r, false) + '</div></td>' +
-        '<td>' + esc(firstName(u)) + '</td>' +
-        '<td>' + esc(u.rank) + '</td>' +
-        '<td>' + esc(roleName(u.role)) + '</td>' +
         '<td class="num">' + milDate(r.start) + '</td>' +
         '<td class="num">' + milDate(r.end) + '</td>' +
         '<td class="num"><span class="days">' + n + '</span>' +
