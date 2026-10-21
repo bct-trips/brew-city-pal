@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792583028"></script>
+    <script src="config.js?v=1792583084"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -4516,7 +4516,9 @@
   function renderListBody() {
     const arr = sortRows(filteredList(), S.list);
     const nc = arr.filter(r => conflictDays(r).some(d => conflictState(d, userOf(r.userId).role) === 'bad')).length;
-    return '<div class="tbl-count">' + plural(arr.length, 'request') + (nc ? ' · <span class="cfl-count">' + icon('alert', 13) + plural(nc, 'request') + ' in conflict</span>' : '') + sortNote(S.list, 'list') + '</div>' + reqTable(arr, 'list');
+    // No "N requests" count; the line only appears for requests in conflict and / or the "Default order" link.
+    const parts = (nc ? '<span class="cfl-count">' + icon('alert', 13) + plural(nc, 'request') + ' in conflict</span>' : '') + sortNote(S.list, 'list');
+    return (parts ? '<div class="tbl-count">' + parts.replace(/^ · /, '') + '</div>' : '') + reqTable(arr, 'list');
   }
   /* List page bar — same controls and order as the calendar bar:
      phone: search / filters (Add Request is the bar under the table); desktop: search · filters · Add Request. */
