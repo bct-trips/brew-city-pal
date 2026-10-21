@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792596534"></script>
+    <script src="config.js?v=1792596595"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792596534';
+      window.PAL_BUILD = '1792596595';
       (function () {
         function check(launch) {
           try {
@@ -2558,6 +2558,12 @@
   .ta-sect + .ta-sect { margin-top: 14px; }
   .ta-sect > .lbl { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
   .pin-state { margin: 0 0 8px; display: flex; align-items: center; gap: 6px; white-space: normal; }
+  /* Roster: crown = org admin, stamp = team admin (manager), right after the last name. */
+  .adm-ic { display: inline-flex; vertical-align: -2px; margin-left: 4px; }
+  .adm-ic.adm-org { color: #b8860b; }
+  .adm-ic.adm-team { color: var(--navy); }
+  :root[data-theme="dark"] .adm-ic.adm-org { color: var(--gold); }
+  :root[data-theme="dark"] .adm-ic.adm-team { color: #9db7e3; }
 </style>
 
   </head>
@@ -2614,6 +2620,8 @@
     down: '<path d="m6 9 6 6 6-6"/>',
     chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
     clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    crown: '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
+    stamp: '<path d="M5 22h14"/><path d="M19.27 13.73A2.5 2.5 0 0 0 17.5 13h-11A2.5 2.5 0 0 0 4 15.5V17a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1.5c0-.66-.26-1.3-.73-1.77Z"/><path d="M14 13V8.5C14 7 15 7 15 5a3 3 0 0 0-3-3c-1.66 0-3 1-3 3s1 2 1 3.5V13"/>',
     home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>',
     trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>'
   };
@@ -5043,12 +5051,15 @@
     const box = (on, act, id, label, mixed) => '<button type="button" class="rsel' + (on ? ' on' : '') + (mixed ? ' mixed' : '') + '" role="checkbox" aria-checked="' + (mixed ? 'mixed' : on) + '" data-act="' + act + '"' + (id ? ' data-id="' + esc(id) + '"' : '') + ' aria-label="' + esc(label) + '">' + (on ? icon('check', 14) : mixed ? '<i class="rsel-dash"></i>' : '') + '</button>';
     const head = '<th scope="col" class="sel-cell">' + box(listed.length > 0 && nSel === listed.length, 'rosterSelAll', '', 'Select everyone listed', nSel > 0 && nSel < listed.length) + '</th>' +
       PEOPLE_COLS.map(c => sortTh(P, c[0], c[1], 'peopleSort', '', !!c[2])).join('') + '<th scope="col" class="th-acts">Actions</th>';
-    const adminBadge = u => { const a = (S.admins || {})[u.id]; return a ? ' <span class="badge adm-b" title="' + esc(a.level === 'org' ? 'Org admin' : 'Team admin: ' + scopeText(a.scope)) + '">' + (a.level === 'org' ? 'Org Admin' : 'Team Admin') + '</span>' : ''; };
+    // Admins on the Roster: a crown after an org admin's name, a stamp after a team admin's (manager's).
+    const adminMark = u => { const a = (S.admins || {})[u.id]; if (!a) return '';
+      const t = a.level === 'org' ? 'Org Admin' : 'Team Admin · ' + scopeText(a.scope);
+      return ' <span class="adm-ic ' + (a.level === 'org' ? 'adm-org' : 'adm-team') + '" role="img" aria-label="' + esc(t) + '" title="' + esc(t) + '">' + icon(a.level === 'org' ? 'crown' : 'stamp', 15) + '</span>'; };
     const cell = (v, cls) => '<td class="num' + (cls ? ' ' + cls : '') + '">' + (v ? v : '<span class="muted">0</span>') + '</td>';
     const body = rows.length ? rows.map(m => '<tr data-act="memberCard" data-id="' + esc(m.u.id) + '" tabindex="0" class="' + (m.u.pending ? 'ro-wait' : m.u.active ? '' : 'ro-off') + (sel.has(m.u.id) ? ' ro-sel' : '') + '" aria-label="' + esc(fullName(m.u) + ': ' + m.count + ' requests, ' + m.req + ' days requested, ' + m.appr + ' approved, ' + m.den + ' denied') + '">' +
         '<td class="sel-cell">' + box(sel.has(m.u.id), 'rosterSel', m.u.id, 'Select ' + fullName(m.u)) + '</td>' +
-        '<td>' + unitBadge(m.u.unit) + '</td><td class="strong stk">' + esc(lastName(m.u)) + '</td><td>' + esc(firstName(m.u)) + '</td><td>' + esc(m.u.rank) + '</td>' +
-        '<td>' + esc(roleName(m.u.role)) + adminBadge(m.u) + (m.u.pending ? ' <span class="badge caution">Awaiting Approval</span>' : m.u.active ? '' : ' <span class="badge ro-off-b">Inactive</span>') + '</td>' +
+        '<td>' + unitBadge(m.u.unit) + '</td><td class="strong stk">' + esc(lastName(m.u)) + adminMark(m.u) + '</td><td>' + esc(firstName(m.u)) + '</td><td>' + esc(m.u.rank) + '</td>' +
+        '<td>' + esc(roleName(m.u.role)) + (m.u.pending ? ' <span class="badge caution">Awaiting Approval</span>' : m.u.active ? '' : ' <span class="badge ro-off-b">Inactive</span>') + '</td>' +
         cell(m.count) + cell(m.req, 'strong') + cell(m.appr, 'ok-t') + cell(m.den, 'bad-t') + cell(m.pend, 'pend-t') + cell(m.leave) + cell(m.pass) + rosterActs(m.u) + '</tr>').join('')
       : '<tr class="empty-row"><td colspan="' + (PEOPLE_COLS.length + 2) + '">No members match.</td></tr>';
     const foot = '<tfoot><tr><td class="sel-cell"></td><td colspan="5" class="strong">Squadron total · ' + plural(rows.length, 'member') + '</td>' +
