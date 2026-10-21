@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792572517"></script>
+    <script src="config.js?v=1792572679"></script>
     <style>
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
@@ -2010,21 +2010,6 @@
   .rtable td.stk .stk-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* Requests tables size to their content (no forced 1240px), so on phones no column gets padded with spare space. */
   .rtable:not(.ptable) { min-width: 100%; width: max-content; }
-  /* View switch + Today travel together (.cb-views); a plain pass-through except on tablets. */
-  .cb-views { display: contents; }
-  /* Tablets (iPad, 701–1100px): row 1 [Week|Month|Qtr · Today]  [ ‹ date › ] centred  [Add Request];
-     row 2 the filters, left-aligned. Nothing gets pushed onto a stray right-aligned line. */
-  @media (min-width: 701px) and (max-width: 1100px) {
-    .calbar { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 8px; }
-    .calbar .cb-left { display: contents; }
-    .calbar .cb-views { display: flex; align-items: center; gap: 8px; grid-column: 1; grid-row: 1; justify-self: start; }
-    .calbar .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
-    .calbar .req-btn { grid-column: 3; grid-row: 1; justify-self: end; }
-    .calbar .cb-right { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; margin-left: 0; flex-wrap: nowrap; }
-    .calbar .cb-views .seg button { padding: 0 12px; }
-  }
-  /* Filters sit at the left of their row in every layout. */
-  .calbar .cb-right { justify-content: flex-start; }
   /* View switch icons (Week · Month · Qtr). */
   .calbar .cb-views .seg button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; padding: 0 12px; }
   /* Smooth paging between weeks / months: the calendar body slides; its frame clips it. */
@@ -2089,14 +2074,23 @@
   }
   .cal-peek { padding-top: 6px; box-sizing: border-box; }
   :root[data-theme="dark"] .nav.nav-admin { border-top-color: #f04438; } /* admin red line, brighter on dark */
-  /* Calendar bar: view switch, Today, Add Request and the filters share one group on the left (.cb-start); the date is
-     centred. Phones / tablets keep their own layouts (.cb-start passes its children through). */
-  .cb-start { display: contents; }
-  @media (min-width: 1101px) {
-    .calbar { grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr); }
-    .calbar .cb-start { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; grid-column: 1; grid-row: 1; justify-self: start; }
-    .calbar .cb-start .cb-right { margin-left: 0; justify-self: auto; }
-    .calbar .cb-center { grid-column: 2; grid-row: 1; }
+  /* ---------- Calendar bar (final layout) ----------
+     Wide (one row fits, ≥ 1180px): [views · Today · Add Request]   [ ‹ date › ] centred   [filters] right-aligned.
+     Not enough room for one row (iPad / iPad Pro, 701–1179px): like a phone — the date centred on its own top row, then
+     [views · Today · Add Request] on the left and [filters] on the right.
+     Phones (≤ 700px) keep their own stacked layout. */
+  .cb-start, .cb-views { display: contents; }
+  @media (min-width: 1180px) {
+    .calbar { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); align-items: center; column-gap: 12px; }
+    .calbar .cb-left { grid-column: 1; grid-row: 1; justify-self: start; flex-wrap: nowrap; }
+    .calbar .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
+    .calbar .cb-right { grid-column: 3; grid-row: 1; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; }
+  }
+  @media (min-width: 701px) and (max-width: 1179px) {
+    .calbar { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 8px; }
+    .calbar .cb-center { grid-column: 1 / -1; grid-row: 1; justify-self: center; }
+    .calbar .cb-left { grid-column: 1; grid-row: 2; justify-self: start; flex-wrap: nowrap; }
+    .calbar .cb-right { grid-column: 2; grid-row: 2; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; min-width: 0; }
   }
 </style>
 
