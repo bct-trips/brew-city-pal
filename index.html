@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792676163"></script>
+    <script src="config.js?v=1792676455"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792676163';
+      window.PAL_BUILD = '1792676455';
       (function () {
         function check(launch) {
           try {
@@ -99,6 +99,9 @@
   /* No rubber-band anywhere (iOS bounce): the page, the calendar, the nav and every table or list stay fixed; a scroller
      moves only when it really has more to show, and never drags past its edge or pulls the screen with it. */
   html, body, * { overscroll-behavior: none; }
+  /* Tables inside a scrolling page (Admin, Settings, dialogs) only scroll sideways: a vertical wheel / swipe over them
+     passes on to the page instead of stopping there. The page scroller itself still never bounces. */
+  .scroll .tbl-wrap, .scroll .pg-wrap, .modal-b .tbl-wrap, .modal-b .pg-wrap { overscroll-behavior-y: auto; }
   #app { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
   .main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
