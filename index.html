@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792701045"></script>
+    <script src="config.js?v=1792701205"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792701045';
+      window.PAL_BUILD = '1792701205';
       (function () {
         function check(launch) {
           try {
@@ -3416,6 +3416,15 @@
 
   /* Sign-in, create account and setup: one-line inputs are search-style pills (48px, outlined) like every other form. */
   .login input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(.sr), .login select { height: 48px; min-height: 48px; border-radius: 24px; padding: 0 18px; box-sizing: border-box; }
+
+  /* Drag to reorder (Admin → Teams, Positions): a grip at the start of each row; the row being dragged lifts. */
+  .rtable th.drag-th, .rtable td.drag-cell { width: 1%; padding-left: 8px; padding-right: 0; }
+  .drag-h { display: grid; place-items: center; width: 32px; height: 40px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--muted); cursor: grab; touch-action: none; }
+  .drag-h:hover { background: var(--card-2); color: var(--ink); }
+  .drag-h:active { cursor: grabbing; }
+  .drag-h:focus-visible { outline: 3px solid var(--focus); outline-offset: -2px; }
+  .rtable tr.dragging > td { background: var(--sel-bg) !important; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+  .rtable tr.dragging { position: relative; z-index: 2; }
 </style>
 
   </head>
@@ -3482,6 +3491,7 @@
     crown: '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
     stamp: '<path d="M5 22h14"/><path d="M19.27 13.73A2.5 2.5 0 0 0 17.5 13h-11A2.5 2.5 0 0 0 4 15.5V17a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1.5c0-.66-.26-1.3-.73-1.77Z"/><path d="M14 13V8.5C14 7 15 7 15 5a3 3 0 0 0-3-3c-1.66 0-3 1-3 3s1 2 1 3.5V13"/>',
     pin: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+    grip: '<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>',
     home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>',
     trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>'
   };
@@ -3929,7 +3939,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-22.44'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-22.45'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -6791,7 +6801,8 @@
   function adminRoles() {
     const rows = ROLES.map(name => {
       const r = roleInfo(name), used = S.users.filter(u => u.role === name).length, builtIn = !!ROLE_DEF[name];
-      return '<tr class="' + (r.disabled ? 'is-off' : '') + '" data-act="editRole" data-name="' + esc(name) + '" tabindex="0">' +
+      return '<tr class="' + (r.disabled ? 'is-off' : '') + '" data-act="editRole" data-name="' + esc(name) + '" data-key="' + esc(name) + '" tabindex="0">' +
+        dragCell('roles', roleName(name)) +
         '<td><span class="idb"><span class="idb-r ' + roleCls(name) + '">' + esc(roleL(name)) + '</span></span></td>' +
         '<td class="strong">' + esc(roleName(name)) + (r.disabled ? ' <span class="badge">Disabled</span>' : '') + '</td>' +
         '<td class="num">' + used + '</td>' +
@@ -6802,7 +6813,7 @@
           (used || builtIn ? '' : '<button class="btn sm del act ico" data-act="deleteRole" data-name="' + esc(name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td><td class="on-cell">' + sw(!r.disabled, 'toggleRole', name + ' enabled', ' data-name="' + esc(name) + '"') + '</td></tr>';
     }).join('');
-    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Position</th>' +
+    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr>' + dragTh() + '<th scope="col">Badge</th><th scope="col">Position</th>' +
       '<th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th><th scope="col" class="th-on">On</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
   /** Position editor (new or existing): name, letter, max on leave, Can see and color; Cancel · Save. */
@@ -6866,10 +6877,53 @@
         icon('userPlus', 16) + '<span>Choose a member…</span>' + icon('down', 14) + '</button><div class="who-pop" id="whoPop" hidden></div></div></div></div>' +
       '<div class="modal-f"><button class="btn primary block" data-act="closeModal">Done</button></div>', true);
   }
+  /* ---------- Drag to reorder (Admin → Teams, Positions; org admins) ----------
+     A grip at the start of each row: drag it (mouse or touch) up or down, or focus it and press ↑ / ↓. The new order
+     saves at once and is the order positions / units are listed in everywhere (filters, Week view sections, grids). */
+  const dragTh = () => S.isOrg ? '<th scope="col" class="drag-th"><span class="sr">Order</span></th>' : '';
+  const dragCell = (kind, label) => S.isOrg ? '<td class="drag-cell"><button type="button" class="drag-h" data-drag="' + kind + '" aria-label="Move ' + esc(label) + ' (drag, or ↑ / ↓)" title="Drag to reorder">' + icon('grip', 18) + '</button></td>' : '';
+  function saveOrder(kind, keys) {
+    S.nextSyncTab = 'admin';
+    save(() => {
+      if (kind === 'roles') { const cur = (S.settings.roles && S.settings.roles.length) ? S.settings.roles : ROLES.map(roleInfo); S.settings.roles = keys.map(k => cur.find(r => r.name === k)).filter(Boolean); setRoles(S.settings.roles); }
+      else { const cur = unitsList(); S.settings.units = keys.map(k => cur.find(u => u.code === k)).filter(Boolean); }
+    }, 'apiReorder', S.token, kind, keys);
+    render(); toast('Order saved', 'ok', 1200);
+  }
+  (function () {
+    let drag = null;
+    const keysOf = body => [...body.children].map(r => r.dataset.key).filter(Boolean);
+    document.addEventListener('pointerdown', ev => {
+      const h = ev.target.closest && ev.target.closest('.drag-h'); if (!h) return;
+      const row = h.closest('tr'); ev.preventDefault();
+      try { h.setPointerCapture(ev.pointerId); } catch (e) { /* older browsers */ }
+      drag = { row, body: row.parentElement, kind: h.dataset.drag }; drag.start = keysOf(drag.body).join('|');
+      row.classList.add('dragging');
+    });
+    document.addEventListener('pointermove', ev => {
+      if (!drag) return; ev.preventDefault();
+      const y = ev.clientY, before = [...drag.body.children].filter(r => r !== drag.row && r.dataset.key).find(r => { const b = r.getBoundingClientRect(); return y < b.top + b.height / 2; });
+      if (before) { if (drag.row.nextElementSibling !== before) drag.body.insertBefore(drag.row, before); }
+      else if (drag.body.lastElementChild !== drag.row) drag.body.appendChild(drag.row);
+    }, { passive: false });
+    const end = () => { if (!drag) return; const d = drag; drag = null; d.row.classList.remove('dragging'); const keys = keysOf(d.body); if (keys.join('|') !== d.start) saveOrder(d.kind, keys); };
+    document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
+    // The grip never opens the row's editor.
+    document.addEventListener('click', ev => { if (ev.target.closest && ev.target.closest('.drag-h')) { ev.stopPropagation(); ev.preventDefault(); } }, true);
+    document.addEventListener('keydown', ev => {
+      const h = ev.target.closest && ev.target.closest('.drag-h'); if (!h || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return;
+      ev.preventDefault(); ev.stopPropagation();
+      const row = h.closest('tr'), body = row.parentElement, keys = keysOf(body), i = keys.indexOf(row.dataset.key), j = i + (ev.key === 'ArrowUp' ? -1 : 1);
+      if (j < 0 || j >= keys.length) return;
+      keys.splice(j, 0, keys.splice(i, 1)[0]); saveOrder(h.dataset.drag, keys);
+      setTimeout(() => { const b = $('.drag-h[data-drag="' + h.dataset.drag + '"][aria-label="' + h.getAttribute('aria-label').replace(/"/g, '\\"') + '"]'); if (b) b.focus(); }, 50);
+    }, true);
+  })();
   function adminUnits() {
     const rows = unitsList().map(un => {
       const used = S.users.filter(u => u.unit === un.code).length;
-      return '<tr class="' + (un.disabled ? 'is-off' : '') + '" data-act="editUnit" data-code="' + esc(un.code) + '" tabindex="0">' +
+      return '<tr class="' + (un.disabled ? 'is-off' : '') + '" data-act="editUnit" data-code="' + esc(un.code) + '" data-key="' + esc(un.code) + '" tabindex="0">' +
+        dragCell('units', un.name) +
         '<td>' + unitBadge(un.code) + '</td>' +
         '<td class="strong">' + esc(un.name) + (un.disabled ? ' <span class="badge">Disabled</span>' : '') + '</td>' +
         '<td class="num">' + used + '</td>' +
@@ -6880,7 +6934,7 @@
           (used ? '' : '<button class="btn sm del act ico" data-act="deleteUnit" data-code="' + esc(un.code) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td><td class="on-cell">' + sw(!un.disabled, 'toggleUnit', un.code + ' enabled', ' data-code="' + esc(un.code) + '"') + '</td></tr>';
     }).join('');
-    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Name</th><th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th><th scope="col" class="th-on">On</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr>' + dragTh() + '<th scope="col">Badge</th><th scope="col">Name</th><th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th><th scope="col" class="th-on">On</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
   /* Roster page (admin): add members, edit, reset PINs, deactivate / reactivate. Opened from the Roster tab → Manage. */
