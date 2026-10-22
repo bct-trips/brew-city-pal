@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792657636"></script>
+    <script src="config.js?v=1792658415"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792657636';
+      window.PAL_BUILD = '1792658415';
       (function () {
         function check(launch) {
           try {
@@ -2818,6 +2818,75 @@
   :root[data-theme="dark"] .bo.bo-pass { --bo-stripe: color-mix(in srgb, var(--gold) 34%, transparent); }
   .msg.bo-day.bo-leave { background: var(--leave-tint); color: var(--leave-tint-ink); border-color: transparent; }
   .msg.bo-day.bo-pass { background: color-mix(in srgb, var(--gold) 22%, var(--card)); color: var(--ink); border-color: transparent; }
+  /* Material 3 switch (single on/off settings). 52×32 track; off: outlined track, small outline-colored thumb; on: filled
+     track (navy light / pale selected color dark, ≥3:1 against the page) with a large thumb holding a ✓. The thumb
+     slides and grows. 48px tall hit area. */
+  :root { --sw-on: var(--sel-ink); --sw-thumb: var(--sel-bg); --sw-ck: var(--sel-ink); }
+  :root[data-theme="dark"] { --sw-on: var(--sel-bg); --sw-thumb: var(--sel-ink); --sw-ck: var(--sel-bg); }
+  .m3sw { position: relative; flex: none; width: 52px; height: 32px; margin: 8px 0; padding: 0; border: 2px solid var(--outline); border-radius: 16px;
+    background: var(--card-2); cursor: pointer; transition: background-color .2s, border-color .2s; }
+  .m3sw::before { content: ""; position: absolute; inset: -10px -4px; } /* 48px hit area */
+  .m3sw-thumb { position: absolute; top: 50%; left: 6px; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; background: var(--outline);
+    display: grid; place-items: center; color: var(--sw-ck); transition: left .2s cubic-bezier(.3, .8, .25, 1), width .2s, height .2s, margin .2s, background-color .2s; }
+  .m3sw.on { background: var(--sw-on); border-color: var(--sw-on); }
+  .m3sw.on .m3sw-thumb { left: 22px; width: 24px; height: 24px; margin-top: -12px; background: var(--sw-thumb); }
+  .m3sw:hover:not(.on) .m3sw-thumb { background: var(--ink); }
+  .m3sw:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .m3sw, .m3sw-thumb { transition: none; } }
+  td .m3sw, .cfg-act .m3sw { margin: 0; }
+  /* Material 3 lists in panels (Backup & Restore, PINs): full-width rows, 56px+ tall, leading icon, title + supporting
+     text that wraps (never runs past the border), trailing chevron or button. Rows are separated by hairlines. */
+  .m3-list { display: flex; flex-direction: column; margin: 8px 0 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .m3-li { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 10px 12px 10px 14px; border: 0; border-top: 1px solid var(--line);
+    background: none; color: var(--ink); font: inherit; text-align: left; }
+  .m3-li:first-child { border-top: 0; }
+  button.m3-li { cursor: pointer; }
+  button.m3-li:hover { background: color-mix(in srgb, var(--on-surface) 6%, transparent); }
+  button.m3-li:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+  .m3-li-ic { flex: none; width: 40px; height: 40px; border-radius: 20px; display: grid; place-items: center; background: var(--card-2); color: var(--ink); }
+  .m3-li-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .m3-li-t b { font-size: 15.5px; font-weight: 700; overflow-wrap: anywhere; }
+  .m3-li-t span { font-size: 13.5px; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
+  .m3-li-end { flex: none; color: var(--muted); display: grid; place-items: center; }
+  .m3-li-btn { flex: none; height: 40px; white-space: nowrap; }
+  .m3-li-warn .m3-li-ic { background: var(--warn-bg); color: var(--warn); }
+  .m3-note { display: flex; align-items: flex-start; gap: 6px; margin: 10px 2px 0; }
+  .m3-note .ic { flex: none; margin-top: 2px; }
+  /* Phones: a long Set … button drops under the text instead of squeezing it. */
+  @media (max-width: 480px) {
+    .m3-li-static { display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 14px; row-gap: 8px; align-items: center; }
+    .m3-li-static .m3-li-btn { grid-column: 2; justify-self: start; }
+  }
+  .m3-note, .m3-note * { white-space: normal; overflow-wrap: anywhere; }
+  /* Qtr on phones: the pull-for-next / previous-quarter pill, and the new quarter sliding in. */
+  .q-pull { position: absolute; left: 50%; z-index: 6; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px;
+    border-radius: 18px; background: var(--card-2); color: var(--ink); border: 1px solid var(--outline); font-size: 14px; font-weight: 700;
+    box-shadow: var(--shadow); white-space: nowrap; pointer-events: none; opacity: calc(.35 + .65 * var(--pull, 0));
+    transform: translate(-50%, calc((1 - var(--pull, 0)) * var(--q-from))); }
+  .q-pull-end { bottom: 12px; --q-from: 24px; }
+  .q-pull-top { top: 12px; --q-from: -24px; }
+  .q-pull.ready { background: var(--sel-bg); color: var(--sel-ink); border-color: var(--sel-bg); }
+  #calBody { position: relative; }
+  .quad.q-in-up { animation: qInUp .28s cubic-bezier(.3, .8, .25, 1); }
+  .quad.q-in-down { animation: qInDown .28s cubic-bezier(.3, .8, .25, 1); }
+  @keyframes qInUp { from { transform: translateY(48px); opacity: .3; } }
+  @keyframes qInDown { from { transform: translateY(-48px); opacity: .3; } }
+  /* PIN panels (Admin: Default, Team Admin = yellow; Org Admin = red; Settings: My PIN = plain). Title + ⓘ on the left,
+     one button on the right: Change PIN (tonal) or Set PIN (filled, when not set). Filled colors: navy on yellow 9.3:1,
+     white on red 6.5:1. */
+  .pin-panel .cfg-h { margin-bottom: 0; flex-wrap: nowrap; }
+  .pin-t { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .pin-y { --tone: #e0a800; } :root[data-theme="dark"] .pin-y { --tone: var(--gold); }
+  .pin-r { --tone: #d92d20; } :root[data-theme="dark"] .pin-r { --tone: #ff5a4e; }
+  .panel.pin-panel:is(.pin-y, .pin-r) { background: color-mix(in srgb, var(--tone) 10%, var(--card)); border-color: color-mix(in srgb, var(--tone) 60%, transparent); }
+  .pin-panel:is(.pin-y, .pin-r) h3 .ic { color: var(--tone); }
+  .pin-btn { flex: none; height: 40px; }
+  .pin-y .pin-btn { background: color-mix(in srgb, var(--gold) 30%, var(--card)); border-color: transparent; color: var(--ink); }
+  .pin-r .pin-btn { background: color-mix(in srgb, #d92d20 16%, var(--card)); border-color: transparent; color: var(--ink); }
+  .pin-y .pin-btn.pin-btn-set { background: var(--gold); color: var(--navy); }
+  .pin-r .pin-btn.pin-btn-set { background: #b42318; color: #ffffff; }
+  .pin-unset { display: inline-flex; align-items: center; height: 22px; margin-left: 24px; padding: 0 8px; border-radius: 11px; font-size: 12.5px; font-weight: 800;
+    background: var(--gold); color: var(--navy); }
 </style>
 
   </head>
@@ -2876,6 +2945,7 @@
     sheet: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/>',
     arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
     down: '<path d="m6 9 6 6 6-6"/>',
+    up: '<path d="m18 15-6-6-6 6"/>',
     chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
     clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     crown: '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
@@ -5951,6 +6021,10 @@
     openModal('badge', html);
   }
   /** Small ⓘ beside a setting's title: one short sentence in a bubble, on hover or tap (no toast, no browser tooltip). */
+  /** Material 3 switch for a single on/off setting (Hide User Schedules, Daily Email Report, Admin Alerts, and Enabled
+   *  on each event type, position and unit). role="switch" + aria-checked; the thumb shows a ✓ when on. */
+  const sw = (on, act, label, attrs) => '<button type="button" class="m3sw' + (on ? ' on' : '') + '" role="switch" aria-checked="' + !!on + '" data-act="' + act + '" aria-label="' + esc(label) + '" title="' + esc(label) + ': ' + (on ? 'on' : 'off') + '"' + (attrs || '') + '>' +
+    '<span class="m3sw-thumb">' + (on ? icon('check', 14) : '') + '</span></button>';
   const tip = t => ' <button type="button" class="cfg-tip" data-act="showTip" data-tip="' + esc(t) + '" aria-label="' + esc(t) + '">' + icon('info', 15) + '</button>';
   /** Position color picker: the position square in each color. */
   function roleSwatches(name, cur, letter) {
@@ -5994,7 +6068,7 @@
         '<td>' + (t.mode === 'limit' ? 'Limit' : 'Warn') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
           '<button class="btn sm act" data-act="editType" data-name="' + esc(t.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
-          '<button class="btn sm act" data-act="toggleType" data-name="' + esc(t.name) + '" title="' + (t.disabled ? 'Enable' : 'Disable') + '">' + icon(t.disabled ? 'check' : 'ban', 13) + '<span class="bl">' + (t.disabled ? 'Enable' : 'Disable') + '</span></button>' +
+          sw(!t.disabled, 'toggleType', t.name + ' enabled', ' data-name="' + esc(t.name) + '"') +
           (used || builtIn ? '' : '<button class="btn sm del act" data-act="deleteType" data-name="' + esc(t.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td></tr>';
     }).join('') +
@@ -6042,7 +6116,7 @@
         '<td class="acts-cell"><div class="row-acts">' +
           '<button class="btn sm act" data-act="editRole" data-name="' + esc(name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
           '<button class="btn sm act" data-act="roleManagers" data-name="' + esc(name) + '" title="Position managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
-          '<button class="btn sm act" data-act="toggleRole" data-name="' + esc(name) + '" title="' + (r.disabled ? 'Enable' : 'Disable') + '">' + icon(r.disabled ? 'check' : 'ban', 13) + '<span class="bl">' + (r.disabled ? 'Enable' : 'Disable') + '</span></button>' +
+          sw(!r.disabled, 'toggleRole', name + ' enabled', ' data-name="' + esc(name) + '"') +
           (used || builtIn ? '' : '<button class="btn sm del act" data-act="deleteRole" data-name="' + esc(name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td></tr>';
     }).join('');
@@ -6122,7 +6196,7 @@
         '<td class="acts-cell"><div class="row-acts">' +
           '<button class="btn sm act" data-act="editUnit" data-code="' + esc(un.code) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
           '<button class="btn sm act" data-act="teamAdmins" data-code="' + esc(un.code) + '" title="Team managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
-          '<button class="btn sm act" data-act="toggleUnit" data-code="' + esc(un.code) + '" title="' + (un.disabled ? 'Enable' : 'Disable') + '">' + icon(un.disabled ? 'check' : 'ban', 13) + '<span class="bl">' + (un.disabled ? 'Enable' : 'Disable') + '</span></button>' +
+          sw(!un.disabled, 'toggleUnit', un.code + ' enabled', ' data-code="' + esc(un.code) + '"') +
           (used ? '' : '<button class="btn sm del act" data-act="deleteUnit" data-code="' + esc(un.code) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td></tr>';
     }).join('');
@@ -6169,7 +6243,7 @@
     const hour = h => (h % 12 || 12) + ':00 ' + (h < 12 ? 'AM' : 'PM');
     const opt = (v, l, cur) => '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(l) + '</option>';
     return '<div class="panel" id="reportPanel"><div class="cfg-row-tog"><div><h3>' + icon('bell', 16) + ' Daily Email Report' + tip('Your own report, every morning: who is out today and the next 7 days (and any blackouts), for the groups and types you pick. Pending requests are marked.') + '</h3></div>' +
-        '<button type="button" class="btn chip-tog' + (r.on ? ' on' : '') + '" aria-pressed="' + r.on + '" data-act="rpOn">' + (r.on ? icon('check', 18) + 'On' : 'Off') + '</button></div>' +
+        sw(r.on, 'rpOn', 'Daily Email Report') + '</div>' +
       (r.on ? '<div class="field"><label for="rpEmail">Email' + REQ + '</label><input id="rpEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="' + esc(r.email) + '" data-model="rpDraft.email"></div>' +
         '<div class="row rp-row"><div class="field rp-hour"><label for="rpHour">Time</label><select id="rpHour" data-change="rpHour">' + Array.from({ length: 24 }, (_, h) => opt(h, hour(h), Number(r.hour))).join('') + '</select></div>' +
           '<div class="field"><label for="rpTz">Time Zone</label><select id="rpTz" data-change="rpTz">' + zones.map(z => opt(z[0], z[1], r.tz)).join('') + '</select></div></div>' +
@@ -6195,14 +6269,17 @@
     const hour = h => (h % 12 || 12) + ':00 ' + (h < 12 ? 'AM' : 'PM');
     const opt = (v, l, cur) => '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(l) + '</option>';
     const any = EMAIL_KINDS.some(k => e[k[0]]), day = e.start || e.end;
-    return '<div class="panel" id="emailPanel"><h3>' + icon('mail', 16) + ' Email Notifications' + tip('Emails about your own requests. Pick the ones you want. Start Day and End Day come the morning your approved leave or pass begins or ends.') + '</h3>' +
+    // On / off switch: on when any email kind is picked (or just switched on); its settings show only while on.
+    const on = e.on != null ? e.on : any;
+    return '<div class="panel" id="emailPanel"><div class="cfg-row-tog"><div><h3>' + icon('mail', 16) + ' Email Notifications' + tip('Emails about your own requests. Pick the ones you want. Start Day and End Day come the morning your approved leave or pass begins or ends.') + '</h3></div>' +
+      sw(on, 'emOn', 'Email notifications') + '</div>' + (!on ? '</div>' :
       '<div class="field"><label for="emEmail">Email' + (any ? REQ : '') + '</label><input id="emEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="' + esc(e.email || '') + '" data-model="emDraft.email"></div>' +
       '<div class="sect"><div class="lbl">Email Me When</div><div class="push-btns">' + EMAIL_KINDS.map(k => { const on = !!e[k[0]];
         return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="emKind" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>'; }).join('') + '</div></div>' +
       (day ? '<div class="row rp-row"><div class="field rp-hour"><label for="emHour">Start / End Day Time</label><select id="emHour" data-change="emHour">' + Array.from({ length: 24 }, (_, h) => opt(h, hour(h), Number(e.hour))).join('') + '</select></div>' +
         '<div class="field"><label for="emTz">Time Zone</label><select id="emTz" data-change="emTz">' + zones.map(z => opt(z[0], z[1], e.tz)).join('') + '</select></div></div>' : '') +
       '<div class="err" id="emErr"></div><div class="cfg-foot">' + (any ? '<button class="btn" data-act="emTest">' + icon('mail', 16) + 'Send Test Email</button>' : '') +
-        '<button class="btn primary" data-act="emSave">' + icon('check', 16) + 'Save</button></div></div>';
+        '<button class="btn primary" data-act="emSave">' + icon('check', 16) + 'Save</button></div></div>');
   }
   const redrawEmail = () => { const p = $('#emailPanel'); if (p) p.outerHTML = emailPanel(); };
   // Report coverage grid: the draft's rows; saved with Save Report.
@@ -6269,12 +6346,35 @@
       '<div class="modal-f"><button class="btn" data-act="rosterTemplate">' + icon('download', 16) + 'Template</button><span class="grow"></span>' +
         '<button class="btn" data-act="closeModal">' + (first ? 'Skip' : 'Cancel') + '</button><button class="btn primary" id="riGo" data-act="rosterGo" disabled>' + icon('check', 16) + 'Import</button></div>');
   }
+  /** Material 3 list row: leading icon, title + supporting text (wraps, never overflows), chevron. */
+  const listRow = (act, ic, title, sub, attrs) => '<button type="button" class="m3-li" data-act="' + act + '"' + (attrs || '') + '>' +
+    '<span class="m3-li-ic">' + icon(ic, 20) + '</span><span class="m3-li-t"><b>' + esc(title) + '</b>' + (sub ? '<span>' + esc(sub) + '</span>' : '') + '</span>' +
+    '<span class="m3-li-end">' + icon('right', 18) + '</span></button>';
+  /** A PIN panel: its title (the ⓘ explains it; "Not Set" under it when it isn't) and one button on the right — Set
+   *  (filled) or Change —
+   *  that opens the PIN dialog. tone: 'y' = yellow (Default, Team Admin), 'r' = red (Org Admin), '' = plain (My PIN). */
+  const pinPanel = (kind, ic, title, tipText, isSet, tone) => '<div class="panel pin-panel' + (tone ? ' pin-' + tone : '') + '"><div class="cfg-h">' +
+    '<div class="pin-t"><h3>' + icon(ic, 16) + ' ' + esc(title) + (tipText ? tip(tipText) : '') + '</h3>' + (isSet ? '' : '<span class="pin-unset">Not Set</span>') + '</div>' +
+    '<button type="button" class="btn pin-btn' + (isSet ? '' : ' pin-btn-set') + '" data-act="pinDialog" data-k="' + kind + '" aria-label="' + (isSet ? 'Change ' : 'Set ') + esc(title) + '">' + icon('key', 16) + (isSet ? 'Change' : 'Set') + '</button></div></div>';
+  /* ---------- PIN dialog: set or change a PIN (mine, default, team admin, org admin) ----------
+     New PIN + Confirm (dot boxes), the first one focused; Enter in Confirm saves. On success the dialog closes. */
+  const PIN_KINDS = {
+    me: { title: 'Change My PIN', label: 'New PIN', api: 'apiChangePin', done: 'PIN updated' },
+    def: { title: 'Default PIN', label: 'New Default PIN', api: 'apiSetDefaultPin', done: 'Default PIN updated' },
+    team: { title: 'Team Admin PIN', label: 'New Team Admin PIN', api: 'apiSetTeamPin', done: 'Team Admin PIN saved', apply: true },
+    org: { title: 'Org Admin PIN', label: 'New Org Admin PIN', api: 'apiChangePasskey', done: 'Org Admin PIN updated' }
+  };
+  function pinDialog(kind) {
+    const k = PIN_KINDS[kind];
+    openModal('pin', modalHead(k.title, 'key') + '<div class="modal-b">' + PIN_HINT +
+      '<div class="field"><label for="pdA">' + k.label + '</label><input id="pdA" ' + NEW_PIN + '></div>' +
+      '<div class="field"><label for="pdB">Confirm</label><input id="pdB" ' + NEW_PIN + '></div><div class="err" id="pdErr"></div></div>' +
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" id="pdGo" data-act="pinSave" data-k="' + kind + '">' + icon('check', 18) + 'Save PIN</button></div>');
+    $('#modal .modal').classList.add('modal-center');
+    $('#pdB').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); A.pinSave($('#pdGo')); } });
+  }
   function renderAdmin() {
     const st = S.settings;
-    // New PIN · Confirm · button on one line when there's room (wraps: the button drops to its own line on phones).
-    const pinPair = (id1, id2, l1, l2, btn) => PIN_HINT + '<div class="pin-row">' +
-      '<div class="field"><label for="' + id1 + '">' + l1 + '</label><input id="' + id1 + '" ' + NEW_PIN + '></div>' +
-      '<div class="field"><label for="' + id2 + '">' + l2 + '</label><input id="' + id2 + '" ' + NEW_PIN + '></div>' + btn + '</div>';
     return '<section class="page admin-page"><div class="toolbar"><span class="title">Admin</span>' +
       adminModeBadge() +
       '<div class="cfg-tools">' +
@@ -6285,7 +6385,7 @@
       // Privacy: members see only their own schedule plus day availability. Admins always see everything.
       '<div class="panel"><div class="cfg-row-tog"><div><h3>' + icon('lock', 16) + ' Hide User Schedules' + tip('Members see only their own requests plus day availability. Admin mode always shows everything.') + '</h3>' +
         '</div>' +
-        '<button type="button" class="btn chip-tog' + (st.hideSchedules ? ' on' : '') + '" aria-pressed="' + !!st.hideSchedules + '" data-act="hideSchedules">' + (st.hideSchedules ? icon('check', 18) + 'On' : 'Off') + '</button></div>' +
+        sw(st.hideSchedules, 'hideSchedules', 'Hide User Schedules') + '</div>' +
         '</div>' +
 
 
@@ -6304,31 +6404,20 @@
         '<button class="btn primary" data-act="newType">' + icon('plus', 18) + 'New Type</button></div>' +
         adminTypes() + '</div>' +
 
-      // App updates: make every device reload to the newest version.
-      '<div class="panel"><div class="cfg-h"><h3>' + icon('refresh', 16) + ' App Updates' + tip('After you deploy a new version, tap this so every phone and computer reloads to it the next time it opens or syncs — even if already signed in.') + '</h3>' +
-        '<button class="btn primary" data-act="forceReload">' + icon('refresh', 18) + 'Update All Devices</button></div>' +
-        '<p class="meta">' + (S.reloadAt ? 'Last pushed ' + esc(new Date(S.reloadAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })) : 'Not pushed yet') + '</p></div>' +
 
-      // Backup & Restore (org admins): a file with everything, to move the app to another Google account; Import Roster
-      // adds members from a CSV / JSON file.
-      (S.isOrg ? '<div class="panel"><div class="cfg-h"><h3>' + icon('download', 16) + ' Backup &amp; Restore' + tip('A backup is one file with every member, request, setting and PIN, so everyone keeps their PIN. To move PAL to another Google account: Download Backup here, set up PAL in the new account, then Restore From Backup there.') + '</h3></div>' +
-        '<p class="meta">Keep backup files private: they hold the roster and everyone’s PIN data.</p>' +
-        '<div class="cfg-foot bk-acts"><button class="btn" data-act="rosterImport">' + icon('userPlus', 18) + 'Import Roster…</button>' +
-        '<button class="btn" data-act="bkRestore">' + icon('upload', 18) + 'Restore From Backup…</button>' +
-        '<button class="btn primary" data-act="bkDownload">' + icon('download', 18) + 'Download Backup</button></div></div>' : '') +
+      // Backup & Restore (org admins): Material 3 list rows — icon, title, one line saying what it does, chevron. Text wraps.
+      (S.isOrg ? '<div class="panel"><h3>' + icon('download', 16) + ' Backup &amp; Restore' + tip('A backup is one file with every member, request, setting and PIN, so everyone keeps their PIN. To move PAL to another Google account: Download Backup here, set up PAL in the new account, then Restore From Backup there.') + '</h3>' +
+        '<div class="m3-list">' +
+          listRow('bkDownload', 'download', 'Download Backup', 'Every member, request, setting and PIN in one file') +
+          listRow('bkRestore', 'upload', 'Restore From Backup', 'Replace everything here with a backup file') +
+          listRow('rosterImport', 'userPlus', 'Import Roster', 'Add members from a CSV or JSON file') +
+        '</div><p class="meta m3-note">' + icon('lock', 14) + 'Keep backup files private: they hold the roster and everyone’s PIN data.</p></div>' : '') +
 
-      // PINs
-      '<div class="panel panel-warn"><h3>' + icon('key', 16) + ' Default PIN' + tip('Temporary PIN for new members and PIN resets. They must change it at next sign-in.') + '</h3>' +
-        pinPair('dp1', 'dp2', 'New Default PIN', 'Confirm', '<button class="btn" data-act="saveDefaultPin">Update Default PIN</button>') + '</div>' +
-      // One team admin PIN for every team admin: it unlocks Team Admin mode for members marked as team admins, for
-      // exactly their teams and positions (their admin status). It can never be the org admin PIN.
-      '<div class="panel panel-warn"><h3>' + icon('shield', 16) + ' Team Admin PIN' + tip('Team admins unlock Admin Mode with this. What they manage comes from their admin status (Teams → Admins, or Admin Status on the Roster). It can’t be the org admin PIN.') + '</h3>' +
-        '<p class="meta pin-state">' + (S.teamPinSet ? icon('check', 14) + ' Set' : 'Not set yet: team admins can’t unlock until you set it.') + '</p>' +
-        pinPair('tk1', 'tk2', 'New Team Admin PIN', 'Confirm', '<button class="btn" data-act="saveTeamPin">Update Team Admin PIN</button>') + '</div>' +
-      '<div class="panel panel-danger"><h3>' + icon('shield', 16) + ' Org Admin PIN' + tip('Unlocks Org Admin mode (everything) from Profile. It can’t be the team admin PIN.') + '</h3>' +
-        pinPair('pk1', 'pk2', 'New Org Admin PIN', 'Confirm', '<button class="btn" data-act="savePasskey">Update Org Admin PIN</button>') + '</div>' +
-      // Last on the page, on its own: every member back to the default PIN (asks twice — tick the warning, then OK).
-      '<div class="ra-wrap"><button class="btn ra-btn" data-act="resetAllPins">' + icon('key', 18) + 'Reset All Account PINs</button></div>' +
+      // PINs: one panel each — yellow for Default and Team Admin, red for Org Admin.
+      pinPanel('def', 'key', 'Default PIN', 'Temporary PIN for new members and PIN resets. They change it at next sign-in.', true, 'y') +
+      // One team admin PIN for every team admin; it can never be the org admin PIN.
+      pinPanel('team', 'shield', 'Team Admin PIN', 'Team admins unlock Admin Mode with this. What they manage comes from their admin status. It can’t be the org admin PIN.', S.teamPinSet, 'y') +
+      pinPanel('org', 'shield', 'Org Admin PIN', 'Unlocks Org Admin mode (everything) from Profile. It can’t be the team admin PIN.', true, 'r') +
       '</div></section>';
   }
 
@@ -6754,24 +6843,24 @@
       google: 'Push notifications work in the GitHub Pages version of the app (add it to your Home Screen). Everything still shows up under Profile → Notifications.',
       unsupported: 'This browser can’t receive push notifications. Everything still shows up under Profile → Notifications.',
       denied: 'Notifications are blocked for PAL on this device. Allow them in your phone’s Settings → Notifications → PAL (or the browser’s site settings), then come back.',
-      off: 'Get a notification on this device when your requests are approved, denied, edited or deleted.',
-      busy: 'Setting up notifications…',
-      install: 'Add PAL to your Homescreen to turn on notifications. Then open it from the Homescreen and come back here.',
-      on: 'Notifications are on for this device.'
+      install: 'Add PAL to your Homescreen to turn on notifications. Then open it from the Homescreen and come back here.'
     }[pst];
-    const pushBtns = pst === 'install' ? '<button class="btn primary" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Homescreen</button>'
-      : pst === 'off' ? '<button class="btn primary" data-act="pushOn">' + icon('bell', 18) + 'Turn On Notifications</button>'
-      : pst === 'on' ? '<button class="btn" data-act="pushOff">Turn Off</button><button class="btn" data-act="pushTest">Send Test</button>'
-      : pst === 'busy' ? '<button class="btn primary is-busy" aria-busy="true" tabindex="-1"><span class="btn-spin" aria-hidden="true"></span>Turning on…</button>' : '';
-    return '<div class="notes-h"><h3>' + icon('bell', 16) + ' Notification Settings</h3></div>' +
-      (pushMsg ? '<div class="push-row push-' + pst + '"><p>' + (pst === 'on' ? icon('check', 16) : '') + esc(pushMsg) + '</p>' + (pushBtns ? '<div class="push-btns">' + pushBtns + '</div>' : '') + '</div>' : '') +
+    // Push on this device: one switch (off / on; it shows on while turning on). While on: Send Test Notification.
+    const canSwitch = pst === 'off' || pst === 'on' || pst === 'busy';
+    const pushRow = canSwitch
+      ? '<div class="push-row push-sw"><div class="cfg-row-tog"><div><p><b>Push Notifications</b></p><p class="meta">' + (pst === 'busy' ? 'Turning on…' : 'On this device') + '</p></div>' +
+          sw(pst !== 'off', 'pushToggle', 'Push notifications', pst === 'busy' ? ' disabled aria-busy="true"' : '') + '</div>' +
+          (pst === 'on' ? '<div class="push-btns"><button class="btn" data-act="pushTest">' + icon('bell', 18) + 'Send Test Notification</button></div>' : '') + '</div>'
+      : pushMsg ? '<div class="push-row push-' + pst + '"><p>' + esc(pushMsg) + '</p>' +
+          (pst === 'install' ? '<div class="push-btns"><button class="btn primary" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Homescreen</button></div>' : '') + '</div>' : '';
+    return '<div class="notes-h"><h3>' + icon('bell', 16) + ' Notification Settings</h3></div>' + pushRow +
       '<div class="push-row note-prefs"><p><b>Notify Me When My Request Is</b></p><div class="push-btns">' +
         [['approved', 'Approved'], ['denied', 'Denied'], ['edited', 'Changed']].map(k => {
           const on = S.notePrefs[k[0]] !== false;
           return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="notePref" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>';
         }).join('') + '</div></div>' +
       (S.myAdmin ? '<div class="push-row admin-alerts"><p><b>Admin Alerts</b>' + tip('New requests, edits, deletions and sign-ups for the members picked below (team admins: only their team).') + '</p><div class="push-btns">' +
-        '<button type="button" class="btn chip-tog' + (S.adminAlerts ? ' on' : '') + '" aria-pressed="' + S.adminAlerts + '" data-act="adminAlerts">' + (S.adminAlerts ? icon('check', 18) : '') + (S.adminAlerts ? 'On' : 'Off') + '</button></div></div>' +
+        sw(S.adminAlerts, 'adminAlerts', 'Admin Alerts') + '</div></div>' +
         // Which members: positions (default: my Default Filter Positions) and units (none picked = every unit).
         // Alert rules: one row per alert (unit · position · alert), Add Alert and a delete per row. Shown in admin mode
         // even while alerts are off (dimmed), so they can be set up first.
@@ -6837,10 +6926,7 @@
 
       startupPanel() +
 
-      '<div class="panel"><h3>' + icon('key', 16) + ' Change PIN</h3>' + PIN_HINT + '<div class="row">' +
-        '<div class="field"><label for="np1">New PIN</label><input id="np1" ' + NEW_PIN + '></div>' +
-        '<div class="field"><label for="np2">Confirm New PIN</label><input id="np2" ' + NEW_PIN + '></div></div>' +
-        '<div class="err" id="pinErr"></div><div class="row" style="margin-top:4px"><button class="btn primary" data-act="savePin">Save PIN</button><button class="btn" data-act="clearPin">Cancel</button></div></div>' +
+      pinPanel('me', 'key', 'My PIN', '', true, '') +
 
       '<div class="panel about"><h3>' + icon('sheet', 16) + ' About</h3><div class="srv-row"><span>Server</span><span id="srvInfo" class="meta">Checking…</span></div></div>' +
       '</div></section>';
@@ -7506,7 +7592,8 @@
     setTimeout(() => el.remove(), 650);
   }
   /* Swipe left / right on the calendar (touch), or grab and drag it with the mouse (desktop): next / previous day, week or
-     month; Qtr moves a whole quarter, like its arrows. Week view has its own drag (the strip scrolls). */
+     month. Qtr: on phones (one month across) a swipe moves one month; on wide screens the next / previous quarter is drawn
+     beside it and follows the drag, like Month. Week view has its own drag (the strip scrolls). */
   (function () {
     let sx = 0, sy = 0, st = 0, on = false, mouse = false;
     let drag = false; // the calendar is following the finger / pointer sideways
@@ -7521,7 +7608,8 @@
       begin(ev.touches[0].clientX, ev.touches[0].clientY, ev.target);
     }, { passive: true });
     let peekDir = 0; // Month / Day: the neighboring month or day drawn beside the current one while dragging (+1 next, -1 previous)
-    const peeks = () => S.cal === 'month' || S.cal === 'day';
+    const peeks = () => S.cal === 'month' || S.cal === 'day' || (S.cal === 'quad' && !isCompact());
+    const peekStep = () => S.cal === 'quad' ? 4 : 1; // months per drag (Qtr on wide screens: a whole quarter)
     function showPeek(b, dir) {
       if (peekDir === dir) return;
       const old = b.querySelector('.cal-peek'); if (old) old.remove();
@@ -7529,8 +7617,8 @@
       if (S.cal === 'day') html = renderDay(D.add(S.cursor, dir)).replace(/ id="[^"]*"/g, '');
       else {
         const keep = S.cursor;
-        S.cursor = D.addMonths(keep, dir);
-        html = renderMonth();
+        S.cursor = D.addMonths(keep, dir * peekStep());
+        html = S.cal === 'quad' ? renderQuad() : renderMonth();
         S.cursor = keep;
       }
       const p = document.createElement('div');
@@ -7589,16 +7677,61 @@
         b.style.transform = 'translateX(' + (dir > 0 ? '-100%' : '100%') + ')';
         drag = false;
         setTimeout(() => {
-          S.cursor = S.cal === 'day' ? D.add(S.cursor, dir) : D.addMonths(S.cursor, dir);
+          S.cursor = S.cal === 'day' ? D.add(S.cursor, dir) : D.addMonths(S.cursor, dir * peekStep());
           S.weekLeft = null; peekDir = 0; render();
           const n = $('#calBody'); if (n) { n.style.transition = ''; n.style.transform = ''; }
         }, 230);
         return;
       }
-      moveCursor(dx < 0 ? 1 : -1, 0, drag ? dx * 0.85 : 0); // 0 = Qtr's full step, same as the arrows
+      moveCursor(dx < 0 ? 1 : -1, isCompact() ? 1 : 0, drag ? dx * 0.85 : 0); // Qtr: one month on phones, else a quarter
       drag = false;
     }
   })();
+  /* Phones, Qtr: the four months scroll; keep pulling past the last one (or above the first) and a pill shows "Pull for
+     next quarter" → "Release for Feb – May 2027". Let go past the line and the next / previous quarter loads (at its top,
+     or its bottom when going back). No rubber-band anywhere, so this pill is the only thing that moves. */
+  (function () {
+    const PULL = 84; // px of pull to switch
+    let st = null; // { y, el, dir, cue }
+    const label = dir => { const c = D.addMonths(S.cursor, 4 * dir), last = D.addMonths(c, 3);
+      return D.f(c, { month: 'short' }) + ' – ' + D.f(last, { month: 'short', year: 'numeric' }); };
+    document.addEventListener('touchstart', ev => {
+      st = null;
+      if (!isCalView() || S.cal !== 'quad' || !isCompact() || S.modal || ev.touches.length !== 1) return;
+      const el = ev.target.closest && ev.target.closest('.quad'); if (!el) return;
+      const atTop = el.scrollTop <= 0, atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+      if (atTop || atEnd) st = { y: ev.touches[0].clientY, x: ev.touches[0].clientX, el, atTop, atEnd, dir: 0, cue: null, pull: 0 };
+    }, { passive: true });
+    document.addEventListener('touchmove', ev => {
+      if (!st) return;
+      const dy = ev.touches[0].clientY - st.y, dx = ev.touches[0].clientX - st.x;
+      if (Math.abs(dx) > Math.abs(dy)) { drop(); return; } // sideways: that's a month swipe
+      const dir = dy < 0 && st.atEnd ? 1 : dy > 0 && st.atTop ? -1 : 0;
+      if (!dir) { drop(); return; }
+      st.dir = dir; st.pull = Math.min(140, Math.abs(dy) * 0.6);
+      if (!st.cue) {
+        st.cue = document.createElement('div'); st.cue.className = 'q-pull ' + (dir > 0 ? 'q-pull-end' : 'q-pull-top'); st.cue.setAttribute('aria-hidden', 'true');
+        st.el.parentElement.appendChild(st.cue);
+      }
+      const ready = st.pull >= PULL;
+      st.cue.innerHTML = icon(dir > 0 ? 'down' : 'up', 16) + '<span>' + (ready ? 'Release for ' + esc(label(dir)) : 'Pull for ' + (dir > 0 ? 'next' : 'previous') + ' quarter') + '</span>';
+      st.cue.classList.toggle('ready', ready);
+      st.cue.style.setProperty('--pull', String(Math.min(1, st.pull / PULL)));
+    }, { passive: true });
+    function drop() { if (st && st.cue) st.cue.remove(); st = null; }
+    document.addEventListener('touchend', () => {
+      if (!st) return;
+      const go = st.dir && st.pull >= PULL, dir = st.dir;
+      drop();
+      if (!go) return;
+      hideToast(); S.sel = null; S.weekLeft = null;
+      S.cursor = D.addMonths(S.cursor, 4 * dir);
+      render();
+      const q = document.querySelector('.quad');
+      if (q) { q.scrollTop = dir > 0 ? 0 : q.scrollHeight; if (!reduceMotion()) q.classList.add(dir > 0 ? 'q-in-up' : 'q-in-down'); }
+    }, { passive: true });
+  })();
+
   /* Phones: pull a bottom-sheet dialog down to close it — but only when the swipe STARTS with its content already
      scrolled to the top (a swipe that's scrolling the content up never closes it). */
   (function () {
@@ -7743,11 +7876,22 @@
     },
     boEdit(el) { S.boReturn = S.boResolve; openEditWizard(el.dataset.id); },
     rpOn() { S.rpDraft.on = !S.rpDraft.on; redrawReport(); },
+    // Email switch: on shows the settings (every kind picked to start, if none were); off turns every kind off and saves.
+    emOn(el) {
+      const e = S.emDraft, i = $('#emEmail'); if (i) e.email = i.value.trim();
+      const on = !(e.on != null ? e.on : EMAIL_KINDS.some(k => e[k[0]]));
+      e.on = on;
+      if (on) { if (!EMAIL_KINDS.some(k => e[k[0]])) EMAIL_KINDS.forEach(k => { e[k[0]] = true; }); redrawEmail(); return; }
+      const had = EMAIL_KINDS.some(k => (S.emailPrefs || {})[k[0]]);
+      EMAIL_KINDS.forEach(k => { e[k[0]] = false; });
+      redrawEmail();
+      if (had) A.emSave(el, true);
+    },
     emKind(el) { const e = S.emDraft, i = $('#emEmail'); if (i) e.email = i.value.trim(); e[el.dataset.v] = !e[el.dataset.v]; redrawEmail(); },
     emHour(el) { S.emDraft.hour = Number(el.value); },
     emTz(el) { S.emDraft.tz = el.value; },
     async emSave(el, quiet) {
-      const e = S.emDraft, err = $('#emErr'), i = $('#emEmail');
+      const e = S.emDraft, err = $('#emErr') || {}, i = $('#emEmail'); // switched off: no error line on screen
       if (i) e.email = i.value.trim();
       const any = EMAIL_KINDS.some(k => e[k[0]]);
       if (any && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e.email)) { err.textContent = 'Enter the email address for your notifications.'; return false; }
@@ -8238,15 +8382,19 @@
     },
 
     /* Profile */
-    async savePin(el) {
-      const a = $('#np1').value.trim(), b = $('#np2').value.trim(), err = $('#pinErr');
+    pinDialog(el) { pinDialog(el.dataset.k); },
+    pushToggle(el) { return S.pushState === 'on' ? A.pushOff(el) : A.pushOn(el); },
+    async pinSave(el) {
+      const kind = el.dataset.k, k = PIN_KINDS[kind], a = $('#pdA').value.trim(), b = $('#pdB').value.trim(), err = $('#pdErr');
       if (pinProblem(a)) { err.textContent = pinProblem(a); return; }
-      if (a !== b) { err.textContent = 'The two PIN entries do not match.'; return; }
+      if (a !== b) { err.textContent = 'The two PIN entries do not match.'; $('#pdB').value = ''; focusPin($('#pdB')); return; }
       err.textContent = '';
-      const ok = await run(el, 'apiChangePin', S.token, a, b);
-      if (ok) { $('#np1').value = ''; $('#np2').value = ''; toast('PIN updated'); }
+      const d = await run(el, k.api, S.token, a, b);
+      if (!d) return;
+      closeModal();
+      if (k.apply) { apply(d); render(); }
+      toast(k.done);
     },
-    clearPin() { $('#np1').value = ''; $('#np2').value = ''; $('#pinErr').textContent = ''; },
     // Admin mode is separate from sign-in: you always sign in as yourself, then unlock with the admin PIN here.
     // Your own PIN and the admin PIN never interfere, even if they're the same digits.
     async unlockAdmin(el) {
@@ -8444,21 +8592,6 @@
       toast('Restored ' + plural(res.users, 'member') + ' and ' + plural(res.requests, 'request') + '. Sign in with your PIN from the backup.', 'ok', 6000);
     },
     // Every member's PIN back to the default: a confirm dialog whose Reset button stays off until the warning is ticked.
-    async resetAllPins(el) {
-      const n = S.users.filter(u => u.id !== S.me).length;
-      if (!await askConfirm('Reset all PINs?', { ok: 'Reset All PINs', danger: true, ack: 'I have read this warning',
-        list: [n + ' accounts set to the default PIN', 'New PIN required at next sign-in', 'Your PIN unchanged', 'Can’t be undone'] })) return;
-      const d = await run(el, 'apiResetAllPins', S.token, 'RESET ALL');
-      if (!d) return;
-      apply(d); render(); toast('Every member’s PIN was reset to the default', 'ok', 2600);
-    },
-    async saveDefaultPin(el) {
-      const a = $('#dp1').value.trim(), b = $('#dp2').value.trim();
-      if (pinProblem(a)) return toast(pinProblem(a), 'error');
-      if (a !== b) return toast('PINs do not match.', 'error');
-      const ok = await run(el, 'apiSetDefaultPin', S.token, a, b);
-      if (ok) { $('#dp1').value = ''; $('#dp2').value = ''; toast('Default PIN updated'); }
-    },
     lenMode(el) {
       S.lenDraft = Object.assign({}, S.lenDraft, { [el.dataset.t]: el.dataset.v });
       $$('[data-act="lenMode"][data-t="' + el.dataset.t + '"]').forEach(b => b.classList.toggle('on', b.dataset.v === el.dataset.v));
@@ -8476,11 +8609,6 @@
     },
     // Can see: Everyone, or tap positions on / off. With none picked, members see only their own requests.
     groupList(el) { openGroupList(String(el.dataset.ids || '').split(',').filter(Boolean)); },
-    async forceReload(el) {
-      if (!await askConfirm('Update all devices?', { ok: 'Update All', list: ['Every device reloads to the newest version', 'On next open or sync'] })) return;
-      // Admins' own device is marked as seen so it doesn't reload itself mid-session.
-      run(el, 'apiForceReload', S.token).then(d => { if (!d) return; try { localStorage.setItem('pal.reloadSeen', String(d.reloadAt || Date.now())); } catch (e) { /* ignore */ } apply(d); render(); toast('Every device will update on its next open or sync', 'ok', 2500); });
-    },
     // Tap on a phone: the same bubble hover shows (never a second copy as a toast); it closes by itself after 4 s.
     showTip(el) { showTip(el); clearTimeout(tipTimer); tipTimer = setTimeout(hideTip, 4000); },
     roleView(el) {
@@ -8676,20 +8804,6 @@
       const sc = { cells, rows };
       save(() => { if (cells.length) S.admins[id] = { level: 'team', scope: sc }; else delete S.admins[id]; }, 'apiSetAdminStatus', S.token, id, cells.length ? 'team' : '', cells.length ? sc : null);
       render(); openManagers(w);
-    },
-    async saveTeamPin(el) {
-      const a = $('#tk1').value.trim(), b = $('#tk2').value.trim();
-      if (pinProblem(a)) return toast(pinProblem(a), 'error');
-      if (a !== b) return toast('PINs do not match.', 'error');
-      const d = await run(el, 'apiSetTeamPin', S.token, a, b);
-      if (d) { apply(d); $('#tk1').value = ''; $('#tk2').value = ''; render(); toast('Team Admin PIN updated'); }
-    },
-    async savePasskey(el) {
-      const a = $('#pk1').value.trim(), b = $('#pk2').value.trim();
-      if (pinProblem(a)) return toast(pinProblem(a), 'error');
-      if (a !== b) return toast('Passkeys do not match.', 'error');
-      const ok = await run(el, 'apiChangePasskey', S.token, a, b);
-      if (ok) { $('#pk1').value = ''; $('#pk2').value = ''; toast('Admin PIN updated'); }
     },
 
     /* Wizard */
