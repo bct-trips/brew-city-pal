@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792689969"></script>
+    <script src="config.js?v=1792690164"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792689969';
+      window.PAL_BUILD = '1792690164';
       (function () {
         function check(launch) {
           try {
@@ -3094,6 +3094,37 @@
   .conf-banner > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .conf-banner .btn.icon-btn.conf-x { width: 28px !important; height: 28px !important; min-width: 28px; min-height: 28px; padding: 0; flex: none; }
   .conf-banner .conf-x .ic { width: 16px; height: 16px; }
+
+  /* ---------- M3 outlined text field (.field.m3f): request form's Departure, Return, Location, Notes ----------
+     56px tall, 16px side padding, 16px text centered; 1px outline, 2px primary outline on focus (label turns primary);
+     the label sits on the outline (cut out with the dialog's color); supporting text 12/16 under it, red in the error
+     state (2px error outline, red label). Corner radius follows the app's fields (12px). */
+  .field.m3f { position: relative; gap: 0; margin: 10px 0 8px; }
+  .field.m3f > label { position: absolute; z-index: 1; top: -8px; left: 12px; max-width: calc(100% - 24px); margin: 0; padding: 0 4px;
+    font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .01em; color: var(--muted); background: var(--card);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+  .field.m3f > input, .field.m3f > textarea { height: 56px; min-height: 56px; padding: 0 16px; border: 1px solid var(--outline); border-radius: 12px;
+    background: transparent; font-size: 16px; line-height: 24px; box-sizing: border-box; }
+  .field.m3f > textarea { height: auto; min-height: 88px; padding: 16px; resize: vertical; }
+  .field.m3f > :is(input, textarea):hover { border-color: var(--ink); }
+  .field.m3f > :is(input, textarea):focus { outline: none; border: 2px solid var(--primary); padding-left: 15px; }
+  .field.m3f > textarea:focus { padding: 15px; }
+  .field.m3f:focus-within > label { color: var(--primary); }
+  .field.m3f > [aria-invalid="true"], .field.m3f > [aria-invalid="true"]:focus { border: 2px solid var(--no-bg); padding-left: 15px; }
+  .field.m3f:has(> [aria-invalid="true"]) > label { color: var(--no-bg); }
+  .field.m3f > input[type="date"] { display: flex; align-items: center; -webkit-appearance: none; appearance: none; }
+  .field.m3f > input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+  .field.m3f > input[type="date"]::-webkit-calendar-picker-indicator { opacity: .7; }
+  .m3-sup { min-height: 0; padding: 4px 16px 0; font-size: 12px; line-height: 16px; color: var(--muted); }
+  .m3-sup:empty { display: none; }
+  .m3-sup.err { color: var(--no-bg); font-weight: 600; }
+  .wiz-sheet .field.m3f { margin: 10px 0 8px; gap: 0; }
+  .wiz-sheet .wiz-dates { gap: 12px; margin: 4px 0 8px; }
+  .wiz-sheet .wiz-dates .field.m3f { margin: 10px 0 0; }
+  .wiz-sheet .field.m3f > textarea { height: auto; min-height: 88px; padding: 16px; }
+  .wiz-sheet .field.m3f > textarea:focus { padding: 15px; }
+  .wiz-dates .field.m3f > input[type="date"] { height: 56px; padding: 0 16px; border-radius: 12px; }
+  .wiz-dates .field.m3f > input[type="date"]:focus { padding-left: 15px; }
 </style>
 
   </head>
@@ -7973,8 +8004,9 @@
             '<p class="meta sc-note">' + ((w.boRows || []).length ? 'Only these people see it and are blocked by it' + (boLim() ? ' (limited to your team).' : '.') : boLim() ? 'No rows: your whole team.' : 'No rows: everyone.') + '</p></div>' : '') +
         renderWizDates() +
         // Location: required on leave / passes; private like the note (only the member and their admins see it).
-        (isBo ? '' : '<div class="field"><label for="wzL">Location' + REQ + '</label><input id="wzL" maxlength="80" autocomplete="off" placeholder="City, state (or base)" value="' + esc(w.location || '') + '" data-model="wiz.location" data-live="wizLoc" aria-required="true"></div>') +
-        '<div class="field"><label for="wzN">' + (isBo ? 'Reason &amp; notes (optional)' : 'Trip reason &amp; notes (optional)') + '</label><textarea id="wzN" maxlength="' + (isBo ? 80 : 500) + '" data-model="wiz.note" placeholder="' + (isBo ? 'e.g. ORE week, UTA' : 'Destination, reason, contact info…') + '">' + esc(w.note) + '</textarea></div>' +
+        // M3 outlined text fields (.m3f): the label sits on the outline; supporting text (or the error) under the field.
+        (isBo ? '' : '<div class="field m3f"><label for="wzL">Location' + REQ + '</label><input id="wzL" maxlength="80" autocomplete="off" placeholder="City, state (or base)" value="' + esc(w.location || '') + '" data-model="wiz.location" data-live="wizLoc" aria-required="true" aria-describedby="wzLSup"><div class="m3-sup" id="wzLSup"></div></div>') +
+        '<div class="field m3f"><label for="wzN">' + (isBo ? 'Reason &amp; Notes' : 'Trip Reason &amp; Notes') + '</label><textarea id="wzN" maxlength="' + (isBo ? 80 : 500) + '" data-model="wiz.note" placeholder="' + (isBo ? 'e.g. ORE week, UTA' : 'Destination, reason, contact info…') + '" aria-describedby="wzNSup">' + esc(w.note) + '</textarea><div class="m3-sup" id="wzNSup">Optional</div></div>' +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div>';
       foot = '<button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="wizReview">Review ' + icon('right', 18) + '</button>';
     } else {
@@ -8012,8 +8044,8 @@
   function renderWizDates() {
     const w = S.wiz;
     return '<div id="wizMini">' + renderMini() + '</div>' +
-      '<div class="wiz-dates"><div class="field"><label for="wzS">Departure</label><input id="wzS" type="date" value="' + esc(w.start) + '" data-model="wiz.start" data-change="wizDates"></div>' +
-      '<div class="field"><label for="wzE">Return</label><input id="wzE" type="date" value="' + esc(w.end) + '" data-model="wiz.end" data-change="wizDates"></div></div>' +
+      '<div class="wiz-dates"><div class="field m3f"><label for="wzS">Departure</label><input id="wzS" type="date" value="' + esc(w.start) + '" data-model="wiz.start" data-change="wizDates"></div>' +
+      '<div class="field m3f"><label for="wzE">Return</label><input id="wzE" type="date" value="' + esc(w.end) + '" data-model="wiz.end" data-change="wizDates"></div></div>' +
       '<div id="wizStatus">' + renderWizStatus() + '</div>';
   }
   /** Slot state of a day for the request being made: 'ok' (green), 'over' (adding it overbooks, orange), 'full' (approved leave
@@ -9326,7 +9358,10 @@
     wizEdit() { S.wiz.step = 'form'; S.wiz.error = ''; renderWizard(); },
     /** One-page form → Review: check the new member (if any) and the dates first. */
     // Typing a location clears a "(Location)" message left from an earlier Review.
-    wizLoc(el) { const e = $('#wizErr'); if (e && el.value.trim() && /\(Location\)/.test(e.textContent)) e.textContent = ''; S.wiz.error = ''; },
+    wizLoc(el) {
+      const e = $('#wizErr'); if (e && el.value.trim() && /\(Location\)/.test(e.textContent)) e.textContent = ''; S.wiz.error = '';
+      if (el.value.trim()) { el.removeAttribute('aria-invalid'); const sp = $('#wzLSup'); if (sp) { sp.textContent = ''; sp.classList.remove('err'); } }
+    },
     wizReview() {
       const w = S.wiz, err = m => { const e = $('#wizErr'); if (e) e.textContent = m; toast(m, 'error'); };
       // Read the boxes as they are now (autofill / dictation / a suggestion tap may not send an input event).
@@ -9340,7 +9375,11 @@
       if (!D.valid(w.start)) return err('Pick your departure date on the calendar.');
       if (!D.valid(w.end)) return err('Now pick your return date — tap the same day again for a one-day request.');
       const c = wizCheck();
-      if (c.errs.length) return err(c.errs[0]);
+      if (c.errs.length) {
+        // A missing location: the field itself turns red with the message under it (M3 error state).
+        if (/\(Location\)/.test(c.errs[0]) && lb) { lb.setAttribute('aria-invalid', 'true'); const sp = $('#wzLSup'); if (sp) { sp.textContent = 'Enter where ' + (wizIds().length === 1 && wizIds()[0] === S.me ? 'you’ll' : 'they’ll') + ' be.'; sp.classList.add('err'); } lb.focus(); toast(c.errs[0], 'error'); return; }
+        return err(c.errs[0]);
+      }
       w.error = ''; w.step = 3; renderWizard();
     },
     wizBoTypes(el) { S.wiz.boTypes = el.dataset.v; renderWizard(); },
