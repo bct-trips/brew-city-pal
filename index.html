@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792707324"></script>
+    <script src="config.js?v=1792707520"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792707324';
+      window.PAL_BUILD = '1792707520';
       (function () {
         function check(launch) {
           try {
@@ -3542,6 +3542,15 @@
   .day-groups .dl-row > .badge { grid-column: 2; grid-row: 1; justify-self: end; }
   .day-groups .dl-row > .dl-meta { grid-column: 1 / -1; grid-row: 2; }
   .dl-meta .dl-n { color: var(--ink); }
+  .tk-arw { display: inline-block; margin: 0 6px; vertical-align: -2px; }
+  .tk-arw .ic { display: block; width: 14px; height: 14px; stroke-width: 2.6; }
+  /* Pass arrows: bold and centered on the big dates (not on date + weekday). Measured: mini date line 28px, full 40px
+     (34px on phones), weekday line under it ~18px. */
+  .mp-arrow { opacity: 1; align-self: flex-start; margin: 3px 0 0; }
+  .mp-arrow .ic { display: block; width: 22px; height: 22px; stroke-width: 3; }
+  .wp-arrow { opacity: 1; margin-bottom: 23px; }
+  .wp-arrow .ic { display: block; width: 28px; height: 28px; stroke-width: 3; }
+  @media (max-width: 400px) { .wp-arrow { margin-bottom: 22px; } }
 </style>
 
   </head>
@@ -5799,7 +5808,9 @@
   }
   /** Dates in a list line, ticket style: "OCT 22 → OCT 26" in bold caps. */
   const tkDay = d => '<b class="tk">' + esc(D.f(d, { month: 'short', day: 'numeric' }).toUpperCase()) + '</b>';
-  const tkRange = r => tkDay(r.start) + (r.end !== r.start ? ' → ' + tkDay(r.end) : '');
+  /** "OCT 22 → OCT 26": the arrow is an icon centered on the capital letters (a text → sits low next to caps). */
+  const tkArrow = '<span class="tk-arw" aria-hidden="true">' + icon('arrow', 14) + '</span><span class="sr"> to </span>';
+  const tkRange = r => tkDay(r.start) + (r.end !== r.start ? tkArrow + tkDay(r.end) : '');
   /** A position's letter square ([P], [B], [O]) for count chips — the same square as in pucks and the day panel. */
   const roleSq = role => '<span class="sq-r ' + roleCls(role) + '" aria-hidden="true">' + esc(roleL(role)) + '</span>';
   /** The big [P|MKE|Name] badge: the top of the Profile menu and of Settings. */
@@ -5850,7 +5861,7 @@
       const u = userOf(m.userId);
       return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(m.id) + '" aria-label="' + esc(fullName(u) + ': Medical') + '">' +
         '<span class="dl-who">' + memberPuck(u) + '</span>' +
-        '<span class="dl-meta">' + tkDay(m.start) + ' → ' + (m.end ? tkDay(m.end) + dlDays(m.start, m.end) : '<b class="tk">NO END</b>') + '</span></button></li>';
+        '<span class="dl-meta">' + tkDay(m.start) + tkArrow + (m.end ? tkDay(m.end) + dlDays(m.start, m.end) : '<b class="tk">NO END</b>') + '</span></button></li>';
     }).join('') + '</ul></div>';
   }
   /** The medical red cross: a solid red plus. */
@@ -8157,7 +8168,7 @@
       '<div class="wp-sec wp-foot"><div class="wp-who"><div class="wp-name">' + esc(o.who) + '</div>' + (o.whoSub ? '<div class="wp-sub">' + esc(o.whoSub) + '</div>' : '') + '</div>' + (o.med ? '' : o.decide || wpChip(o.status)) + '</div>' +
       '<div class="wp-sec wp-cals">' + cal + '</div>' + cut +
       '<div class="wp-sec wp-dates"><div><div class="wp-lab">' + (o.med ? 'Start' : 'Depart') + '</div><div class="wp-big">' + big(o.start) + '</div><div class="wp-wk">' + wk(o.start) + '</div></div>' +
-        '<span class="wp-arrow">' + icon('arrow', 20) + '</span>' +
+        '<span class="wp-arrow">' + icon('arrow', 28) + '</span>' +
         '<div class="wp-r"><div class="wp-lab">' + (o.med ? 'End' : 'Return') + '</div><div class="wp-big">' + (o.noEnd ? 'NO END' : big(o.end)) + '</div><div class="wp-wk">' + (o.noEnd ? '&nbsp;' : wk(o.end)) + '</div></div></div>' +
       (o.med ? '<div class="wp-sec wp-info"><div class="wp-lab">Notes</div><div class="wp-note">' + (o.note ? esc(o.note) : '<span class="wp-dim">None</span>') + '</div>' +
         ((o.cut || []).length ? '<div class="wp-lab wp-lab2">Lowers</div><div class="wp-cuts">' + o.cut.map(t => '<span class="wp-cutchip">' + esc(t) + ' Max</span>').join('') + '</div>' : '') + '</div>' : '') +
