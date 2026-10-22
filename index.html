@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792695173"></script>
+    <script src="config.js?v=1792695268"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792695173';
+      window.PAL_BUILD = '1792695268';
       (function () {
         function check(launch) {
           try {
@@ -3164,8 +3164,6 @@
   .wp-lab2 { margin-top: 12px; }
   .wp-foot { align-items: center; }
   .wp-who { min-width: 0; }
-  .wp-whov { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 15px; font-weight: 700; min-width: 0; }
-  .wp-puck { --tag: 22px; box-shadow: 0 0 0 1.5px var(--wp-ink); }
   .wp-st { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 12px; border-radius: 15px; font-size: 13px; font-weight: 800; }
   .wp-st-ok { background: #e3f4e8; color: #14532d; } .wp-st-pend { background: #fff3d6; color: #7a4a00; }
   .wp-st-no { background: #fde2df; color: #8c1d18; } .wp-st-off { background: #e7e8ec; color: #3f4350; }
@@ -3203,6 +3201,13 @@
   .wpass .stsl .stsl-o:not(.on) { color: #3f4350; }
   .cc-detail:empty { display: none; }
   .wpass + .cc-detail { margin: -4px 0 12px; }
+
+  /* Member on the pass: last name big (24/34), rank · position · unit under it; the status (slider 34px / chip 30px)
+     sits level with the name line, not centered on the two lines. */
+  .wpass .wp-foot { align-items: flex-start; }
+  .wp-name { font-size: 24px; line-height: 34px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wp-sub { font-size: 13px; line-height: 18px; font-weight: 600; opacity: .8; }
+  .wpass .wp-foot > .wp-st { margin-top: 2px; }
 </style>
 
   </head>
@@ -5420,10 +5425,8 @@
     return '<span class="idb" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(L) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span></span>';
   }
-  /** A member's puck — [P|MKE|Name] as one chip, like the calendar bars (no status marks). */
-  const userPuck = u => { const un = unitsList().find(x => x.code === u.unit);
-    return '<span class="idb pb wp-puck" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(roleL(u.role)) + '</span>' +
-      '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span><span class="idb-n"><span class="idb-t">' + esc(nameText(u)) + '</span></span></span>'; };
+  /** Under a member's name on the wallet pass: rank · position · unit. */
+  const memberSub = u => [u.rank, roleName(u.role), u.unit].filter(Boolean).join(' · ');
   /* Full person badge on calendar bars: [P|MKE|Lastname] as one chip. Approved = green border. */
   /** Green "going on now" dot after a name — only on the bar that covers today (from–to = the dates that bar shows). */
   // On leave / pass right now = APPROVED and today is inside the dates (pending or denied isn't "on leave", even on those days).
@@ -7611,8 +7614,9 @@
   /* ---------- Wallet pass (Review step and request details) ----------
      The request as a pass pulled from a digital wallet: Leave = navy with gold days, Pass = gold with navy days. Top: app
      name, the type, and the length; then the month calendar with the dates filled in; a perforation; Depart → Return in
-     big type with the weekdays; Location and Notes (only for the member and their admins). The member's puck and the
-     status (chip, or the admin's status slider) sit at the top, under the type. o = { type, start, end, location, note, priv (show location / notes), who (HTML), status, id, cf }.
+     big type with the weekdays; Location and Notes (only for the member and their admins). The member — last name big,
+     rank · position · unit under it — and the status (chip, or the admin's status slider, level with the name) sit at
+     the top, under the type. o.who / o.whoSub are plain text. o = { type, start, end, location, note, priv (show location / notes), who (HTML), status, id, cf }.
      With an id and conflict info (cf), the filled days are buttons that show who else is out (confDay). */
   const WP_ST = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'], Cancelled: ['x', 'off'] };
   const wpChip = st => { const m = WP_ST[st] || WP_ST.Pending; return '<span class="wp-st wp-st-' + m[1] + '" id="wpSt">' + icon(m[0], 14) + esc(st) + '</span>'; };
@@ -7640,7 +7644,7 @@
       '<div class="wp-sec wp-top"><div><div class="wp-app">BREW CITY PAL</div><div class="wp-type">' + esc(o.type.toUpperCase()) + '</div></div>' +
         '<div class="wp-r"><div class="wp-lab">Days</div><div class="wp-n">' + n + '</div></div></div>' +
       // Status: a chip for members; admins get the Approved | Pending | Denied slider right here (o.decide).
-      '<div class="wp-sec wp-foot"><div class="wp-who"><div class="wp-lab">Member</div><div class="wp-whov">' + o.who + '</div></div>' + (o.decide || wpChip(o.status)) + '</div>' +
+      '<div class="wp-sec wp-foot"><div class="wp-who"><div class="wp-name">' + esc(o.who) + '</div>' + (o.whoSub ? '<div class="wp-sub">' + esc(o.whoSub) + '</div>' : '') + '</div>' + (o.decide || wpChip(o.status)) + '</div>' +
       '<div class="wp-sec wp-cals">' + cal + '</div>' + cut +
       '<div class="wp-sec wp-dates"><div><div class="wp-lab">Depart</div><div class="wp-big">' + big(o.start) + '</div><div class="wp-wk">' + wk(o.start) + '</div></div>' +
         '<span class="wp-arrow">' + icon('arrow', 20) + '</span>' +
@@ -7669,7 +7673,7 @@
     const priv = managesReq(r) || r.userId === S.me, showCf = r.status !== 'Cancelled' && n <= 92;
     const html = modalHead(esc(r.type) + ' Details', r.type === 'Leave' ? 'calendar' : 'clipboard') +
       '<div class="modal-b req-view">' +
-      walletPass({ type: r.type, start: r.start, end: r.end, location: r.location, note: r.note, priv, who: userPuck(u), status: r.status, decide, id: r.id, cf: showCf ? reqConflicts(r) : null }) +
+      walletPass({ type: r.type, start: r.start, end: r.end, location: r.location, note: r.note, priv, who: calName(u), whoSub: memberSub(u), status: r.status, decide, id: r.id, cf: showCf ? reqConflicts(r) : null }) +
       // Tap a red (conflict) day on the pass: who else is out that day shows here.
       (showCf ? '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>' : '') +
       calAddHtml(r, true) +
@@ -8111,9 +8115,9 @@
       else {
         // Review = the request as a wallet pass (calendar, dates, location, notes, member, status).
         const ids = wizIds(), one = !w.creating && ids.length === 1 && userOf(ids[0]);
-        const whoHtml = one ? userPuck(one) : esc(who) + (w.creating ? ' · new member' : ids.length > 1 ? ' · one request each' : '');
+        const wn = one ? [calName(one), memberSub(one)] : w.creating ? [w.nu.name.split(' ').pop(), memberSub(w.nu) + ' · new member'] : [plural(ids.length, 'member'), who + ' · one request each'];
         body = '<div class="review">' +
-        walletPass({ type: w.type, start: w.start, end: w.end, location: String(w.location || '').trim(), note: w.note.trim(), priv: true, who: whoHtml, status: 'Pending', decide: wizDecides() ? statusSlider({ id: '', status: w.status || 'Pending' }, 'wizStatus', '', false) : '' }) +
+        walletPass({ type: w.type, start: w.start, end: w.end, location: String(w.location || '').trim(), note: w.note.trim(), priv: true, who: wn[0], whoSub: wn[1], status: 'Pending', decide: wizDecides() ? statusSlider({ id: '', status: w.status || 'Pending' }, 'wizStatus', '', false) : '' }) +
         (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>'
           : '<div class="msgs"><div class="msg i">' + icon('check', 15) + '<span>Dates look good — no conflicts.</span></div></div>') +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
