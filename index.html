@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792699851"></script>
+    <script src="config.js?v=1792700436"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792699851';
+      window.PAL_BUILD = '1792700436';
       (function () {
         function check(launch) {
           try {
@@ -1456,7 +1456,7 @@
     background: var(--mark); color: var(--on-primary); font-size: var(--mk-fs); font-weight: 800; font-variant-numeric: tabular-nums; }
   /* Today's pill on the yellow selected-day ring: navy text. */
   :is(.cell, .wk-day, .qd).is-open.today::after { color: var(--navy); }
-  :is(.cell.today .dnum, .cell.cc.today .cc-n, .wk-day.today .wk-num, .qd.today .qn) { opacity: 0; }
+  :is(.cell.today .dnum, .cell.cc.today .cc-n, .qd.today .qn) { opacity: 0; }
   .cell .cell-head, .month.compact .cell.cc > .cc-n { position: relative; z-index: 4; }
   .mo, .cs-lanes { z-index: 4; }
   .qd .qbar { position: relative; z-index: 4; }
@@ -3378,6 +3378,39 @@
      width (wide enough for 3 letters; a longer unit code still fits), so names start at the same spot on every row. */
   .idb > .idb-r { width: var(--tag); min-width: var(--tag); padding: 0; box-sizing: border-box; }
   .idb > .idb-u { min-width: calc(var(--tag) * 1.9 + 1.5px); padding: 0 4px; box-sizing: border-box; justify-content: center; text-align: center; }
+
+  /* Admin tables (Teams, Positions, Event Types): the on / off switch has its own **On** column at the far right of the
+     row (label left, switch right — the Settings rule), not mixed in with the buttons; a switched-off row is faded
+     (its switch isn't). Actions use the table language: Edit an outlined pill, Managers / Delete outlined circles. */
+  .rtable th.th-on { width: 1%; text-align: right; padding-right: 16px; }
+  .rtable td.on-cell { width: 1%; text-align: right; padding-right: 16px; white-space: nowrap; }
+  .rtable td.on-cell { vertical-align: middle; } .rtable td.on-cell .m3sw { margin-left: auto; vertical-align: middle; display: inline-flex; }
+  .rtable tr.is-off > td:not(.on-cell) { opacity: .5; }
+
+  /* Grid rows (Admin Alerts, Daily Report, blackout Applies To): the same 34px outlined circles as table rows. */
+  .rg-acts { display: flex; gap: 8px; justify-content: flex-end; }
+  .rg-acts .btn.act.ico, .rg-acts .btn.act.ico:has(> .ic:first-child) { width: 34px; min-width: 34px; height: 34px; padding: 0; justify-content: center; border: 1px solid var(--outline); border-radius: 50%; }
+  .rg-acts .btn.act.del { color: var(--error); }
+
+  /* Settings: the top card is the member's big badge itself (the Profile menu's header) — full width, the cards'
+     corners and spacing, no caption. */
+  .pm-bh.set-badge { height: 56px; font-size: 22px; border: 1.5px solid #0b1730; border-radius: 16px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .pm-bh.set-badge .bh-r { width: 56px; } .pm-bh.set-badge .bh-u { min-width: 76px; }
+  .pm-bh.set-badge .bh-n { line-height: 56px; text-align: left; padding: 0 18px; }
+
+  /* Week view: today looks like every other day (weekday, big date, month, counts) — just its ring and the date in the
+     highlight color; no corner date bubble (that's for Month and Quarter, where the date is small). */
+  .wk-day.today::after { display: none !important; }
+  .wk-day.today .wk-num { opacity: 1; color: var(--mark); }
+
+  /* Count chips (Month, Week): the position's letter square + count / max, like the Quarter view and the day panel. */
+  .sq-r { display: inline-grid; place-items: center; width: 1.3em; height: 1.3em; margin-right: 4px; border-radius: 3px; font-size: .82em; font-weight: 900;
+    box-shadow: 0 0 0 1px #0b1730; vertical-align: -.15em; flex: none; }
+  .qc-day, .wk-q > span { display: inline-flex; align-items: center; }
+  .qc-day b, .wk-q b { font-weight: 900; }
+  .qc-day { gap: 0; }
+  /* Dates in list lines, ticket style ("OCT 22 → OCT 26"). */
+  .tk { font-weight: 900; letter-spacing: .02em; color: var(--ink); white-space: nowrap; }
 </style>
 
   </head>
@@ -3764,8 +3797,8 @@
         '<td class="rg-r">' + (x.roles.length ? esc(x.roles.map(rolePl).join(', ')) : none('Pick positions')) + '</td>' +
         cols.map(c => { const on = (x[h.key] || []).includes(c[0]);
           return '<td class="ag-k"><button type="button" class="rsel' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" aria-label="' + esc(c[1]) + '"' + attrs('col', i, c[0]) + '>' + (on ? icon('check', 14) : '') + '</button></td>'; }).join('') +
-        '<td class="ag-del"><div class="rg-acts"><button type="button" class="btn sm act' + (i === ed ? ' on' : '') + '"' + attrs('edit', i) + ' aria-label="Edit this row" aria-expanded="' + (i === ed) + '" title="Edit">' + icon('pencil', 14) + '</button>' +
-          '<button type="button" class="btn sm del act"' + attrs('del', i) + ' aria-label="Delete this row" title="Delete">' + icon('trash', 14) + '</button></div></td></tr>' +
+        '<td class="ag-del"><div class="rg-acts"><button type="button" class="btn sm act ico' + (i === ed ? ' on' : '') + '"' + attrs('edit', i) + ' aria-label="Edit this row" aria-expanded="' + (i === ed) + '" title="Edit">' + icon('pencil', 14) + '</button>' +
+          '<button type="button" class="btn sm del act ico"' + attrs('del', i) + ' aria-label="Delete this row" title="Delete">' + icon('trash', 14) + '</button></div></td></tr>' +
       (i === ed ? '<tr class="rg-ed"><td colspan="' + span + '"><div class="rg-box"><div class="rg-pick">' +
           '<span class="sc-l">Units</span><div class="push-btns">' + (h.any ? chip('anyU', i, null, !x.units.length, 'Any') : '') + units(x).map(c => chip('unit', i, c, x.units.includes(c), c)).join('') + '</div>' +
           '<span class="sc-l">Positions</span><div class="push-btns">' + (h.any ? chip('anyR', i, null, !x.roles.length, 'Any') : '') + roles(x).map(r => chip('role', i, r, x.roles.includes(r), rolePl(r))).join('') + '</div></div>' +
@@ -3870,7 +3903,7 @@
   /** Pill / button content for the picked people: [P|MKE] Last, First for one; a count bubble and names for several. */
   function personPillInner(st) {
     const ids = personIds(st);
-    return ids.length === 1 ? idBadge(userOf(ids[0])) + '<span>' + nameHtml(userOf(ids[0]), true) + '</span>'
+    return ids.length === 1 ? memberPuck(userOf(ids[0]))
       : '<span class="who-n">' + ids.length + '</span><span>' + esc(personLabel(st)) + '</span>';
   }
   function personConfOk(r, F) {
@@ -4871,7 +4904,7 @@
     const people = S.users.filter(u => (u.active || picked.has(u.id)) && (!withConf || withConf.has(u.id) || picked.has(u.id)));
     const row = u => '<button type="button" class="who-row' + (picked.has(u.id) ? ' on' : '') + '" role="option" aria-selected="' + picked.has(u.id) + '" data-act="fpPick" data-id="' + esc(u.id) + '"' + scAttr(sc) +
       ' data-q="' + esc((lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit + (u.id === S.me ? ' me' : '')).toLowerCase()) + '">' +
-      '<span class="who-ck">' + (picked.has(u.id) ? icon('check', 16) : '') + '</span>' + idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span></button>';
+      '<span class="who-ck">' + (picked.has(u.id) ? icon('check', 16) : '') + '</span>' + memberPuck(u) + '</button>';
     const meU = people.find(u => u.id === S.me);
     const groups = (meU ? '<div class="who-h">Me</div>' + row(meU) : '') + ROLES.map(role => {
       const list = people.filter(u => u.role === role && u.id !== S.me).sort((a, b) => lastName(a).localeCompare(lastName(b)));
@@ -4989,14 +5022,14 @@
     const row = (id, inner, label) => '<button type="button" class="pp-row' + (isOn(id) ? ' on' : '') + '" data-act="setPerson" data-id="' + esc(id) + '" data-q="' + esc(label.toLowerCase()) + '"' +
       (picked ? ' aria-pressed="' + isOn(id) + '"' : isOn(id) ? ' aria-current="true"' : '') + '>' + inner + '<span class="pp-ck">' + (isOn(id) ? icon('check', 18) : '') + '</span></button>';
     const meU = people.find(u => u.id === S.me);
-    const personRow = u => row(u.id, idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span>',
+    const personRow = u => row(u.id, memberPuck(u),
       lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit + ' me');
     // "Me" first, then everyone else by position.
     const groups = (meU ? '<div class="pp-g"><div class="pp-h">Me</div>' + personRow(meU) + '</div>' : '') + ROLES.map(role => {
       const list = people.filter(u => u.role === role && u.id !== S.me).sort((a, b) => lastName(a).localeCompare(lastName(b)));
       if (!list.length) return '';
       return '<div class="pp-g"><div class="pp-h">' + esc(roleGroup(role)) + '</div>' +
-        list.map(u => row(u.id, idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span>',
+        list.map(u => row(u.id, memberPuck(u),
           lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit)).join('') + '</div>';
     }).join('');
     const confRow = ''; // Conflict mode lives in the Filters sheet
@@ -5233,7 +5266,7 @@
     const roles = [...new Set(list.map(r => userOf(r.userId).role))].sort((a, b) => posRank(a).localeCompare(posRank(b)));
     const row = r => { const u = userOf(r.userId);
       return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
-        '<span class="dl-who">' + idBadge(u) + nameHtml(u) + '</span>' +
+        '<span class="dl-who">' + memberPuck(u) + '</span>' +
         '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>'; };
     const sections = roles.map(role => {
       const rs = list.filter(r => userOf(r.userId).role === role).sort((a, b) => (a.userId === S.me ? 0 : 1) - (b.userId === S.me ? 0 : 1) || byPosName(a, b));
@@ -5485,7 +5518,7 @@
     // green = slots open. Positions with no max stay neutral.
     const st = over ? ' over' : q && c === q ? ' full' : q ? ' open' : c ? '' : ' zero';
     return '<button class="qc-day' + st + '" data-act="quotaInfo" data-date="' + d + '" data-role="' + esc(role) + '" data-type="' + esc(type) + '" title="' + esc(msg) + '" aria-label="' + esc(msg) + '">' +
-      esc(roleL(role)) + (type === 'Leave' ? '' : '·' + esc(tLetter(type))) + ': ' + c + (q ? '/' + q : '') + '</button>';
+      roleSq(role) + (type === 'Leave' ? '' : esc(tLetter(type)) + ' ') + '<b>' + c + '</b>' + (q ? '/' + q : '') + '</button>';
   }
 
   /* ---------- Conflict days ----------
@@ -5560,7 +5593,7 @@
         acts = '<span class="cf-acts">' + (canDelete(r) ? b('del', 'cfDelete', 'trash', 'Delete') : '') + (canEdit(r) ? b('', 'cfEdit', 'pencil', 'Edit') : '') + '</span>';
       }
       return '<li class="cf-row"><span class="dl-who">' + personBadge(r, true) + '</span>' +
-        '<span class="dl-meta">' + r.type + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + ' · ' + plural(D.days(r.start, r.end), 'day') + '</span>' +
+        '<span class="dl-meta">' + r.type + ' · ' + tkRange(r) + ' · ' + plural(D.days(r.start, r.end), 'day') + '</span>' +
         '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span>' + acts + '</li>';
     };
     const html = modalHead('Conflict · ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })), 'alert') + '<div class="modal-b">' +
@@ -5603,6 +5636,15 @@
     return '<span class="idb" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(L) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span></span>';
   }
+  /** Dates in a list line, ticket style: "OCT 22 → OCT 26" in bold caps. */
+  const tkDay = d => '<b class="tk">' + esc(D.f(d, { month: 'short', day: 'numeric' }).toUpperCase()) + '</b>';
+  const tkRange = r => tkDay(r.start) + (r.end !== r.start ? ' → ' + tkDay(r.end) : '');
+  /** A position's letter square ([P], [B], [O]) for count chips — the same square as in pucks and the day panel. */
+  const roleSq = role => '<span class="sq-r ' + roleCls(role) + '" aria-hidden="true">' + esc(roleL(role)) + '</span>';
+  /** The big [P|MKE|Name] badge: the top of the Profile menu and of Settings. */
+  const bigBadge = u => { const un = unitsList().find(x => x.code === u.unit);
+    return '<div class="pm-bh" aria-label="' + esc(fullName(u)) + '"><span class="bh-r ' + roleCls(u.role) + '" aria-hidden="true">' + esc(roleL(u.role)) + '</span>' +
+      '<span class="bh-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(u.unit) + '</span><span class="bh-n" aria-hidden="true">' + esc(calName(u)) + '</span></div>'; };
   /** Under a member's name on the wallet pass: rank · position · unit. */
   const memberSub = u => [u.rank, roleName(u.role), u.unit].filter(Boolean).join(' · ');
   /** A member as their puck — [P|MKE|Last name], like All Requests and the calendar (no status marks). */
@@ -5775,8 +5817,8 @@
       return '<div class="wk-day' + (d === S.today ? ' today' : '') + (D.dow(d) === 0 ? ' wk-sun' : '') + (D.dow(d) % 6 === 0 ? ' wknd' : '') + ' ' + dayWarn(d) + boCls(d) + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + ' role="button" tabindex="0" aria-label="Open day view for ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })) + '" data-act="gotoDay" data-date="' + d + '">' +
         '<div class="wk-dow">' + DOW[D.dow(d)] + '</div><div class="wk-num">' + Number(d.slice(8)) + '</div>' +
         '<div class="wk-date">' + D.f(d, { month: 'short' }) + '</div>' +
-        (S.priv ? '' : '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">P: ' + p + (qp ? '/' + qp : '') + '</span>' +
-        '<span class="' + (qb && b > qb ? 'over' : '') + '">B: ' + b + (qb ? '/' + qb : '') + '</span></div>') + '</div>';
+        (S.priv ? '' : '<div class="wk-q"><span class="' + (qp && p > qp ? 'over' : '') + '">' + roleSq('Pilot') + '<b>' + p + '</b>' + (qp ? '/' + qp : '') + '</span>' +
+        '<span class="' + (qb && b > qb ? 'over' : '') + '">' + roleSq('Boom') + '<b>' + b + '</b>' + (qb ? '/' + qb : '') + '</span></div>') + '</div>';
     }).join('');
     const col = (a, z) => 'grid-column:' + (D.diff(ws, D.max(a, ws)) + 1) + '/' + (D.diff(ws, D.min(z, we)) + 2);
     // Band titles: just the position's plural name — Pilots, Booms, Maintenance, Other…
@@ -6710,15 +6752,14 @@
         '<td class="num">' + plural(Number(t.max) || 0, 'day') + '</td>' +
         '<td>' + (t.mode === 'limit' ? 'Limit' : 'Warn') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
-          sw(!t.disabled, 'toggleType', t.name + ' enabled', ' data-name="' + esc(t.name) + '"') +
           '<button class="btn sm act" data-act="editType" data-name="' + esc(t.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
-          (used || builtIn ? '' : '<button class="btn sm del act" data-act="deleteType" data-name="' + esc(t.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
-        '</div></td></tr>';
+          (used || builtIn ? '' : '<button class="btn sm del act ico" data-act="deleteType" data-name="' + esc(t.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
+        '</div></td><td class="on-cell">' + sw(!t.disabled, 'toggleType', t.name + ' enabled', ' data-name="' + esc(t.name) + '"') + '</td></tr>';
     }).join('') +
       '<tr class="ty-bo"><td><span class="badge bo-badge t-ltr">' + icon('ban', 12) + '</span></td><td class="strong">Blackout</td><td class="num"><span class="muted">—</span></td>' +
-        '<td><span class="muted">Admin Only</span></td><td class="acts-cell"><div class="row-acts"><span class="muted">Set in Blackout dates</span></div></td></tr>';
+        '<td><span class="muted">Admin Only</span></td><td class="acts-cell"><div class="row-acts"><span class="muted">Set in Blackout dates</span></div></td><td class="on-cell"></td></tr>';
     return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Tag</th><th scope="col">Type</th><th scope="col" class="num">Max Length</th>' +
-      '<th scope="col">When Over</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      '<th scope="col">When Over</th><th scope="col" class="th-acts">Actions</th><th scope="col" class="th-on">On</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
   /** Event type editor (new or existing): name, tag letter, color, max days, Warn / Limit; Cancel · Save. */
   function openTypeEditor(name) {
@@ -6750,14 +6791,13 @@
         '<td class="num">' + used + '</td>' +
         '<td>' + (managersOf({ role: name }).map(u => esc(nameText(u))).join(', ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
-          sw(!r.disabled, 'toggleRole', name + ' enabled', ' data-name="' + esc(name) + '"') +
           '<button class="btn sm act" data-act="editRole" data-name="' + esc(name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
-          '<button class="btn sm act" data-act="roleManagers" data-name="' + esc(name) + '" title="Position managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
-          (used || builtIn ? '' : '<button class="btn sm del act" data-act="deleteRole" data-name="' + esc(name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
-        '</div></td></tr>';
+          '<button class="btn sm act ico" data-act="roleManagers" data-name="' + esc(name) + '" title="Position managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
+          (used || builtIn ? '' : '<button class="btn sm del act ico" data-act="deleteRole" data-name="' + esc(name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
+        '</div></td><td class="on-cell">' + sw(!r.disabled, 'toggleRole', name + ' enabled', ' data-name="' + esc(name) + '"') + '</td></tr>';
     }).join('');
     return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Position</th>' +
-      '<th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      '<th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th><th scope="col" class="th-on">On</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
   /** Position editor (new or existing): name, letter, max on leave, Can see and color; Cancel · Save. */
   function openRoleEditor(name) {
@@ -6808,7 +6848,7 @@
     const lim = S.isOrg ? null : S.adminScope;
     const pool = S.mgrPool = S.users.filter(u => u.active && u.id !== S.me && !managesPart(u.id, w) && ((S.admins || {})[u.id] || {}).level !== 'org' && (!lim || inScope(lim, u))).sort(byLast);
     const row = u => { const a = S.admins[u.id];
-      return '<div class="ta-row">' + idBadge(u) + '<span class="pp-n">' + nameHtml(u) + ' <span class="badge adm-b">' + esc(scopeText(a.scope)) + '</span></span>' +
+      return '<div class="ta-row">' + memberPuck(u) + '<span class="pp-n"><span class="badge adm-b">' + esc(scopeText(a.scope)) + '</span></span>' +
         '<span class="ta-acts"><button type="button" class="btn sm" data-act="mgrEdit" data-id="' + esc(u.id) + '">' + icon('pencil', 14) + 'Edit</button>' +
         '<button type="button" class="btn sm del" data-act="mgrRemove" data-id="' + esc(u.id) + '">' + icon('x', 14) + 'Remove</button></span></div>'; };
     S.mgrFor = w;
@@ -6829,13 +6869,12 @@
         '<td class="num">' + used + '</td>' +
         '<td>' + (managersOf({ unit: un.code }).map(u => esc(nameText(u))).join(', ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
-          sw(!un.disabled, 'toggleUnit', un.code + ' enabled', ' data-code="' + esc(un.code) + '"') +
           '<button class="btn sm act" data-act="editUnit" data-code="' + esc(un.code) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
-          '<button class="btn sm act" data-act="teamAdmins" data-code="' + esc(un.code) + '" title="Team managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
-          (used ? '' : '<button class="btn sm del act" data-act="deleteUnit" data-code="' + esc(un.code) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
-        '</div></td></tr>';
+          '<button class="btn sm act ico" data-act="teamAdmins" data-code="' + esc(un.code) + '" title="Team managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
+          (used ? '' : '<button class="btn sm del act ico" data-act="deleteUnit" data-code="' + esc(un.code) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
+        '</div></td><td class="on-cell">' + sw(!un.disabled, 'toggleUnit', un.code + ' enabled', ' data-code="' + esc(un.code) + '"') + '</td></tr>';
     }).join('');
-    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Name</th><th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Name</th><th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th><th scope="col" class="th-on">On</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
   /* Roster page (admin): add members, edit, reset PINs, deactivate / reactivate. Opened from the Roster tab → Manage. */
@@ -7323,8 +7362,8 @@
         (rows.length ? '<ul class="dl-list">' + rows.map(r => {
           const u = userOf(r.userId);
           return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
-            '<span class="dl-who">' + idBadge(u) + nameHtml(u) + '</span>' +
-            '<span class="dl-meta">' + esc(roleName(u.role)) + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + '</span>' +
+            '<span class="dl-who">' + memberPuck(u) + '</span>' +
+            '<span class="dl-meta">' + esc(roleName(u.role)) + ' · ' + tkRange(r) + '</span>' +
             '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>';
         }).join('') + '</ul>' : '<div class="dl-none">No one</div>') + '</div>';
     }).join('');
@@ -7534,11 +7573,7 @@
     const el = document.createElement('div');
     el.id = 'pmenu'; el.className = 'pm-pop'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'Profile');
     // Header: one big [P|MKE|Name] badge filling the top of the menu (same colors as the small badges).
-    const L = roleL(me.role), un = unitsList().find(x => x.code === me.unit);
-    el.innerHTML = '<div class="pm-bh" aria-label="' + esc(fullName(me)) + '">' +
-        '<span class="bh-r ' + roleCls(me.role) + '" aria-hidden="true">' + esc(L) + '</span>' +
-        '<span class="bh-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(me.unit) + '</span>' +
-        '<span class="bh-n" aria-hidden="true">' + esc(calName(me)) + '</span></div>' +
+    el.innerHTML = bigBadge(me) +
       '<div class="pm-notes" id="pmNotes">' + pmNotesHtml() + '</div>' +
       '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full seg-slide" role="group" aria-label="Appearance" data-sk="theme"><span class="seg-thumb" aria-hidden="true"></span>' +
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
@@ -7737,8 +7772,8 @@
       (S.isAdmin ? adminModeBadge() : '') + '</div>' +
       '<div class="scroll" id="profileScroll">' +
 
-      '<div class="panel"><div class="uhead"><div class="avatar">' + esc(initials(me)) + '</div><div><div class="nm">' + esc(me.rank + ' ' + me.name) + '</div>' +
-        '<div style="display:flex;gap:6px;margin-top:4px"><span class="badge">' + esc(roleName(me.role)) + '</span>' + unitBadge(me.unit) + '</div></div></div></div>' +
+      // The top card IS the member's big [P|MKE|Name] badge (the Profile menu's header), no box or caption around it.
+      bigBadge(me).replace('class="pm-bh"', 'class="pm-bh set-badge"') +
 
       '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' +
       (S.myAdmin ? '<div class="panel" id="alertsPanel">' + alertsPanelHtml() + '</div>' : '') +
@@ -8118,7 +8153,7 @@
     const rows = hits.map(r => {
       const u = userOf(r.userId);
       return '<div class="bor-row">' +
-        '<div class="bor-top"><div class="bor-who">' + idBadge(u) + '<b>' + esc(nameText(u)) + '</b></div>' +
+        '<div class="bor-top"><div class="bor-who">' + memberPuck(u) + '</div>' +
           '<div class="bor-when"><span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '</span>' + esc(sd(r.start, r.end)) +
             ' <span class="muted">· ' + plural(D.days(r.start, r.end), 'day') + '</span></div>' +
           '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></div>' +
@@ -8151,8 +8186,8 @@
         '<div class="meta" style="margin-top:4px;white-space:normal">Requests on these days show a conflict until an admin allows, moves, denies or deletes them.</div></div>' +
       '<div class="rv"><span class="lbl">Reason &amp; Notes</span><div class="note">' + (b.note ? esc(b.note) : '<span class="muted">No reason given.</span>') + '</div></div>' +
       (S.isAdmin ? '<div class="rv"><span class="lbl">Requests to Review</span>' + (hits.length
-        ? '<ul class="dl-list">' + hits.map(r => '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '"><span class="dl-who">' + idBadge(userOf(r.userId)) + nameHtml(userOf(r.userId)) + '</span>' +
-            '<span class="dl-meta">' + r.type + ' · ' + D.short(r.start) + ' → ' + D.short(r.end) + '</span><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>').join('') + '</ul>'
+        ? '<ul class="dl-list">' + hits.map(r => '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '"><span class="dl-who">' + memberPuck(userOf(r.userId)) + '</span>' +
+            '<span class="dl-meta">' + r.type + ' · ' + tkRange(r) + '</span><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>').join('') + '</ul>'
         : '<div class="note muted">None — nothing on these days needs a decision.</div>') +
         (hits.length ? '<button class="btn primary sm" data-act="boResolveOpen" data-id="' + esc(b.id) + '" style="margin-top:8px">' + icon('alert', 14) + 'Resolve Conflicts</button>' : '') + '</div>' : '') +
       '</div></div><div class="modal-f">' + foot + '</div>';
@@ -8185,7 +8220,7 @@
     }
     const ids = wizIds();
     return (ids.length > 1 ? '<span class="who-n">' + ids.length + '</span><span>' + esc(ids.map(id => lastName(userOf(id))).join(', ')) + '</span>'
-      : ids.length ? idBadge(userOf(ids[0])) + '<span>' + esc(nameText(userOf(ids[0]))) + '</span>'
+      : ids.length ? memberPuck(userOf(ids[0]))
       : icon('userPlus', 16) + '<span>Choose members…</span>') + icon('down', 14);
   }
   function whoPopHtml() {
@@ -8198,7 +8233,7 @@
   function whoListHtml(people, picked, act, top) {
     const row = u => '<button type="button" class="who-row' + (picked.has(u.id) ? ' on' : '') + '" role="option" aria-selected="' + picked.has(u.id) + '" data-act="' + act + '" data-id="' + esc(u.id) + '"' +
       ' data-q="' + esc((lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit + (u.id === S.me ? ' me' : '')).toLowerCase()) + '">' +
-      '<span class="who-ck">' + (picked.has(u.id) ? icon('check', 16) : '') + '</span>' + idBadge(u) + '<span class="pp-n">' + nameHtml(u) + '</span></button>';
+      '<span class="who-ck">' + (picked.has(u.id) ? icon('check', 16) : '') + '</span>' + memberPuck(u) + '</button>';
     const meU = people.find(u => u.id === S.me);
     const groups = (meU ? '<div class="who-h">Me</div>' + row(meU) : '') + ROLES.map(role => {
       const list = people.filter(u => u.role === role && u.id !== S.me).sort((a, b) => lastName(a).localeCompare(lastName(b)));
