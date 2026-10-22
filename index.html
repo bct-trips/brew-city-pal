@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792690164"></script>
+    <script src="config.js?v=1792690763"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792690164';
+      window.PAL_BUILD = '1792690763';
       (function () {
         function check(launch) {
           try {
@@ -3095,36 +3095,45 @@
   .conf-banner .btn.icon-btn.conf-x { width: 28px !important; height: 28px !important; min-width: 28px; min-height: 28px; padding: 0; flex: none; }
   .conf-banner .conf-x .ic { width: 16px; height: 16px; }
 
-  /* ---------- M3 outlined text field (.field.m3f): request form's Departure, Return, Location, Notes ----------
-     56px tall, 16px side padding, 16px text centered; 1px outline, 2px primary outline on focus (label turns primary);
-     the label sits on the outline (cut out with the dialog's color); supporting text 12/16 under it, red in the error
-     state (2px error outline, red label). Corner radius follows the app's fields (12px). */
-  .field.m3f { position: relative; gap: 0; margin: 10px 0 8px; }
-  .field.m3f > label { position: absolute; z-index: 1; top: -8px; left: 12px; max-width: calc(100% - 24px); margin: 0; padding: 0 4px;
-    font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .01em; color: var(--muted); background: var(--card);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
-  .field.m3f > input, .field.m3f > textarea { height: 56px; min-height: 56px; padding: 0 16px; border: 1px solid var(--outline); border-radius: 12px;
-    background: transparent; font-size: 16px; line-height: 24px; box-sizing: border-box; }
-  .field.m3f > textarea { height: auto; min-height: 88px; padding: 16px; resize: vertical; }
-  .field.m3f > :is(input, textarea):hover { border-color: var(--ink); }
-  .field.m3f > :is(input, textarea):focus { outline: none; border: 2px solid var(--primary); padding-left: 15px; }
-  .field.m3f > textarea:focus { padding: 15px; }
-  .field.m3f:focus-within > label { color: var(--primary); }
-  .field.m3f > [aria-invalid="true"], .field.m3f > [aria-invalid="true"]:focus { border: 2px solid var(--no-bg); padding-left: 15px; }
-  .field.m3f:has(> [aria-invalid="true"]) > label { color: var(--no-bg); }
-  .field.m3f > input[type="date"] { display: flex; align-items: center; -webkit-appearance: none; appearance: none; }
-  .field.m3f > input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
-  .field.m3f > input[type="date"]::-webkit-calendar-picker-indicator { opacity: .7; }
-  .m3-sup { min-height: 0; padding: 4px 16px 0; font-size: 12px; line-height: 16px; color: var(--muted); }
-  .m3-sup:empty { display: none; }
-  .m3-sup.err { color: var(--no-bg); font-weight: 600; }
-  .wiz-sheet .field.m3f { margin: 10px 0 8px; gap: 0; }
-  .wiz-sheet .wiz-dates { gap: 12px; margin: 4px 0 8px; }
-  .wiz-sheet .wiz-dates .field.m3f { margin: 10px 0 0; }
-  .wiz-sheet .field.m3f > textarea { height: auto; min-height: 88px; padding: 16px; }
-  .wiz-sheet .field.m3f > textarea:focus { padding: 15px; }
-  .wiz-dates .field.m3f > input[type="date"] { height: 56px; padding: 0 16px; border-radius: 12px; }
-  .wiz-dates .field.m3f > input[type="date"]:focus { padding-left: 15px; }
+  /* ---------- Pill fields (.field.pf): the request form's Departure, Return, Location, Notes ----------
+     Built like the search pill (.lsearch): 1px outline, transparent fill, fully rounded, 16px text, a 3px focus ring.
+     Label above (13.5px muted, title case). One-line fields are 48px pills: Location with a pin on the left; dates
+     with the date on the left and a calendar icon on the right (the whole pill opens the picker). The notes box is
+     the same outline with 20px corners (longer text). Error: 2px red outline, message under the field in red. */
+  .field.pf { gap: 6px; margin: 0 0 12px; }
+  .field.pf > label { margin: 0; font-size: 13.5px; line-height: 18px; font-weight: 600; color: var(--muted); }
+  .field.pf .pf-opt { font-weight: 500; opacity: .8; margin-left: 4px; }
+  .pill-in { position: relative; display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 18px; box-sizing: border-box;
+    border: 1px solid var(--outline); border-radius: 24px; background: transparent; color: var(--muted); }
+  .pill-in:hover { border-color: var(--ink); }
+  .pill-in:focus-within { outline: 3px solid var(--focus); outline-offset: 1px; }
+  .pill-in > .ic { flex: none; }
+  .pill-in > input { flex: 1; min-width: 0; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent;
+    color: var(--on-surface); font-size: 16px; outline: none; box-shadow: none; }
+  .pill-in > input:focus { outline: none; }
+  .pill-in:has(> [aria-invalid="true"]) { border: 2px solid var(--no-bg); padding: 0 17px; }
+  .pill-in:has(> [aria-invalid="true"]) > .ic { color: var(--no-bg); }
+  .pill-in:has(> [aria-invalid="true"]):focus-within { outline-color: color-mix(in srgb, var(--no-bg) 35%, transparent); }
+  .field.pf:has([aria-invalid="true"]) > label { color: var(--no-bg); }
+  .pf-sup { padding: 0 18px; font-size: 12.5px; line-height: 16px; font-weight: 600; color: var(--no-bg); }
+  .pf-sup:empty { display: none; }
+  /* Dates: the value on the left (iPhone too: padding centers it, not line-height), the calendar icon on the right;
+     the browser's own picker button is stretched invisibly over the whole pill so any click opens it. */
+  .pill-date > input[type="date"] { -webkit-appearance: none; appearance: none; position: static; height: 46px; padding: 11px 0; line-height: 24px;
+    box-sizing: border-box; display: block; text-align: left; }
+  .pill-date > input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+  .pill-date > input[type="date"]::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: auto; height: auto; margin: 0; padding: 0; opacity: 0; cursor: pointer; }
+  .pill-date > .ic { order: 2; pointer-events: none; color: var(--on-surface); opacity: .75; }
+  @supports (-moz-appearance: none) { .pill-date > .ic { display: none; } } /* Firefox draws its own calendar button */
+  .field.pf > .pf-box { min-height: 96px; padding: 13px 18px; border: 1px solid var(--outline); border-radius: 20px; background: transparent;
+    font-size: 16px; line-height: 22px; resize: vertical; box-sizing: border-box; }
+  .field.pf > .pf-box:hover { border-color: var(--ink); }
+  .field.pf > .pf-box:focus { outline: 3px solid var(--focus); outline-offset: 1px; }
+  .wiz-sheet .field.pf { margin: 0 0 12px; gap: 6px; }
+  .wiz-sheet .field.pf > .pf-box { height: auto; min-height: 96px; padding: 13px 18px; }
+  .wiz-sheet .wiz-dates { gap: 12px; margin: 4px 0 12px; }
+  .wiz-sheet .wiz-dates .field.pf { margin: 0; }
+  .wiz-dates .pill-date > input[type="date"] { width: auto; height: 46px; border: 0; padding: 11px 0; border-radius: 0; }
 </style>
 
   </head>
@@ -3190,6 +3199,7 @@
     clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     crown: '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
     stamp: '<path d="M5 22h14"/><path d="M19.27 13.73A2.5 2.5 0 0 0 17.5 13h-11A2.5 2.5 0 0 0 4 15.5V17a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1.5c0-.66-.26-1.3-.73-1.77Z"/><path d="M14 13V8.5C14 7 15 7 15 5a3 3 0 0 0-3-3c-1.66 0-3 1-3 3s1 2 1 3.5V13"/>',
+    pin: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
     home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>',
     trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>'
   };
@@ -8004,9 +8014,11 @@
             '<p class="meta sc-note">' + ((w.boRows || []).length ? 'Only these people see it and are blocked by it' + (boLim() ? ' (limited to your team).' : '.') : boLim() ? 'No rows: your whole team.' : 'No rows: everyone.') + '</p></div>' : '') +
         renderWizDates() +
         // Location: required on leave / passes; private like the note (only the member and their admins see it).
-        // M3 outlined text fields (.m3f): the label sits on the outline; supporting text (or the error) under the field.
-        (isBo ? '' : '<div class="field m3f"><label for="wzL">Location' + REQ + '</label><input id="wzL" maxlength="80" autocomplete="off" placeholder="City, state (or base)" value="' + esc(w.location || '') + '" data-model="wiz.location" data-live="wizLoc" aria-required="true" aria-describedby="wzLSup"><div class="m3-sup" id="wzLSup"></div></div>') +
-        '<div class="field m3f"><label for="wzN">' + (isBo ? 'Reason &amp; Notes' : 'Trip Reason &amp; Notes') + '</label><textarea id="wzN" maxlength="' + (isBo ? 80 : 500) + '" data-model="wiz.note" placeholder="' + (isBo ? 'e.g. ORE week, UTA' : 'Destination, reason, contact info…') + '" aria-describedby="wzNSup">' + esc(w.note) + '</textarea><div class="m3-sup" id="wzNSup">Optional</div></div>' +
+        // Pill fields like the search box (.pf): label above; Location is a short one-line pill with a pin; the notes are a
+        // rounded box (longer text). The error shows on the field with its message under it.
+        (isBo ? '' : '<div class="field pf"><label for="wzL">Location' + REQ + '</label><div class="pill-in">' + icon('pin', 18) +
+          '<input id="wzL" maxlength="80" autocomplete="off" placeholder="e.g. Disneyland" value="' + esc(w.location || '') + '" data-model="wiz.location" data-live="wizLoc" aria-required="true" aria-describedby="wzLSup"></div><div class="pf-sup" id="wzLSup"></div></div>') +
+        '<div class="field pf"><label for="wzN">' + (isBo ? 'Reason &amp; Notes' : 'Trip Reason &amp; Notes') + ' <span class="pf-opt">Optional</span></label><textarea id="wzN" class="pf-box" maxlength="' + (isBo ? 80 : 500) + '" data-model="wiz.note" placeholder="' + (isBo ? 'e.g. ORE week, UTA' : 'Destination, reason, contact info…') + '">' + esc(w.note) + '</textarea></div>' +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div>';
       foot = '<button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="wizReview">Review ' + icon('right', 18) + '</button>';
     } else {
@@ -8044,8 +8056,9 @@
   function renderWizDates() {
     const w = S.wiz;
     return '<div id="wizMini">' + renderMini() + '</div>' +
-      '<div class="wiz-dates"><div class="field m3f"><label for="wzS">Departure</label><input id="wzS" type="date" value="' + esc(w.start) + '" data-model="wiz.start" data-change="wizDates"></div>' +
-      '<div class="field m3f"><label for="wzE">Return</label><input id="wzE" type="date" value="' + esc(w.end) + '" data-model="wiz.end" data-change="wizDates"></div></div>' +
+      // Date pills: the date on the left, a calendar icon on the right; tapping anywhere opens the date picker.
+      '<div class="wiz-dates"><div class="field pf"><label for="wzS">Departure</label><div class="pill-in pill-date"><input id="wzS" type="date" value="' + esc(w.start) + '" data-model="wiz.start" data-change="wizDates">' + icon('calendar', 18) + '</div></div>' +
+      '<div class="field pf"><label for="wzE">Return</label><div class="pill-in pill-date"><input id="wzE" type="date" value="' + esc(w.end) + '" data-model="wiz.end" data-change="wizDates">' + icon('calendar', 18) + '</div></div></div>' +
       '<div id="wizStatus">' + renderWizStatus() + '</div>';
   }
   /** Slot state of a day for the request being made: 'ok' (green), 'over' (adding it overbooks, orange), 'full' (approved leave
@@ -9360,7 +9373,7 @@
     // Typing a location clears a "(Location)" message left from an earlier Review.
     wizLoc(el) {
       const e = $('#wizErr'); if (e && el.value.trim() && /\(Location\)/.test(e.textContent)) e.textContent = ''; S.wiz.error = '';
-      if (el.value.trim()) { el.removeAttribute('aria-invalid'); const sp = $('#wzLSup'); if (sp) { sp.textContent = ''; sp.classList.remove('err'); } }
+      if (el.value.trim()) { el.removeAttribute('aria-invalid'); const sp = $('#wzLSup'); if (sp) sp.textContent = ''; }
     },
     wizReview() {
       const w = S.wiz, err = m => { const e = $('#wizErr'); if (e) e.textContent = m; toast(m, 'error'); };
@@ -9377,7 +9390,7 @@
       const c = wizCheck();
       if (c.errs.length) {
         // A missing location: the field itself turns red with the message under it (M3 error state).
-        if (/\(Location\)/.test(c.errs[0]) && lb) { lb.setAttribute('aria-invalid', 'true'); const sp = $('#wzLSup'); if (sp) { sp.textContent = 'Enter where ' + (wizIds().length === 1 && wizIds()[0] === S.me ? 'you’ll' : 'they’ll') + ' be.'; sp.classList.add('err'); } lb.focus(); toast(c.errs[0], 'error'); return; }
+        if (/\(Location\)/.test(c.errs[0]) && lb) { lb.setAttribute('aria-invalid', 'true'); const sp = $('#wzLSup'); if (sp) { sp.textContent = 'Enter where ' + (wizIds().length === 1 && wizIds()[0] === S.me ? 'you’ll' : 'they’ll') + ' be.'; } lb.focus(); toast(c.errs[0], 'error'); return; }
         return err(c.errs[0]);
       }
       w.error = ''; w.step = 3; renderWizard();
@@ -9543,6 +9556,12 @@
   document.addEventListener('click', ev => {
     if (S.periodOpen && !(ev.target.closest && ev.target.closest('.pdrop'))) { S.periodOpen = false; render(); }
   }, true);
+  // Date pills: a click anywhere opens the browser's date picker (not via data-act: that handler cancels the default
+  // action, which would stop phones opening their own picker).
+  document.addEventListener('click', ev => {
+    const t = ev.target;
+    if (t && t.matches && t.matches('.pill-date > input[type="date"]') && t.showPicker) { try { t.showPicker(); } catch (e) {} }
+  });
   document.addEventListener('input', ev => {
     const t = ev.target, m = t.dataset && t.dataset.model;
     if (!t.dataset) return;
