@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792660468"></script>
+    <script src="config.js?v=1792660718"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792660468';
+      window.PAL_BUILD = '1792660718';
       (function () {
         function check(launch) {
           try {
@@ -1229,13 +1229,9 @@
     color: color-mix(in srgb, var(--on-surface) 38%, transparent) !important; box-shadow: none !important; cursor: not-allowed; opacity: 1; }
   button:disabled .ic, button:disabled .idb { opacity: .6; }
 
-  /* Sync indicator: the Profile tab icon spins a ring while changes save; a red dot if a save failed. */
+  /* Sync indicator: no saving animation; a red dot on the Profile (or Admin) icon if a save failed. */
   .nav-ic { position: relative; }
-  .nav-ic.syncing::after { content: ""; position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%;
-    border: 2.5px solid color-mix(in srgb, var(--primary) 25%, transparent); border-top-color: var(--primary); animation: spin .8s linear infinite; }
-  .nav button.on .nav-ic.syncing::after { border-color: color-mix(in srgb, var(--sel-ink) 25%, transparent); border-top-color: var(--sel-ink); }
   .nav-ic.sync-err::after { content: ""; position: absolute; top: 2px; right: 14px; width: 9px; height: 9px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 2px var(--nav-bg); }
-  @media (prefers-reduced-motion: reduce) { .nav-ic.syncing::after { animation-duration: 2.4s; } }
   /* Admin → Request length */
   .cfg-len { display: grid; grid-template-columns: 64px minmax(0, 110px) minmax(0, 200px); gap: 12px; align-items: end; padding: 10px 0; border-top: 1px solid var(--line); }
   .cfg-len:first-of-type { border-top: 0; }
@@ -1606,8 +1602,6 @@
   .nav button:hover .nav-ic, .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: transparent; color: inherit; }
   .nav .dot { background: var(--gold); color: var(--navy); }
   .nav .dot.warn { background: #ffffff; color: #c2410c; }
-  .nav .nav-ic.syncing::after { border-color: rgba(255, 255, 255, .25); border-top-color: #ffffff; }
-  .nav button.on .nav-ic.syncing::after { border-color: color-mix(in srgb, var(--navy) 25%, transparent); border-top-color: var(--navy); }
   /* Admin mode (metallic gold bar): the open page's pill is Brewers navy with a white icon, so it contrasts with the bar. */
   .nav.nav-admin button.on .nav-ic, :root[data-theme="dark"] .nav.nav-admin button.on .nav-ic { background: transparent; color: inherit; }
   .modal.modal-wide:has(.y-grid) { max-width: 1100px; }
@@ -1870,7 +1864,6 @@
   .nav button:hover::before { background: rgba(255, 255, 255, .10); }
   .nav button.on::before, .nav button[aria-expanded="true"]::before { background: var(--gold); }
   .nav button[aria-expanded="true"] { color: var(--navy); }
-  .nav button.on .nav-ic.syncing::after, .nav button[aria-expanded="true"] .nav-ic.syncing::after { border-color: color-mix(in srgb, currentColor 25%, transparent); border-top-color: currentColor; }
   /* Profile tab: a small caret after the label says it opens a menu upward; it flips while the menu is open. */
   .nav-caret { display: inline-flex; vertical-align: -1px; margin-left: 2px; transition: transform .18s ease; }
   .nav-caret .ic { transform: rotate(180deg); }
@@ -1913,10 +1906,6 @@
   .nav button.on:hover::before, .nav button[aria-expanded="true"]:hover::before { background: var(--gold-2); }
   .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover { color: #ffffff; }
   .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover::before { background: rgba(255, 255, 255, .22); }
-  /* Saving ring on the Profile tab: the same brick arc as the logo loading ring, circling the patch icon. */
-  .nav button[data-v="profile"] .nav-ic.syncing::after, .nav button[data-v="profile"].on .nav-ic.syncing::after,
-  .nav button[data-v="profile"][aria-expanded="true"] .nav-ic.syncing::after {
-    border-width: 3px; border-color: transparent; border-top-color: var(--brick); border-right-color: var(--brick); }
   #modal #passkey::placeholder { letter-spacing: normal; font-size: 16px; }
   .splash .splash-t { font-size: 24px; font-weight: 800; letter-spacing: .02em; color: #ffffff; } /* big and bold so it's obvious the app is loading */
   /* Requests table: status mark and name sit close together (no wide padding between them or after the marks). */
@@ -2843,14 +2832,11 @@
   .m3-li-end { flex: none; color: var(--muted); display: grid; place-items: center; }
   .m3-li-btn { flex: none; height: 40px; white-space: nowrap; }
   .m3-li-warn .m3-li-ic { background: var(--warn-bg); color: var(--warn); }
-  .m3-note { display: flex; align-items: flex-start; gap: 6px; margin: 10px 2px 0; }
-  .m3-note .ic { flex: none; margin-top: 2px; }
   /* Phones: a long Set … button drops under the text instead of squeezing it. */
   @media (max-width: 480px) {
     .m3-li-static { display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 14px; row-gap: 8px; align-items: center; }
     .m3-li-static .m3-li-btn { grid-column: 2; justify-self: start; }
   }
-  .m3-note, .m3-note * { white-space: normal; overflow-wrap: anywhere; }
   #calBody { position: relative; }
   /* PIN panels (Admin: Default, Team Admin = yellow; Org Admin = red; Settings: My PIN = plain). Title + ⓘ on the left,
      one button on the right: Change PIN (tonal) or Set PIN (filled, when not set). Filled colors: navy on yellow 9.3:1,
@@ -2922,6 +2908,16 @@
     .page > .lbar { margin-top: -18px; z-index: 6; }
     .page:has(> .lbar) .tbl-wrap, .page:has(> .lbar) .scroll { padding-bottom: 18px; }
   }
+  /* Admin mode colors: unlocked is a warning — the badge is red for Org Admin (white text 6.5:1) and yellow for Team
+     Admin (navy 9.3:1); locking is the safe move — Lock Admin Mode is green (Admin page button: white on #15803d 5.0:1;
+     Profile menu row: green text, 7:1 light / 8:1 dark). */
+  .unlocked { white-space: nowrap; }
+  .unlocked.ul-org { background: #b42318; color: #ffffff; }
+  .unlocked.ul-team { background: var(--gold); color: var(--navy); }
+  .btn.admin-lock, :root[data-theme="dark"] .btn.admin-lock { background: #15803d; border-color: #15803d; color: #ffffff; }
+  .btn.admin-lock:hover { background: #166534; border-color: #166534; }
+  .btn.admin-lock { gap: 6px; padding: 0 14px; white-space: nowrap; }
+  .pm-row.pm-lock, .pm-row.pm-lock .ic { color: var(--ok); }
 </style>
 
   </head>
@@ -3565,13 +3561,13 @@
     render();
     if (S.modal === 'req' && S.reqOpen) openRequest(S.reqOpen);
   }
-  /** Profile icon spins while saving; a red dot appears if the last save failed. */
-  /** Which nav icon carries the saving ring: Admin for admin settings, otherwise Profile. */
+  /** No saving animation on the nav: saves are quiet. If the last save failed, a red dot shows on the icon (Admin for
+   *  admin settings, otherwise Profile), and screen readers hear "Saving changes…" / the failure. */
   const syncTab = () => (S.syncTab === 'admin' && S.isAdmin ? 'admin' : 'profile');
   function syncUI() {
-    $$('.nav .nav-ic').forEach(e => e.classList.remove('syncing', 'sync-err'));
+    $$('.nav .nav-ic').forEach(e => e.classList.remove('sync-err'));
     const ic = $('.nav button[data-v="' + syncTab() + '"] .nav-ic');
-    if (ic) { ic.classList.toggle('syncing', !!S.pending); ic.classList.toggle('sync-err', !S.pending && !!S.syncErr); }
+    if (ic) ic.classList.toggle('sync-err', !S.pending && !!S.syncErr);
     const live = $('#syncStatus');
     if (live) live.textContent = S.pending ? 'Saving changes…' : S.syncErr ? 'Some changes were not saved.' : '';
     saveBarUI();
@@ -4224,7 +4220,7 @@
       // The active tab's pill slides between tabs (same as segmented buttons: placeSeg, remembered as "nav").
       '<nav class="nav seg-slide' + (S.isAdmin ? ' nav-admin' : '') + '" data-sk="nav"' + segPre('nav').attr + ' aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '"><span class="seg-thumb nav-thumb" aria-hidden="true"' + segPre('nav').style + '></span>' + items.map(i =>
       '<button data-act="nav" data-v="' + i[0] + '"' + (i[0] === 'profile' ? ' aria-haspopup="menu" aria-expanded="' + !!document.getElementById('pmenu') + '"' : '') + ' class="' + (navOn(i[0]) ? 'on' : '') + '"' + (navOn(i[0]) ? ' aria-current="page"' : '') + '>' +
-      '<span class="nav-ic' + (i[0] === syncTab() && S.pending ? ' syncing' : i[0] === syncTab() && S.syncErr ? ' sync-err' : '') + '">' + (i[0] === 'profile' ? '<span class="nav-logo" aria-hidden="true"></span>' : icon(i[2], 20)) + '</span><span class="wide">' + i[1] + caret(i[0]) + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + caret(i[0]) + '</span>' +
+      '<span class="nav-ic' + (i[0] === syncTab() && !S.pending && S.syncErr ? ' sync-err' : '') + '">' + (i[0] === 'profile' ? '<span class="nav-logo" aria-hidden="true"></span>' : icon(i[2], 20)) + '</span><span class="wide">' + i[1] + caret(i[0]) + '</span><span class="narrow" aria-hidden="true"' + (i[0] === 'calendar' ? ' data-short="Cal"' : '') + '>' + i[3] + caret(i[0]) + '</span>' +
       (i[0] === 'all' && S.isAdmin && pending ? '<b class="dot">' + pending + '</b>' : '') +
       (i[0] === 'mine' && myChanged ? '<b class="dot warn" title="Dates changed by an admin">' + myChanged + '</b>' : '') +
       (i[0] === 'profile' && noteCount() ? '<b class="dot" title="' + plural(noteCount(), 'notification') + '">' + noteCount() + '</b>' : '') + '</button>').join('') + '</nav>';
@@ -6371,7 +6367,7 @@
   RG.report = { key: 'types', any: true, get lim() { return myScope(); }, get cols() { return typeNames().concat(['Blackout']).map(t => [t, t]); },
     blank: () => ({ types: typeNames().concat(['Blackout']) }), rows: () => S.rpDraft.rules, set: rows => { S.rpDraft.rules = rows; redrawReport(); A.rpAuto(); }, redraw: redrawReport };
   /** Which admin mode is unlocked: "Org Admin", or "Team Admin" (its team in the tooltip). */
-  const adminModeBadge = () => '<span class="unlocked" title="' + esc(S.adminScope ? 'Team admin for ' + scopeText(S.adminScope) : 'Org admin: every team') + '">' + icon('unlock', 13) + (S.adminScope ? ' Team Admin' : ' Org Admin') + '</span>';
+  const adminModeBadge = () => '<span class="unlocked ' + (S.adminScope ? 'ul-team' : 'ul-org') + '" title="' + esc(S.adminScope ? 'Team admin for ' + scopeText(S.adminScope) : 'Org admin: every team') + '">' + icon('unlock', 13) + (S.adminScope ? ' Team Admin' : ' Org Admin') + '</span>';
   /** Team admins change only blackouts that stay within their team; org admins change any. */
   const canEditBo = b => S.isOrg || (S.isAdmin && scopeWithin(b.scope || { units: [], roles: [] }, S.adminScope));
 
@@ -6463,8 +6459,7 @@
     return '<section class="page admin-page"><div class="toolbar"><span class="title">Admin</span>' +
       adminModeBadge() +
       '<div class="cfg-tools">' +
-      (S.sheetUrl ? '<a class="btn act" href="' + esc(S.sheetUrl) + '" target="_blank" rel="noopener" aria-label="Open data sheet" title="Data Sheet">' + icon('sheet', 18) + '<span class="bl">Data Sheet</span></a>' : '') +
-      '<button class="btn act" data-act="lockAdmin" aria-label="Lock admin" title="Lock admin">' + icon('lock', 18) + '<span class="bl">Lock</span></button></div></div>' +
+      '<button class="btn admin-lock" data-act="lockAdmin">' + icon('lock', 18) + 'Lock Admin Mode</button></div></div>' +
       '<div class="scroll" id="adminScroll">' +
 
       // Privacy: members see only their own schedule plus day availability. Admins always see everything.
@@ -6496,7 +6491,7 @@
           listRow('bkDownload', 'download', 'Download Backup', 'Every member, request, setting and PIN in one file') +
           listRow('bkRestore', 'upload', 'Restore From Backup', 'Replace everything here with a backup file') +
           listRow('rosterImport', 'userPlus', 'Import Roster', 'Add members from a CSV or JSON file') +
-        '</div><p class="meta m3-note">' + icon('lock', 14) + 'Keep backup files private: they hold the roster and everyone’s PIN data.</p></div>' : '') +
+        '</div></div>' : '') +
 
       // PINs: one panel each — yellow for Default and Team Admin, red for Org Admin.
       pinPanel('def', 'key', 'Default PIN', 'Temporary PIN for new members and PIN resets. They change it at next sign-in.', true, 'y') +
@@ -6849,7 +6844,8 @@
       '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full seg-slide" role="group" aria-label="Appearance" data-sk="theme"><span class="seg-thumb" aria-hidden="true"></span>' +
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
           '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '">' + icon(t[2], 15) + t[1] + '</button>').join('') + '</div></div>' +
-      (S.isAdmin ? row('menuLockAdmin', 'lock', 'Lock Admin Mode') : row('openAdminPin', 'shield', 'Admin Mode')) +
+      // Unlocked: Lock Admin Mode in green (locking is the safe move); locked: Admin Mode.
+      (S.isAdmin ? row('menuLockAdmin', 'lock', 'Lock Admin Mode').replace('class="pm-row"', 'class="pm-row pm-lock"') : row('openAdminPin', 'shield', 'Admin Mode')) +
       row('openSettings', 'sliders', 'Settings') +
       row('signOut', 'logout', 'Sign Out');
     document.body.appendChild(el);
