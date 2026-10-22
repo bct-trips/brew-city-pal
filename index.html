@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792655700"></script>
+    <script src="config.js?v=1792655825"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792655700';
+      window.PAL_BUILD = '1792655825';
       (function () {
         function check(launch) {
           try {
@@ -2747,6 +2747,11 @@
   .seg.seg-slide:not(.nav)[data-placed] > button.on { background: transparent; }
   .seg.seg-ro > button.on { color: var(--sel-ink); }
   @media (prefers-reduced-motion: reduce) { .seg:not(.nav) > button, .seg.seg-slide:not(.nav) > .seg-thumb { transition: none; } }
+  /* Multi-select groups: chosen options side by side join into one shape. Their shared edge is flat and touching (groups
+     have no gap between options, so nothing shifts); the outer ends stay round. A chosen option with no chosen neighbor keeps the full pill. */
+  .seg:not(.nav) { gap: 0; }
+  .seg:not(.nav) > button.on + button.on { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .seg:not(.nav) > button.on:has(+ button.on) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
   /* Dropdowns and on/off toggles speak the same language: the same tinted, outlined track; when on (a filter is set,
      a toggle is on), a tonal pill fills the track 2px inside its edge, like a selected button-group option. */
   .fsel, .fdrop-btn, .btn.chip-tog { border: 1px solid var(--outline); background-color: var(--card-2); color: var(--muted); font-weight: 700;
