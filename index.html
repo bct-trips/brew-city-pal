@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792670264"></script>
+    <script src="config.js?v=1792670763"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792670264';
+      window.PAL_BUILD = '1792670763';
       (function () {
         function check(launch) {
           try {
@@ -2964,6 +2964,18 @@
   .tp-n:focus-visible, .tp-box:focus-visible, .tp-ap button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
   .tp-f { display: flex; justify-content: flex-end; gap: 8px; }
   @media (prefers-reduced-motion: reduce) { .tp-hand { transition: none; } .tp-wrap { animation: none; } }
+  /* Email time + time zone row: two pills of the same height side by side, labels aligned; the zone fills the rest. */
+  .rp-row { align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+  .rp-row .rp-hour { flex: 1 1 150px; max-width: 220px; }
+  .rp-row .rp-hour .tp-field { width: 100%; }
+  @media (max-width: 480px) { .rp-row .rp-hour { max-width: none; } } /* phones: the two pills stack, full width */
+  .rp-row .tz-f { flex: 1 1 180px; min-width: 0; }
+  .rp-row .tp-field, .tz-drop .tz-btn { height: 44px; min-height: 44px; }
+  .tz-drop { width: 100%; }
+  .tz-drop .tz-btn { display: flex; width: 100%; max-width: none; justify-content: flex-start; gap: 8px; border-radius: 22px; font-size: 16px; color: var(--ink); font-weight: 700; }
+  .tz-drop .tz-btn > span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+  .tz-drop .tz-btn .ic:first-child { color: var(--muted); }
+  .tz-pop { width: 100%; }
 </style>
 
   </head>
@@ -3022,6 +3034,7 @@
     sheet: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/>',
     arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
     down: '<path d="m6 9 6 6 6-6"/>',
+    globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
     calPlus: '<path d="M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M19 16v6"/><path d="M16 19h6"/>',
     eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
@@ -6326,12 +6339,11 @@
       S.report ? JSON.parse(JSON.stringify(S.report)) : {}));
     r.rules = (r.rules || []).map(gridRow);
     const zones = REPORT_TZ.some(z => z[0] === r.tz) ? REPORT_TZ : REPORT_TZ.concat([[r.tz, r.tz.replace(/_/g, ' ')]]);
-    const opt = (v, l, cur) => '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(l) + '</option>';
     return '<div class="panel" id="reportPanel"><div class="cfg-row-tog"><div><h3>' + icon('bell', 16) + ' Daily Email Report' + tip('Your own report, every morning: who is out today and the next 7 days (and any blackouts), for the groups and types you pick. Pending requests are marked.') + '</h3></div>' +
         sw(r.on, 'rpOn', 'Daily Email Report') + '</div>' +
       (r.on ? '<div class="field"><label for="rpEmail">Email' + REQ + '</label><input id="rpEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="' + esc(r.email) + '" data-model="rpDraft.email" data-live="rpType" data-change="rpAuto"></div>' +
         '<div class="row rp-row">' + timeField('rpTime', 'rpTime', 'Time', r.hour, r.min) +
-          '<div class="field"><label for="rpTz">Time Zone</label><select id="rpTz" data-change="rpTz">' + zones.map(z => opt(z[0], z[1], r.tz)).join('') + '</select></div></div>' +
+          tzField('rpTz', 'rpTz', zones, r.tz) + '</div>' +
         '<div class="sect"><div class="lbl">Covers</div>' + ruleGrid('report') + '</div>' : '') +
       (r.on ? (S.report && S.report.on ? rpStatusHtml(r) : '<div id="rpStatusBox"></div>') : '') +
       (r.on ? '<div class="cfg-foot auto-foot"><span class="auto-st" id="rpStat" role="status"></span><button class="btn" data-act="rpTest">' + icon('bell', 16) + 'Send Test Now</button></div>' : '') + '</div>';
@@ -6350,6 +6362,7 @@
       S.rpStatus = null;
       const put = () => { const b = $('#rpStatusBox'); if (b && S.rpDraft) b.outerHTML = rpStatusHtml(S.rpDraft); };
       call('apiReportStatus', S.token).then(x => { S.rpStatus = x; put(); }).catch(() => { S.rpStatus = { failed: true }; put(); });
+      setTimeout(() => { if (S.rpStatus === null) { S.rpStatus = { failed: true }; put(); } }, 10000); // never stuck on Checking…
     }
     const line = (cls, ic, html) => '<div class="rp-status rp-' + cls + '" id="rpStatusBox">' + icon(ic, 16) + '<span>' + html + '</span></div>';
     if (!st) return line('wait', 'clock', 'Checking the schedule…');
@@ -6372,6 +6385,14 @@
   const timeField = (id, act, label, h, m) => '<div class="field rp-hour"><label for="' + id + '">' + label + '</label>' +
     '<button type="button" class="tp-field" id="' + id + '" data-act="timePick" data-cb="' + act + '" data-h="' + (Number(h) || 0) + '" data-m="' + (Number(m) || 0) + '" aria-haspopup="dialog">' +
       icon('clock', 18) + '<span>' + timeText(h, m) + '</span></button></div>';
+  /** The app's dropdown for settings choices (time zone, Start-Up): a pill like the time field and the filter dropdowns;
+   *  the list opens under it, the chosen one has the filled dot. Picking one closes it and runs act({value, dataset}) —
+   *  which saves. Never the browser's own select. */
+  const dropField = (id, act, label, opts, cur, ic, cls, extra) => '<div class="field tz-f' + (cls ? ' ' + cls : '') + '"><label for="' + id + '">' + label + '</label><div class="fp bdrop tz-drop">' +
+    '<button type="button" class="fsel fdrop-btn tz-btn" id="' + id + '" data-act="tzOpen" data-cb="' + act + '" data-v="' + esc(cur) + '"' + (extra || '') + ' aria-haspopup="listbox">' +
+      (ic ? icon(ic, 18) : '') + '<span>' + esc((opts.find(z => z[0] === cur) || [cur, cur])[1]) + '</span>' + icon('down', 14) + '</button>' +
+    '<div class="who-pop fp-pop tz-pop" hidden data-zones="' + esc(JSON.stringify(opts)) + '"></div></div></div>';
+  const tzField = (id, act, zones, cur) => dropField(id, act, 'Time Zone', zones, cur, 'globe');
   /* ---------- Material 3 time picker (dial) ----------
      Headline "Select Time"; the hour and minute boxes (the one being set is tonal), AM / PM stacked beside them; a round
      dial (12 hour marks, or 12 minute marks 00–55 in 5-minute steps) with a hand to the selected mark — tap a mark or
@@ -6478,7 +6499,6 @@
     const saved = S.emailPrefs || {};
     const e = S.emDraft || (S.emDraft = Object.assign({ email: '', hour: 6, tz: devTz }, JSON.parse(JSON.stringify(saved)), saved.email ? {} : { tz: devTz }));
     const zones = REPORT_TZ.some(z => z[0] === e.tz) ? REPORT_TZ : REPORT_TZ.concat([[e.tz, e.tz.replace(/_/g, ' ')]]);
-    const opt = (v, l, cur) => '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(l) + '</option>';
     const any = EMAIL_KINDS.some(k => e[k[0]]), day = e.start || e.end;
     // On / off switch: on when any email kind is picked (or just switched on); its settings show only while on.
     const on = e.on != null ? e.on : any;
@@ -6488,7 +6508,7 @@
       '<div class="sect"><div class="lbl">Email Me When</div><div class="push-btns">' + EMAIL_KINDS.map(k => { const on = !!e[k[0]];
         return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="emKind" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>'; }).join('') + '</div></div>' +
       (day ? '<div class="row rp-row">' + timeField('emTime', 'emTime', 'Start / End Day Time', e.hour, e.min) +
-        '<div class="field"><label for="emTz">Time Zone</label><select id="emTz" data-change="emTz">' + zones.map(z => opt(z[0], z[1], e.tz)).join('') + '</select></div></div>' : '') +
+        tzField('emTz', 'emTz', zones, e.tz) + '</div>' : '') +
       '<div class="cfg-foot auto-foot"><span class="auto-st" id="emStat" role="status"></span>' + (any ? '<button class="btn" data-act="emTest">' + icon('mail', 16) + 'Send Test Email</button>' : '') + '</div></div>');
   }
   const redrawEmail = () => { const p = $('#emailPanel'); if (p) p.outerHTML = emailPanel(); };
@@ -7189,9 +7209,8 @@
   }
   /** Settings → Start-up (this device): the page the app opens to and the calendar view it starts in. */
   function startupPanel() {
-    // Two Material 3 dropdown fields side by side (native picker on phones); the choice saves as soon as it changes.
-    const pick = (k, label, cur, opts) => '<div class="field su-f"><label for="su-' + k + '">' + label + '</label>' +
-      '<select id="su-' + k + '" data-change="startPick" data-k="' + k + '">' + opts.map(o => '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div>';
+    // Two of the app's dropdowns side by side; the choice saves as soon as it's picked.
+    const pick = (k, label, cur, opts) => dropField('su-' + k, 'startPick', label, opts, cur, k === 'startView' ? 'home' : 'calendar', 'su-f', ' data-k="' + k + '"');
     const pages = [['last', 'Last Used'], ['calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'List']], [['mine', 'My Requests']]);
     let pv = store.get('startView', 'last'); if (!pages.some(o => o[0] === pv)) pv = 'last';
     return '<div class="panel"><h3>' + icon('home', 16) + ' Start-Up</h3>' +
@@ -8131,6 +8150,25 @@
     },
     emKind(el) { const e = S.emDraft, i = $('#emEmail'); if (i) e.email = i.value.trim(); e[el.dataset.v] = !e[el.dataset.v]; redrawEmail(); A.emAuto(); },
     emTime(el) { Object.assign(S.emDraft, readTime(el)); A.emAuto(); },
+    // Time zone dropdown: open its list (radio rows); a pick closes it and saves.
+    tzOpen(el) {
+      const pop = el.parentElement.querySelector('.tz-pop');
+      if (!pop.hidden) { closeFpPop(); return; }
+      closeFpPop();
+      const zones = JSON.parse(pop.dataset.zones || '[]'), cur = el.dataset.v;
+      pop.innerHTML = '<div class="who-list" role="listbox" aria-label="Time zone">' + zones.map(z => { const on = z[0] === cur;
+        return '<button type="button" class="who-row rf-radio' + (on ? ' on' : '') + '" role="option" aria-selected="' + on + '" data-act="tzPick" data-v="' + esc(z[0]) + '">' +
+          '<span class="rf-dot" aria-hidden="true"></span><span class="pp-n"><b>' + esc(z[1]) + '</b></span></button>'; }).join('') + '</div>';
+      pop.hidden = false;
+      const sel = pop.querySelector('.on'); if (sel) sel.scrollIntoView({ block: 'center' });
+      pop.scrollIntoView({ block: 'nearest' });
+    },
+    tzPick(el) {
+      const btn = el.closest('.tz-drop').querySelector('.tz-btn'), pop = el.closest('.tz-pop');
+      btn.dataset.v = el.dataset.v; btn.querySelector('span').textContent = el.querySelector('b').textContent;
+      pop.hidden = true; pop.innerHTML = '';
+      if (A[btn.dataset.cb]) A[btn.dataset.cb]({ value: el.dataset.v, dataset: btn.dataset });
+    },
     // Time fields: open the Material 3 time picker; OK puts the time in the field and runs its action (which saves).
     timePick(el) {
       const label = (el.closest('.field') && el.closest('.field').querySelector('label') || {}).textContent || 'Select Time';
