@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792708339"></script>
+    <script src="config.js?v=1792708517"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792708339';
+      window.PAL_BUILD = '1792708517';
       (function () {
         function check(launch) {
           try {
@@ -3575,7 +3575,18 @@
   .mc-tb .mc-year, :root[data-theme="dark"] .mc-tb .mc-year { height: 40px; background: transparent; color: #0b1730; border-color: rgba(11, 23, 48, .45); font-size: 15px; }
   .mc-tb .mc-x, :root[data-theme="dark"] .mc-tb .mc-x { color: #0b1730; }
   @media (max-width: 600px) { .pm-bh.mc-tb { height: 52px; font-size: 20px; } .pm-bh.mc-tb .bh-r { width: 52px; } .pm-bh.mc-tb .bh-u { min-width: 64px; } .pm-bh.mc-tb .bh-n { padding-left: 12px; } .mc-tb .mc-year { height: 36px; padding: 0 10px; } }
-  .pm-bh .bh-n .st-med { margin-left: 8px; vertical-align: -3px; }
+  /* Admin marks everywhere: crown = gold on a black circle (light) / black on a gold circle (dark); stamp = white on a
+     blue circle (light) / blue on a white circle (dark). */
+  .adm-ic.adm-org { background: #111111 !important; color: #FCC22B !important; }
+  :root[data-theme="dark"] .adm-ic.adm-org { background: #FCC22B !important; color: #111111 !important; }
+  .adm-ic.adm-team { background: #1d4ed8 !important; color: #ffffff !important; }
+  :root[data-theme="dark"] .adm-ic.adm-team { background: #ffffff !important; color: #1d4ed8 !important; }
+  /* Big badges (Profile menu, Settings, member card): the Medical / admin marks at the name box's far right. */
+  .pm-bh .bh-n { position: relative; }
+  .pm-bh .bh-marks { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 4px; }
+  .pm-bh .bh-marks:empty { display: none; }
+  .pm-bh .bh-marks .st-med, .pm-bh .bh-marks .adm-ic { margin-left: 0; }
+  .mc-tb .adm-ic { margin-left: 0; }
 </style>
 
   </head>
@@ -5839,9 +5850,9 @@
   /** A position's letter square ([P], [B], [O]) for count chips — the same square as in pucks and the day panel. */
   const roleSq = role => '<span class="sq-r ' + roleCls(role) + '" aria-hidden="true">' + esc(roleL(role)) + '</span>';
   /** The big [P|MKE|Name] badge: the top of the Profile menu and of Settings. */
-  const bigBadge = (u, med) => { const un = unitsList().find(x => x.code === u.unit); // med: add the Medical mark (Settings, not the Profile menu)
+  const bigBadge = u => { const un = unitsList().find(x => x.code === u.unit);
     return '<div class="pm-bh" aria-label="' + esc(fullName(u)) + '"><span class="bh-r ' + roleCls(u.role) + '" aria-hidden="true">' + esc(roleL(u.role)) + '</span>' +
-      '<span class="bh-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(u.unit) + '</span><span class="bh-n" aria-hidden="true">' + esc(calName(u)) + (med ? medMark(u) : '') + '</span></div>'; };
+      '<span class="bh-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(u.unit) + '</span><span class="bh-n"><span aria-hidden="true">' + esc(calName(u)) + '</span><span class="bh-marks">' + medMark(u) + admMark(u) + '</span></span></div>'; }; // marks at the name box's far right
   /** Under a member's name on the wallet pass: rank · position · unit. */
   const memberSub = u => [u.rank, roleName(u.role), u.unit].filter(Boolean).join(' · ');
   /** A member as their puck — [P|MKE|Last name], like All Requests and the calendar (no status marks). */
@@ -5860,6 +5871,12 @@
    *  --msym-bg so the inside of the ring is filled light (light mode) or dark (dark mode) and it stays visible. */
   const medSym = (n, cls) => '<svg class="msym' + (cls ? ' ' + cls : '') + '" width="' + n + '" height="' + n + '" viewBox="0 0 24 24" aria-hidden="true">' +
     '<circle cx="12" cy="12" r="10.6" fill="var(--msym-bg, none)" stroke="currentColor" stroke-width="2.4"/><path d="M10 5.8h4v4.2h4.2v4H14v4.2h-4V14H5.8v-4H10z" fill="currentColor"/></svg>';
+  /** Admin status mark: a crown (org admin) or a stamp (team admin) in a circle — the same everywhere (Roster, member card,
+   *  the Profile menu and Settings badges). Known for everyone an admin can see (S.admins) and for yourself (S.myAdmin). */
+  const admMark = u => { if (!u) return '';
+    const a = (S.admins || {})[u.id] || (u.id === S.me && S.myAdmin ? { level: S.myAdmin.level, scope: S.myAdmin.scope } : null); if (!a || !a.level) return '';
+    const t = a.level === 'org' ? 'Org Admin' : 'Team Admin' + (a.scope ? ' · ' + scopeText(a.scope) : '');
+    return '<span class="adm-ic ' + (a.level === 'org' ? 'adm-org' : 'adm-team') + '" role="img" aria-label="' + esc(t) + '" title="' + esc(t) + '">' + icon(a.level === 'org' ? 'crown' : 'stamp', 15) + '</span>'; };
   const medMark = u => injuredNow(u) ? '<span class="st-med" role="img" aria-label="Medical" title="Medical (injured)">' + medSym(20) + '</span>' : '';
   /** A Medical event shaped like a request, for the calendar bars (no end yet = shown a year out). */
   const medReq = m => ({ id: m.id, userId: m.userId, type: 'Medical', start: m.start, end: m.end || D.add(S.today, 365), status: 'Approved', note: m.note || '', location: '', boOk: 'true', med: m });
@@ -6786,10 +6803,7 @@
     const box = (on, act, id, label, mixed) => '<button type="button" class="rsel' + (on ? ' on' : '') + (mixed ? ' mixed' : '') + '" role="checkbox" aria-checked="' + (mixed ? 'mixed' : on) + '" data-act="' + act + '"' + (id ? ' data-id="' + esc(id) + '"' : '') + ' aria-label="' + esc(label) + '">' + (on ? icon('check', 14) : mixed ? '<i class="rsel-dash"></i>' : '') + '</button>';
     const head = '<th scope="col" class="sel-cell">' + box(listed.length > 0 && nSel === listed.length, 'rosterSelAll', '', 'Select everyone listed', nSel > 0 && nSel < listed.length) + '</th>' +
       PEOPLE_COLS.map(c => sortTh(P, c[0], c[1], 'peopleSort', '', !!c[2])).join('') + '<th scope="col" class="th-acts">Actions</th>';
-    // Admins on the Roster: a crown after an org admin's name, a stamp after a team admin's (manager's).
-    const adminMark = u => { const a = (S.admins || {})[u.id]; if (!a) return '';
-      const t = a.level === 'org' ? 'Org Admin' : 'Team Admin · ' + scopeText(a.scope);
-      return ' <span class="adm-ic ' + (a.level === 'org' ? 'adm-org' : 'adm-team') + '" role="img" aria-label="' + esc(t) + '" title="' + esc(t) + '">' + icon(a.level === 'org' ? 'crown' : 'stamp', 15) + '</span>'; };
+    const adminMark = u => ' ' + admMark(u);
     // Counts: real numbers bold, zeros faded so they don't compete.
     const cell = (v, cls) => '<td class="num' + (cls ? ' ' + cls : '') + '">' + (v ? '<b class="nz">' + v + '</b>' : '<span class="zero">0</span>') + '</td>';
     const body = rows.length ? rows.map(m => '<tr data-act="memberCard" data-id="' + esc(m.u.id) + '" tabindex="0" class="' + (m.u.pending ? 'ro-wait' : m.u.active ? '' : 'ro-off') + (sel.has(m.u.id) ? ' ro-sel' : '') + '" aria-label="' + esc(fullName(m.u) + ': ' + m.count + ' requests, ' + m.req + ' days requested, ' + m.appr + ' approved, ' + m.den + ' denied') + '">' +
@@ -8099,7 +8113,7 @@
       '<div class="scroll" id="profileScroll">' +
 
       // The top card IS the member's big [P|MKE|Name] badge (the Profile menu's header), no box or caption around it.
-      bigBadge(me, true).replace('class="pm-bh"', 'class="pm-bh set-badge"') +
+      bigBadge(me).replace('class="pm-bh"', 'class="pm-bh set-badge"') +
 
       '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' +
       (S.myAdmin ? '<div class="panel" id="alertsPanel">' + alertsPanelHtml() + '</div>' : '') +
@@ -8389,7 +8403,7 @@
     const html = '<div class="modal-h mc-top"><h2 id="modalTitle" class="sr">' + esc(fullName(u)) + '</h2><div class="pm-bh mc-tb">' +
         '<span class="bh-r ' + roleCls(u.role) + '" aria-hidden="true">' + esc(roleL(u.role)) + '</span>' +
         '<span class="bh-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(u.unit) + '</span>' +
-        '<span class="bh-n"><span class="mc-tn">' + esc(calName(u)) + '</span>' + medMark(u) + (u.active ? '' : '<span class="badge mc-inact">Inactive</span>') +
+        '<span class="bh-n"><span class="mc-tn">' + esc(calName(u)) + '</span>' + medMark(u) + admMark(u) + (u.active ? '' : '<span class="badge mc-inact">Inactive</span>') +
           '<span class="mc-ta"><button class="btn sm mc-year" data-act="memberYear" data-id="' + esc(uid) + '">' + icon('calendar', 16) + 'Year</button>' +
           '<button class="btn ghost icon-btn mc-x" data-act="closeModal" aria-label="Close">' + icon('x', 18) + '</button></span></span></div></div>' +
       '<div class="modal-b mc-body">' +
