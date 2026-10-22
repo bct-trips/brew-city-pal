@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792706862"></script>
+    <script src="config.js?v=1792706963"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792706862';
+      window.PAL_BUILD = '1792706963';
       (function () {
         function check(launch) {
           try {
@@ -3509,7 +3509,11 @@
   .st-ic-off { color: var(--muted); }
   tr.st-canceled td.pdate, tr.st-canceled td.num, tr.st-canceled .idb-n { text-decoration: line-through; }
   tr.st-canceled td:not(.acts-cell) { opacity: .75; }
-  .mpass.mp-canceled .mp-dates b, .mpass.mp-canceled .mp-type, .wpass.wp-canceled .wp-big, .wpass.wp-canceled .wp-type { text-decoration: line-through; text-decoration-thickness: 3px; }
+  .mpass.mp-canceled .mp-dates b, .mpass.mp-canceled .mp-type, .wpass.wp-canceled .wp-big, .wpass.wp-canceled .wp-type, .wpass.wp-canceled .wp-n { text-decoration: line-through; text-decoration-thickness: 3px; }
+  /* The Canceled tag: solid near-black with white text and a white ring — stands out on navy, gold, white and dark. */
+  .wp-st.wp-st-off, .mpass .wp-st-off { background: #1b1e23 !important; color: #ffffff !important; box-shadow: 0 0 0 1.5px #ffffff; font-weight: 800; }
+  .badge.s-canceled, :root[data-theme="dark"] .badge.s-canceled { background: #1b1e23; color: #ffffff; box-shadow: 0 0 0 1.5px var(--line-strong); }
+  :root[data-theme="dark"] .badge.s-canceled { background: #eceef2; color: #1b1e23; }
   .mpass.mp-canceled { opacity: .8; }
   /* Medical pass: the medical stripes across the top, fading out before MEDICAL (no hard edge). */
   .wpass.wp-ty-medical::before, .mpass.wp-ty-medical::before { content: ""; position: absolute; z-index: 0; inset: 0 0 auto 0; pointer-events: none;
