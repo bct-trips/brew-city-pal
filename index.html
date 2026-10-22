@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792672399"></script>
+    <script src="config.js?v=1792673529"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792672399';
+      window.PAL_BUILD = '1792673529';
       (function () {
         function check(launch) {
           try {
@@ -2898,10 +2898,9 @@
     .quad { padding-bottom: 0; }
     .quad > :last-child { padding-bottom: 18px; } /* the last month card runs behind the dock, so its corners show the card */
     .dayv, .dayv-panel { padding-bottom: 18px; }
-    /* List pages (All Requests, My Requests, Roster): the table / list runs behind the dock the same way, with 18px of
-       room at its end so the last row still scrolls clear. */
-    .page > .lbar { margin-top: -18px; z-index: 6; }
-    .page:has(> .lbar) .tbl-wrap, .page:has(> .lbar) .scroll { padding-bottom: 18px; }
+    /* List pages (List, My Requests, Roster): tables stop at the dock (rows sliding behind its corners looked broken);
+       the page behind the dock's rounded corners is the table's own color, so there's no dark gap either. */
+    .page:has(> .lbar) { background: var(--card); }
   }
   /* Admin mode badge: Org Admin green (white 5.0:1), Team Admin yellow (navy 9.3:1); no lock icon. */
   .unlocked { white-space: nowrap; }
@@ -2989,6 +2988,9 @@
   .pop-float { position: fixed !important; right: auto !important; z-index: 260 !important; overflow: hidden; display: flex; flex-direction: column; }
   .pop-float[hidden] { display: none !important; }
   .pop-float > .who-list, .pop-float.fdrop-pop, .pop-float.pdrop-pop { overflow-y: auto; min-height: 0; }
+  /* Roster: the Squadron total is a summary row under the column titles (tonal, bold), not a sticky footer. */
+  .rtable tbody.tot-body td { background: var(--card-2); border-bottom: 2px solid var(--line); padding-top: 9px; padding-bottom: 9px; font-weight: 800; }
+  .rtable tbody.tot-body td.stk, .rtable tbody.tot-body td:first-child { background: var(--card-2); }
 </style>
 
   </head>
@@ -6019,12 +6021,14 @@
         '<td>' + esc(roleName(m.u.role)) + (m.u.pending ? ' <span class="badge caution">Awaiting Approval</span>' : m.u.active ? '' : ' <span class="badge ro-off-b">Inactive</span>') + '</td>' +
         cell(m.count) + cell(m.req, 'strong') + cell(m.appr, 'ok-t') + cell(m.den, 'bad-t') + cell(m.pend, 'pend-t') + cell(m.leave) + cell(m.pass) + rosterActs(m.u) + '</tr>').join('')
       : '<tr class="empty-row"><td colspan="' + (PEOPLE_COLS.length + 2) + '">No members match.</td></tr>';
-    const foot = '<tfoot><tr><td class="sel-cell"></td><td colspan="5" class="strong">Squadron total · ' + plural(rows.length, 'member') + '</td>' +
-      ['count', 'req', 'appr', 'den', 'pend', 'leave', 'pass'].map(k => '<td class="num strong">' + tot[k] + '</td>').join('') + '<td class="acts-cell"></td></tr></tfoot>';
+    // Squadron totals: a summary row right under the column titles (its own tbody, so the stripes below stay even) —
+    // seen without scrolling, never under the bottom bar or the scroll cue.
+    const totRow = '<tbody class="tot-body"><tr class="tot-row"><td class="sel-cell"></td><td colspan="5" class="strong">Squadron total · ' + plural(rows.length, 'member') + '</td>' +
+      ['count', 'req', 'appr', 'den', 'pend', 'leave', 'pass'].map(k => '<td class="num strong">' + tot[k] + '</td>').join('') + '<td class="acts-cell"></td></tr></tbody>';
     // Only the multi-sort note remains above the table (no period explanation).
     const note = sortNote(P, 'people').replace(/^ · /, '');
     return (note ? '<div class="tbl-count">' + note + '</div>' : '') + batchBar(listed.filter(id => sel.has(id))) +
-      '<div class="tbl-wrap" id="tbl-people"><table class="rtable ptable"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody>' + foot + '</table></div>';
+      '<div class="tbl-wrap" id="tbl-people"><table class="rtable ptable"><thead><tr>' + head + '</tr></thead>' + totRow + '<tbody>' + body + '</tbody></table></div>';
   }
   const rosterRoles = () => ROLES.filter(r => !roleInfo(r).disabled || S.users.some(u => u.role === r));
   /** Roster batch bar (shown while members are selected): N Selected · Clear, then the actions for all of them. */
