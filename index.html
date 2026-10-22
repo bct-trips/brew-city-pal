@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792662887"></script>
+    <script src="config.js?v=1792663604"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792662887';
+      window.PAL_BUILD = '1792663604';
       (function () {
         function check(launch) {
           try {
@@ -2927,6 +2927,12 @@
   .see-grid .sg-row { position: sticky; left: 0; z-index: 1; background: var(--card); text-align: left; font-weight: 700; white-space: nowrap; }
   .see-grid .sg-row .idb { vertical-align: middle; }
   @media (max-width: 480px) { .see-grid .sg-cn { display: none; } .see-grid .rtable.ag th.sg-col, .see-grid .rtable.ag td.ag-k { width: 40px; min-width: 40px; max-width: 40px; padding: 6px 2px; } .see-grid .rtable.ag .sg-row, .see-grid .rtable.ag .sg-corner { padding: 6px 8px 6px 10px; } } /* phones: badges identify the columns */
+  /* Request details: Add to My Calendar — two one-tap buttons side by side (wrap on narrow screens). */
+  .cal-add .cal-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cal-add .cal-btns .btn { flex: 1 1 140px; justify-content: center; text-decoration: none; }
+  .cal-add .btn[aria-disabled="true"] { opacity: .55; pointer-events: none; }
+  /* Profile menu: Sign Out in red (it asks to confirm). */
+  .pm-row.pm-out, .pm-row.pm-out .ic { color: var(--bad); }
 </style>
 
   </head>
@@ -3437,7 +3443,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-22.37'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-22.38'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -6875,7 +6881,7 @@
       // Admin Mode: label on the left, the Locked | Unlocked slider on the right.
       '<div class="pm-row pm-adm" role="none">' + icon('shield', 20) + '<span class="pm-l">Admin Mode</span>' + adminSlider() + '</div>' +
       row('openSettings', 'sliders', 'Settings') +
-      row('signOut', 'logout', 'Sign Out');
+      row('signOut', 'logout', 'Sign Out').replace('class="pm-row"', 'class="pm-row pm-out"');
     document.body.appendChild(el);
     // Open upward out of the Profile tab, right-aligned with it and kept on screen.
     const r = btn.getBoundingClientRect(), w = el.offsetWidth;
@@ -7200,12 +7206,47 @@
         : '') +
       '<div class="wiz-dates"><div class="field"><span class="lbl">Departure</span><div class="ro-val">' + longDate(r.start) + '</div></div>' +
         '<div class="field"><span class="lbl">Return</span><div class="ro-val">' + longDate(r.end) + '</div></div></div>' +
+      calAddHtml(r) +
       // Notes are private to the member and admins (the server doesn't send other members' notes at all).
       // Location and notes: only the member and admins over them (the server never sends them to anyone else).
       (managesReq(r) || r.userId === S.me ? '<div class="field"><span class="lbl">Location</span><div class="ro-val">' + (r.location ? esc(r.location) : '<span class="muted">Not given (older request).</span>') + '</div></div>' : '') +
       (managesReq(r) || r.userId === S.me ? '<div class="field"><span class="lbl">Trip Reason &amp; Notes</span><div class="ro-val ro-note">' + (r.note ? esc(r.note) : '<span class="muted">No note provided.</span>') + '</div></div>' : '') +
       '</div>' + (foot ? '<div class="modal-f modal-f-rows">' + foot + '</div>' : '');
     openModal('req', html);
+    calAddWire(r);
+  }
+  /* ---------- Add to My Calendar (request details) ----------
+     Two one-tap buttons for your own requests (or ones you manage), unless denied or cancelled: Google Calendar (a
+     prefilled event link) and Apple / Outlook (.ics). The .ics is made here and downloaded on Android and computers; an
+     iPhone only imports one from a web link, so there the button opens a signed link the server serves (apiIcsLink). */
+  const calOk = r => r.status !== 'Denied' && r.status !== 'Cancelled' && (String(r.userId).split(',').includes(S.me) || managesReq(r));
+  function calEvent(r) {
+    const u = userOf(r.userId), mine = String(r.userId).split(',').includes(S.me);
+    const summary = (mine ? '' : nameText(u) + ' · ') + r.type + (r.status !== 'Approved' ? ' (' + r.status + ')' : '');
+    const where = mine && r.location ? r.location : '';
+    const details = 'From Brew City PAL.' + (where ? ' Location: ' + where + '.' : '');
+    const day = d => d.replace(/-/g, ''), after = D.add(r.end, 1);
+    const tx = t => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Brew City PAL//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+      'UID:' + r.id + '@brew-city-pal', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''),
+      'DTSTART;VALUE=DATE:' + day(r.start), 'DTEND;VALUE=DATE:' + day(after), 'SUMMARY:' + tx(summary), 'DESCRIPTION:' + tx(details)]
+      .concat(where ? ['LOCATION:' + tx(where)] : []).concat(['TRANSP:OPAQUE', 'END:VEVENT', 'END:VCALENDAR']).join('\r\n') + '\r\n';
+    const google = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(summary) + '&dates=' + day(r.start) + '/' + day(after) +
+      '&details=' + encodeURIComponent(details) + (where ? '&location=' + encodeURIComponent(where) : '');
+    return { ics, google };
+  }
+  function calAddHtml(r) {
+    if (!calOk(r)) return '';
+    const ev = calEvent(r);
+    return '<div class="field cal-add"><span class="lbl">' + icon('calendar', 14) + ' Add to My Calendar</span><div class="cal-btns">' +
+      '<a class="btn" id="calIcs" role="button" aria-disabled="' + isIOS() + '" ' + (isIOS() ? 'href="#" target="_blank" rel="noopener"' : 'download="' + esc(r.type.toLowerCase() + '-' + r.start) + '.ics"') + '>' + icon('download', 16) + 'Apple / Outlook</a>' +
+      '<a class="btn" id="calGoogle" href="' + esc(ev.google) + '" target="_blank" rel="noopener">' + icon('calendar', 16) + 'Google Calendar</a></div></div>';
+  }
+  function calAddWire(r) {
+    const a = $('#calIcs'); if (!a) return;
+    if (!isIOS()) { a.href = URL.createObjectURL(new Blob([calEvent(r).ics], { type: 'text/calendar' })); return; }
+    call('apiIcsLink', S.token, r.id).then(x => { const b = $('#calIcs'); if (b && x && x.url) { b.href = x.url; b.setAttribute('aria-disabled', 'false'); } })
+      .catch(() => { const b = $('#calIcs'); if (b) { b.href = URL.createObjectURL(new Blob([calEvent(r).ics], { type: 'text/calendar' })); b.setAttribute('download', 'leave.ics'); b.removeAttribute('target'); b.setAttribute('aria-disabled', 'false'); } });
   }
 
   /* ---------- Roster: one member's year (6 months back, this month, 5 ahead) ---------- */
@@ -8508,6 +8549,8 @@
       if (isCalView() && S.cal === 'month') fitMonth();
     },
     async signOut() {
+      closeProfileMenu();
+      if (!await askConfirm('Sign out?', { ok: 'Sign Out', danger: true })) return;
       // Full-screen logo ring + "Signing out…". Tell the server (drop this device's push subscription, end the session)
       // but never wait more than ~2.5s: signing out always works, even offline or when the server is slow.
       closeProfileMenu();
