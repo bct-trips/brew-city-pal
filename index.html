@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792674105"></script>
+    <script src="config.js?v=1792674352"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792674105';
+      window.PAL_BUILD = '1792674352';
       (function () {
         function check(launch) {
           try {
@@ -2158,6 +2158,9 @@
   .rtable td.stk .stk-in { min-width: max-content; }
   /* Status mark sits right beside the badge: the mark's box is only as wide as the icon, with no extra cell padding. */
   .rtable td.st-ic-c .st-ic { width: 18px; }
+  /* Status mark on the name badge: phones only (desktop shows it in the first column). */
+  .idb-n > .sti.m-st { display: none; }
+  @media (max-width: 700px) { .idb-n > .sti.m-st { display: inline-flex; } .rtable td.st-ic-c .st-ic { display: none; } .rtable th.st-ic-h, .rtable td.st-ic-c { min-width: 0; padding-left: 4px; } }
   .rtable th.st-ic-h, .rtable td.st-ic-c { min-width: 18px; padding-right: 0; }
   .rtable tbody td.stk { padding-left: 8px; }
   /* Phones: the calendar controls (date, views, Today, filters) sit at the bottom, just above Add Request,
@@ -5154,8 +5157,8 @@
     openModal('conflict', html, true);
   }
 
-  /** In progress today (not denied): the member is out right now. */
-  const isNow = r => r.status !== 'Denied' && r.start <= S.today && r.end >= S.today;
+  /** Active: approved and in progress today (the member is out right now). Pending or denied is never active. */
+  const isNow = r => r.status === 'Approved' && r.start <= S.today && r.end >= S.today;
   function describe(r) {
     const u = userOf(r.userId);
     return fullName(u) + ', ' + roleName(u.role) + ', ' + r.type + ', ' + r.status + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
@@ -5187,14 +5190,16 @@
   // The green dot sits to the RIGHT of the name, in the ✓'s place, on every bar of that request (all weeks).
   const onNow = r => r.status === 'Approved' && isNow(r);
   const nowDot = (r, from, to) => onNow(r, from, to) ? '<i class="now-dot" title="On ' + r.type.toLowerCase() + ' now"></i>' : '';
+  // withStatus 'table': request tables, where the status mark rides on the badge only on phones (`.m-st`); desktop keeps it
+  // in the first column.
   function personBadge(r, withStatus, from, to) {
+    const tbl = withStatus === 'table'; if (tbl) withStatus = false;
     const u = userOf(r.userId), L = roleL(u.role);
     const un = unitsList().find(x => x.code === u.unit);
     return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(L) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
       '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + nowDot(r, from, to) +
-        // Tables (no status marks on the badge): a pending request going on today shows its clock where the green dot would be.
-        (!withStatus && r.status === 'Pending' && isNow(r) ? statusIcon('Pending') : '') + (withStatus ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
+        (tbl && !onNow(r) ? statusIcon(r.status).replace('class="sti ', 'class="sti m-st ') : '') + (withStatus ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
@@ -5697,9 +5702,9 @@
       return '<tr class="t-' + tcls(r.type) + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + (isNow(r) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
         // Status mark plus the ⚠ / overlap / changed marks live in the first column, so the pinned Name column is only
         // as wide as the L / P badge and the name (no dead space on phones).
-        '<td class="st-ic-c"><div class="st-in">' + stIcon(r) + conflictBadge(r, true) + marks(r) + '</div></td>' +
+        '<td class="st-ic-c"><div class="st-in">' + stIcon(r) + blackoutBadge(r, true) + marks(r) + '</div></td>' +
         '<td class="strong stk"><div class="stk-in">' + (showType ? '<span class="badge t-' + tcls(r.type) + ' t-ltr" title="' + esc(r.type) + '">' + esc(tLetter(r.type)) + '<span class="sr"> ' + esc(r.type) + '</span></span>' : '') +
-          personBadge(r, false) + '</div></td>' +
+          personBadge(r, 'table') + '</div></td>' +
         '<td class="num">' + milDate(r.start) + '</td>' +
         '<td class="num">' + milDate(r.end) + '</td>' +
         '<td class="num"><span class="days">' + n + '</span>' +
@@ -5725,12 +5730,8 @@
         // off goes back to the usual part-open bands. Bands you opened / closed yourself keep that.
         : type === 'Past' ? (col.Past === false ? 'open' : col.Past === true ? 'closed' : S.f.conf ? 'open' : 'closed')
         : band ? (col[type] || (S.f.conf ? 'open' : 'partial')) : (col[type] ? 'closed' : 'open');
-      // Top group = requests whose dates include today, approved or pending, so approving or setting back to pending
-      // never moves a row (only its color and slider change). "N active" counts the approved ones going on now.
-      const today = r => r.start <= S.today && r.end >= S.today;
-      // Denied requests are never "active": they leave the top group and sort with the rest.
-      const isAct = r => today(r) && r.status !== 'Denied';
-      const act = band ? list.filter(isAct) : [], rest = band ? list.filter(r => !isAct(r)) : list, nAct = act.filter(isNow).length;
+      // Active = approved and in progress today; pending and denied ones sort with the rest.
+      const act = band ? list.filter(isNow) : [], rest = band ? list.filter(r => !isNow(r)) : list, nAct = act.length;
       // Default order (until a column is clicked): out today = position, last, first; the rest = departure date first.
       const byStart = (a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || byPosName(a, b);
       if (mine) { if (!st.userSorted) list = list.slice().sort(byStart); }
