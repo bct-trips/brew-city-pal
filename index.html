@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792675922"></script>
+    <script src="config.js?v=1792676055"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792675922';
+      window.PAL_BUILD = '1792676055';
       (function () {
         function check(launch) {
           try {
@@ -700,8 +700,9 @@
   #toast .error { background: #991b1b; }
   #toast .hint-t { background: var(--gold); color: var(--navy); }
   /* Admin Mode switched: the slider's colors, a bit bigger and bolder than a plain snackbar. */
-  #toast .adm-t { padding: 12px 18px; font-size: 16px; font-weight: 800; border-radius: 14px; }
-  #toast .adm-unl { background: #b42318; }
+  #toast .adm-t { padding: 12px 18px; font-size: 16px; font-weight: 800; border-radius: 14px; color: #ffffff; box-shadow: 0 0 0 2px #ffffff, 0 10px 30px rgba(0,0,0,.4); }
+  #toast .adm-t .ic { color: #ffffff; }
+  #toast .adm-unl { background: #dc2626; }
   #toast .adm-lck { background: #15803d; }
   .spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; animation: spin .7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -3785,7 +3786,7 @@
     const el = $('#toast');
     // 'unl' / 'lck': Admin Mode switches, in the slider's colors (red = unlocked, green = locked) so they stand out.
     const cls = kind === 'error' ? 'error' : kind === 'hint' ? 'hint-t' : kind === 'unl' ? 'adm-t adm-unl' : kind === 'lck' ? 'adm-t adm-lck' : '';
-    const ic = kind === 'unl' ? icon('unlock', 18) : kind === 'lck' ? icon('lock', 18) : kind === 'busy' ? '<span class="spin"></span>' : kind === 'error' ? icon('alert', 16) : kind === 'hint' ? icon('calendar', 16) : kind === 'info' ? icon('info', 16) : icon('check', 16);
+    const ic = kind === 'unl' ? icon('shield', 18) : kind === 'lck' ? icon('user', 18) : kind === 'busy' ? '<span class="spin"></span>' : kind === 'error' ? icon('alert', 16) : kind === 'hint' ? icon('calendar', 16) : kind === 'info' ? icon('info', 16) : icon('check', 16);
     el.innerHTML = '<div class="' + cls + '">' + ic + '<span>' + esc(msg) + '</span></div>';
     el.classList.add('show');
     clearTimeout(toastTimer);
@@ -6607,14 +6608,14 @@
   // Report coverage grid: the draft's rows; saved with Save Report.
   RG.report = { key: 'types', any: true, get lim() { return myScope(); }, get cols() { return typeNames().concat(['Blackout']).map(t => [t, t]); },
     blank: () => ({ types: typeNames().concat(['Blackout']) }), rows: () => S.rpDraft.rules, set: rows => { S.rpDraft.rules = rows; redrawReport(); A.rpAuto(); }, redraw: redrawReport };
-  /** Admin Mode slider (Profile menu and the top of the Admin page): Locked | Unlocked, built like the status slider.
-   *  Locked = a green pill with a lock, Unlocked = a red pill with an open lock; the chosen side shows its word, the
-   *  other just its icon. Unlocking asks for the admin PIN first (the pill moves once it's accepted); locking is instant. */
+  /** Mode slider (Profile menu row "Mode" and the top of the Admin page): User | Admin, built like the status slider.
+   *  User = a green pill with a person, Admin = a red pill with a shield; the chosen side shows its word, the other just
+   *  its icon. Known admins switch at once; anyone else is asked for the admin PIN first. */
   const adminSlider = () => {
     const on = !!S.isAdmin, o = (v, ic, word, sel) => '<button type="button" class="stsl-o' + (sel ? ' on' : '') + '" role="radio" aria-checked="' + sel + '" data-act="adminModeTo" data-v="' + v + '"' +
       (sel ? ' tabindex="-1"' : '') + ' title="' + word + '">' + icon(ic, 15) + '<span class="stsl-t">' + word + '</span></button>';
-    return '<div class="stsl lksl ' + (on ? 'st-unl' : 'st-lck') + '" role="radiogroup" aria-label="Admin Mode"><span class="stsl-thumb" aria-hidden="true"></span>' +
-      o('lock', 'lock', 'Locked', !on) + o('unlock', 'unlock', 'Unlocked', on) + '</div>';
+    return '<div class="stsl lksl ' + (on ? 'st-unl' : 'st-lck') + '" role="radiogroup" aria-label="Mode"><span class="stsl-thumb" aria-hidden="true"></span>' +
+      o('lock', 'user', 'User', !on) + o('unlock', 'shield', 'Admin', on) + '</div>';
   };
   /** Which admin mode is unlocked: "Org Admin", or "Team Admin" (its team in the tooltip). */
   const adminModeBadge = () => '<span class="unlocked ' + (S.adminScope ? 'ul-team' : 'ul-org') + '" title="' + esc(S.adminScope ? 'Team admin for ' + scopeText(S.adminScope) : 'Org admin: every team') + '">' + (S.adminScope ? 'Team Admin' : 'Org Admin') + '</span>';
@@ -7099,7 +7100,7 @@
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
           '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '">' + icon(t[2], 15) + t[1] + '</button>').join('') + '</div></div>' +
       // Admin Mode: label on the left, the Locked | Unlocked slider on the right.
-      '<div class="pm-row pm-adm" role="none">' + icon('shield', 20) + '<span class="pm-l">Admin Mode</span>' + adminSlider() + '</div>' +
+      '<div class="pm-row pm-adm" role="none">' + icon('shield', 20) + '<span class="pm-l">Mode</span>' + adminSlider() + '</div>' +
       row('openSettings', 'sliders', 'Settings') +
       row('signOut', 'logout', 'Sign Out').replace('class="pm-row"', 'class="pm-row pm-out"');
     document.body.appendChild(el);
