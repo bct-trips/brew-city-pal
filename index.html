@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792697100"></script>
+    <script src="config.js?v=1792697393"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792697100';
+      window.PAL_BUILD = '1792697393';
       (function () {
         function check(launch) {
           try {
@@ -3236,6 +3236,13 @@
   .wiz-tsel.wt-ty-blackout .seg.seg-slide:not(.nav) > button.on { color: #ffffff !important; }
   .wiz-tsel .seg.seg-slide:not(.nav) > button { transition: none; font-weight: 800; } /* the pill glides; the words change at once */
   :root[data-theme="dark"] .wiz-tsel.wt-leave .seg-thumb { box-shadow: inset 0 0 0 1.5px var(--navy-edge, #3b5b9a); }
+
+  /* Passes keep iPhone proportions on every screen: the dialog showing one (Review, request details) is as wide as an
+     iPhone 17 Pro (402px), so the pass is ~370px wide with the dialog's 16px sides; the Add to Calendar button and the
+     day details match it. Phones are already this width. */
+  #modal .modal:has(.wpass) { max-width: 402px; }
+  #modal .modal:has(.wpass) .modal-b { padding-left: 16px; padding-right: 16px; }
+  .wpass, .btn.wp-add, .wpass + .cc-detail { width: 100%; max-width: 370px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
 </style>
 
   </head>
