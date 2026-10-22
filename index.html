@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792663886"></script>
+    <script src="config.js?v=1792664247"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792663886';
+      window.PAL_BUILD = '1792664247';
       (function () {
         function check(launch) {
           try {
@@ -2933,6 +2933,9 @@
   @media (max-width: 480px) { .modal-h .hd-cal { width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 20px; } .modal-h .hd-cal .hd-cal-t { display: none; } }
   /* Profile menu: Sign Out in red (it asks to confirm). */
   .pm-row.pm-out, .pm-row.pm-out .ic { color: var(--bad); }
+  /* Wide screens: the calendar's bar and the list bars share one padding, so the same control (My Requests' List |
+     Calendar switch, Add Request) sits in exactly the same place in both modes. */
+  @media (min-width: 701px) { .cal > .calbar, .page > .lbar { padding: 8px 12px; } }
 </style>
 
   </head>
@@ -5660,10 +5663,12 @@
   /* List page bar — same controls and order as the calendar bar:
      phone: search / filters (Add Request is the bar under the table); desktop: search · filters · Add Request. */
   function listBar(search, filters, sc) {
+    // Wide screens: Add Request first (as in the calendar's bar), so My Requests' List | Calendar switch stays in the same
+    // place in both modes. Phones hide this one and use the full-width Add Request bar.
     return '<div class="lbar">' +
+      '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button>' +
       '<div class="lsearch">' + icon('search', 16) + search + '</div>' +
-      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'list' && S.isAdmin ? openBtn() : '') + (sc === 'mine' ? mineSwitch() : '') + '</div>' +
-      '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
+      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'list' && S.isAdmin ? openBtn() : '') + (sc === 'mine' ? mineSwitch() : '') + '</div></div>';
   }
   /** Admin status control: a three-way slider Approved | Pending | Denied. The current status has a solid red / amber /
    *  green fill and shows its word; the other two show only their icon. Used in the request tables, request details and the conflict screen. */
