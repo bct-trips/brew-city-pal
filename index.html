@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792671527"></script>
+    <script src="config.js?v=1792671617"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792671527';
+      window.PAL_BUILD = '1792671617';
       (function () {
         function check(launch) {
           try {
@@ -2597,7 +2597,7 @@
      while there's more below. */
   .more-hint { position: sticky; left: 0; bottom: 0; height: 0; width: 100%; max-width: 100vw; display: none; justify-content: center; z-index: 4; pointer-events: none; }
   .more-below > .more-hint { display: flex; }
-  .more-hint::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 56px; background: linear-gradient(to bottom, transparent, var(--card) 92%); }
+  .more-hint::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 56px; background: linear-gradient(to bottom, transparent, var(--hint-bg, var(--card)) 92%); }
   .more-pill { position: absolute; bottom: 10px; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%;
     background: var(--sel-bg); color: var(--sel-ink); box-shadow: 0 2px 10px rgba(0, 0, 0, .3); cursor: pointer; pointer-events: auto; }
   @media (prefers-reduced-motion: no-preference) { .more-pill { animation: fade .2s ease-out; } }
@@ -4210,6 +4210,13 @@
   function markScroll(el) {
     if (!el.querySelector(':scope > .more-hint')) el.insertAdjacentHTML('beforeend', '<div class="more-hint" aria-hidden="true"><button type="button" class="more-pill" tabindex="-1" aria-label="Scroll down" title="Scroll down">' + icon('down', 22) + '</button></div>');
     el.classList.toggle('more-below', el.scrollHeight - el.scrollTop - el.clientHeight > 24);
+    // Sit on the scroller's real bottom edge (a sticky bottom stops above its padding) and fade into what's behind it
+    // (the page on Settings / Admin, the card in tables).
+    const h = el.querySelector(':scope > .more-hint'), cs = getComputedStyle(el);
+    h.style.bottom = -(parseFloat(cs.paddingBottom) || 0) + 'px';
+    let bg = cs.backgroundColor;
+    for (let e = el; e && /rgba\(0, 0, 0, 0\)|transparent/.test(bg); e = e.parentElement) bg = getComputedStyle(e).backgroundColor;
+    if (!/rgba\(0, 0, 0, 0\)|transparent/.test(bg)) h.style.setProperty('--hint-bg', bg);
   }
   function markScrollers() { $$(SCROLLERS).forEach(markScroll); }
   document.addEventListener('scroll', ev => { const el = ev.target; if (el && el.matches && el.matches(SCROLLERS)) markScroll(el); }, true);
