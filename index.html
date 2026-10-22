@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792660718"></script>
+    <script src="config.js?v=1792661124"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792660718';
+      window.PAL_BUILD = '1792661124';
       (function () {
         function check(launch) {
           try {
@@ -3427,7 +3427,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-22.35'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-22.36'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -3859,7 +3859,8 @@
     } else if (SU.mode === 'restore') {
       body = '<h2 class="auth-h">' + opt[2] + '</h2>' + steps +
         '<p class="auth-note">Choose the backup file you downloaded from the other copy (Admin → Backup &amp; Restore). Everything in it comes back — members, requests, settings and PINs.</p>' +
-        '<section class="su-sec"><h3 class="setup-h">Backup File</h3>' + file('suFile', 'Choose Backup File', SU.backupName, '.json,application/json') + '<div class="su-sum" id="suSum"></div></section>' +
+        '<section class="su-sec"><h3 class="setup-h">Backup File</h3>' + file('suFile', 'Choose Backup File', SU.backupName, '.json,application/json') + '<div class="su-sum" id="suSum"></div>' +
+          '<div class="field" id="suUnlockF" hidden><label for="suBkPin">Backup’s Org Admin PIN</label><input id="suBkPin" ' + NEW_PIN + ' aria-label="The backup’s org admin PIN"></div></section>' +
         '<div class="err" id="suErr"></div><div class="su-foot"><button type="button" class="btn" data-back="choose">' + icon('left', 18) + 'Back</button>' +
           '<button class="btn primary" type="submit">' + icon('upload', 18) + 'Restore</button></div>';
     } else {
@@ -3893,16 +3894,18 @@
       const f = input.files && input.files[0]; if (!f) return;
       const rd = new FileReader(); rd.onload = () => done(String(rd.result || ''), f.name); rd.readAsText(f);
     }); };
-    const showBackup = () => { const b = SU.backup, el = $('#suSum'); if (!el) return;
-      el.innerHTML = b ? '<p>' + icon('check', 16) + 'Backup from <b>' + esc(new Date(b.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })) +
-        '</b> · ' + plural(b.tables.Users.length, 'member') + ' · ' + plural((b.tables.Requests || []).length, 'request') + '</p>' : ''; };
+    const showBackup = () => { const b = SU.backup, el = $('#suSum'), f = $('#suUnlockF'); if (!el) return;
+      if (f) f.hidden = !isEncBackup(b);
+      el.innerHTML = !b ? '' : isEncBackup(b) ? '<p>' + icon('lock', 16) + 'Locked backup from <b>' + esc(bkWhen(b)) + '</b>. Enter the org admin PIN it was made with.</p>'
+        : '<p>' + icon('check', 16) + 'Backup from <b>' + esc(bkWhen(b)) + '</b> · ' + plural(b.tables.Users.length, 'member') + ' · ' + plural((b.tables.Requests || []).length, 'request') + '</p>'; };
     const showRoster = r => { const el = $('#suRSum'); if (!el || !r) return;
       el.innerHTML = '<p>' + (r.rows.length ? icon('check', 16) : icon('alert', 16)) + '<b>' + plural(r.rows.length, 'member') + '</b> ready to add' + (r.problems.length ? ' · ' + plural(r.problems.length, 'row') + ' skipped:' : '') + '</p>' +
         (r.problems.length ? '<ul>' + r.problems.slice(0, 6).map(x => '<li>' + esc(x) + '</li>').join('') + (r.problems.length > 6 ? '<li>…and ' + (r.problems.length - 6) + ' more</li>' : '') + '</ul>' : ''); };
     showBackup(); if (SU.rosterRead) showRoster(SU.rosterRead);
     read('suFile', (text, name) => {
       let b = null; try { b = JSON.parse(text); } catch (e) { b = null; }
-      if (!b || b.app !== 'brew-city-pal' || !b.tables || !Array.isArray(b.tables.Users)) { SU.backup = null; SU.backupName = ''; $('#suErr').textContent = 'That file isn’t a PAL backup.'; return; }
+      if (!isEncBackup(b) && !isPlainBackup(b)) { SU.backup = null; SU.backupName = ''; $('#suErr').textContent = 'That file isn’t a PAL backup.'; return; }
+      $('#suErr').textContent = '';
       SU.backup = b; SU.backupName = name; $('.su-fname').textContent = name; $('label[for="suFile"]').lastChild.textContent = 'Change File'; showBackup();
     });
     read('suRoster', (text, name) => {
@@ -3928,7 +3931,12 @@
         err.textContent = '';
         return authBusy(btn, async () => {
           try {
-            const res = await call('apiSetupRestore', SU.code, SU.backup);
+            let plain = SU.backup;
+            if (isEncBackup(plain)) {
+              const bp = v('suBkPin'); if (!bp) { err.textContent = 'Enter the backup’s org admin PIN.'; return; }
+              plain = await bkDecrypt(plain, bp);
+            }
+            const res = await call('apiSetupRestore', SU.code, plain);
             SU.code = ''; SU.backup = null; S.setupNeeded = false; showLogin();
             toast('Restored ' + plural(res.users, 'member') + ' and ' + plural(res.requests, 'request') + '. Sign in with your PIN from the backup.', 'ok', 6000);
           } catch (e) { err.textContent = e.message; }
@@ -6516,7 +6524,7 @@
       $('#modal').innerHTML = '<div class="overlay" data-overlay="1"><div class="modal' + (wide ? ' modal-wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="modalTitle">' + html + '</div></div>';
     }
     // A dialog asking for a PIN focuses its first PIN box (phones too); others focus [autofocus] (not on phones).
-    autoFocus($('#modal [autofocus]') || [...document.querySelectorAll('#modal input')].find(isPinBox));
+    if (kind !== 'restore') autoFocus($('#modal [autofocus]') || [...document.querySelectorAll('#modal input')].find(isPinBox)); // Restore: read the warning first
   }
   /* ---------- Confirm dialog (Material 3 basic dialog, replaces the browser's confirm box) ----------
      askConfirm(message) → Promise<boolean>. Its own layer above any open dialog, so the dialog underneath stays as it
@@ -6564,9 +6572,12 @@
       wrap.innerHTML = '<div class="cdlg" role="alertdialog" aria-modal="true" aria-labelledby="cdlgT" aria-describedby="cdlgM">' +
         '<h2 id="cdlgT">' + esc(title) + '</h2>' + (body ? (opts.list ? '<div id="cdlgM">' + body + '</div>' : '<p id="cdlgM">' + body + '</p>') : '') +
         (opts.ack ? ackBox('cdlgAck', opts.ack) : '') +
+        // pin: a PIN box (its label); the action stays off until 4+ digits are typed, and the dialog resolves to the PIN.
+        (opts.pin ? '<div class="field cdlg-pin"><label for="cdlgPin">' + esc(opts.pin) + '</label><input id="cdlgPin" ' + NEW_PIN + '></div>' : '') +
         '<div class="cdlg-f"><button type="button" class="btn" data-c="0">Cancel</button>' +
-        '<button type="button" class="btn ' + (danger ? 'bad' : 'primary') + '" data-c="1"' + (opts.ack ? ' disabled' : '') + '>' + esc(ok) + '</button></div></div>';
-      const done = v => { document.removeEventListener('keydown', key, true); wrap.remove(); try { if (prev && prev.focus) prev.focus(); } catch (e) { /* gone */ } resolve(v); };
+        '<button type="button" class="btn ' + (danger ? 'bad' : 'primary') + '" data-c="1"' + (opts.ack || opts.pin ? ' disabled' : '') + '>' + esc(ok) + '</button></div></div>';
+      const pinVal = () => (wrap.querySelector('#cdlgPin') || {}).value || '';
+      const done = v => { document.removeEventListener('keydown', key, true); wrap.remove(); try { if (prev && prev.focus) prev.focus(); } catch (e) { /* gone */ } resolve(v && opts.pin ? pinVal() : v); };
       const key = ev => {
         if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); done(false); }
         else if (ev.key === 'Enter') {
@@ -6586,7 +6597,10 @@
       });
       document.addEventListener('keydown', key, true);
       document.body.appendChild(wrap);
-      const first = wrap.querySelector(opts.ack ? '.ack' : '[data-c="1"]'); if (first) first.focus();
+      if (opts.pin) {
+        wrap.addEventListener('input', () => { wrap.querySelector('[data-c="1"]').disabled = pinVal().length < 4; });
+        focusPin(wrap.querySelector('#cdlgPin'));
+      } else { const first = wrap.querySelector(opts.ack ? '.ack' : '[data-c="1"]'); if (first) first.focus(); }
     });
   }
   function closeModal() {
@@ -6985,6 +6999,37 @@
     return (notes.length ? '<div class="notes-lh"><span class="notes-n">' + plural(notes.length, 'notification') + '</span>' +
         '<button class="btn ghost sm" data-act="notesClear">' + icon('trash', 14) + 'Clear All</button></div>' : '') + list + more;
   }
+
+  /* ---------- Encrypted backups ----------
+     A downloaded backup is encrypted on this device with the org admin PIN typed to download it: AES-256-GCM, key from
+     PBKDF2-SHA-256 (600,000 rounds, random salt). The file holds no readable names or PIN data — only the app name, the
+     format, when it was made, and the cipher text. Restoring (Admin or first-time Setup) asks for that backup's org
+     admin PIN to unlock it; a wrong PIN can't open it (GCM rejects it). Older plain backups still restore. */
+  const BK_ITER = 600000;
+  const u8ToB64 = u8 => { let t = ''; for (let i = 0; i < u8.length; i += 0x8000) t += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(t); };
+  const isEncBackup = b => !!(b && b.app === 'brew-city-pal' && b.format === 'encrypted' && b.data && b.kdf && b.iv);
+  const isPlainBackup = b => !!(b && b.app === 'brew-city-pal' && b.tables && Array.isArray(b.tables.Users));
+  async function bkKey(pin, salt, iter) {
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(pin)), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  async function bkEncrypt(obj, pin) {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await bkKey(pin, salt, BK_ITER);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(obj))));
+    return { app: 'brew-city-pal', format: 'encrypted', v: 2, createdAt: obj.createdAt,
+      kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: BK_ITER, salt: u8ToB64(salt) }, iv: u8ToB64(iv), data: u8ToB64(ct) };
+  }
+  async function bkDecrypt(file, pin) {
+    let out = null;
+    try {
+      const key = await bkKey(pin, b64ToU8(file.kdf.salt), Number(file.kdf.iterations) || BK_ITER);
+      out = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToU8(file.iv) }, key, b64ToU8(file.data))));
+    } catch (e) { throw new Error('That PIN doesn’t unlock this backup. Use the org admin PIN from when the backup was made.'); }
+    if (!isPlainBackup(out)) throw new Error('That file isn’t a PAL backup.');
+    return out;
+  }
+  const bkWhen = b => new Date(b.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 
   const b64ToU8 = b => { const s = atob(b.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((b.length + 3) % 4)); return Uint8Array.from(s, c => c.charCodeAt(0)); };
 
@@ -8551,7 +8596,7 @@
     // Backup: type the org admin PIN, then the file downloads (brew-city-pal-backup-YYYY-MM-DD.json).
     bkDownload() {
       openModal('backup', modalHead('Download Backup', 'download') + '<div class="modal-b">' +
-        '<p class="meta" style="white-space:normal;margin:0 0 10px">All members, requests, settings and PIN data. Keep it private.</p>' +
+        '<p class="meta" style="white-space:normal;margin:0 0 10px">The file is locked with this PIN. You’ll need it to restore the backup.</p>' +
         '<div class="field"><label for="bkPin">Org Admin PIN</label><input id="bkPin" ' + NEW_PIN + ' aria-label="Org admin PIN"></div><div class="err" id="bkErr"></div></div>' +
         '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="bkGo">' + icon('download', 18) + 'Download</button></div>');
     },
@@ -8560,49 +8605,57 @@
       if (!pin) { err.textContent = 'Enter the org admin PIN.'; return; }
       const b = await run(el, 'apiBackup', S.token, pin);
       if (!b) return;
-      const blob = new Blob([JSON.stringify(b)], { type: 'application/json' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+      let file;
+      try { file = await busy(el, () => bkEncrypt(b, pin)); } catch (e) { err.textContent = 'This browser couldn’t lock the backup. Try another browser.'; return; }
+      const blob = new Blob([JSON.stringify(file)], { type: 'application/json' }), url = URL.createObjectURL(blob), a = document.createElement('a');
       a.href = url; a.download = 'brew-city-pal-backup-' + S.today + '.json'; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 4000);
       closeModal(); toast('Backup downloaded · ' + plural(b.tables.Users.length, 'member') + ', ' + plural(b.tables.Requests.length, 'request'), 'ok', 3000);
     },
-    // Restore: choose a backup file, read the warning and tick it, type the org admin PIN, then Restore.
+    // Restore: read the warning (nothing is focused, so it's read first), choose the backup file, type the backup's org
+    // admin PIN to unlock it (encrypted backups) and this copy's org admin PIN, then Restore.
     bkRestore() {
       S.bkFile = null;
       openModal('restore', modalHead('Restore From Backup', 'alert') + '<div class="modal-b">' +
         '<div class="ra-warn"><b>Warning</b><ul><li>Replaces all members, requests, notifications, settings and PINs</li><li>Everyone signs in again with their backup PIN</li><li>Org admin PIN becomes the backup’s</li><li>Can’t be undone</li></ul></div>' +
         '<div class="field"><span class="lbl-t">Backup File</span>' + fileField('bkFile', 'Choose Backup File', '.json,application/json', 'bkPick') + '</div>' +
         '<p class="meta" id="bkSum" style="white-space:normal"></p>' +
-        '<div class="field"><label for="bkPin2">Org Admin PIN (this copy)</label><input id="bkPin2" ' + NEW_PIN + ' aria-label="Org admin PIN"></div>' +
-        ackBox('bkOk', 'I have read this warning') + '<div class="err" id="bkErr"></div></div>' +
+        '<div class="field" id="bkUnlockF" hidden><label for="bkUnlock">Backup’s Org Admin PIN</label><input id="bkUnlock" ' + NEW_PIN + ' aria-label="The backup’s org admin PIN"></div>' +
+        '<div class="field"><label for="bkPin2">This Copy’s Org Admin PIN</label><input id="bkPin2" ' + NEW_PIN + ' aria-label="This copy’s org admin PIN"></div>' +
+        '<div class="err" id="bkErr"></div></div>' +
         '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn bad" id="bkGo2" data-act="bkRestoreGo" disabled>Restore</button></div>');
     },
     bkPick(el) {
-      const f = el.files && el.files[0], sum = $('#bkSum'), err = $('#bkErr');
-      S.bkFile = null; err.textContent = ''; sum.textContent = '';
+      const f = el.files && el.files[0], sum = $('#bkSum'), err = $('#bkErr'), unlock = $('#bkUnlockF');
+      S.bkFile = null; err.textContent = ''; sum.textContent = ''; unlock.hidden = true;
       if (!f) return A.bkCheck();
       const rd = new FileReader();
       rd.onload = () => {
         let b = null; try { b = JSON.parse(rd.result); } catch (e) { b = null; }
-        if (!b || b.app !== 'brew-city-pal' || !b.tables || !Array.isArray(b.tables.Users)) { err.textContent = 'That file isn’t a PAL backup.'; return A.bkCheck(); }
+        if (!isEncBackup(b) && !isPlainBackup(b)) { err.textContent = 'That file isn’t a PAL backup.'; return A.bkCheck(); }
         S.bkFile = b;
-        sum.textContent = 'Backup from ' + new Date(b.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) +
-          ' · ' + plural(b.tables.Users.length, 'member') + ' · ' + plural((b.tables.Requests || []).length, 'request') + '.';
+        if (isEncBackup(b)) { unlock.hidden = false; sum.textContent = 'Locked backup from ' + bkWhen(b) + '. Enter the org admin PIN it was made with.'; }
+        else sum.textContent = 'Backup from ' + bkWhen(b) + ' · ' + plural(b.tables.Users.length, 'member') + ' · ' + plural((b.tables.Requests || []).length, 'request') + ' (not locked).';
         A.bkCheck();
       };
       rd.readAsText(f);
     },
-    bkCheck() { const b = $('#bkGo2'), a = $('#bkOk'); if (b) b.disabled = !(S.bkFile && a && a.getAttribute('aria-checked') === 'true'); },
+    bkCheck() { const b = $('#bkGo2'); if (b) b.disabled = !S.bkFile; },
     async bkRestoreGo(el) {
-      const pin = ($('#bkPin2') || {}).value || '', err = $('#bkErr');
-      if (!S.bkFile || ($('#bkOk') || { getAttribute() {} }).getAttribute('aria-checked') !== 'true') return;
-      if (!pin) { err.textContent = 'Enter the org admin PIN.'; return; }
-      const res = await run(el, 'apiRestore', S.token, pin, S.bkFile);
+      const pin = ($('#bkPin2') || {}).value || '', err = $('#bkErr'), enc = isEncBackup(S.bkFile);
+      if (!S.bkFile) return;
+      const bpin = enc ? (($('#bkUnlock') || {}).value || '') : '';
+      if (enc && !bpin) { err.textContent = 'Enter the backup’s org admin PIN.'; return; }
+      if (!pin) { err.textContent = 'Enter this copy’s org admin PIN.'; return; }
+      err.textContent = '';
+      let plain = S.bkFile;
+      if (enc) { try { plain = await busy(el, () => bkDecrypt(S.bkFile, bpin)); } catch (e) { err.textContent = e.message; return; } }
+      const res = await run(el, 'apiRestore', S.token, pin, plain);
       if (!res) return;
       S.bkFile = null;
       signOutLocal();
       toast('Restored ' + plural(res.users, 'member') + ' and ' + plural(res.requests, 'request') + '. Sign in with your PIN from the backup.', 'ok', 6000);
     },
-    // Every member's PIN back to the default: a confirm dialog whose Reset button stays off until the warning is ticked.
     lenMode(el) {
       S.lenDraft = Object.assign({}, S.lenDraft, { [el.dataset.t]: el.dataset.v });
       $$('[data-act="lenMode"][data-t="' + el.dataset.t + '"]').forEach(b => b.classList.toggle('on', b.dataset.v === el.dataset.v));
@@ -8757,7 +8810,17 @@
     rosterSelClear() { S.rosterSel = new Set(); renderPeopleOnly(); },
     batchUnit(el) { const v = el.value; if (!v) return; runBatch('unit', v, list => list.forEach(u => { u.unit = v; }), n => plural(n, 'member') + ' moved to ' + v); },
     batchRole(el) { const v = el.value; if (!v) return; runBatch('role', v, list => list.forEach(u => { u.role = v; }), n => plural(n, 'member') + ' changed to ' + roleName(v)); },
-    async batchResetPin() { const n = batchIds().length; if (!n || !await askConfirm('Reset ' + plural(n, 'PIN') + '?', { list: [plural(n, 'member') + ' set to the default PIN', 'New PIN required at next sign-in'] })) return; runBatch('resetPin', null, list => list.forEach(u => { u.mustChange = true; }), k => plural(k, 'PIN') + ' reset to the default'); },
+    // Reset PINs: re-enter your admin PIN (org or team, whichever mode you're in). Not optimistic: nothing changes until
+    // the server has checked the PIN.
+    async batchResetPin(el) {
+      const ids = batchIds(), n = ids.length; if (!n) return;
+      const pin = await askConfirm('Reset ' + plural(n, 'PIN') + '?', { list: [plural(n, 'member') + ' set to the default PIN', 'New PIN required at next sign-in'], pin: S.adminScope ? 'Team Admin PIN' : 'Org Admin PIN' });
+      if (!pin) return;
+      const d = await run(el, 'apiBatchUsers', S.token, ids, 'resetPin', pin);
+      if (!d) return;
+      apply(d); S.rosterSel = new Set(); closeModal(); render();
+      toast(plural(n, 'PIN') + ' reset to the default', 'ok', 2200);
+    },
     async batchDeactivate() { const n = batchIds().filter(id => id !== S.me).length; if (!n || !await askConfirm('Deactivate ' + plural(n, 'member') + '?', { list: ['No sign-in until reactivated', 'History kept'] })) return; runBatch('deactivate', null, list => list.forEach(u => { if (u.id !== S.me) u.active = false; }), () => plural(n, 'member') + ' deactivated'); },
     batchReactivate() { runBatch('reactivate', null, list => list.forEach(u => { u.active = true; u.pending = false; }), n => plural(n, 'member') + ' reactivated'); },
     batchAdmin() { if (batchIds().length) openAdminPicker(null); },
@@ -8970,7 +9033,7 @@
     if (ov && ev.target === ov) { closeModal(); return; }
     // "I have read this warning" check boxes inside a sheet (Restore From Backup).
     const ack = ev.target.closest('#modal .ack');
-    if (ack) { ev.preventDefault(); toggleAck(ack); if (ack.id === 'bkOk') A.bkCheck(); return; }
+    if (ack) { ev.preventDefault(); toggleAck(ack); return; }
     const el = ev.target.closest('[data-act]');
     if (!el || el.disabled) return;
     const fn = A[el.dataset.act];
