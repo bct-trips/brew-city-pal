@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792708661"></script>
+    <script src="config.js?v=1792708846"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792708661';
+      window.PAL_BUILD = '1792708846';
       (function () {
         function check(launch) {
           try {
@@ -3587,6 +3587,17 @@
   .pm-bh .bh-marks:empty { display: none; }
   .pm-bh .bh-marks .st-med, .pm-bh .bh-marks .adm-ic { margin-left: 0; }
   .mc-tb .adm-ic { margin-left: 0; }
+  /* Day panel week strip: taller dates with bigger type that fill the space under the header (less dead gap). */
+  .dayv-panel .dp-h { padding-bottom: 2px; margin-bottom: 0; }
+  .dayv-panel .dstrip { padding-top: 0; }
+  .dayv-panel .ds-d { height: 80px; gap: 4px; border-radius: 12px; }
+  .dayv-panel .ds-w { font-size: 14px; }
+  .dayv-panel .ds-n { font-size: 26px; }
+  .dayv-panel .ds-dots { height: 7px; } .dayv-panel .ds-dots i { width: 7px; height: 7px; }
+  /* Today in the week strip: the ring stays the soft blue-gray, but the letters need contrast — navy in light, the soft
+     blue-gray in dark. */
+  .ds-d.today .ds-n, .ds-d.today .ds-w { color: var(--sel-ink); }
+  :root[data-theme="dark"] .ds-d.today .ds-n, :root[data-theme="dark"] .ds-d.today .ds-w { color: var(--sel-bg); }
 </style>
 
   </head>
