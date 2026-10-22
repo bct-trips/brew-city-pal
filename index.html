@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792699569"></script>
+    <script src="config.js?v=1792699681"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792699569';
+      window.PAL_BUILD = '1792699681';
       (function () {
         function check(launch) {
           try {
@@ -5600,6 +5600,11 @@
   }
   /** Under a member's name on the wallet pass: rank · position · unit. */
   const memberSub = u => [u.rank, roleName(u.role), u.unit].filter(Boolean).join(' · ');
+  /** A member as their puck — [P|MKE|Last name], like All Requests and the calendar (no status marks). */
+  const memberPuck = u => { const un = unitsList().find(x => x.code === u.unit);
+    return '<span class="idb pb" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(roleL(u.role)) + '</span>' +
+      '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span><span class="idb-n"><span class="idb-t">' + esc(calName(u)) + '</span></span></span>' +
+      '<span class="sr">' + esc(fullName(u)) + '</span>'; };
   /* Full person badge on calendar bars: [P|MKE|Lastname] as one chip. Approved = green border. */
   /** Green "going on now" dot after a name — only on the bar that covers today (from–to = the dates that bar shows). */
   // On leave / pass right now = APPROVED and today is inside the dates (pending or denied isn't "on leave", even on those days).
@@ -6415,7 +6420,8 @@
     return ['0000-01-01', '9999-12-31', 'All Time'];
   }
   const PEOPLE_COLS = [
-    ['unit', 'Unit'], ['last', 'Last Name'], ['first', 'First Name'], ['rank', 'Rank'], ['role', 'Position'],
+    // Name = the member's puck [P|MKE|Last name], the same as on All Requests (sorted by last name).
+    ['last', 'Name'], ['first', 'First Name'], ['rank', 'Rank'], ['role', 'Position'],
     ['count', 'Requests', 1], ['req', 'Days Requested', 1], ['appr', 'Days Approved', 1], ['den', 'Days Denied', 1], ['pend', 'Days Pending', 1],
     ['leave', 'Leave Approved', 1], ['pass', 'Pass Approved', 1]
   ];
@@ -6466,13 +6472,13 @@
     const cell = (v, cls) => '<td class="num' + (cls ? ' ' + cls : '') + '">' + (v ? '<b class="nz">' + v + '</b>' : '<span class="zero">0</span>') + '</td>';
     const body = rows.length ? rows.map(m => '<tr data-act="memberCard" data-id="' + esc(m.u.id) + '" tabindex="0" class="' + (m.u.pending ? 'ro-wait' : m.u.active ? '' : 'ro-off') + (sel.has(m.u.id) ? ' ro-sel' : '') + '" aria-label="' + esc(fullName(m.u) + ': ' + m.count + ' requests, ' + m.req + ' days requested, ' + m.appr + ' approved, ' + m.den + ' denied') + '">' +
         '<td class="sel-cell">' + box(sel.has(m.u.id), 'rosterSel', m.u.id, 'Select ' + fullName(m.u)) + '</td>' +
-        '<td>' + unitBadge(m.u.unit) + '</td><td class="strong stk">' + esc(lastName(m.u)) + adminMark(m.u) + '</td><td>' + esc(firstName(m.u)) + '</td><td>' + esc(m.u.rank) + '</td>' +
+        '<td class="strong stk"><div class="stk-in">' + memberPuck(m.u) + adminMark(m.u) + '</div></td><td>' + esc(firstName(m.u)) + '</td><td>' + esc(m.u.rank) + '</td>' +
         '<td>' + esc(roleName(m.u.role)) + (m.u.pending ? ' <span class="badge caution">Awaiting Approval</span>' : m.u.active ? '' : ' <span class="badge ro-off-b">Inactive</span>') + '</td>' +
         cell(m.count) + cell(m.req, 'strong') + cell(m.appr, 'ok-t') + cell(m.den, 'bad-t') + cell(m.pend, 'pend-t') + cell(m.leave) + cell(m.pass) + rosterActs(m.u) + '</tr>').join('')
       : '<tr class="empty-row"><td colspan="' + (PEOPLE_COLS.length + 2) + '">No members match.</td></tr>';
     // Squadron totals: a summary row right under the column titles (its own tbody, so the stripes below stay even) —
     // seen without scrolling, never under the bottom bar or the scroll cue.
-    const totRow = '<tbody class="tot-body"><tr class="tot-row"><td class="sel-cell"></td><td colspan="5" class="strong">Squadron total · ' + plural(rows.length, 'member') + '</td>' +
+    const totRow = '<tbody class="tot-body"><tr class="tot-row"><td class="sel-cell"></td><td colspan="4" class="strong">Squadron total · ' + plural(rows.length, 'member') + '</td>' +
       ['count', 'req', 'appr', 'den', 'pend', 'leave', 'pass'].map(k => '<td class="num strong">' + tot[k] + '</td>').join('') + '<td class="acts-cell"></td></tr></tbody>';
     // Only the multi-sort note remains above the table (no period explanation).
     const note = sortNote(P, 'people').replace(/^ · /, '');
