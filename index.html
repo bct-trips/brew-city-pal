@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792696087"></script>
+    <script src="config.js?v=1792696158"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792696087';
+      window.PAL_BUILD = '1792696158';
       (function () {
         function check(launch) {
           try {
@@ -3158,7 +3158,7 @@
   .wp-top, .wp-dates, .wp-foot { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
   .wp-r { text-align: right; }
   .wp-app { font-size: 12px; font-weight: 700; letter-spacing: .08em; opacity: .75; }
-  .wp-type { font-size: 28px; line-height: 34px; font-weight: 900; letter-spacing: .05em; }
+  .wp-type { font-size: 38px; line-height: 44px; font-weight: 900; letter-spacing: .04em; -webkit-text-stroke: .8px currentColor; } /* LEAVE / PASS: big and extra heavy */
   .wp-n { font-size: 28px; line-height: 34px; font-weight: 900; }
   .wp-lab { font-size: 11px; line-height: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
   .wp-lab2 { margin-top: 12px; }
