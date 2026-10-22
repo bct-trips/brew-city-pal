@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792676455"></script>
+    <script src="config.js?v=1792681538"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792676455';
+      window.PAL_BUILD = '1792681538';
       (function () {
         function check(launch) {
           try {
@@ -2121,11 +2121,15 @@
     .calbar .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
     .calbar .cb-right { grid-column: 3; grid-row: 1; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; }
   }
+  /* Tablets (iPad portrait, small laptops): two rows. Top: [views · Today] [‹ date ›]; bottom: [Add Request] [filters].
+     The view switch and Today sit with the date they change, so the filters row has room and nothing overlaps. */
   @media (min-width: 701px) and (max-width: 1179px) {
-    .calbar { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 8px; }
-    .calbar .cb-center { grid-column: 1 / -1; grid-row: 1; justify-self: center; }
-    .calbar .cb-left { grid-column: 1; grid-row: 2; justify-self: start; flex-wrap: nowrap; }
-    .calbar .cb-right { grid-column: 2; grid-row: 2; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; min-width: 0; }
+    .calbar { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 8px; }
+    .calbar .cb-left { display: contents; }
+    .calbar .cb-views { display: flex; align-items: center; gap: 8px; grid-column: 1; grid-row: 1; justify-self: start; }
+    .calbar .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
+    .calbar .req-btn { grid-column: 1; grid-row: 2; justify-self: start; }
+    .calbar .cb-right { grid-column: 2 / -1; grid-row: 2; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; min-width: 0; max-width: 100%; }
   }
   /* Admin → Positions: square swatches show the position letter in each color; white gets an outline. */
   .rsw .ub { display: inline-grid; place-items: center; border-radius: 6px; font-size: 13px; font-weight: 900; }
@@ -5868,6 +5872,13 @@
     const th = sg.querySelector(':scope > .seg-thumb'), on = sg.querySelector(':scope > button.on');
     sg.dataset.placed = '1'; delete sg.dataset.pre;
     if (!th) return;
+    // Re-place (no glide) whenever the group changes size: rotating a phone / iPad reflows the nav after the resize event,
+    // so a pill placed on that event alone lands where the old layout had the tab.
+    if (!sg._ro && window.ResizeObserver) {
+      let w0 = sg.offsetWidth;
+      sg._ro = new ResizeObserver(() => { const w = sg.offsetWidth; if (w === w0 || !document.contains(sg)) return; w0 = w; if (sg.dataset.sk) delete segLast[sg.dataset.sk]; placeSeg(sg, false); });
+      sg._ro.observe(sg);
+    }
     if (!on) { th.style.opacity = '0'; return; }
     // Nav bar: the pill is the Material 3 active indicator — it hugs the selected item's icon (64×32), not the whole item.
     const ic = sg.classList.contains('nav') && on.querySelector('.nav-ic');
@@ -5896,10 +5907,16 @@
       const sg = ev.target.closest && ev.target.closest('.seg-slide');
       if (sg) setTimeout(() => { if (document.contains(sg)) placeSeg(sg, true); }, 0);
     });
-    window.addEventListener('resize', () => {
+    // Re-place every pill on resize, and again a moment later: rotating an iPad / phone fires resize (and
+    // orientationchange) before the new layout has settled, so a pill placed right away lands on the old spot.
+    const replaceAll = () => {
       document.querySelectorAll('.stsl').forEach(sl => placeThumb(sl, false));
       document.querySelectorAll('.seg-slide').forEach(sg => { delete segLast[sg.dataset.sk]; placeSeg(sg, false); });
-    });
+    };
+    let late = [];
+    const onResize = () => { replaceAll(); late.forEach(clearTimeout); late = [150, 400, 900].map(ms => setTimeout(replaceAll, ms)); };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
   })();
   /** Admin: show only open requests (pending, or in an unresolved conflict), with how many there are. */
   function openBtn() {
