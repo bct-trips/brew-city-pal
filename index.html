@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792673529"></script>
+    <script src="config.js?v=1792674105"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792673529';
+      window.PAL_BUILD = '1792674105';
       (function () {
         function check(launch) {
           try {
@@ -2937,7 +2937,9 @@
   /* Request details header: Add to Calendar (icon + words; phones: just the icon), next to the days pill. */
   .modal-h .hd-cal { flex: none; height: 36px; gap: 6px; padding: 0 12px; text-decoration: none; font-size: 14px; }
   .modal-h .hd-cal[aria-disabled="true"] { opacity: .55; pointer-events: none; }
-  @media (max-width: 480px) { .modal-h .hd-cal { width: 40px; height: 40px; padding: 0; justify-content: center; border-radius: 20px; } .modal-h .hd-cal .hd-cal-t { display: none; } }
+  .modal-h .hd-cal .hd-cal-s { display: none; }
+  .modal-h .hd-cal > .ic { flex: none; display: block; margin: 0; }
+  @media (max-width: 480px) { .modal-h .hd-cal { height: 36px; padding: 0 14px 0 10px; justify-content: center; align-items: center; border-radius: 18px; } .modal-h .hd-cal .hd-cal-t { display: none; } .modal-h .hd-cal .hd-cal-s { display: inline; } }
   /* Profile menu: Sign Out in red (it asks to confirm). */
   .pm-row.pm-out, .pm-row.pm-out .ic { color: var(--bad); }
   /* Wide screens: the calendar's bar and the list bars share one padding, so the same control (My Requests' List |
@@ -5190,7 +5192,9 @@
     const un = unitsList().find(x => x.code === u.unit);
     return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(L) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
-      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + nowDot(r, from, to) + (withStatus ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
+      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + nowDot(r, from, to) +
+        // Tables (no status marks on the badge): a pending request going on today shows its clock where the green dot would be.
+        (!withStatus && r.status === 'Pending' && isNow(r) ? statusIcon('Pending') : '') + (withStatus ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
@@ -5721,10 +5725,12 @@
         // off goes back to the usual part-open bands. Bands you opened / closed yourself keep that.
         : type === 'Past' ? (col.Past === false ? 'open' : col.Past === true ? 'closed' : S.f.conf ? 'open' : 'closed')
         : band ? (col[type] || (S.f.conf ? 'open' : 'partial')) : (col[type] ? 'closed' : 'open');
-      // Top group = requests whose dates include today, whatever their status — so approving / denying / setting back to
-      // pending never moves a row (only its color and slider change). "N active" counts the approved ones going on now.
+      // Top group = requests whose dates include today, approved or pending, so approving or setting back to pending
+      // never moves a row (only its color and slider change). "N active" counts the approved ones going on now.
       const today = r => r.start <= S.today && r.end >= S.today;
-      const act = band ? list.filter(today) : [], rest = band ? list.filter(r => !today(r)) : list, nAct = act.filter(isNow).length;
+      // Denied requests are never "active": they leave the top group and sort with the rest.
+      const isAct = r => today(r) && r.status !== 'Denied';
+      const act = band ? list.filter(isAct) : [], rest = band ? list.filter(r => !isAct(r)) : list, nAct = act.filter(isNow).length;
       // Default order (until a column is clicked): out today = position, last, first; the rest = departure date first.
       const byStart = (a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || byPosName(a, b);
       if (mine) { if (!st.userSorted) list = list.slice().sort(byStart); }
@@ -7446,7 +7452,7 @@
     const k = calKind(), label = 'Add to ' + (k === 'google' ? 'Google' : 'Apple') + ' Calendar';
     const attrs = k === 'google' ? 'href="' + esc(calEvent(r).google) + '" target="_blank" rel="noopener"'
       : k === 'apple-file' ? 'href="#" download="' + esc(r.type.toLowerCase() + '-' + r.start) + '.ics"' : 'href="#" target="_blank" rel="noopener" aria-disabled="true"';
-    return '<a class="btn hd-cal" id="calAdd" role="button" ' + attrs + ' aria-label="' + label + '" title="' + label + '">' + icon('calPlus', 18) + '<span class="hd-cal-t">Add to Calendar</span></a>';
+    return '<a class="btn hd-cal" id="calAdd" role="button" ' + attrs + ' aria-label="' + label + '" title="' + label + '">' + icon('calPlus', 18) + '<span class="hd-cal-t">Add to Calendar</span><span class="hd-cal-s" aria-hidden="true">Add</span></a>';
   }
   function calAddWire(r) {
     const a = $('#calAdd'), k = calKind(); if (!a || k === 'google') return;
