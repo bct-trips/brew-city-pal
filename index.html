@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792672074"></script>
+    <script src="config.js?v=1792672399"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792672074';
+      window.PAL_BUILD = '1792672399';
       (function () {
         function check(launch) {
           try {
@@ -4216,11 +4216,18 @@
   const SCROLLERS = '#main .tbl-wrap, #main .scroll';
   function markScroll(el) {
     if (!el.querySelector(':scope > .more-hint')) el.insertAdjacentHTML('beforeend', '<div class="more-hint" aria-hidden="true"><button type="button" class="more-pill" tabindex="-1" aria-label="Scroll down" title="Scroll down">' + icon('down', 22) + '</button></div>');
-    el.classList.toggle('more-below', el.scrollHeight - el.scrollTop - el.clientHeight > 24);
-    // Sit on the scroller's real bottom edge (a sticky bottom stops above its padding) and fade into what's behind it
-    // (the page on Settings / Admin, the card in tables).
-    const h = el.querySelector(':scope > .more-hint'), cs = getComputedStyle(el);
-    h.style.bottom = -(parseFloat(cs.paddingBottom) || 0) + 'px';
+    // The visible bottom: the scroller's own bottom, or the top of the bar that overlaps it (phones: tables run 18px
+    // behind the bottom dock). The arrow sits right there, and only shows while real content is still out of sight —
+    // not the bottom padding, and not rows already in view (the totals row).
+    const h = el.querySelector(':scope > .more-hint'), cs = getComputedStyle(el), pb = parseFloat(cs.paddingBottom) || 0;
+    const sr = el.getBoundingClientRect(), dock = el.closest('.page, .cal') && el.closest('.page, .cal').querySelector(':scope > .lbar, :scope > .calbar');
+    const dr = dock && dock.offsetParent ? dock.getBoundingClientRect() : null;
+    const covered = dr && dr.top < sr.bottom && dr.bottom > sr.bottom - 1 ? sr.bottom - dr.top : 0;
+    const hidden = el.scrollHeight - el.scrollTop - el.clientHeight + covered - pb; // content (not padding) below the visible edge
+    el.classList.toggle('more-below', hidden > 24);
+    // A sticky bottom stops above the padding; shift it to the visible bottom. Fade into what's behind it (the page on
+    // Settings / Admin, the card in tables).
+    h.style.bottom = (covered - pb) + 'px';
     let bg = cs.backgroundColor;
     for (let e = el; e && /rgba\(0, 0, 0, 0\)|transparent/.test(bg); e = e.parentElement) bg = getComputedStyle(e).backgroundColor;
     if (!/rgba\(0, 0, 0, 0\)|transparent/.test(bg)) h.style.setProperty('--hint-bg', bg);
