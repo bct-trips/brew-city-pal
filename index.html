@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792694615"></script>
+    <script src="config.js?v=1792694733"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792694615';
+      window.PAL_BUILD = '1792694733';
       (function () {
         function check(launch) {
           try {
@@ -3765,7 +3765,7 @@
    *  why, until it's dismissed — not just a snackbar. S.nsWhat (set by the caller) says what wasn't saved. */
   let nsAt = 0;
   function notSaved(why, what) {
-    what = what || S.nsWhat || 'Your change wasn’t saved, so it has been undone.'; S.nsWhat = null; nsAt = Date.now();
+    what = what || S.nsWhat || 'Your change wasn’t saved, so it has been undone.'; S.nsWhat = null; S.nsPlain = false; nsAt = Date.now();
     let el = document.getElementById('nsAlert');
     if (!el) { el = document.createElement('div'); el.id = 'nsAlert'; el.className = 'ns-wrap'; document.body.appendChild(el); }
     el.innerHTML = '<div class="ns-card" role="alertdialog" aria-modal="true" aria-labelledby="nsT" aria-describedby="nsW">' +
@@ -3784,7 +3784,7 @@
     S.pending = (S.pending || 0) + 1; S.syncErr = false; saveGen++; syncUI();
     const done = saveChain.then(() => call.apply(null, args)).then(
       data => { lastSaved = data; return data; },
-      e => { resync = true; notSaved(e.message); return null; });
+      e => { resync = true; notSaved(S.nsPlain ? '' : e.message); return null; });
     saveChain = done.then(async () => {
       S.pending--;
       if (!S.pending) {
@@ -9491,7 +9491,7 @@
         if (wizDecides() && w.status && w.status !== 'Pending') payload.status = w.status; // the server keeps your own Pending
         many = S.isAdmin && !w.creating && ids.length > 1 ? ids.length : 0;
         showBlocker('Submitting…');
-        S.nsWhat = 'This ' + w.type.toLowerCase() + ' request was NOT submitted. The form is still open, so you can try again.';
+        S.nsWhat = 'The server was busy. Try again.'; S.nsPlain = true; // a failed submit: just this, no technical reason
         if (many) done = save(null, 'apiCreateRequests', S.token, payload, ids);
         else {
           if (S.isAdmin && w.creating) payload.newUser = w.nu;
@@ -9504,12 +9504,12 @@
       hideBlocker();
       if (!data) {
         // The save's own alert says why; offline (nothing was sent) gets the same big alert here.
-        if (Date.now() - nsAt > 3000) notSaved('You’re offline — check your connection.', S.nsWhat);
-        S.nsWhat = null;
+        if (Date.now() - nsAt > 3000) notSaved('', 'The server was busy. Try again.');
+        S.nsWhat = null; S.nsPlain = false;
         if (S.wiz) $('#wizErr') && ($('#wizErr').textContent = 'Not saved — try again.');
         return;
       }
-      S.nsWhat = null;
+      S.nsWhat = null; S.nsPlain = false;
       closeModal();
       if (!w.editId && isCalView()) S.cursor = w.start;
       render();
