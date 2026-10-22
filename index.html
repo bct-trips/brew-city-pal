@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792661124"></script>
+    <script src="config.js?v=1792661758"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792661124';
+      window.PAL_BUILD = '1792661758';
       (function () {
         function check(launch) {
           try {
@@ -2908,16 +2908,17 @@
     .page > .lbar { margin-top: -18px; z-index: 6; }
     .page:has(> .lbar) .tbl-wrap, .page:has(> .lbar) .scroll { padding-bottom: 18px; }
   }
-  /* Admin mode colors: unlocked is a warning — the badge is red for Org Admin (white text 6.5:1) and yellow for Team
-     Admin (navy 9.3:1); locking is the safe move — Lock Admin Mode is green (Admin page button: white on #15803d 5.0:1;
-     Profile menu row: green text, 7:1 light / 8:1 dark). */
+  /* Admin mode badge: Org Admin green (white 5.0:1), Team Admin yellow (navy 9.3:1); no lock icon. */
   .unlocked { white-space: nowrap; }
-  .unlocked.ul-org { background: #b42318; color: #ffffff; }
+  .unlocked.ul-org { background: #15803d; color: #ffffff; } /* white on green 5.0:1 */
   .unlocked.ul-team { background: var(--gold); color: var(--navy); }
-  .btn.admin-lock, :root[data-theme="dark"] .btn.admin-lock { background: #15803d; border-color: #15803d; color: #ffffff; }
-  .btn.admin-lock:hover { background: #166534; border-color: #166534; }
-  .btn.admin-lock { gap: 6px; padding: 0 14px; white-space: nowrap; }
-  .pm-row.pm-lock, .pm-row.pm-lock .ic { color: var(--ok); }
+  /* Admin Mode slider (Locked | Unlocked): the status slider with two options. Locked = green pill (#15803d, white 5.0:1),
+     Unlocked = red pill (#b42318, white 6.5:1). */
+  .lksl.st-lck .stsl-thumb { background: #15803d; }
+  .lksl.st-unl .stsl-thumb { background: #b42318; }
+  .lksl { flex: none; grid-template-columns: none; }
+  .pm-row.pm-adm { cursor: default; }
+  .pm-row.pm-adm .pm-l { flex: 1 1 auto; }
 </style>
 
   </head>
@@ -5731,7 +5732,8 @@
       if (!raf) raf = requestAnimationFrame(() => { raf = 0; document.querySelectorAll('.stsl:not([data-placed])').forEach(sl => placeThumb(sl, false)); });
       // Segmented pills: a timer, not a frame, so they're placed even in a background tab (until then the group keeps
       // its plain selected highlight).
-      if (!tmr) tmr = setTimeout(() => { tmr = 0; fitSegLabels(); document.querySelectorAll('.seg-slide:not([data-placed]), .seg-slide[data-pre]').forEach(sg => placeSeg(sg, false)); }, 0);
+      if (!tmr) tmr = setTimeout(() => { tmr = 0; fitSegLabels(); document.querySelectorAll('.seg-slide:not([data-placed]), .seg-slide[data-pre]').forEach(sg => placeSeg(sg, false));
+        document.querySelectorAll('.stsl:not([data-placed])').forEach(sl => placeThumb(sl, false)); }, 0); // sliders too, if no frame came
     }).observe(document.body, { childList: true, subtree: true });
     // A choice changed in place (no redraw): slide to it.
     document.addEventListener('click', ev => {
@@ -6374,8 +6376,17 @@
   // Report coverage grid: the draft's rows; saved with Save Report.
   RG.report = { key: 'types', any: true, get lim() { return myScope(); }, get cols() { return typeNames().concat(['Blackout']).map(t => [t, t]); },
     blank: () => ({ types: typeNames().concat(['Blackout']) }), rows: () => S.rpDraft.rules, set: rows => { S.rpDraft.rules = rows; redrawReport(); A.rpAuto(); }, redraw: redrawReport };
+  /** Admin Mode slider (Profile menu and the top of the Admin page): Locked | Unlocked, built like the status slider.
+   *  Locked = a green pill with a lock, Unlocked = a red pill with an open lock; the chosen side shows its word, the
+   *  other just its icon. Unlocking asks for the admin PIN first (the pill moves once it's accepted); locking is instant. */
+  const adminSlider = () => {
+    const on = !!S.isAdmin, o = (v, ic, word, sel) => '<button type="button" class="stsl-o' + (sel ? ' on' : '') + '" role="radio" aria-checked="' + sel + '" data-act="adminModeTo" data-v="' + v + '"' +
+      (sel ? ' tabindex="-1"' : '') + ' title="' + word + '">' + icon(ic, 15) + '<span class="stsl-t">' + word + '</span></button>';
+    return '<div class="stsl lksl ' + (on ? 'st-unl' : 'st-lck') + '" role="radiogroup" aria-label="Admin Mode"><span class="stsl-thumb" aria-hidden="true"></span>' +
+      o('lock', 'lock', 'Locked', !on) + o('unlock', 'unlock', 'Unlocked', on) + '</div>';
+  };
   /** Which admin mode is unlocked: "Org Admin", or "Team Admin" (its team in the tooltip). */
-  const adminModeBadge = () => '<span class="unlocked ' + (S.adminScope ? 'ul-team' : 'ul-org') + '" title="' + esc(S.adminScope ? 'Team admin for ' + scopeText(S.adminScope) : 'Org admin: every team') + '">' + icon('unlock', 13) + (S.adminScope ? ' Team Admin' : ' Org Admin') + '</span>';
+  const adminModeBadge = () => '<span class="unlocked ' + (S.adminScope ? 'ul-team' : 'ul-org') + '" title="' + esc(S.adminScope ? 'Team admin for ' + scopeText(S.adminScope) : 'Org admin: every team') + '">' + (S.adminScope ? 'Team Admin' : 'Org Admin') + '</span>';
   /** Team admins change only blackouts that stay within their team; org admins change any. */
   const canEditBo = b => S.isOrg || (S.isAdmin && scopeWithin(b.scope || { units: [], roles: [] }, S.adminScope));
 
@@ -6467,7 +6478,7 @@
     return '<section class="page admin-page"><div class="toolbar"><span class="title">Admin</span>' +
       adminModeBadge() +
       '<div class="cfg-tools">' +
-      '<button class="btn admin-lock" data-act="lockAdmin">' + icon('lock', 18) + 'Lock Admin Mode</button></div></div>' +
+      adminSlider() + '</div></div>' +
       '<div class="scroll" id="adminScroll">' +
 
       // Privacy: members see only their own schedule plus day availability. Admins always see everything.
@@ -6858,8 +6869,8 @@
       '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full seg-slide" role="group" aria-label="Appearance" data-sk="theme"><span class="seg-thumb" aria-hidden="true"></span>' +
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
           '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '">' + icon(t[2], 15) + t[1] + '</button>').join('') + '</div></div>' +
-      // Unlocked: Lock Admin Mode in green (locking is the safe move); locked: Admin Mode.
-      (S.isAdmin ? row('menuLockAdmin', 'lock', 'Lock Admin Mode').replace('class="pm-row"', 'class="pm-row pm-lock"') : row('openAdminPin', 'shield', 'Admin Mode')) +
+      // Admin Mode: label on the left, the Locked | Unlocked slider on the right.
+      '<div class="pm-row pm-adm" role="none">' + icon('shield', 20) + '<span class="pm-l">Admin Mode</span>' + adminSlider() + '</div>' +
       row('openSettings', 'sliders', 'Settings') +
       row('signOut', 'logout', 'Sign Out');
     document.body.appendChild(el);
@@ -6876,7 +6887,7 @@
     if (!m) return;
     if (ev.target.closest('.nav button[data-v="profile"]')) return; // the tab itself toggles it
     const item = ev.target.closest('#pmenu [data-act]');
-    const keepOpen = item && ['theme', 'noteDel', 'notesClear'].includes(item.dataset.act);
+    const keepOpen = item && ['theme', 'noteDel', 'notesClear', 'adminModeTo'].includes(item.dataset.act);
     if (!m.contains(ev.target) || (item && !keepOpen)) closeProfileMenu();
   }, true);
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && document.getElementById('pmenu')) closeProfileMenu(); });
@@ -8476,21 +8487,23 @@
       hideBlocker();
     },
     openAdminPin() { openAdminPin(); },
-    // Lock from the Profile menu (which has closed): the ring spins on the Profile tab while it locks.
+    // Admin Mode slider: Unlocked asks for the admin PIN; Locked locks (the pill glides first so the change is seen).
+    adminModeTo(el) {
+      const v = el.dataset.v;
+      if (v === 'unlock' && !S.isAdmin) { closeProfileMenu(); openAdminPin(); return; }
+      if (v === 'lock' && S.isAdmin) {
+        const sl = el.closest('.lksl');
+        if (sl) { sl.classList.remove('st-unl'); sl.classList.add('st-lck'); sl.querySelectorAll('.stsl-o').forEach(b => b.classList.toggle('on', b === el)); placeThumb(sl, true); }
+        setTimeout(() => { closeProfileMenu(); A.menuLockAdmin(); }, 260);
+      }
+    },
+    // Lock (Admin Mode slider): the full logo + loading ring while it switches back to member mode.
     async menuLockAdmin() {
       showBlocker('Locking…', ''); // full logo + loading ring while it switches back to member mode
       const data = await run(null, 'apiLockAdmin', S.token);
       hideBlocker();
       if (!data) return;
       apply(data); render(); toast('Admin mode locked');
-    },
-    async lockAdmin(el) {
-      showBlocker('Locking…', '');
-      const data = await run(el, 'apiLockAdmin', S.token);
-      hideBlocker();
-      if (!data) return;
-      apply(data); render();
-      toast('Admin mode locked');
     },
     theme(el) {
       S.theme = el.dataset.v; store.set('theme', S.theme); applyTheme();
