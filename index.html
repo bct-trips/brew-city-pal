@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792698966"></script>
+    <script src="config.js?v=1792699143"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792698966';
+      window.PAL_BUILD = '1792699143';
       (function () {
         function check(launch) {
           try {
@@ -3281,6 +3281,48 @@
   .dp-row { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n s" "m s"; align-items: center; column-gap: 8px; width: 100%; padding: 6px 0; border: 0; border-top: 1px solid var(--line); background: none; color: inherit; text-align: left; font: inherit; cursor: pointer; }
   .dp-row .dp-n { grid-area: n; font-weight: 800; font-size: 14.5px; } .dp-row .dp-m { grid-area: m; font-size: 12.5px; color: var(--muted); }
   .dp-row .wp-st { grid-area: s; height: 24px; padding: 0 8px; font-size: 12px; }
+
+  /* ---------- My Requests wallet (miniPass / mineWallet) ----------
+     Compact passes in the ticket's language: Leave navy / white, Pass gold / navy (same pairs as the full pass), 18px
+     corners, the patch as a faint watermark at the right, type + status on top, big dates with weekdays and the day
+     count, a dashed perforation, then location · note on one line. ~130px tall: 4 fit on an iPhone 17 Pro. Phones: one
+     column; wider screens: as many 360px columns as fit. */
+  .mwallet { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 24px; }
+  .mw-h { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; font-size: 15px; font-weight: 800; color: var(--primary); }
+  .mw-tog { margin-top: 18px; border: 0; background: none; padding: 0; cursor: pointer; font-family: inherit; }
+  .mw-ct { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--card-2); color: var(--ink); font-size: 12.5px; }
+  .mw-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 10px; }
+  .mw-empty { margin: 4px 0 16px; color: var(--muted); }
+  .mpass { --wp-bg: #0A2351; --wp-ink: #ffffff; --wp-line: rgba(255,255,255,.32);
+    position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 12px 16px 12px; border: 0; border-radius: 18px;
+    background: var(--wp-bg); color: var(--wp-ink); text-align: left; font: inherit; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+  .mpass.wp-pass { --wp-bg: #FCC22B; --wp-ink: #0A2351; --wp-line: rgba(10,35,81,.3); }
+  .mpass:active { transform: scale(.985); }
+  .mpass:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .mpass > * { position: relative; z-index: 1; }
+  .mpass .mp-logo { position: absolute; z-index: 0; right: -40px; top: -30px; width: 190px; height: 186px; opacity: .13; background-size: contain; background-repeat: no-repeat; pointer-events: none; }
+  .mp-top { display: flex; align-items: center; gap: 8px; min-height: 26px; }
+  .mp-type { font-size: 20px; line-height: 24px; font-weight: 900; letter-spacing: .04em; -webkit-text-stroke: .4px currentColor; margin-right: auto; }
+  .mpass .wp-st { height: 26px; padding: 0 10px; font-size: 12px; }
+  .mp-now { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 11px; background: rgba(255,255,255,.92); color: #14532d; font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+  .mp-now .now-dot { width: 7px; height: 7px; }
+  .mp-chg { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 11px; background: #fff3d6; color: #7a4a00; font-size: 11.5px; font-weight: 800; }
+  .mp-dates { display: flex; align-items: flex-end; gap: 10px; }
+  .mp-d { display: flex; flex-direction: column; }
+  .mp-d b { font-size: 24px; line-height: 28px; font-weight: 900; letter-spacing: .01em; white-space: nowrap; }
+  .mp-d i { font-style: normal; font-size: 12px; opacity: .8; }
+  .mp-arrow { opacity: .7; margin-bottom: 18px; }
+  .mp-n { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .9; }
+  .mp-n b { font-size: 24px; line-height: 28px; font-weight: 900; letter-spacing: 0; }
+  .mp-cut { display: block; height: 0; border-top: 2px dashed var(--wp-line); margin: 2px 0; }
+  .mp-info { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 14px; line-height: 20px; }
+  .mp-info .ic { flex: none; opacity: .85; }
+  .mp-loc { flex: none; max-width: 60%; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mp-note { min-width: 0; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mp-note::before { content: "·"; margin-right: 6px; }
+  .mpass.mp-denied { opacity: .7; }
+  .mpass.mp-denied .mp-dates b { text-decoration: line-through; text-decoration-thickness: 2px; }
+  .mw-past .mpass { opacity: .85; }
 </style>
 
   </head>
@@ -6257,17 +6299,45 @@
     const t = IDX.ytd.get(S.me) || { Leave: 0, Pass: 0 };
     const mine = IDX.live.filter(r => r.userId === S.me);
     const F = S.mf, q = (S.mine.q || '').trim().toLowerCase();
-    const shown = sortRows(mine.filter(r => F.status.includes(r.status) && F.type.includes(r.type) &&
-      (!q || (r.type + ' ' + r.status + ' ' + r.note).toLowerCase().indexOf(q) >= 0)), S.mine);
+    const shown = mine.filter(r => F.status.includes(r.status) && F.type.includes(r.type) &&
+      (!q || (r.type + ' ' + r.status + ' ' + r.note + ' ' + (r.location || '')).toLowerCase().indexOf(q) >= 0));
     const changedMine = mine.filter(isChanged);
     return '<section class="page list-page">' +
-      listBar('<input type="search" placeholder="Search notes…" value="' + esc(S.mine.q || '') + '" data-model="mine.q" data-live="mineRefresh" aria-label="Search my requests">', FILTERS.filter(f => f.g !== 'role'), 'mine') +
+      listBar('<input type="search" placeholder="Search location, notes…" value="' + esc(S.mine.q || '') + '" data-model="mine.q" data-live="mineRefresh" aria-label="Search my requests">', FILTERS.filter(f => f.g !== 'role'), 'mine') +
       (changedMine.length ? '<div class="chg-note" role="alert">' + icon('alert', 18) + '<div><b>' + plural(changedMine.length, 'request') + ' changed by an admin.</b> ' +
         changedMine.map(r => '<button class="linkbtn" data-act="openReq" data-id="' + esc(r.id) + '">' + r.type + ' ' + D.short(r.start) + ' → ' + D.short(r.end) + '</button>').join(' · ') +
         '<div class="meta" style="white-space:normal">Open each one to see what changed, then tap “Got it”.</div></div></div>' : '') +
-      // No count / days-taken summary line; only the "Default Order" link when a column sort is on.
-      '<div class="tbl-page" id="mineBody">' + (S.mine.userSorted ? '<div class="tbl-count">' + sortNote(S.mine, 'mine').replace(/^ · /, '') + '</div>' : '') +
-      reqTable(shown, 'mine') + '</div>' + reqBar() + '</section>';
+      // My leave and passes as a wallet of compact passes (tap one for the full pass).
+      '<div class="tbl-page" id="mineBody">' + mineWallet(shown) + '</div>' + reqBar() + '</section>';
+  }
+  /* ---------- My Requests: the wallet ----------
+     Every request as a compact pass in the ticket's language (Leave navy / Pass gold, the patch as a faint watermark,
+     big dates, a perforation, location), ~130px tall so 4 fit on an iPhone 17 Pro. Upcoming first (going on now at the
+     top, then by departure), then Past (newest first, collapsed until opened). Tap a pass for the full one. */
+  function miniPass(r) {
+    const n = D.days(r.start, r.end), big = d => esc(D.f(d, { month: 'short', day: 'numeric' }).toUpperCase());
+    const wk = d => esc(D.f(d, { weekday: 'short' }) + (d.slice(0, 4) !== S.today.slice(0, 4) ? ' · ' + d.slice(0, 4) : ''));
+    return '<button type="button" class="mpass wp-' + tcls(r.type) + ' mp-' + r.status.toLowerCase() + '" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
+      '<span class="brand-logo mp-logo" aria-hidden="true"></span>' +
+      '<span class="mp-top"><span class="mp-type">' + esc(r.type.toUpperCase()) + '</span>' + (onNow(r) ? '<span class="mp-now"><i class="now-dot"></i>Now</span>' : '') +
+        (isChanged(r) ? '<span class="mp-chg">' + icon('alert', 13) + 'Changed</span>' : '') + wpChip(r.status).replace(' id="wpSt"', '') + '</span>' +
+      '<span class="mp-dates"><span class="mp-d"><b>' + big(r.start) + '</b><i>' + wk(r.start) + '</i></span><span class="mp-arrow">' + icon('arrow', 16) + '</span>' +
+        '<span class="mp-d"><b>' + big(r.end) + '</b><i>' + wk(r.end) + '</i></span><span class="mp-n"><b>' + n + '</b>' + (n === 1 ? 'day' : 'days') + '</span></span>' +
+      '<span class="mp-cut" aria-hidden="true"></span>' +
+      '<span class="mp-info">' + icon('pin', 14) + '<span class="mp-loc">' + (r.location ? esc(r.location) : 'No location') + '</span>' +
+        (r.note ? '<span class="mp-note">' + esc(r.note) + '</span>' : '') + '</span>' +
+    '</button>';
+  }
+  function mineWallet(list) {
+    const up = list.filter(r => r.end >= S.today).sort((a, b) => (onNow(b) - onNow(a)) || (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
+    const past = list.filter(r => r.end < S.today).sort((a, b) => (a.start < b.start ? 1 : -1));
+    const open = !!S.minePast;
+    return '<div class="scroll mwallet">' +
+      '<h3 class="mw-h">Upcoming <span class="mw-ct">' + up.length + '</span></h3>' +
+      (up.length ? '<div class="mw-list">' + up.map(miniPass).join('') + '</div>' : '<p class="mw-empty">Nothing coming up. Tap Add Request to plan your next one.</p>') +
+      (past.length ? '<button type="button" class="mw-h mw-tog" data-act="minePast" aria-expanded="' + open + '">' + icon(open ? 'down' : 'right', 16) + 'Past <span class="mw-ct">' + past.length + '</span></button>' +
+        (open ? '<div class="mw-list mw-past">' + past.map(miniPass).join('') + '</div>' : '') : '') +
+    '</div>';
   }
 
   /* ================================================================ */
@@ -8741,6 +8811,7 @@
       else if (S.modal === 'filters') openFilterSheet(S.fsScope, true);
     },
     confOff() { S.f.conf = false; render(); },
+    minePast() { S.minePast = !S.minePast; render(); },
     mineConf() { S.mineConf = !S.mineConf; render(); if (S.modal === 'filters') openFilterSheet('mine', true); },
     monthMode(el) { S.monthMode = el.dataset.v; try { localStorage.setItem('pal.monthMode', S.monthMode); } catch (e) {} render(); },
     pickAssignee() { openPersonPicker('cal', 'assign'); refreshData(); },
