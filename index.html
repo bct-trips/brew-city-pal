@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792688071"></script>
+    <script src="config.js?v=1792688137"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792688071';
+      window.PAL_BUILD = '1792688137';
       (function () {
         function check(launch) {
           try {
@@ -3072,8 +3072,8 @@
   /* All Requests: Conflicts | Open | All switch (admins), built like the status slider at the bar's 40px height.
      Conflicts = red, Open = yellow (navy ink), All = green; the count rides on Open. */
   .stsl.vw-sl { height: 40px; border-radius: 20px; flex: none; grid-template-columns: repeat(3, auto); }
-  .stsl.vw-sl .stsl-o:not(.on) { width: auto; padding: 0 12px; }
-  .stsl.vw-sl .stsl-o:not(.on) .stsl-t { display: inline; } /* every side shows its word (colors say which is on) */
+  /* Desktop: like the status slider — the chosen side shows its word, the others just their icon (Open keeps its count). */
+  .stsl.vw-sl .stsl-o:not(.on) { width: auto; min-width: 40px; padding: 0 10px; }
   .stsl.vw-sl .stsl-thumb { border-radius: 17px; }
   .stsl.vw-sl .stsl-o { border-radius: 17px; padding: 0 12px; font-size: 14px; font-weight: 700; }
   .stsl.vw-sl.st-conf .stsl-thumb { background: #b42318; }
@@ -3084,7 +3084,7 @@
   .stsl.vw-sl.st-open .stsl-o.on .vw-ct { background: var(--navy); color: var(--gold); }
   .lbar .filters > .vw-sl { order: 9; }
   /* Phones: the switch gets its own full-width row under Filters, three equal parts. */
-  @media (max-width: 700px) { .lbar .filters:has(> .vw-sl) { flex-wrap: wrap; row-gap: 8px; } .lbar .filters > .vw-sl { flex: 1 1 100%; display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); } .lbar .filters > .vw-sl .stsl-o { width: 100%; } }
+  @media (max-width: 700px) { .lbar .filters:has(> .vw-sl) { flex-wrap: wrap; row-gap: 8px; } .lbar .filters > .vw-sl { flex: 1 1 100%; display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); } .lbar .filters > .vw-sl .stsl-o { width: 100%; } .stsl.vw-sl .stsl-o:not(.on) .stsl-t { display: inline; } } /* phones: room for every word */
 </style>
 
   </head>
@@ -6012,7 +6012,7 @@
     const F = S.f, n = IDX.live.filter(r => isOpenReq(r) && F.role.includes(userOf(r.userId).role) && F.type.includes(r.type) && personConfOk(r, F)).length;
     const v = F.conf ? 'conf' : S.openOnly ? 'open' : 'all';
     const o = (k, ic, word, tip) => '<button type="button" role="radio" aria-checked="' + (v === k) + '" class="stsl-o' + (v === k ? ' on' : '') + '" data-act="listView" data-v="' + k + '" title="' + tip + '">' +
-      '<span class="stsl-t">' + word + '</span>' + (k === 'open' && n ? '<b class="vw-ct">' + n + '</b>' : '') + '</button>';
+      icon(ic, 15) + '<span class="stsl-t">' + word + '</span>' + (k === 'open' && n ? '<b class="vw-ct">' + n + '</b>' : '') + '</button>';
     return '<div class="stsl vw-sl st-' + v + '" role="radiogroup" aria-label="Show"><span class="stsl-thumb" aria-hidden="true"></span>' +
       o('conf', 'alert', 'Conflicts', 'Only requests over the daily max') + o('open', 'clock', 'Open', 'Pending, or in a conflict that isn’t resolved') + o('all', 'list', 'All', 'Every request') + '</div>';
   }
