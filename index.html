@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792658696"></script>
+    <script src="config.js?v=1792658964"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792658696';
+      window.PAL_BUILD = '1792658964';
       (function () {
         function check(launch) {
           try {
@@ -2900,6 +2900,23 @@
   .push-row:has(> .push-btns > .m3sw) { flex-wrap: nowrap; }
   .push-row:has(> .push-btns > .m3sw) > p { flex: 1 1 auto; min-width: 0; }
   .push-btns:has(> .m3sw) { flex: none; margin-left: auto; }
+  /* Settings → Notifications card: Push row (label left; Send Test + switch right), then "Notify Me When…" as its own
+     labeled block. Admin Alerts is a separate card. */
+  .notes-panel > h3 { margin-bottom: 4px; }
+  .n-push { align-items: center; gap: 10px; min-height: 48px; }
+  .n-push > div b { font-size: 15.5px; }
+  .n-push .meta { margin: 2px 0 0; font-size: 13.5px; }
+  .n-test { flex: none; height: 36px; padding: 0 12px; }
+  .n-note p { margin: 4px 0 10px; color: var(--muted); font-size: 14.5px; }
+  .n-sect { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .n-sect .lbl { margin-bottom: 8px; }
+  #alertsPanel .alert-rules { border-top: 0; padding-top: 8px; }
+  /* Daily Email Report status line (scheduled / last sent, or why it won't send). */
+  .rp-status { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.4; }
+  .rp-status .ic { flex: none; margin-top: 1px; }
+  .rp-ok { background: color-mix(in srgb, var(--ok) 12%, var(--card)); color: var(--ink); } .rp-ok .ic { color: var(--ok); }
+  .rp-bad { background: var(--bad-bg); color: var(--ink); } .rp-bad .ic { color: var(--bad); }
+  .rp-wait { background: var(--card-2); color: var(--muted); }
 </style>
 
   </head>
@@ -3410,7 +3427,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-21.34'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-22.35'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -6261,8 +6278,9 @@
         '<div class="row rp-row"><div class="field rp-hour"><label for="rpHour">Time</label><select id="rpHour" data-change="rpHour">' + Array.from({ length: 24 }, (_, h) => opt(h, hour(h), Number(r.hour))).join('') + '</select></div>' +
           '<div class="field"><label for="rpTz">Time Zone</label><select id="rpTz" data-change="rpTz">' + zones.map(z => opt(z[0], z[1], r.tz)).join('') + '</select></div></div>' +
         '<div class="sect"><div class="lbl">Covers</div>' + ruleGrid('report') + '</div>' : '') +
-      '<div class="err" id="rpErr"></div><div class="cfg-foot">' + (r.on ? '<button class="btn" data-act="rpTest">' + icon('bell', 16) + 'Send Test Now</button>' : '') +
-        '<button class="btn primary" data-act="rpSave">' + icon('check', 16) + 'Save Report</button></div></div>';
+      (r.on && S.report && S.report.on ? rpStatusHtml(r) : '') +
+      (r.on ? '<div class="err" id="rpErr"></div><div class="cfg-foot"><button class="btn" data-act="rpTest">' + icon('bell', 16) + 'Send Test Now</button>' +
+        '<button class="btn primary" data-act="rpSave">' + icon('check', 16) + 'Save Report</button></div>' : '') + '</div>';
   }
   /** Report time zones: UTC, US, Europe, and the regions the wing deploys to (the device's own zone is added if missing). */
   const REPORT_TZ = [['UTC', 'UTC (Zulu)'], ['America/New_York', 'Eastern (New York)'], ['America/Chicago', 'Central (Chicago)'], ['America/Denver', 'Mountain (Denver)'],
@@ -6270,6 +6288,22 @@
     ['Europe/London', 'London'], ['Europe/Paris', 'Paris'], ['Europe/Berlin', 'Germany (Berlin)'], ['Europe/Istanbul', 'Turkey (Istanbul)'], ['Asia/Qatar', 'Qatar'],
     ['Asia/Dubai', 'UAE (Dubai)'], ['Asia/Riyadh', 'Saudi Arabia (Riyadh)'], ['Asia/Kuwait', 'Kuwait'], ['Asia/Seoul', 'Korea (Seoul)'], ['Asia/Tokyo', 'Japan (Tokyo)'], ['Pacific/Guam', 'Guam']];
   const redrawReport = () => { const p = $('#reportPanel'); if (p) p.outerHTML = reportPanel(); };
+  /** Saved report's health (apiReportStatus, fetched once per visit): scheduled or not, last sent, last error — so a
+   *  report that can't send says why instead of silently never arriving. */
+  function rpStatusHtml(r) {
+    const st = S.rpStatus;
+    if (st === undefined) {
+      S.rpStatus = null;
+      call('apiReportStatus', S.token).then(x => { S.rpStatus = x; redrawReport(); }).catch(() => { S.rpStatus = { failed: true }; redrawReport(); });
+    }
+    const hour = h => (h % 12 || 12) + ':00 ' + (h < 12 ? 'AM' : 'PM');
+    const line = (cls, ic, html) => '<div class="rp-status rp-' + cls + '">' + icon(ic, 16) + '<span>' + html + '</span></div>';
+    if (!st) return line('wait', 'clock', 'Checking the schedule…');
+    if (st.failed) return '';
+    if (!st.scheduled) return line('bad', 'alert', '<b>Not scheduled, so it won’t send.</b> Whoever deployed PAL: open Apps Script, run <b>authorizeEmail</b> once, then deploy a new version.');
+    if (st.lastErr) return line('bad', 'alert', '<b>Last send failed</b> (' + esc(st.lastErr.slice(0, 10)) + '): ' + esc(st.lastErr.slice(12)));
+    return line('ok', 'check', 'Scheduled daily at ' + hour(Number(r.hour)) + (st.lastSent ? ' · Last sent ' + esc(D.f(st.lastSent, { month: 'short', day: 'numeric' })) : ' · Not sent yet'));
+  }
   /** Settings → Email Notifications (every member): Email, then a chip per kind — Approved, Denied, Admin Edits,
    *  Start Day, End Day (all off until picked) — and, with Start / End Day on, the Time and Time Zone those go out.
    *  Send Test Email (saves first) · Save. */
@@ -6749,6 +6783,7 @@
   function renderNavOnly() { const n = $('.nav'); if (n) n.outerHTML = renderNav().replace(/^<span id="syncStatus"[^>]*>[^<]*<\/span>/, ''); }
   function redrawNotes() {
     const p = $('#notesPanel'); if (p) p.innerHTML = notesPanelHtml();
+    redrawAlerts();
     const d = $('#notesDrawer'); if (d) d.innerHTML = notesListHtml();
     const m = $('#pmNotes'); if (m) m.innerHTML = pmNotesHtml();
   }
@@ -6858,33 +6893,33 @@
       denied: 'Notifications are blocked for PAL on this device. Allow them in your phone’s Settings → Notifications → PAL (or the browser’s site settings), then come back.',
       install: 'Add PAL to your Homescreen to turn on notifications. Then open it from the Homescreen and come back here.'
     }[pst];
-    // Push on this device: one switch (off / on; it shows on while turning on). While on: Send Test Notification.
+    // Push: label on the left; on the right Send Test (while on) then the switch (shows on while turning on).
     const canSwitch = pst === 'off' || pst === 'on' || pst === 'busy';
     const pushRow = canSwitch
-      ? '<div class="push-row push-sw"><div class="cfg-row-tog"><div><p><b>Push Notifications</b></p><p class="meta">' + (pst === 'busy' ? 'Turning on…' : 'On this device') + '</p></div>' +
-          sw(pst !== 'off', 'pushToggle', 'Push notifications', pst === 'busy' ? ' disabled aria-busy="true"' : '') + '</div>' +
-          (pst === 'on' ? '<div class="push-btns"><button class="btn" data-act="pushTest">' + icon('bell', 18) + 'Send Test Notification</button></div>' : '') + '</div>'
-      : pushMsg ? '<div class="push-row push-' + pst + '"><p>' + esc(pushMsg) + '</p>' +
-          (pst === 'install' ? '<div class="push-btns"><button class="btn primary" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Homescreen</button></div>' : '') + '</div>' : '';
-    return '<div class="notes-h"><h3>' + icon('bell', 16) + ' Notification Settings</h3></div>' + pushRow +
-      '<div class="push-row note-prefs"><p><b>Notify Me When My Request Is</b></p><div class="push-btns">' +
+      ? '<div class="cfg-row-tog n-push"><div><b>Push Notifications</b>' + (pst === 'busy' ? '<p class="meta">Turning on…</p>' : '') + '</div>' +
+          (pst === 'on' ? '<button type="button" class="btn sm n-test" data-act="pushTest">' + icon('bell', 16) + 'Send Test</button>' : '') +
+          sw(pst !== 'off', 'pushToggle', 'Push notifications', pst === 'busy' ? ' disabled aria-busy="true"' : '') + '</div>'
+      : pushMsg ? '<div class="n-note"><p>' + esc(pushMsg) + '</p>' +
+          (pst === 'install' ? '<button class="btn primary" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Homescreen</button>' : '') + '</div>' : '';
+    return '<h3>' + icon('bell', 16) + ' Notifications</h3>' + pushRow +
+      '<div class="n-sect"><div class="lbl">Notify Me When My Request Is</div><div class="push-btns">' +
         [['approved', 'Approved'], ['denied', 'Denied'], ['edited', 'Changed']].map(k => {
           const on = S.notePrefs[k[0]] !== false;
           return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="notePref" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>';
-        }).join('') + '</div></div>' +
-      (S.myAdmin ? '<div class="push-row admin-alerts"><p><b>Admin Alerts</b>' + tip('New requests, edits, deletions and sign-ups for the members picked below (team admins: only their team).') + '</p><div class="push-btns">' +
-        sw(S.adminAlerts, 'adminAlerts', 'Admin Alerts') + '</div></div>' +
-        // Which members: positions (default: my Default Filter Positions) and units (none picked = every unit).
-        // Alert rules: one row per alert (unit · position · alert), Add Alert and a delete per row. Shown in admin mode
-        // even while alerts are off (dimmed), so they can be set up first.
-        alertRulesHtml() : '') +
-      '';
+        }).join('') + '</div></div>';
   }
+  /** Admin Alerts (anyone with admin status): its own card — title + switch, then the alert rows (unit · position ·
+   *  alerts), shown dimmed while alerts are off so they can be set up first. */
+  function alertsPanelHtml() {
+    return '<div class="cfg-row-tog"><div><h3>' + icon('shield', 16) + ' Admin Alerts' + tip('New requests, edits, deletions and sign-ups for the members in the rows below (team admins: only their team).') + '</h3></div>' +
+      sw(S.adminAlerts, 'adminAlerts', 'Admin Alerts') + '</div>' + alertRulesHtml();
+  }
+  const redrawAlerts = () => { const p = $('#alertsPanel'); if (p) p.innerHTML = alertsPanelHtml(); };
   /** My alert rows: [{units, roles, kinds}] (an empty list = any). Nothing saved yet: my own unit and position. */
   const alertRules = () => (S.alertScope && Array.isArray(S.alertScope.rules)) ? S.alertScope.rules.map(r => Object.assign(gridRow(r), { kinds: Array.isArray(r.kinds) ? r.kinds.slice() : r.kind ? [r.kind] : ALL_KINDS() }))
     : (() => { const me = userOf(S.me) || {}; return [Object.assign(gridRow({ unit: me.unit, role: me.role }), { kinds: ALL_KINDS() })]; })();
   RG.alerts = { cols: ALERT_KINDS, key: 'kinds', any: true, get lim() { return myScope(); }, blank: () => ({ kinds: ALL_KINDS() }),
-    rows: alertRules, set: rows => saveAlertRules(rows), redraw: () => { const p = $('#notesPanel'); if (p) p.innerHTML = notesPanelHtml(); } };
+    rows: alertRules, set: rows => saveAlertRules(rows), redraw: redrawAlerts };
   /** Admin alerts: one editable row per unit · position (each can be Any) with the alerts it sends as on / off chips,
    *  a Delete per row and Add Alert. Shown in admin mode even while alerts are off (dimmed), so they can be set up first. */
   function alertRulesHtml() {
@@ -6892,7 +6927,7 @@
   }
   function saveAlertRules(rules) {
     save(() => { S.alertScope = { rules }; }, 'apiSetAlertScope', S.token, { rules });
-    redrawNotes(); const p = $('#notesPanel'); if (p) p.innerHTML = notesPanelHtml();
+    redrawAlerts();
   }
   const NOTES_SHOWN = 5; // the drawer shows the newest few; "+N more" shows the rest
   /** The notifications themselves (the drawer from Profile → Notifications): Mark all read, Clear all, and a ✕ on each. */
@@ -6928,6 +6963,7 @@
         '<div style="display:flex;gap:6px;margin-top:4px"><span class="badge">' + esc(roleName(me.role)) + '</span>' + unitBadge(me.unit) + '</div></div></div></div>' +
 
       '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' +
+      (S.myAdmin ? '<div class="panel" id="alertsPanel">' + alertsPanelHtml() + '</div>' : '') +
 
       // Everyone: emails about my own requests (each kind on / off), right under notifications.
       emailPanel() +
@@ -7888,7 +7924,12 @@
       render(); openBoResolve(b); toast(nameText(userOf(r.userId)) + ' approved over the blackout', 'ok', 1500);
     },
     boEdit(el) { S.boReturn = S.boResolve; openEditWizard(el.dataset.id); },
-    rpOn() { S.rpDraft.on = !S.rpDraft.on; redrawReport(); },
+    // Report switch: on shows its settings (save with Save Report); off hides them and saves right away if it was on.
+    rpOn(el) {
+      const r = S.rpDraft, e = $('#rpEmail'); if (e) r.email = e.value.trim();
+      r.on = !r.on; redrawReport();
+      if (!r.on && S.report && S.report.on) A.rpSave(el, true);
+    },
     // Email switch: on shows the settings (every kind picked to start, if none were); off turns every kind off and saves.
     emOn(el) {
       const e = S.emDraft, i = $('#emEmail'); if (i) e.email = i.value.trim();
@@ -7925,14 +7966,14 @@
     rpHour(el) { S.rpDraft.hour = Number(el.value); },
     rpTz(el) { S.rpDraft.tz = el.value; },
     async rpSave(el, quiet) {
-      const r = S.rpDraft, err = $('#rpErr'), e = $('#rpEmail');
+      const r = S.rpDraft, err = $('#rpErr') || {}, e = $('#rpEmail'); // switched off: no error line on screen
       if (e) r.email = e.value.trim();
       if (r.on && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email)) { err.textContent = 'Enter the email address for the report.'; return false; }
       if (r.on && !(r.rules || []).some(x => (x.types || []).length)) { err.textContent = 'Add at least one row with a type.'; return false; }
       err.textContent = '';
       const res = await run(el, 'apiSaveReport', S.token, { on: r.on, email: r.email, hour: r.hour, tz: r.tz, rules: r.rules || [] });
       if (!res) return false;
-      apply(res); S.rpDraft = null; redrawReport();
+      apply(res); S.rpDraft = null; S.rpStatus = undefined; redrawReport(); // re-check the schedule after a save
       if (!quiet) toast(r.on ? 'Daily report saved' : 'Daily report off', 'ok', 2000);
       return true;
     },
