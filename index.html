@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792708902"></script>
+    <script src="config.js?v=1792709107"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792708902';
+      window.PAL_BUILD = '1792709107';
       (function () {
         function check(launch) {
           try {
@@ -3402,7 +3402,8 @@
   /* Week view: today looks like every other day (weekday, big date, month, counts) — just its ring and the date in the
      highlight color; no corner date bubble (that's for Month and Quarter, where the date is small). */
   .wk-day.today::after { display: none !important; }
-  .wk-day.today .wk-num { opacity: 1; color: var(--mark); }
+  .wk-day.today .wk-num { opacity: 1; color: var(--sel-ink); } /* readable: navy in light */
+  :root[data-theme="dark"] .wk-day.today .wk-num { color: var(--sel-bg); }
 
   /* Count chips (Month, Week): the position's letter square + count / max, like the Quarter view and the day panel. */
   .sq-r { display: inline-grid; place-items: center; width: 1.3em; height: 1.3em; margin-right: 4px; border-radius: 3px; font-size: .82em; font-weight: 900;
@@ -3592,10 +3593,12 @@
   /* Day panel week strip: taller dates with bigger type that fill the space under the header (less dead gap). */
   .dayv-panel .dp-h { padding-bottom: 2px; margin-bottom: 0; }
   .dayv-panel .dstrip { padding-top: 0; }
-  .dayv-panel .ds-d { height: 80px; gap: 4px; border-radius: 12px; }
-  .dayv-panel .ds-w { font-size: 14px; }
-  .dayv-panel .ds-n { font-size: 26px; }
-  .dayv-panel .ds-dots { height: 7px; } .dayv-panel .ds-dots i { width: 7px; height: 7px; }
+  /* No bigger than the Week view headers (22px / 13px): 20px numbers, 12.5px letters; the box hugs them so the gap under
+     the heading stays small. */
+  .dayv-panel .ds-d { height: 62px; gap: 3px; border-radius: 12px; }
+  .dayv-panel .ds-w { font-size: 12.5px; }
+  .dayv-panel .ds-n { font-size: 20px; font-weight: 700; }
+  .dayv-panel .ds-dots { height: 6px; } .dayv-panel .ds-dots i { width: 6px; height: 6px; }
 </style>
 
   </head>
