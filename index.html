@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792661758"></script>
+    <script src="config.js?v=1792662887"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792661758';
+      window.PAL_BUILD = '1792662887';
       (function () {
         function check(launch) {
           try {
@@ -2183,11 +2183,8 @@
   .cfg-tip { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-left: 2px; padding: 0; border: 0; border-radius: 50%;
     background: none; color: var(--muted); cursor: help; vertical-align: middle; }
   .cfg-tip:hover, .cfg-tip:focus-visible { color: var(--ink); background: var(--card-2); }
-  .cs-own { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 13.5px; color: var(--muted); }
   /* Admin tables (Positions, Unit badges): disabled rows are dimmed; Can see shows the letter squares in a row. */
   .rtable tr.is-off td:not(.acts-cell) { opacity: .55; }
-  .see-sq { display: inline-flex; gap: 4px; }
-  .see-sq .idb { margin-right: 0; }
   /* Admin page: wide enough on desktop that its tables fit without sideways scrolling. */
   .admin-page .panel { max-width: 1040px; }
   .bo-tbl .rtable { width: 100%; min-width: 0; }
@@ -2561,7 +2558,6 @@
   .rtable.ag .ag-del { text-align: right; width: 1%; }
   .rtable.ag .ag-add td { background: var(--surface-low); }
   .rtable.ag .ag-add select { height: 34px; min-height: 34px; padding: 0 6px; font-size: 14px; }
-  .alert-rules.is-off .ag-wrap { opacity: .55; }
   /* Unit × position grid (alerts, report, team admins): badges / positions, check boxes, edit + delete; the row being
      edited is tinted and its unit and position chips open in the line under it. */
   .rtable.ag .rg-u, .rtable.ag .rg-r { white-space: normal; min-width: 56px; }
@@ -2919,6 +2915,18 @@
   .lksl { flex: none; grid-template-columns: none; }
   .pm-row.pm-adm { cursor: default; }
   .pm-row.pm-adm .pm-l { flex: 1 1 auto; }
+  /* Who Sees Whose Schedules grid: row headers are the viewers (badge + name), column headers the positions they can
+     see (badge over a small name); check boxes like every other settings grid. The first column stays put while the
+     grid scrolls sideways. */
+  .see-grid { margin-top: 8px; }
+  .see-grid .rtable { min-width: 0; width: auto; }
+  .see-grid .sg-corner { text-align: left; font-size: 12.5px; }
+  .see-grid .sg-col { vertical-align: bottom; }
+  .see-grid .sg-col .idb { margin: 0 auto 3px; display: flex; width: max-content; }
+  .see-grid .sg-cn { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .02em; text-transform: none; }
+  .see-grid .sg-row { position: sticky; left: 0; z-index: 1; background: var(--card); text-align: left; font-weight: 700; white-space: nowrap; }
+  .see-grid .sg-row .idb { vertical-align: middle; }
+  @media (max-width: 480px) { .see-grid .sg-cn { display: none; } .see-grid .rtable.ag th.sg-col, .see-grid .rtable.ag td.ag-k { width: 40px; min-width: 40px; max-width: 40px; padding: 6px 2px; } .see-grid .rtable.ag .sg-row, .see-grid .rtable.ag .sg-corner { padding: 6px 8px 6px 10px; } } /* phones: badges identify the columns */
 </style>
 
   </head>
@@ -2977,6 +2985,7 @@
     sheet: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/>',
     arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
     down: '<path d="m6 9 6 6 6-6"/>',
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
     clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     crown: '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
@@ -3428,7 +3437,7 @@
   /* ================================================================ */
   /* Server bridge. Served by Apps Script (doGet) → google.script.run. Served elsewhere (GitHub Pages) →
      POST {fn, args} to the Apps Script web-app URL in window.PAL_API_URL (config.js); doPost answers {ok, result|error}. */
-  const EXPECTED_SERVER = '2026-10-22.36'; // must match SERVER_BUILD in Code.gs
+  const EXPECTED_SERVER = '2026-10-22.37'; // must match SERVER_BUILD in Code.gs
   const OUTDATED = 'The Apps Script server code is out of date for this page. Paste the latest Code.gs (and Push.gs) into Apps Script, then Deploy → Manage deployments → Edit → Version: New version → Deploy.';
   function call(fn) {
     const args = Array.prototype.slice.call(arguments, 1);
@@ -6072,19 +6081,24 @@
       '<label class="swatch rsw" title="' + (st === 'grey' ? 'Gray' : st[0].toUpperCase() + st.slice(1)) + '"><input type="radio" name="' + esc(name) + '" value="' + st + '"' + (st === cur ? ' checked' : '') +
         ' data-change="previewRole" aria-label="' + st + '"><span class="ub ' + styleCls(st) + '">' + esc(letter || '') + '</span></label>').join('') + '</div>';
   }
-  /** "Can See" for a position row: 'all', a list of positions, or 'own' (none picked = only their own requests). */
-  const rowView = (key, r) => { const v = (S.roleView || {})[key] || r.view || 'all'; return v === 'same' ? [r.name] : v; };
-  function canSeeHtml(key, self, v) {
-    const names = self && !ROLES.includes(self) ? ROLES.concat([self]) : ROLES;
-    const chip = (val, label, on) => '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="roleView" data-k="' + esc(key) + '" data-v="' + esc(val) + '">' + (on ? icon('check', 16) : '') + esc(label) + '</button>';
-    return '<div class="push-btns can-see">' + chip('all', 'Everyone', v === 'all') +
-      names.map(n => chip(n, rolePl(n), v === 'all' || (Array.isArray(v) && v.includes(n)))).join('') + '</div>' +
-      (v === 'own' ? '<p class="cs-own">' + icon('lock', 14) + ' Own requests only</p>' : '');
+  /* ---------- Who sees whose schedules (Admin, under Positions) ----------
+     One grid like the other multi-select settings: a row per position (the viewer), a column per position (whose
+     schedules), a check box where that position sees them. Every member always sees their own requests and each day's
+     open / full leave slots; a row with nothing checked sees only that. Admins always see everyone they manage. Each tap
+     saves (that position's view: 'all' when every box is ticked, 'own' when none, else the list). */
+  const seeList = name => { const v = roleInfo(name).view || 'all'; return v === 'all' ? ROLES.slice() : v === 'own' ? [] : v === 'same' ? [name] : v.filter(n => ROLES.includes(n)); };
+  function seeGridHtml() {
+    const head = '<tr><th scope="col" class="sg-corner">Sees →</th>' +
+      ROLES.map(c => '<th scope="col" class="ag-k sg-col" title="' + esc(rolePl(c)) + '">' + roleBadge(c) + '<span class="sg-cn">' + esc(rolePl(c)) + '</span></th>').join('') + '</tr>';
+    const body = ROLES.map(r => { const see = seeList(r);
+      return '<tr><th scope="row" class="sg-row">' + roleBadge(r) + esc(rolePl(r)) + '</th>' + ROLES.map(c => { const on = see.includes(c);
+        return '<td class="ag-k"><button type="button" class="rsel' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" aria-label="' + esc(rolePl(r)) + ' see ' + esc(rolePl(c)) + '" data-act="seeToggle" data-r="' + esc(r) + '" data-c="' + esc(c) + '">' +
+          (on ? icon('check', 14) : '') + '</button></td>'; }).join('') + '</tr>'; }).join('');
+    return '<div class="tbl-wrap ag-wrap see-grid"><table class="rtable ag"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
   }
   /** One position's fields (Admin list row and the New position builder share them). */
   /** nameField: the Name input, placed to the right of Letter on the same row (Letter narrow, Name fills the rest). */
   function roleFields(r, key, nameField) {
-    const rv = rowView(key, r);
     return '<div class="row role-top"><div class="field cfg-code"><label for="rl-' + key + '">Letter</label><input id="rl-' + key + '" class="rl-letter" maxlength="1" value="' + esc(r.letter || '') + '" style="text-transform:uppercase" autocapitalize="characters" autocomplete="off" data-live="rolePrev"></div>' +
       (nameField || '') + '</div>' +
       // Most of this position on each event type the same day (0 = no limit), e.g. Leave 2, Pass 0.
@@ -6094,7 +6108,6 @@
           return '<label class="cap-f"><span class="badge t-' + tcls(t.name) + ' t-ltr" aria-hidden="true">' + esc(t.letter) + '</span><span class="cap-n">' + esc(t.name) + '</span>' +
             '<input class="rl-cap" data-type="' + esc(t.name) + '" type="number" inputmode="numeric" min="0" max="99" value="' + v + '" aria-label="' + esc(t.name) + ' max per day"></label>';
         }).join('') + '</div></div>' +
-      '<div class="field"><span class="lbl-sm">Can See</span><div id="cs-' + key + '" data-self="' + esc(r.name || '') + '">' + canSeeHtml(key, r.name, rv) + '</div></div>' +
       '<div class="field"><span class="lbl">Color</span>' + roleSwatches('rs-' + key, r.style || 'grey', r.letter) + '</div>';
   }
   /** Event types table: tag · type · max days · when over · Edit / Disable / Delete. Blackout is listed as the special, admin-only type. */
@@ -6137,12 +6150,6 @@
     openModal('type', html);
   }
   /** Who a position can see, as small letter squares (or Everyone / Own only). */
-  function seeCell(r) {
-    const v = r.view === 'same' ? [r.name] : r.view || 'all';
-    if (v === 'all') return '<span class="muted">Everyone</span>';
-    if (v === 'own') return '<span class="muted">Own Only</span>';
-    return '<span class="see-sq">' + v.filter(n => ROLES.includes(n)).map(n => '<span class="idb"><span class="idb-r ' + roleCls(n) + '" title="' + esc(rolePl(n)) + '">' + esc(roleL(n)) + '</span></span>').join('') + '</span>';
-  }
   /** Positions table: badge · name · can see · members · Edit / Disable / Delete. Tap a row to edit. */
   function adminRoles() {
     const rows = ROLES.map(name => {
@@ -6150,7 +6157,6 @@
       return '<tr class="' + (r.disabled ? 'is-off' : '') + '" data-act="editRole" data-name="' + esc(name) + '" tabindex="0">' +
         '<td><span class="idb"><span class="idb-r ' + roleCls(name) + '">' + esc(roleL(name)) + '</span></span></td>' +
         '<td class="strong">' + esc(roleName(name)) + (r.disabled ? ' <span class="badge">Disabled</span>' : '') + '</td>' +
-        '<td>' + seeCell(Object.assign({ name }, r)) + '</td>' +
         '<td class="num">' + used + '</td>' +
         '<td>' + (managersOf({ role: name }).map(u => esc(nameText(u))).join(', ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
@@ -6161,13 +6167,12 @@
         '</div></td></tr>';
     }).join('');
     return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Badge</th><th scope="col">Position</th>' +
-      '<th scope="col">Can See</th><th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      '<th scope="col" class="num">Members</th><th scope="col">Managers</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
   /** Position editor (new or existing): name, letter, max on leave, Can see and color; Cancel · Save. */
   function openRoleEditor(name) {
     const r = name ? Object.assign({ name }, roleInfo(name)) : { name: '', letter: '', style: 'teal', quota: 0, view: 'all' };
     const builtIn = !!ROLE_DEF[name];
-    S.roleView = Object.assign({}, S.roleView, { ed: r.view === 'same' ? [name] : r.view || 'all' });
     const html = modalHead(name ? 'Edit ' + roleName(name) : 'New Position', name ? 'pencil' : 'plus') +
       '<div class="modal-b role-row badge-builder" data-k="ed" data-old="' + esc(name || '') + '">' +
       // Demo puck: how a member of this position looks on the calendar (updates as the letter / color change).
@@ -6481,11 +6486,6 @@
       adminSlider() + '</div></div>' +
       '<div class="scroll" id="adminScroll">' +
 
-      // Privacy: members see only their own schedule plus day availability. Admins always see everything.
-      '<div class="panel"><div class="cfg-row-tog"><div><h3>' + icon('lock', 16) + ' Hide User Schedules' + tip('Members see only their own requests plus day availability. Admin mode always shows everything.') + '</h3>' +
-        '</div>' +
-        sw(st.hideSchedules, 'hideSchedules', 'Hide User Schedules') + '</div>' +
-        '</div>' +
 
 
       // Unit badges
@@ -6497,6 +6497,9 @@
       '<div class="panel"><div class="cfg-h"><h3>' + icon('users', 16) + ' Positions' + tip('Max on leave: per day, 0 = no limit. Can see: whose schedules that position sees. Admins also see everyone they manage. Disabled positions aren’t offered to new members.') + '</h3>' +
           '<button class="btn primary" data-act="newRole">' + icon('plus', 18) + 'New Position</button></div>' +
         adminRoles() + '</div>' +
+      // Who sees whose schedules: one grid (rows see columns).
+      '<div class="panel"><h3>' + icon('eye', 16) + ' Who Sees Whose Schedules' + tip('Each row is a position; tick the positions whose schedules it can see. Everyone always sees their own requests and each day’s open or full leave slots. Admins always see everyone they manage.') + '</h3>' +
+        seeGridHtml() + '</div>' +
 
       // Event types: Leave, Pass and added ones (max length, Warn / Limit), plus Blackout (special, admin only).
       '<div class="panel"><div class="cfg-h"><h3>' + icon('calendar', 16) + ' Event Types' + tip('Max days per request: Limit blocks longer ones; Warn allows them but flags them. Per-position daily limits are in Positions.') + '</h3>' +
@@ -8013,12 +8016,6 @@
       redrawNotes();
     },
     // Optimistic: flips at once; the ring spins on the Admin icon until the server has saved it.
-    hideSchedules() {
-      const on = !S.settings.hideSchedules;
-      S.nextSyncTab = 'admin';
-      save(() => { S.settings.hideSchedules = on; }, 'apiSetHideSchedules', S.token, on);
-      render();
-    },
     // Optimistic: flips at once; the ring spins on the Profile icon until the server has saved it.
     adminAlerts() {
       const on = !S.adminAlerts;
@@ -8688,19 +8685,15 @@
     groupList(el) { openGroupList(String(el.dataset.ids || '').split(',').filter(Boolean)); },
     // Tap on a phone: the same bubble hover shows (never a second copy as a toast); it closes by itself after 4 s.
     showTip(el) { showTip(el); clearTimeout(tipTimer); tipTimer = setTimeout(hideTip, 4000); },
-    roleView(el) {
-      const k = el.dataset.k, box = $('#cs-' + k), self = box.dataset.self, v = el.dataset.v;
-      const cur = rowView(k, { name: self, view: roleInfo(self).view });
-      let next;
-      if (v === 'all') next = cur === 'all' ? 'own' : 'all';
-      else {
-        const list = cur === 'all' ? ROLES.slice() : cur === 'own' ? [] : cur.slice();
-        next = list.includes(v) ? list.filter(x => x !== v) : list.concat([v]);
-        if (!next.length) next = 'own';
-        else if (ROLES.every(n => next.includes(n))) next = 'all';
-      }
-      S.roleView = Object.assign({}, S.roleView, { [k]: next });
-      box.innerHTML = canSeeHtml(k, self, next);
+    // Who-sees-whom grid: tick / untick one box; saves that position's view right away.
+    seeToggle(el) {
+      const r = el.dataset.r, c = el.dataset.c, cur = seeList(r);
+      const list = cur.includes(c) ? cur.filter(x => x !== c) : ROLES.filter(x => cur.includes(x) || x === c);
+      const view = !list.length ? 'own' : ROLES.every(x => list.includes(x)) ? 'all' : list;
+      const role = Object.assign({ name: r }, roleInfo(r), { view });
+      S.nextSyncTab = 'admin';
+      save(() => { S.settings.roles = ROLES.map(n => n === r ? role : roleInfo(n)); setRoles(S.settings.roles); }, 'apiSaveRole', S.token, role, r);
+      const g = $('.see-grid'); if (g) g.outerHTML = seeGridHtml();
     },
     previewRole(el) {
       const row = el.closest('.role-row'), sq = row && row.querySelector('.bb-prev .idb-r');
@@ -8753,7 +8746,7 @@
       const row = $('#modal .role-row'), err = $('#nrErr'), old = row.dataset.old;
       const name = ROLE_DEF[old] ? old : $('#nrName').value.trim().replace(/\s+/g, ' ');
       const r = { name, letter: row.querySelector('.rl-letter').value.trim().toUpperCase(), style: (row.querySelector('.swatches input:checked') || {}).value || 'grey',
-        caps: Object.fromEntries([...row.querySelectorAll('.rl-cap')].map(i => [i.dataset.type, Number(i.value)])), view: rowView('ed', { name: old || name, view: roleInfo(old).view }), disabled: !!roleInfo(old).disabled };
+        caps: Object.fromEntries([...row.querySelectorAll('.rl-cap')].map(i => [i.dataset.type, Number(i.value)])), view: old ? roleInfo(old).view || 'all' : 'all', disabled: !!roleInfo(old).disabled };
       r.quota = Number(r.caps.Leave) || 0;
       const msg = roleError(r, !old) || (Object.values(r.caps).some(n => !Number.isInteger(n) || n < 0 || n > 99) ? 'Max per day must be 0–99 (0 = no limit).' : '') || (old && r.name.toLowerCase() !== old.toLowerCase() && ROLES.some(x => x.toLowerCase() === r.name.toLowerCase()) ? r.name + ' already exists.' : '');
       if (msg) { err.textContent = msg; return; }
@@ -8763,7 +8756,6 @@
         if (old && r.name !== old) S.users.forEach(u => { if (u.role === old) u.role = r.name; });
         setRoles(S.settings.roles); reindex();
       }, 'apiSaveRole', S.token, r, old || '');
-      S.roleView = null;
       closeModal(); render(); toast(r.name + (old ? ' saved' : ' added'), 'ok', 1500);
     },
     toggleRole(el) {
@@ -8777,7 +8769,6 @@
       const name = el.dataset.name;
       if (!await askConfirm('Delete the ' + name + ' position?', { list: ['Can’t be undone'] })) return;
       save(() => { S.settings.roles = ROLES.filter(n => n !== name).map(roleInfo); setRoles(S.settings.roles); }, 'apiDeleteRole', S.token, name);
-      S.roleView = null;
       render(); toast(name + ' deleted', 'ok', 1500);
     },
     viewRole(el) {
