@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792708266"></script>
+    <script src="config.js?v=1792708339"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792708266';
+      window.PAL_BUILD = '1792708339';
       (function () {
         function check(launch) {
           try {
@@ -3575,6 +3575,7 @@
   .mc-tb .mc-year, :root[data-theme="dark"] .mc-tb .mc-year { height: 40px; background: transparent; color: #0b1730; border-color: rgba(11, 23, 48, .45); font-size: 15px; }
   .mc-tb .mc-x, :root[data-theme="dark"] .mc-tb .mc-x { color: #0b1730; }
   @media (max-width: 600px) { .pm-bh.mc-tb { height: 52px; font-size: 20px; } .pm-bh.mc-tb .bh-r { width: 52px; } .pm-bh.mc-tb .bh-u { min-width: 64px; } .pm-bh.mc-tb .bh-n { padding-left: 12px; } .mc-tb .mc-year { height: 36px; padding: 0 10px; } }
+  .pm-bh .bh-n .st-med { margin-left: 8px; vertical-align: -3px; }
 </style>
 
   </head>
@@ -5838,9 +5839,9 @@
   /** A position's letter square ([P], [B], [O]) for count chips — the same square as in pucks and the day panel. */
   const roleSq = role => '<span class="sq-r ' + roleCls(role) + '" aria-hidden="true">' + esc(roleL(role)) + '</span>';
   /** The big [P|MKE|Name] badge: the top of the Profile menu and of Settings. */
-  const bigBadge = u => { const un = unitsList().find(x => x.code === u.unit);
+  const bigBadge = (u, med) => { const un = unitsList().find(x => x.code === u.unit); // med: add the Medical mark (Settings, not the Profile menu)
     return '<div class="pm-bh" aria-label="' + esc(fullName(u)) + '"><span class="bh-r ' + roleCls(u.role) + '" aria-hidden="true">' + esc(roleL(u.role)) + '</span>' +
-      '<span class="bh-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(u.unit) + '</span><span class="bh-n" aria-hidden="true">' + esc(calName(u)) + '</span></div>'; };
+      '<span class="bh-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(u.unit) + '</span><span class="bh-n" aria-hidden="true">' + esc(calName(u)) + (med ? medMark(u) : '') + '</span></div>'; };
   /** Under a member's name on the wallet pass: rank · position · unit. */
   const memberSub = u => [u.rank, roleName(u.role), u.unit].filter(Boolean).join(' · ');
   /** A member as their puck — [P|MKE|Last name], like All Requests and the calendar (no status marks). */
@@ -8098,7 +8099,7 @@
       '<div class="scroll" id="profileScroll">' +
 
       // The top card IS the member's big [P|MKE|Name] badge (the Profile menu's header), no box or caption around it.
-      bigBadge(me).replace('class="pm-bh"', 'class="pm-bh set-badge"') +
+      bigBadge(me, true).replace('class="pm-bh"', 'class="pm-bh set-badge"') +
 
       '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' +
       (S.myAdmin ? '<div class="panel" id="alertsPanel">' + alertsPanelHtml() + '</div>' : '') +
