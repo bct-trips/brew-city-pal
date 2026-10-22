@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792664247"></script>
+    <script src="config.js?v=1792664732"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792664247';
+      window.PAL_BUILD = '1792664732';
       (function () {
         function check(launch) {
           try {
@@ -2102,9 +2102,9 @@
   .cal-peek { padding-top: 6px; box-sizing: border-box; }
   :root[data-theme="dark"] .nav.nav-admin { border-top-color: #f04438; } /* admin red line, brighter on dark */
   /* ---------- Calendar bar (final layout) ----------
-     Wide (one row fits, ≥ 1180px): [views · Today · Add Request]   [ ‹ date › ] centered   [filters] right-aligned.
+     Wide (one row fits, ≥ 1180px): [Add Request · views · Today]   [ ‹ date › ] centered   [filters] right-aligned.
      Not enough room for one row (iPad / iPad Pro, 701–1179px): like a phone — the date centered on its own top row, then
-     [views · Today · Add Request] on the left and [filters] on the right.
+     [Add Request · views · Today] on the left and [filters] on the right.
      Phones (≤ 700px) keep their own stacked layout. */
   .cb-start, .cb-views { display: contents; }
   @media (min-width: 1180px) {
@@ -4241,7 +4241,7 @@
     const pending = IDX.live.filter(r => r.status === 'Pending' && (!S.isAdmin || managesReq(r))).length;
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
     // Admin mode swaps My Requests for Roster and Admin; Profile is always the last item.
-    const items = [['calendar', 'Calendar', 'calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'All Requests', 'list', 'All']], S.isAdmin
+    const items = [['calendar', 'Calendar', 'calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'List', 'list', 'List']], S.isAdmin
       ? [['people', 'Roster', 'users', 'Roster']].concat(S.isOrg ? [['admin', 'Admin', 'shield', 'Admin']] : [])
       : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
@@ -4304,14 +4304,15 @@
     return '<section class="cal' + (confOn ? ' conf-mode' : '') + (S.cal === 'day' ? ' cal-day' : '') + '">' +
       '<div class="cal-top">' + dateNav + '</div>' +
       '<div class="calbar">' +
-        // Left: view switch, Today, Add Request, then the filters — all together on the left; the date is centered.
-        '<div class="cb-start"><div class="cb-left"><div class="cb-views">' +
+        // Left: Add Request first (same spot as on List and My Requests), then the view switch and Today; the filters on
+        // the right. Phones hide this Add Request (they use the full-width bar).
+        '<div class="cb-start"><div class="cb-left"><button class="btn req-btn" data-act="newReq" title="Start a new leave or pass request">' + icon('plus', 16) + 'Add Request</button>' +
+        '<div class="cb-views">' +
           (S.cal === 'day' ? '<button class="btn back-month" data-act="backMonth">' + icon('left', 18) + 'Month</button>' : '') +
           // View switch as icons: Week (columns) · Month (calendar) · Qtr (four blocks); the name is the tooltip / label.
           seg([['week', icon('columns', 18) + '<span class="sr">Week</span>'], ['month', icon('calendar', 18) + '<span class="sr">Month</span>'], ['quad', icon('grid4', 18) + '<span class="sr">Quarter</span>']], S.cal, 'calMode')
             .replace(/data-v="(week|month|quad)"/g, (m, v) => m + ' title="' + ({ week: 'Week', month: 'Month', quad: 'Quarter' })[v] + '"') +
           '<button class="btn today-btn' + (showsToday() ? ' on' : '') + '" data-act="calToday"' + (showsToday() ? ' aria-pressed="true"' : '') + '>Today</button></div>' +
-          '<button class="btn req-btn" data-act="newReq" title="Start a new leave or pass request">' + icon('plus', 16) + 'Add Request</button>' +
         '</div>' +
         // Filters: status, position, Leave / Pass
         '<div class="cb-right filters">' + (S.view === 'mine'
@@ -7090,7 +7091,7 @@
     // Two Material 3 dropdown fields side by side (native picker on phones); the choice saves as soon as it changes.
     const pick = (k, label, cur, opts) => '<div class="field su-f"><label for="su-' + k + '">' + label + '</label>' +
       '<select id="su-' + k + '" data-change="startPick" data-k="' + k + '">' + opts.map(o => '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></div>';
-    const pages = [['last', 'Last Used'], ['calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'All Requests']], [['mine', 'My Requests']]);
+    const pages = [['last', 'Last Used'], ['calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'List']], [['mine', 'My Requests']]);
     let pv = store.get('startView', 'last'); if (!pages.some(o => o[0] === pv)) pv = 'last';
     return '<div class="panel"><h3>' + icon('home', 16) + ' Start-Up</h3>' +
       '<div class="su-grid">' + pick('startView', 'Open To', pv, pages) +
