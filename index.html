@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792695727"></script>
+    <script src="config.js?v=1792696087"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792695727';
+      window.PAL_BUILD = '1792696087';
       (function () {
         function check(launch) {
           try {
@@ -7656,7 +7656,6 @@
       // Tap a red (conflict) day on the pass: who else is out that day shows here.
       (showCf ? '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>' : '') +
       calAddHtml(r, true) +
-      (isCaution(r) ? '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(cautionText(r)) + '</span></div>' : '') +
       (blackoutDaysOf(r).length && r.status !== 'Cancelled' ? (r.boOk === 'true'
         ? '<div class="msg i">' + icon('check', 15) + '<span>Falls on blackout days (' + esc(blackoutDaysOf(r).map(D.short).join(', ')) + ') — allowed by an admin.</span></div>'
         : '<div class="msg e bo-msg">' + icon('ban', 15) + '<span>Falls on blackout days: ' + esc(blackoutDaysOf(r).map(D.short).join(', ')) + '. ' +
@@ -8007,9 +8006,8 @@
       if (!String(w.location || '').trim()) errs.push('Enter where ' + (wizIds().length === 1 && wizIds()[0] === S.me ? 'you’ll' : 'they’ll') + ' be (Location).');
       n = D.days(w.start, w.end);
       const rule = lenRule(w.type), tn = w.type;
-      if (n > rule.max) (rule.mode === 'limit' ? errs : warns).push(rule.mode === 'limit'
-        ? tn + ' is limited to ' + rule.max + ' days — you selected ' + n + '.'
-        : 'Caution: ' + tn.toLowerCase() + ' over ' + rule.max + ' days is flagged for leadership review.');
+      // Over the length: a hard "Limit" blocks it; a "Warn" rule shows no message here (only the small flag in the tables).
+      if (n > rule.max && rule.mode === 'limit') errs.push(tn + ' is limited to ' + rule.max + ' days — you selected ' + n + '.');
       if (n > 60) errs.push('Requests are limited to 60 days.');
       // Daily max per position: every member on this request adds one to their position's count.
       const roleN = {};
