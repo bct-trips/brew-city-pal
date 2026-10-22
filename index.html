@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792622442"></script>
+    <script src="config.js?v=1792655700"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792622442';
+      window.PAL_BUILD = '1792655700';
       (function () {
         function check(launch) {
           try {
@@ -96,6 +96,9 @@
      leave a gap at the bottom. Safe areas are padded inside: status bar on top, home indicator in the nav. */
   html { height: 100%; overflow: hidden; }
   body { position: fixed; inset: 0; overflow: hidden; overscroll-behavior: none; }
+  /* No rubber-band anywhere (iOS bounce): the page, the calendar, the nav and every table or list stay fixed; a scroller
+     moves only when it really has more to show, and never drags past its edge or pulls the screen with it. */
+  html, body, * { overscroll-behavior: none; }
   #app { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
   .main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
@@ -567,12 +570,18 @@
     .badge.t-pass { background: var(--gold); border-color: var(--gold); color: var(--navy); }
   .badge.conflict { background: var(--bad-bg); border-color: transparent; color: var(--bad); }
   .badge.caution { background: var(--warn-bg); border-color: transparent; color: var(--warn); }
-  /* Status chips: neutral surface + full-contrast text; status color is a dot (≥3:1 against the chip). */
+  /* Status chips: neutral surface + full-contrast text; the status shows as its icon in its color (≥3:1 against the chip),
+     the same icons as the status slider: Approved ✓, Pending clock, Denied ⊘. A plain dot means "active now" only. */
   .badge.ok, .s-approved, .s-pending, .s-denied { background: var(--card-2); border-color: var(--line-strong); color: var(--ink); }
   .s-approved::before, .s-pending::before, .s-denied::before, .badge.ok::before { content: ""; width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .s-approved::before, .badge.ok::before { background: var(--dot-ok); }
   .s-pending::before { background: var(--dot-pend); }
   .s-denied::before { background: var(--dot-bad); }
+  .s-approved::before, .s-pending::before, .s-denied::before, .badge.ok::before { width: 13px; height: 13px; border-radius: 0;
+    -webkit-mask: var(--st-ic) center / contain no-repeat; mask: var(--st-ic) center / contain no-repeat; }
+  .s-approved::before, .badge.ok::before { --st-ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E"); }
+  .s-pending::before { --st-ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpolyline points='12 6 12 12 16 14'/%3E%3C/svg%3E"); }
+  .s-denied::before { --st-ic: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m4.9 4.9 14.2 14.2'/%3E%3C/svg%3E"); }
   .s-cancelled { text-decoration: line-through; }
   .dates { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .meta { font-size: 14.5px; color: var(--muted); white-space: nowrap; }
@@ -2070,7 +2079,7 @@
   .pin-err { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px auto 0; padding: 10px 14px; max-width: 320px; border-radius: 12px;
     background: #b42318; color: #ffffff; font-weight: 800; font-size: 15px; text-align: center; }
   /* Week view = one continuous horizontal strip of days (a day is 1/7 of the screen; snaps to days). */
-  .wk-strip { overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; container-type: inline-size; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+  .wk-strip { overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; container-type: inline-size; overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
   .wk-strip::-webkit-scrollbar { height: 0; }
   .wk-inner { width: calc(var(--days) * 100cqw / 7); height: 100%; display: flex; flex-direction: column; }
   .wg { display: grid; grid-template-columns: repeat(var(--days), calc(100cqw / 7)); }
@@ -2238,6 +2247,13 @@
     .page > .req-bar, .cal > .req-bar { position: relative; z-index: 2; background: var(--surface-high); border-top: 0; }
     .page > .lbar:last-child { padding-bottom: 10px; }
     :root[data-theme="dark"] .page > .lbar, :root[data-theme="dark"] .cal > .calbar { box-shadow: 0 -6px 16px -4px rgba(0, 0, 0, .7); }
+  }
+  /* Dock spacing, the same on every page (M3 8dp grid): 12px above the first row, 8px between rows, 8px from the last
+     row to Add Request, 8px from Add Request to the nav bar, 8px side margins so every row lines up with Add Request. */
+  @media (max-width: 700px) {
+    .page > .lbar, .cal > .calbar { padding: 12px 8px 0; row-gap: 8px; column-gap: 8px; }
+    .page:not(:has(> .req-bar)) > .lbar, .cal:not(:has(> .req-bar)) > .calbar { padding-bottom: 8px; } /* no Add Request below (Roster) */
+    .page > .req-bar, .cal > .req-bar { padding: 8px; }
   }
   /* Status slider (admin): Approved | Pending | Denied. A solid thumb (red / amber / green, white text ≥ 4.5:1) sits under
      the current status and slides to the one you pick. */
@@ -2718,6 +2734,28 @@
   .nav.seg-slide:has(button[aria-expanded="true"]):has(button.on:not([aria-expanded="true"])) > .seg-thumb.nav-thumb { background-color: rgba(255, 255, 255, .16); }
   .nav.seg-slide:has(button[aria-expanded="true"]):has(button.on:not([aria-expanded="true"]):hover) > .seg-thumb.nav-thumb { background-color: rgba(255, 255, 255, .22); }
   @media (prefers-reduced-motion: reduce) { .nav.seg-slide > .seg-thumb.nav-thumb { transition: background-color .18s ease; } }
+  /* Button groups, final: every segmented group looks and moves like the status slider. A tinted track with a 2px inset,
+     no dividers; the selected option is a rounded pill (tonal fill, bold); unselected options are muted. Single-choice
+     groups glide the pill (left + width) to the option you pick; multi-select groups (filters) fill each chosen pill. */
+  .seg:not(.nav) { padding: 2px; gap: 2px; background: var(--card-2); border: 1px solid var(--outline); }
+  .seg:not(.nav) > button, .seg.tgroup .tchip { height: 100%; border: 0 !important; border-radius: 999px; color: var(--muted); font-weight: 700; transition: color .2s, background-color .2s; }
+  .seg:not(.nav) > button:not(.on):hover, .seg.tgroup .tchip:not(.on):hover { background: transparent; color: var(--ink); }
+  .seg:not(.nav) > button.on { background: var(--sel-bg); color: var(--sel-ink); font-weight: 800; }
+  .seg.tgroup .tchip-leave.on { background: var(--leave); color: #ffffff; }
+  .seg.tgroup .tchip-pass.on { background: var(--gold); color: var(--navy); }
+  .seg.seg-slide:not(.nav) > .seg-thumb { border-radius: 999px; transition: left .28s cubic-bezier(.3, .8, .25, 1), width .28s cubic-bezier(.3, .8, .25, 1); }
+  .seg.seg-slide:not(.nav)[data-placed] > button.on { background: transparent; }
+  .seg.seg-ro > button.on { color: var(--sel-ink); }
+  @media (prefers-reduced-motion: reduce) { .seg:not(.nav) > button, .seg.seg-slide:not(.nav) > .seg-thumb { transition: none; } }
+  /* Dropdowns and on/off toggles speak the same language: the same tinted, outlined track; when on (a filter is set,
+     a toggle is on), a tonal pill fills the track 2px inside its edge, like a selected button-group option. */
+  .fsel, .fdrop-btn, .btn.chip-tog { border: 1px solid var(--outline); background-color: var(--card-2); color: var(--muted); font-weight: 700;
+    transition: background-color .28s cubic-bezier(.3, .8, .25, 1), box-shadow .28s cubic-bezier(.3, .8, .25, 1), color .2s; }
+  .fsel:not(.on):hover, .fdrop-btn:not(.on):hover, .btn.chip-tog:not(.on):hover { background-color: var(--card-2); color: var(--ink); }
+  .fsel.on, .fdrop-btn.on, .btn.chip-tog.on { border-color: var(--outline); background-color: var(--sel-bg); color: var(--sel-ink); font-weight: 800;
+    box-shadow: inset 0 0 0 2px var(--card-2); }
+  .fdrop-btn.wiz-who:not(.on) { color: var(--ink); } /* a form field: its value reads at full contrast */
+  @media (prefers-reduced-motion: reduce) { .fsel, .fdrop-btn, .btn.chip-tog { transition: none; } }
 </style>
 
   </head>
@@ -3409,7 +3447,8 @@
   const saveSnap = data => { clearTimeout(snapTimer); snapTimer = setTimeout(() => { if (S.token) store.set('snap', { t: S.token, d: data }); }, 800); };
   const dropSnap = () => { clearTimeout(snapTimer); store.del('snap'); };
   function apply(data) {
-    if (!data) return;
+    // Signed out (or signing out): a reply that was already on its way must never sign this device back in.
+    if (!data || !S.token) return;
     saveSnap(data);
     S.me = data.me; S.isAdmin = !!data.isAdmin; S.adminScope = data.isAdmin ? (data.adminScope || null) : null; S.isOrg = S.isAdmin && !S.adminScope;
     S.teamPinSet = !!data.teamPinSet; S.admins = data.admins || {}; S.alertScope = data.alertScope || null; S.report = data.report || null;
@@ -3501,7 +3540,16 @@
   /** Phones / tablets (touch, no mouse): never put the cursor in a field by ourselves. Focusing a sign-in or PIN field
    *  makes iOS pop its saved-password prompt every time the app opens; it should only appear when the user taps a field. */
   const touchOnly = () => !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
-  const autoFocus = el => { if (el && !touchOnly()) el.focus(); };
+  /** PIN boxes always get focus (phones too, so the number pad is up right away): armed first, since a read-only box
+   *  can't raise the keyboard. Other fields: only where there's a real keyboard. */
+  const isPinBox = el => !!(el && el.matches && el.matches('input[type="password"], input.pin-dots, #passkey'));
+  function focusPin(el) {
+    if (!el) return;
+    if (el.hasAttribute('data-arm') && typeof dotPin === 'function') dotPin(el);
+    if (el.readOnly) { el.readOnly = false; if (el.id === 'passkey') el.value = ''; }
+    el.focus();
+  }
+  const autoFocus = el => { if (!el) return; if (isPinBox(el)) focusPin(el); else if (!touchOnly()) el.focus(); };
   /* Sign-in screens on phones: when the keyboard opens, show the WHOLE card (fields + Sign in button) above it, not just the
      field being typed in. The keyboard's height is added as room under the card (--kb), then the screen scrolls so the
      card's bottom sits just above the keyboard. Works for every field, whichever one you tap first. */
@@ -4794,7 +4842,7 @@
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
-    const m = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['x', 'no'] }[st];
+    const m = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'] }[st];
     return m ? '<span class="sti sti-' + m[1] + '" title="' + st + '">' + icon(m[0], 14) + '</span>' : '';
   }
   /* Middle days: one badge per position — [P|Doe · Roe · Poe], or [P|4+ Pilots] when more than 3. */
@@ -6162,7 +6210,8 @@
       modalOpener = document.activeElement;
       $('#modal').innerHTML = '<div class="overlay" data-overlay="1"><div class="modal' + (wide ? ' modal-wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="modalTitle">' + html + '</div></div>';
     }
-    autoFocus($('#modal [autofocus]')); // phones: no keyboard popping up on its own
+    // A dialog asking for a PIN focuses its first PIN box (phones too); others focus [autofocus] (not on phones).
+    autoFocus($('#modal [autofocus]') || [...document.querySelectorAll('#modal input')].find(isPinBox));
   }
   /* ---------- Confirm dialog (Material 3 basic dialog, replaces the browser's confirm box) ----------
      askConfirm(message) → Promise<boolean>. Its own layer above any open dialog, so the dialog underneath stays as it
@@ -6349,13 +6398,27 @@
     const show = canOfferInstall() && store.get('installHidden', '') !== '1';
     if (!show) { if (old) old.remove(); return; }
     // Sign-in screens have no nav or Add Request bar, so the pill sits near the bottom edge there.
-    if (old) { old.classList.toggle('on-login', !S.me); return; }
+    if (old) { old.classList.toggle('on-login', !S.me); placeInstallFab(); return; }
     const el = document.createElement('div');
     el.id = 'installFab'; el.className = 'install-fab' + (S.me ? '' : ' on-login');
     el.innerHTML = '<button type="button" class="install-go" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Homescreen</button>' +
       '<button type="button" class="install-x" data-act="installHide" aria-label="Hide Add to Homescreen" title="Hide">' + icon('x', 16) + '</button>';
     document.body.appendChild(el);
+    placeInstallFab();
   }
+  /** Sign-in screens: the pill sits halfway between the sign-in card and the bottom of the screen (re-placed whenever
+   *  the card or the window changes size). */
+  let fabRO = null;
+  function placeInstallFab() {
+    const f = document.getElementById('installFab'), card = document.querySelector('.login-card');
+    if (fabRO) fabRO.disconnect();
+    if (!f) return;
+    if (!f.classList.contains('on-login') || !card) { f.style.bottom = ''; return; }
+    const put = () => { const gap = window.innerHeight - card.getBoundingClientRect().bottom; f.style.bottom = Math.max(12, Math.round((gap - f.offsetHeight) / 2)) + 'px'; };
+    put();
+    if (window.ResizeObserver) { fabRO = new ResizeObserver(put); fabRO.observe(card); fabRO.observe(document.documentElement); }
+  }
+  window.addEventListener('resize', () => placeInstallFab());
   /** iPhone (or a browser with no install prompt): the steps, with the icons they'll see. */
   function openInstallHelp() {
     const ios = isIOS();
@@ -6508,7 +6571,7 @@
     const box = $('#passkey');
     box.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); A.unlockAdmin($('#admGo')); } });
     box.addEventListener('input', () => { box.classList.remove('pin-bad'); $('#admErr').innerHTML = ''; });
-    setTimeout(() => box.focus(), 50); // focusing arms it (see armPasskey)
+    focusPin(box); // in the same tap, so iPhone raises the number pad
   }
   /** Notifications inside the Profile menu: the newest few, each with a ✕; "+N more" opens the whole list; Clear all. */
   const PM_NOTES = 3;
@@ -7307,7 +7370,7 @@
     setTimeout(() => el.remove(), 650);
   }
   /* Swipe left / right on the calendar (touch), or grab and drag it with the mouse (desktop): next / previous day, week or
-     month; Qtr shifts by one month. Week view has its own drag (the strip scrolls). */
+     month; Qtr moves a whole quarter, like its arrows. Week view has its own drag (the strip scrolls). */
   (function () {
     let sx = 0, sy = 0, st = 0, on = false, mouse = false;
     let drag = false; // the calendar is following the finger / pointer sideways
@@ -7396,7 +7459,7 @@
         }, 230);
         return;
       }
-      moveCursor(dx < 0 ? 1 : -1, 1, drag ? dx * 0.85 : 0);
+      moveCursor(dx < 0 ? 1 : -1, 0, drag ? dx * 0.85 : 0); // 0 = Qtr's full step, same as the arrows
       drag = false;
     }
   })();
@@ -7904,7 +7967,7 @@
       const none = pop.querySelector('.who-none'); if (none) none.hidden = any;
     },
     srvRefresh() { S.updateLater = false; S.update = () => goFresh(); askUpdate(); },
-    mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; $('#mcPin1').focus(); } },
+    mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; focusPin($('#mcPin1')); } },
     // Optimistic, like every Roster action: the card updates now and the server catches up in the background.
     async revokeAdmin(el) {
       const id = el.dataset.id, u = userOf(id);
@@ -8086,7 +8149,9 @@
       // but never wait more than ~2.5s: signing out always works, even offline or when the server is slow.
       closeProfileMenu();
       showBlocker('Signing out…', '');
+      // Drop the session here first, so a refresh or save still in flight can't redraw the app while we wait.
       const tok = S.token;
+      S.token = null; store.del('token'); dropSnap();
       const tidy = (async () => {
         try { const sub = swReg && await swReg.pushManager.getSubscription(); if (sub) { await call('apiPushUnsubscribe', tok, sub.endpoint); await sub.unsubscribe(); } } catch (e) { /* best effort */ }
         try { await call('apiLogout', tok); } catch (e) { /* session may already be gone */ }
