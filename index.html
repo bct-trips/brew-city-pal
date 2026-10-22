@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792675660"></script>
+    <script src="config.js?v=1792675922"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792675660';
+      window.PAL_BUILD = '1792675922';
       (function () {
         function check(launch) {
           try {
@@ -699,6 +699,10 @@
   #toast > div { display: flex; align-items: center; gap: 8px; background: var(--navy); color: #fff; border-radius: 12px; padding: 10px 14px; font-weight: 600; font-size: 15px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
   #toast .error { background: #991b1b; }
   #toast .hint-t { background: var(--gold); color: var(--navy); }
+  /* Admin Mode switched: the slider's colors, a bit bigger and bolder than a plain snackbar. */
+  #toast .adm-t { padding: 12px 18px; font-size: 16px; font-weight: 800; border-radius: 14px; }
+  #toast .adm-unl { background: #b42318; }
+  #toast .adm-lck { background: #15803d; }
   .spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; animation: spin .7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -3779,8 +3783,9 @@
   let toastTimer = null;
   function toast(msg, kind, ms) {
     const el = $('#toast');
-    const cls = kind === 'error' ? 'error' : kind === 'hint' ? 'hint-t' : '';
-    const ic = kind === 'busy' ? '<span class="spin"></span>' : kind === 'error' ? icon('alert', 16) : kind === 'hint' ? icon('calendar', 16) : kind === 'info' ? icon('info', 16) : icon('check', 16);
+    // 'unl' / 'lck': Admin Mode switches, in the slider's colors (red = unlocked, green = locked) so they stand out.
+    const cls = kind === 'error' ? 'error' : kind === 'hint' ? 'hint-t' : kind === 'unl' ? 'adm-t adm-unl' : kind === 'lck' ? 'adm-t adm-lck' : '';
+    const ic = kind === 'unl' ? icon('unlock', 18) : kind === 'lck' ? icon('lock', 18) : kind === 'busy' ? '<span class="spin"></span>' : kind === 'error' ? icon('alert', 16) : kind === 'hint' ? icon('calendar', 16) : kind === 'info' ? icon('info', 16) : icon('check', 16);
     el.innerHTML = '<div class="' + cls + '">' + ic + '<span>' + esc(msg) + '</span></div>';
     el.classList.add('show');
     clearTimeout(toastTimer);
@@ -3962,7 +3967,7 @@
           PIN_HINT + pair('suMe', 'Your PIN') + '</section>') +
         '<section class="su-sec"><h3 class="setup-h">PINs</h3>' + (SU.mode === 'roster' ? PIN_HINT : '') + pair('suDef', 'Default PIN') +
           '<p class="auth-note su-help">' + (SU.mode === 'roster' ? 'Everyone on the roster, you included, signs in with this the first time, then chooses their own PIN.' : 'New members sign in with this, then choose their own.') + '</p>' + pair('suOrg', 'New Org Admin PIN') +
-          '<p class="auth-note su-help">Unlocks Org Admin mode (Profile → Admin Mode). It must be different from the default PIN' + (SU.mode === 'roster' ? '' : ' and your PIN') + '. Set the team admin PIN later on the Admin page.</p></section>' +
+          '<p class="auth-note su-help">Unlocks Org Admin Mode (Profile → Admin Mode). It must be different from the default PIN' + (SU.mode === 'roster' ? '' : ' and your PIN') + '. Set the team admin PIN later on the Admin page.</p></section>' +
         '<div class="err" id="suErr"></div><div class="su-foot"><button type="button" class="btn" data-back="choose">' + icon('left', 18) + 'Back</button>' +
           '<button class="btn primary" type="submit">' + icon('check', 18) + 'Finish Setup</button></div>';
     }
@@ -6740,7 +6745,7 @@
       pinPanel('def', 'key', 'Default PIN', 'Temporary PIN for new members and PIN resets. They change it at next sign-in.', true, 'y') +
       // One team admin PIN for every team admin; it can never be the org admin PIN.
       pinPanel('team', 'shield', 'Team Admin PIN', 'Team admins unlock Admin Mode with this. What they manage comes from their admin status. It can’t be the org admin PIN.', S.teamPinSet, 'y') +
-      pinPanel('org', 'shield', 'Org Admin PIN', 'Unlocks Org Admin mode (everything) from Profile. It can’t be the team admin PIN.', true, 'r') +
+      pinPanel('org', 'shield', 'Org Admin PIN', 'Unlocks Org Admin Mode (everything) from Profile. It can’t be the team admin PIN.', true, 'r') +
       '</div></section>';
   }
 
@@ -7120,11 +7125,12 @@
   /** Optimistic Admin Mode switch: known admins (an admin status on file) unlock without a PIN, to their own level (org,
    *  or team with their team), and anyone locks. The app flips at once; the server's reply brings the admin data, and
    *  a refusal flips it back with a message. */
+  const adminOnText = scope => scope ? 'Team Admin Mode · ' + scopeText(scope) : 'Org Admin Mode';
   function switchAdmin(on) {
     const prev = { on: S.isAdmin, scope: S.adminScope }, scope = on ? myScope() : null;
     const set = m => { S.isAdmin = m.on; S.adminScope = m.scope; S.isOrg = m.on && !m.scope; };
     S.modeFlip = { on, scope }; set(S.modeFlip); render();
-    toast(on ? (scope ? 'Team Admin mode · ' + scopeText(scope) : 'Org Admin mode') : 'Admin mode locked', 'ok');
+    toast(on ? adminOnText(scope) : 'User Mode', on ? 'unl' : 'lck', 3200);
     (on ? call('apiUnlockAdmin', S.token, '') : call('apiLockAdmin', S.token))
       .then(d => { S.modeFlip = null; apply(d); render(); })
       .catch(e => { S.modeFlip = null; set(prev); render(); toast(e.message || 'Couldn’t switch Admin Mode.', 'error'); });
@@ -8768,7 +8774,7 @@
       await busy(el, async () => {
         try {
           const data = await call('apiUnlockAdmin', S.token, k);
-          apply(data); if (S.modal === 'adminPin') closeModal(); render(); toast(S.adminScope ? 'Team Admin mode · ' + scopeText(S.adminScope) : 'Org Admin mode');
+          apply(data); if (S.modal === 'adminPin') closeModal(); render(); toast(adminOnText(S.adminScope), 'unl', 3200);
         } catch (e) {
           // Wrong PIN (or too many tries): the box shakes and turns red, with a clear message under it.
           box.disabled = false; box.value = '';
