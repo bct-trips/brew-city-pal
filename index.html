@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792694733"></script>
+    <script src="config.js?v=1792694941"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792694733';
+      window.PAL_BUILD = '1792694941';
       (function () {
         function check(launch) {
           try {
@@ -3145,6 +3145,57 @@
   .ns-what { margin: 20px 24px 8px; font-size: 16px; line-height: 24px; font-weight: 700; text-align: center; }
   .ns-why { margin: 0 24px; font-size: 14px; line-height: 20px; color: var(--muted); text-align: center; }
   .ns-ok { display: flex; width: calc(100% - 48px); height: 48px; margin: 20px 24px 24px; justify-content: center; border-radius: 24px; background: #b3261e; border-color: #b3261e; color: #ffffff; font-size: 16px; font-weight: 800; }
+
+  /* ---------- Wallet pass (walletPass: Review step and request details) ----------
+     A pass pulled from a digital wallet. Leave: navy card, white ink, gold days. Pass: gold card, navy ink, navy days.
+     20px corners; sections 16/20px; uppercase 11px labels; big 34px Depart / Return; perforations are a dashed line with
+     half-circle notches cut in the dialog's color. Same colors in light and dark (they're the type's colors). */
+  .wpass { --wp-bg: #0A2351; --wp-ink: #ffffff; --wp-acc: #FCC22B; --wp-acc-ink: #0A2351; --wp-line: rgba(255,255,255,.32);
+    position: relative; margin: 4px 0 12px; border-radius: 20px; overflow: hidden; background: var(--wp-bg); color: var(--wp-ink); }
+  .wpass.wp-pass { --wp-bg: #FCC22B; --wp-ink: #0A2351; --wp-acc: #0A2351; --wp-acc-ink: #FCC22B; --wp-line: rgba(10,35,81,.3); }
+  .wp-sec { padding: 16px 20px; }
+  .wp-sec + .wp-sec { padding-top: 0; }
+  .wp-top, .wp-dates, .wp-foot { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .wp-r { text-align: right; }
+  .wp-app { font-size: 12px; font-weight: 700; letter-spacing: .08em; opacity: .75; }
+  .wp-type { font-size: 28px; line-height: 34px; font-weight: 900; letter-spacing: .05em; }
+  .wp-n { font-size: 28px; line-height: 34px; font-weight: 900; }
+  .wp-lab { font-size: 11px; line-height: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+  .wp-lab2 { margin-top: 12px; }
+  .wp-foot { align-items: center; }
+  .wp-who { min-width: 0; }
+  .wp-whov { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 15px; font-weight: 700; min-width: 0; }
+  .wp-puck { --tag: 22px; box-shadow: 0 0 0 1.5px var(--wp-ink); }
+  .wp-st { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 12px; border-radius: 15px; font-size: 13px; font-weight: 800; }
+  .wp-st-ok { background: #e3f4e8; color: #14532d; } .wp-st-pend { background: #fff3d6; color: #7a4a00; }
+  .wp-st-no { background: #fde2df; color: #8c1d18; } .wp-st-off { background: #e7e8ec; color: #3f4350; }
+  .wp-mon + .wp-mon { margin-top: 12px; }
+  .wp-mh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 14px; font-weight: 800; }
+  .wp-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; }
+  .wp-dw { font-size: 11px; font-weight: 700; opacity: .6; line-height: 20px; }
+  .wp-d { height: 28px; line-height: 28px; border-radius: 6px; font-size: 13px; font-weight: 600; border: 0; padding: 0; background: none; color: inherit; font-family: inherit; }
+  .wp-in { background: var(--wp-acc); color: var(--wp-acc-ink); font-weight: 800; border-radius: 0; }
+  .wp-in.wp-s { border-radius: 8px 0 0 8px; } .wp-in.wp-e { border-radius: 0 8px 8px 0; } .wp-in.wp-s.wp-e { border-radius: 8px; }
+  .wp-in.wp-bad { background: #d93025; color: #ffffff; }
+  button.wp-d { cursor: pointer; } button.wp-d:focus-visible, button.wp-d.sel { outline: 3px solid var(--wp-ink); outline-offset: -3px; }
+  .wp-cut { position: relative; height: 0; margin: 0 20px; border-top: 2px dashed var(--wp-line); }
+  .wp-cut::before, .wp-cut::after { content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--card); }
+  .wp-cut::before { left: -31px; } .wp-cut::after { right: -31px; }
+  .wp-dates { align-items: flex-end; padding-top: 16px !important; }
+  .wp-big { font-size: 34px; line-height: 40px; font-weight: 900; letter-spacing: .01em; }
+  .wp-wk { font-size: 12.5px; opacity: .8; }
+  .wp-arrow { opacity: .7; margin-bottom: 26px; flex: none; }
+  .wp-loc { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 18px; line-height: 24px; font-weight: 800; overflow-wrap: anywhere; }
+  .wp-loc .ic { flex: none; opacity: .85; }
+  .wp-note { margin-top: 2px; font-size: 14.5px; line-height: 20px; white-space: pre-wrap; overflow-wrap: anywhere; opacity: .92; }
+  .wp-dim { opacity: .6; font-weight: 500; }
+  .wpass + .msgs, .wpass + .wp-add { margin-top: 0; }
+  /* Add to Calendar under the pass: a full-width black pill, like a wallet's "Add" button. */
+  .btn.wp-add { display: flex; width: 100%; height: 48px; margin: 0 0 12px; justify-content: center; gap: 8px; border-radius: 24px;
+    background: #111216; border-color: #111216; color: #ffffff; font-size: 15.5px; font-weight: 800; text-decoration: none; }
+  :root[data-theme="dark"] .btn.wp-add { background: #ffffff; border-color: #ffffff; color: #111216; }
+  .btn.wp-add[aria-disabled="true"] { opacity: .55; pointer-events: none; }
+  @media (max-width: 400px) { .wp-big { font-size: 28px; line-height: 34px; } .wp-sec { padding-left: 16px; padding-right: 16px; } .wp-cut { margin: 0 16px; } .wp-cut::before { left: -27px; } .wp-cut::after { right: -27px; } }
 </style>
 
   </head>
@@ -5362,6 +5413,10 @@
     return '<span class="idb" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(L) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span></span>';
   }
+  /** A member's puck — [P|MKE|Name] as one chip, like the calendar bars (no status marks). */
+  const userPuck = u => { const un = unitsList().find(x => x.code === u.unit);
+    return '<span class="idb pb wp-puck" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(roleL(u.role)) + '</span>' +
+      '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span><span class="idb-n"><span class="idb-t">' + esc(nameText(u)) + '</span></span></span>'; };
   /* Full person badge on calendar bars: [P|MKE|Lastname] as one chip. Approved = green border. */
   /** Green "going on now" dot after a name — only on the bar that covers today (from–to = the dates that bar shows). */
   // On leave / pass right now = APPROVED and today is inside the dates (pending or denied isn't "on leave", even on those days).
@@ -7563,27 +7618,45 @@
     if (c.dups.length) parts.push('duplicate of own ' + c.dups.map(x => x.type.toLowerCase() + ' ' + D.short(x.start) + '–' + D.short(x.end)).join(', '));
     return day + ': conflicts — ' + parts.join('. ') + '.';
   }
-  /** Request details calendar: the same month grid as the request form, with the request's range colored
-   *  green (no conflict) or red (conflict). Every day in the range is tappable to see who else is out. */
-  function reqCalendar(r) {
-    const cf = reqConflicts(r);
+  /* ---------- Wallet pass (Review step and request details) ----------
+     The request as a pass pulled from a digital wallet: Leave = navy with gold days, Pass = gold with navy days. Top: app
+     name, the type, and the length; then the month calendar with the dates filled in; a perforation; Depart → Return in
+     big type with the weekdays; Location and Notes (only for the member and their admins). The member's puck and the
+     status chip sit at the top, under the type. o = { type, start, end, location, note, priv (show location / notes), who (HTML), status, id, cf }.
+     With an id and conflict info (cf), the filled days are buttons that show who else is out (confDay). */
+  const WP_ST = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'], Cancelled: ['x', 'off'] };
+  const wpChip = st => { const m = WP_ST[st] || WP_ST.Pending; return '<span class="wp-st wp-st-' + m[1] + '" id="wpSt">' + icon(m[0], 14) + esc(st) + '</span>'; };
+  function walletPass(o) {
+    const n = D.days(o.start, o.end), big = d => esc(D.f(d, { month: 'short', day: 'numeric' }).toUpperCase());
+    const wk = d => esc(D.f(d, { weekday: 'long' }) + (d.slice(0, 4) !== S.today.slice(0, 4) ? ' · ' + d.slice(0, 4) : ''));
     const months = [];
-    for (let m = D.monthStart(r.start); m <= r.end && months.length < 3; m = D.addMonths(m, 1)) months.push(m);
-    return months.map(m0 => {
+    for (let m = D.monthStart(o.start); m <= o.end && months.length < 3; m = D.addMonths(m, 1)) months.push(m);
+    const cal = months.map((m0, mi) => {
       const gs = D.weekStart(m0), mon = m0.slice(0, 7);
-      let cells = DOW.map(x => '<div class="dw">' + x[0] + '</div>').join('');
+      let cells = DOW.map(x => '<span class="wp-dw">' + x[0] + '</span>').join('');
       for (let i = 0; i < 42; i++) {
         const d = D.add(gs, i);
         if (i === 35 && d.slice(0, 7) !== mon) break;
-        if (d.slice(0, 7) !== mon) { cells += '<span class="blank"></span>'; continue; }
-        const today = d === S.today ? ' today' : '', c = cf.get(d);
-        if (!c) { cells += '<span class="' + (today + boCls(d, r.type)).trim() + '">' + Number(d.slice(8)) + '</span>'; continue; }
-        const txt = conflictText(d, c);
-        cells += '<button type="button" class="in ' + (c.bad ? 'rg-full' : 'rg-ok') + (d === r.start ? ' r-s' : '') + (d === r.end ? ' r-e' : '') + today + '"' +
-          ' data-act="confDay" data-date="' + d + '" data-id="' + esc(r.id) + '" aria-label="' + esc(txt) + '" title="' + esc(txt) + '">' + Number(d.slice(8)) + '</button>';
+        if (d.slice(0, 7) !== mon) { cells += '<span></span>'; continue; }
+        const inR = d >= o.start && d <= o.end, c = o.cf && o.cf.get(d), cls = 'wp-d' + (inR ? ' wp-in' : '') + (c && c.bad ? ' wp-bad' : '') + (d === o.start ? ' wp-s' : '') + (d === o.end ? ' wp-e' : '');
+        cells += inR && c && o.id
+          ? '<button type="button" class="' + cls + '" data-act="confDay" data-date="' + d + '" data-id="' + esc(o.id) + '" aria-label="' + esc(conflictText(d, c)) + '" title="' + esc(conflictText(d, c)) + '">' + Number(d.slice(8)) + '</button>'
+          : '<span class="' + cls + '">' + Number(d.slice(8)) + '</span>';
       }
-      return '<div class="mini"><div class="mini-h"><span>' + D.f(m0, { month: 'long', year: 'numeric' }) + '</span></div><div class="mini-g">' + cells + '</div></div>';
+      return '<div class="wp-mon"><div class="wp-mh"><span>' + esc(D.f(m0, { month: 'long', year: 'numeric' })) + '</span>' + (mi ? '' : '<span class="wp-lab">' + esc(fyOf(o.start)[2]) + '</span>') + '</div><div class="wp-cal">' + cells + '</div></div>';
     }).join('');
+    const cut = '<div class="wp-cut" aria-hidden="true"></div>';
+    return '<article class="wpass wp-' + tcls(o.type) + '" aria-label="' + esc(o.type + ', ' + D.short(o.start) + ' to ' + D.short(o.end)) + '">' +
+      '<div class="wp-sec wp-top"><div><div class="wp-app">BREW CITY PAL</div><div class="wp-type">' + esc(o.type.toUpperCase()) + '</div></div>' +
+        '<div class="wp-r"><div class="wp-lab">Days</div><div class="wp-n">' + n + '</div></div></div>' +
+      '<div class="wp-sec wp-foot"><div class="wp-who"><div class="wp-lab">Member</div><div class="wp-whov">' + o.who + '</div></div>' + wpChip(o.status) + '</div>' +
+      '<div class="wp-sec wp-cals">' + cal + '</div>' + cut +
+      '<div class="wp-sec wp-dates"><div><div class="wp-lab">Depart</div><div class="wp-big">' + big(o.start) + '</div><div class="wp-wk">' + wk(o.start) + '</div></div>' +
+        '<span class="wp-arrow">' + icon('arrow', 20) + '</span>' +
+        '<div class="wp-r"><div class="wp-lab">Return</div><div class="wp-big">' + big(o.end) + '</div><div class="wp-wk">' + wk(o.end) + '</div></div></div>' +
+      (o.priv ? '<div class="wp-sec wp-info"><div class="wp-lab">Location</div><div class="wp-loc">' + icon('pin', 16) + (o.location ? esc(o.location) : '<span class="wp-dim">Not given</span>') + '</div>' +
+        '<div class="wp-lab wp-lab2">Notes</div><div class="wp-note">' + (o.note ? esc(o.note) : '<span class="wp-dim">None</span>') + '</div></div>' : '') +
+    '</article>';
   }
 
   function openRequest(id) {
@@ -7603,15 +7676,13 @@
     const main = '<div class="mf-row">' + del + edit + '<button class="btn act act-lbl' + (del || edit ? '' : ' mf-close') + '" data-act="closeModal" aria-label="Close" title="Close">' + icon('x', 15) + '<span class="bl">Close</span></button></div>';
     const foot = (decide ? '<div class="mf-row mf-decide">' + decide + '</div>' : '') + main;
     const bad = [...reqConflicts(r).values()].filter(c => c.bad).length;
-    const longDate = d => D.f(d, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     // Same layout as the request form (DESIGN.md §Request details): who, type, calendar, dates, notes — read-only.
-    const html = modalHead(esc(r.type), r.type === 'Leave' ? 'calendar' : 'clipboard', calAddHtml(r) + dayPill(n, r.type)) +
+    // The request as a wallet pass, with Add to Calendar right under it; notices, conflicts and actions follow.
+    const priv = managesReq(r) || r.userId === S.me, showCf = r.status !== 'Cancelled' && n <= 92;
+    const html = modalHead(esc(r.type) + ' Details', r.type === 'Leave' ? 'calendar' : 'clipboard') +
       '<div class="modal-b req-view">' +
-      '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request For</div>' +
-        '<div class="req-who">' + idBadge(u) + '<span class="req-name">' + esc(nameText(u)) + '</span>' +
-        '<span class="badge s-' + esc(r.status.toLowerCase()) + '">' + esc(r.status) + '</span></div></div>' +
-      '<div class="sect"><div class="lbl">Type</div><div class="wiz-type"><div class="seg seg-ro" role="group" aria-label="Type">' +
-        liveTypes().map(t => '<button type="button" tabindex="-1" aria-disabled="true" class="' + (t === r.type ? 'on' : '') + '">' + esc(t) + '</button>').join('') + '</div></div></div>' +
+      walletPass({ type: r.type, start: r.start, end: r.end, location: r.location, note: r.note, priv, who: userPuck(u), status: r.status, id: r.id, cf: showCf ? reqConflicts(r) : null }) +
+      calAddHtml(r, true) +
       (isCaution(r) ? '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(cautionText(r)) + '</span></div>' : '') +
       (blackoutDaysOf(r).length && r.status !== 'Cancelled' ? (r.boOk === 'true'
         ? '<div class="msg i">' + icon('check', 15) + '<span>Falls on blackout days (' + esc(blackoutDaysOf(r).map(D.short).join(', ')) + ') — allowed by an admin.</span></div>'
@@ -7621,18 +7692,9 @@
       (isChanged(r) ? '<div class="msg w chg-msg">' + icon('alert', 15) + '<span>' + esc(changeText(r)) +
         (r.userId === S.me ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('check', 13) + ' Got It</button>' : ' The member hasn’t acknowledged this yet.' + (S.isAdmin ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('x', 13) + ' Clear notice</button>' : '')) + '</span></div>' : '') +
       (dupsOf(r).length ? '<div class="msg e">' + icon('alert', 15) + '<span>Overlap: this member also has ' + esc(dupText(r)) + '. A member can’t be on leave and a pass (or two requests) at the same time.</span></div>' : '') +
-      (r.status !== 'Cancelled' && n <= 92
-        ? (bad ? conflictsWithHtml(r) : '<div class="cc-sum ok">' + icon('check', 15) + 'No conflicts on any requested day</div>') +
-          reqCalendar(r) +
-          '<div class="mini-key"><span class="mk-i"><span class="mk mk-ok"></span>No conflict</span><span class="mk-i"><span class="mk mk-full"></span>Conflict</span></div>' +
-          '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>'
-        : '') +
-      '<div class="wiz-dates"><div class="field"><span class="lbl">Departure</span><div class="ro-val">' + longDate(r.start) + '</div></div>' +
-        '<div class="field"><span class="lbl">Return</span><div class="ro-val">' + longDate(r.end) + '</div></div></div>' +
-      // Notes are private to the member and admins (the server doesn't send other members' notes at all).
-      // Location and notes: only the member and admins over them (the server never sends them to anyone else).
-      (managesReq(r) || r.userId === S.me ? '<div class="field"><span class="lbl">Location</span><div class="ro-val">' + (r.location ? esc(r.location) : '<span class="muted">Not given (older request).</span>') + '</div></div>' : '') +
-      (managesReq(r) || r.userId === S.me ? '<div class="field"><span class="lbl">Trip Reason &amp; Notes</span><div class="ro-val ro-note">' + (r.note ? esc(r.note) : '<span class="muted">No note provided.</span>') + '</div></div>' : '') +
+      // Conflicts: the summary, then tap a filled day on the pass to see who else is out (a red day = a conflict).
+      (showCf ? (bad ? conflictsWithHtml(r) : '<div class="cc-sum ok">' + icon('check', 15) + 'No conflicts on any requested day</div>') +
+          '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>' : '') +
       '</div>' + (foot ? '<div class="modal-f modal-f-rows">' + foot + '</div>' : '');
     openModal('req', html);
     calAddWire(r);
@@ -7659,11 +7721,13 @@
       '&details=' + encodeURIComponent(details) + (where ? '&location=' + encodeURIComponent(where) : '');
     return { ics, google };
   }
-  function calAddHtml(r) {
+  function calAddHtml(r, big) {
     if (!calOk(r)) return '';
     const k = calKind(), label = 'Add to ' + (k === 'google' ? 'Google' : 'Apple') + ' Calendar';
     const attrs = k === 'google' ? 'href="' + esc(calEvent(r).google) + '" target="_blank" rel="noopener"'
       : k === 'apple-file' ? 'href="#" download="' + esc(r.type.toLowerCase() + '-' + r.start) + '.ics"' : 'href="#" target="_blank" rel="noopener" aria-disabled="true"';
+    // big: the wallet-style button under the pass ("Add to Apple Calendar" / "Add to Google Calendar").
+    if (big) return '<a class="btn wp-add" id="calAdd" role="button" ' + attrs + '>' + icon('calPlus', 20) + '<span>' + label + '</span></a>';
     return '<a class="btn hd-cal" id="calAdd" role="button" ' + attrs + ' aria-label="' + label + '" title="' + label + '">' + icon('calPlus', 18) + '<span class="hd-cal-t">Add to Calendar</span><span class="hd-cal-s" aria-hidden="true">Add</span></a>';
   }
   function calAddWire(r) {
@@ -8057,18 +8121,18 @@
         '<div class="rv"><span class="lbl">Reason &amp; Notes</span><div class="note">' + (w.note.trim() ? esc(w.note.trim()) : '<span class="muted">No reason given.</span>') + '</div></div>' +
         (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '') +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
-      else body = '<div class="review">' +
-        // A big Leave (navy) / Pass (yellow) banner at the top so the type can't be missed, with who it's for under it.
-        '<div class="rv-type rv-' + tcls(w.type) + '"><span class="rv-tt">' + icon(w.type === 'Pass' ? 'clock' : 'calendar', 22) + esc(w.type) + '</span>' +
-          '<span class="rv-for">For ' + esc(who) + (w.creating ? ' · new member' : wizIds().length > 1 ? ' · one request each' : '') + '</span></div>' +
-        '<div class="rv"><span class="lbl">Dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div></div>' +
-        '<div class="rv"><span class="lbl">Location</span><div class="note">' + esc(String(w.location || '').trim()) + '</div></div>' +
-        '<div class="rv"><span class="lbl">Trip Reason &amp; Notes</span><div class="note">' + (w.note.trim() ? esc(w.note.trim()) : '<span class="muted">No note provided.</span>') + '</div></div>' +
+      else {
+        // Review = the request as a wallet pass (calendar, dates, location, notes, member, status).
+        const ids = wizIds(), one = !w.creating && ids.length === 1 && userOf(ids[0]);
+        const whoHtml = one ? userPuck(one) : esc(who) + (w.creating ? ' · new member' : ids.length > 1 ? ' · one request each' : '');
+        body = '<div class="review">' +
+        walletPass({ type: w.type, start: w.start, end: w.end, location: String(w.location || '').trim(), note: w.note.trim(), priv: true, who: whoHtml, status: wizDecides() ? (w.status || 'Pending') : 'Pending' }) +
         (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>'
           : '<div class="msgs"><div class="msg i">' + icon('check', 15) + '<span>Dates look good — no conflicts.</span></div></div>') +
         // Admins entering a request for someone else decide it right here: Approved, Pending (default) or Denied.
         (wizDecides() ? '<div class="rv rv-st"><span class="lbl">Status</span>' + statusSlider({ id: '', status: w.status || 'Pending' }, 'wizStatus', '', true) + '</div>' : '') +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
+      }
       foot = '<button class="btn" data-act="wizEdit">' + icon('pencil', 18) + 'Edit</button>' +
         '<button class="btn ok" data-act="wizSubmit">' + icon('check', 18) + (w.editId || w.editBoId ? 'Save' : isBo ? 'Add Blackout' : 'Submit') + '</button>';
     }
@@ -9447,7 +9511,7 @@
     },
     /* A NEW request waits for the server behind the full-screen "Submitting…" cover, so nobody closes the app before it's
        saved; if it fails, the form stays open with the error. Edits (requests and blackouts) are optimistic. */
-    wizStatus(el) { S.wiz.status = el.dataset.v; slideStatus(el, el.dataset.v); },
+    wizStatus(el) { S.wiz.status = el.dataset.v; slideStatus(el, el.dataset.v); const c = $('#wpSt'); if (c) c.outerHTML = wpChip(el.dataset.v); },
     async wizSubmit() {
       const w = S.wiz, c = wizCheck();
       if (c.errs.length) { $('#wizErr').textContent = c.errs[0]; return; }
