@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792696158"></script>
+    <script src="config.js?v=1792696593"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792696158';
+      window.PAL_BUILD = '1792696593';
       (function () {
         function check(launch) {
           try {
@@ -3218,6 +3218,10 @@
   .wpass .wp-logo { position: absolute; z-index: -1; top: -70px; left: -90px; width: 360px; height: 352px; margin: 0; opacity: .14; pointer-events: none; }
   .wpass > * { position: relative; z-index: 1; }
   .wpass .wp-brand { position: static; }
+
+  /* Pass calendar: requested days are green when they fit, red on a conflict (over the daily max, blackout, overlap). */
+  .wp-in.wp-ok { background: #1e8e3e; color: #ffffff; }
+  .wp-in.wp-bad { background: #d93025; color: #ffffff; }
 </style>
 
   </head>
@@ -7610,7 +7614,8 @@
         const d = D.add(gs, i);
         if (i === 35 && d.slice(0, 7) !== mon) break;
         if (d.slice(0, 7) !== mon) { cells += '<span></span>'; continue; }
-        const inR = d >= o.start && d <= o.end, c = o.cf && o.cf.get(d), cls = 'wp-d' + (inR ? ' wp-in' : '') + (c && c.bad ? ' wp-bad' : '') + (d === o.start ? ' wp-s' : '') + (d === o.end ? ' wp-e' : '');
+        const inR = d >= o.start && d <= o.end, c = o.cf && o.cf.get(d), isBad = (c && c.bad) || (o.bad && o.bad.has(d));
+        const cls = 'wp-d' + (inR ? ' wp-in' + (isBad ? ' wp-bad' : ' wp-ok') : '') + (d === o.start ? ' wp-s' : '') + (d === o.end ? ' wp-e' : '');
         cells += inR && c && o.id
           ? '<button type="button" class="' + cls + '" data-act="confDay" data-date="' + d + '" data-id="' + esc(o.id) + '" aria-label="' + esc(conflictText(d, c)) + '" title="' + esc(conflictText(d, c)) + '">' + Number(d.slice(8)) + '</button>'
           : '<span class="' + cls + '">' + Number(d.slice(8)) + '</span>';
@@ -7991,7 +7996,7 @@
   const wizIds = () => { const w = S.wiz; return w.creating ? [] : w.editId ? [w.assigneeId].concat(w.extra || []) : (w.assignees || []); };
   const wizWho = () => { const w = S.wiz; return w.creating ? w.nu.rank + ' ' + w.nu.name + ' (' + w.nu.unit + ')' : wizIds().map(id => fullName(userOf(id))).join(', '); };
   function wizCheck() {
-    const w = S.wiz, errs = [], warns = [];
+    const w = S.wiz, errs = [], warns = [], bad = new Set(); // bad: conflict days, shown red on the pass (no text)
     let n = 0;
     if (!D.valid(w.start) || !D.valid(w.end)) {
       errs.push('Select departure and return dates.');
@@ -8023,7 +8028,7 @@
           const own = self && d >= self.start && d <= self.end ? 1 : 0;
           if (countOn(d, role, w.type) - own + roleN[role] > q) hits.push(d);
         }
-        if (hits.length) warns.push(role + ' ' + w.type.toLowerCase() + ' max (' + q + '/day) would be exceeded on ' + hits.map(D.short).join(', ') + '. Leadership will see a conflict flag.');
+        hits.forEach(d => bad.add(d)); // over the daily max: red on the pass's calendar (no warning text)
       });
       if (!w.creating) {
         const ids = wizIds(), many = ids.length > 1;
@@ -8031,10 +8036,10 @@
         if (clash.length) warns.push('Overlap: these dates overlap ' + clash.map(c => (many ? lastName(userOf(c.userId)) + '’s ' : 'an existing ') + c.type.toLowerCase() + ' (' + D.short(c.start) + ' → ' + D.short(c.end) + ', ' + c.status.toLowerCase() + ')').join(' and ') + '. A member can’t be on leave and a pass at the same time — leadership will see a conflict warning.');
       }
       if (w.start < S.today) warns.push('Departure date is in the past.');
-      const bo = blackoutDaysOf({ type: w.type, start: w.start, end: w.end });
+      const bo = blackoutDaysOf({ type: w.type, start: w.start, end: w.end }); bo.forEach(d => bad.add(d));
       if (bo.length) warns.push('Blackout: ' + bo.map(D.short).join(', ') + ' ' + (bo.length === 1 ? 'is a' : 'are') + ' ' + w.type.toLowerCase() + ' blackout day' + (bo.length === 1 ? '' : 's') + '. You can still submit, but it will show as a conflict for an admin to review.');
     }
-    return { errs, warns, n };
+    return { errs, warns, n, bad };
   }
   /* Request form: one page (who · type · calendar & dates · notes) → Review (summary, warnings, Submit). */
   function renderWizard() {
@@ -8094,7 +8099,7 @@
         const ids = wizIds(), one = !w.creating && ids.length === 1 && userOf(ids[0]);
         const wn = one ? [calName(one), memberSub(one)] : w.creating ? [w.nu.name.split(' ').pop(), memberSub(w.nu) + ' · new member'] : [plural(ids.length, 'member'), who + ' · one request each'];
         body = '<div class="review">' +
-        walletPass({ type: w.type, start: w.start, end: w.end, location: String(w.location || '').trim(), note: w.note.trim(), priv: true, who: wn[0], whoSub: wn[1], status: 'Pending', decide: wizDecides() ? statusSlider({ id: '', status: w.status || 'Pending' }, 'wizStatus', '', false) : '' }) +
+        walletPass({ type: w.type, start: w.start, end: w.end, location: String(w.location || '').trim(), note: w.note.trim(), priv: true, who: wn[0], whoSub: wn[1], status: 'Pending', bad: c.bad, decide: wizDecides() ? statusSlider({ id: '', status: w.status || 'Pending' }, 'wizStatus', '', false) : '' }) +
         // Warnings only (no "no conflicts" line: the pass's calendar shows conflicts).
         (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '') +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
