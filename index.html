@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792706150"></script>
+    <script src="config.js?v=1792706728"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792706150';
+      window.PAL_BUILD = '1792706728';
       (function () {
         function check(launch) {
           try {
@@ -3486,17 +3486,13 @@
   .mc-sec h4 > .mc-add { margin-left: auto; text-transform: none; letter-spacing: 0; height: 36px; }
   .mc-body .mc-sec h4:has(> .mc-add) { display: flex; align-items: center; }
   /* Medical pass (wallet + details), designed like Leave / Pass: a solid card (white in light, charcoal in dark) with a
-     band of the medical stripes across the top, the squadron patch watermark, MEDICAL heavy in red with the red-cross
+     gray edge, the squadron patch watermark, MEDICAL heavy in red with the red-cross
      mark, big dates, a perforation, then Notes (and the maxes it lowers). Medical days on its calendar are gray. */
   :root { --mp-card: #ffffff; --mp-ink: #1b1e23; --mp-red: #b42318; }
   :root[data-theme="dark"] { --mp-card: #23272e; --mp-ink: #eceef2; --mp-red: #ff8a80; }
   .wpass.wp-ty-medical, .mpass.wp-ty-medical { --wp-bg: var(--mp-card); --wp-ink: var(--mp-ink); --wp-acc: var(--med-b); --wp-acc-ink: var(--mp-ink);
     --wp-line: color-mix(in srgb, var(--mp-ink) 28%, transparent);
-    background: var(--mp-card) !important; color: var(--mp-ink); box-shadow: inset 0 0 0 1.5px var(--med-edge), 0 2px 8px rgba(0,0,0,.15) !important; }
-  .wpass.wp-ty-medical::before, .mpass.wp-ty-medical::before { content: ""; position: absolute; z-index: 0; left: 0; right: 0; top: 0; height: 12px;
-    background: var(--med-stripes); border-bottom: 1.5px solid var(--med-edge); pointer-events: none; }
-  .mpass.wp-ty-medical { padding-top: 20px; }
-  .wpass.wp-ty-medical .wp-top { padding-top: 26px; }
+    background: var(--mp-card) !important; color: var(--mp-ink); border: 2px solid var(--med-edge) !important; box-shadow: 0 2px 8px rgba(0,0,0,.15) !important; }
   .med-type { display: inline-flex; align-items: center; gap: .3em; color: var(--mp-red); }
   .med-x { display: inline-grid; place-items: center; flex: none; width: 1.15em; height: 1.15em; border-radius: 50%; background: #ffffff; color: #d42020;
     box-shadow: 0 0 0 1.5px var(--med-edge); }
@@ -3507,6 +3503,28 @@
   .mp-now.mp-med-now { background: var(--mp-red); color: var(--mp-card); }
   .wp-cuts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
   .wp-cutchip { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 13px; background: var(--med-b); color: var(--mp-ink); font-size: 13px; font-weight: 800; }
+  /* Canceled leave / passes: crossed out everywhere, with a gray Canceled pill. */
+  .badge.s-canceled { height: 26px; padding: 0 10px; border-radius: 13px; border-color: transparent; font-weight: 800; background: #e7e8ec; color: #3f4350; }
+  :root[data-theme="dark"] .badge.s-canceled { background: rgba(255,255,255,.12); color: #d6d8de; }
+  .st-ic-off { color: var(--muted); }
+  tr.st-canceled td.pdate, tr.st-canceled td.num, tr.st-canceled .idb-n { text-decoration: line-through; }
+  tr.st-canceled td:not(.acts-cell) { opacity: .75; }
+  .mpass.mp-canceled .mp-dates b, .mpass.mp-canceled .mp-type, .wpass.wp-canceled .wp-big, .wpass.wp-canceled .wp-type { text-decoration: line-through; text-decoration-thickness: 3px; }
+  .mpass.mp-canceled { opacity: .8; }
+  /* Medical pass: the medical stripes across the top, fading out before MEDICAL (no hard edge). */
+  .wpass.wp-ty-medical::before, .mpass.wp-ty-medical::before { content: ""; position: absolute; z-index: 0; inset: 0 0 auto 0; pointer-events: none;
+    height: 44px; background: var(--med-stripes);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.55) 45%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.55) 45%, transparent 100%); }
+  .wpass.wp-ty-medical::before { height: 64px; }
+  .wpass.wp-ty-medical > :not(.wp-logo):not(.mp-logo), .mpass.wp-ty-medical > :not(.wp-logo):not(.mp-logo) { position: relative; z-index: 1; }
+  .wpass.wp-ty-medical .wp-top { padding-top: 30px; }
+  /* Medical passes: the red-cross mark sits where Leave / Pass show the day count. */
+  .mp-n.mp-medx { display: grid; place-items: center; margin-left: auto; }
+  .wp-medx { display: grid; place-items: center; align-self: center; }
+  /* Just the red cross on passes: no circle or white disc behind it. */
+  .mp-medx .med-x, .wp-medx .med-x { background: none; box-shadow: none; border-radius: 0; color: var(--mp-red); }
+  .mp-medx .med-x { width: 34px; height: 34px; } .mp-medx .med-x svg { width: 100%; height: 100%; }
+  .wp-medx .med-x { width: 48px; height: 48px; } .wp-medx .med-x svg { width: 100%; height: 100%; }
 </style>
 
   </head>
@@ -5386,7 +5404,7 @@
     const row = r => { const u = userOf(r.userId);
       return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
         '<span class="dl-who">' + memberPuck(u) + '</span>' +
-        (r.med ? '' : '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span>') + '</button></li>'; };
+        (r.med ? '' : stBadge(r)) + '</button></li>'; };
     const sections = roles.map(role => {
       const rs = list.filter(r => userOf(r.userId).role === role).sort((a, b) => (a.userId === S.me ? 0 : 1) - (b.userId === S.me ? 0 : 1) || byPosName(a, b));
       return '<div class="dl-sec"><div class="dl-h"><span>' + esc(roleGroup(role)) + '</span><span class="ct">' + rs.length + '</span></div><ul class="dl-list">' + rs.map(row).join('') + '</ul></div>';
@@ -5714,7 +5732,7 @@
       }
       return '<li class="cf-row"><span class="dl-who">' + personBadge(r, true) + '</span>' +
         '<span class="dl-meta">' + r.type + ' · ' + tkRange(r) + ' · ' + plural(D.days(r.start, r.end), 'day') + '</span>' +
-        '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span>' + acts + '</li>';
+        stBadge(r) + acts + '</li>';
     };
     const html = modalHead('Conflict · ' + esc(D.f(d, { weekday: 'long', month: 'long', day: 'numeric' })), 'alert') + '<div class="modal-b">' +
       '<div class="cf-state cf-' + st + '">' + icon(st === 'ok' ? 'check' : 'alert', 18) +
@@ -5731,9 +5749,15 @@
 
   /** Active: approved and in progress today (the member is out right now). Pending or denied is never active. */
   const isNow = r => r.status === 'Approved' && r.start <= S.today && r.end >= S.today;
+  /** Canceled leave / passes: kept, crossed out, shown as Canceled (stored as Denied + canceled, so they never take a slot). */
+  const isCanc = r => !!r && r.canceled === 'true';
+  const stOf = r => isCanc(r) ? 'Canceled' : r.status;
+  const stBadge = r => '<span class="badge s-' + stOf(r).toLowerCase() + '">' + stOf(r) + '</span>';
+  /** Cancel: the member's own or an admin over them; approved or pending, not over yet. */
+  const canCancel = r => !isTmp(r) && !r.med && !isCanc(r) && (r.status === 'Approved' || r.status === 'Pending') && r.end >= S.today && (managesReq(r) || r.userId === S.me);
   function describe(r) {
     const u = userOf(r.userId);
-    return fullName(u) + ', ' + roleName(u.role) + ', ' + r.type + ', ' + r.status + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
+    return fullName(u) + ', ' + roleName(u.role) + ', ' + r.type + ', ' + stOf(r) + ', ' + D.short(r.start) + ' to ' + D.short(r.end) +
       (dupsOf(r).length ? ', overlap' : '');
   }
   const dupsOf = r => (IDX.dups && IDX.dups.get(r.id)) || [];
@@ -5789,8 +5813,10 @@
   const EXTRA_T = ['Medical', 'Blackout'];
   /** "Medical" on striped backgrounds sits on a small white label (like the name pucks on the bars), so it stays readable. */
   const MED_LBL = '<span class="med-lbl">Medical</span>';
-  /** The big type line on a Medical pass: the red-cross mark, then MEDICAL (heavy, red). */
-  const medType = n => '<span class="med-type"><span class="med-x" aria-hidden="true"><svg width="' + n + '" height="' + n + '" viewBox="0 0 24 24"><path d="M9 2.5h6v6.5h6.5v6H15v6.5H9V15H2.5V9H9z" fill="currentColor"/></svg></span>MEDICAL</span>';
+  /** The big type line on a Medical pass: MEDICAL (heavy, red). */
+  const medType = () => '<span class="med-type">MEDICAL</span>';
+  /** The red-cross mark, big, where Leave / Pass passes show their day count. */
+  const medX = n => '<span class="med-x" aria-hidden="true"><svg width="' + n + '" height="' + n + '" viewBox="0 0 24 24"><path d="M9 2.5h6v6.5h6.5v6H15v6.5H9V15H2.5V9H9z" fill="currentColor"/></svg></span>';
   const extraTypes = sc => S.isAdmin && sc !== 'mine' ? EXTRA_T : [];
   const fHidden = t => S.isAdmin && (S.f.hide || []).includes(t);
   /** Day view: Medical — the same list as On Leave / On Pass: each Medical event on day d and its dates. */
@@ -6312,20 +6338,22 @@
       '<th scope="col" class="th-acts">Actions</th>';
     // Status mark (the "going on now" green dot sits after the name, in the badge, as on the calendar).
     const stIcon = r => {
-      const m = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'] }[r.status] || ['clock', 'pend'];
-      return '<span class="st-ic st-ic-' + m[1] + '" title="' + r.status + '" aria-label="' + r.status + '">' + icon(m[0], 18) + '</span>'; };
+      const m = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'], Canceled: ['x', 'off'] }[stOf(r)] || ['clock', 'pend'];
+      return '<span class="st-ic st-ic-' + m[1] + '" title="' + stOf(r) + '" aria-label="' + stOf(r) + '">' + icon(m[0], 18) + '</span>'; };
     // Compact marks next to the name (instead of wide badges): Overlap (orange), changed by admin (pencil).
     const marks = r => (dupsOf(r).length ? '<span class="cfl cfl-sm cfl-warn" title="' + esc('Overlap: ' + dupText(r)) + '" aria-label="Overlap">' + icon('alert', 13) + '</span>' : '') +
       (isChanged(r) ? '<span class="cfl cfl-sm cfl-chg" title="Dates changed by admin" aria-label="Dates changed by admin">' + icon('pencil', 13) + '</span>' : '');
     const rowHtml = (r, showType) => {
       const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r), st2 = r.status.toLowerCase();
       let acts = '';
-      if (managesReq(r)) {
+      if (isCanc(r)) acts += stBadge(r); // canceled: no decision slider, just the pill
+      else if (managesReq(r)) {
         acts += statusSlider(r, 'setStatus');
       }
+      if (canCancel(r)) acts += '<button class="btn sm del act ico" data-act="cancelTrip" data-id="' + esc(r.id) + '" aria-label="Cancel ' + esc(r.type.toLowerCase()) + ' for ' + esc(u.name) + '" title="Cancel ' + esc(r.type) + '">' + icon('x', 13) + '<span class="bl">Cancel</span></button>';
       if (canEdit(r)) acts += '<button class="btn sm act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit request for ' + esc(u.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>';
       if (canDelete(r)) acts += '<button class="btn sm del act ico" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete request for ' + esc(u.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>';
-      return '<tr class="t-' + tcls(r.type) + ' st-' + st2 + (r.userId === S.me ? ' mine' : '') + (isNow(r) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
+      return '<tr class="t-' + tcls(r.type) + ' st-' + st2 + (isCanc(r) ? ' st-canceled' : '') + (r.userId === S.me ? ' mine' : '') + (isNow(r) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
         // Status mark plus the ⚠ / overlap / changed marks live in the first column, so the pinned Name column is only
         // as wide as the L / P badge and the name (no dead space on phones).
         '<td class="st-ic-c"><div class="st-in">' + stIcon(r) + blackoutBadge(r, true) + marks(r) + '</div></td>' +
@@ -6337,7 +6365,7 @@
           (isCaution(r) ? '<span class="flag caution" title="' + esc(cautionText(r)) + '">' + icon('alert', 13) + '<span class="sr">Caution: ' + esc(cautionText(r)) + '</span></span>' : '') +
           '</td>' +
         (showNote ? '<td class="note" title="' + esc(r.note || '') + '"><div class="clamp">' + (r.note ? esc(r.note) : '<span class="muted">—</span>') + '</div></td>' : '') +
-        '<td><div class="st-cell"><span class="badge s-' + st2 + '">' + r.status + '</span>' + conflictBadge(r) + '</div></td>' +
+        '<td><div class="st-cell">' + stBadge(r) + (isCanc(r) ? '' : conflictBadge(r)) + '</div></td>' +
         '<td class="acts-cell"><div class="row-acts">' + (acts || '<span class="muted">—</span>') + '</div></td></tr>';
     };
     // Grouped like the Week view bands: Leave on top, Pass below, each with a header bar.
@@ -6585,12 +6613,13 @@
     const wk = d => esc(D.f(d, { weekday: 'short' }) + (d.slice(0, 4) !== S.today.slice(0, 4) ? ' · ' + d.slice(0, 4) : ''));
     // Medical: the type on its label pill, no status or location, "NO END" when it has no end date yet.
     const med = !!r.med, open = med && !r.med.end;
-    return '<button type="button" class="mpass wp-' + tcls(r.type) + ' mp-' + r.status.toLowerCase() + (isExpired(r) ? ' mp-expired' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(med ? 'Medical, ' + D.short(r.start) + (open ? '' : ' to ' + D.short(r.end)) : describe(r)) + '">' +
+    return '<button type="button" class="mpass wp-' + tcls(r.type) + ' mp-' + r.status.toLowerCase() + (isCanc(r) ? ' mp-canceled' : '') + (isExpired(r) ? ' mp-expired' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(med ? 'Medical, ' + D.short(r.start) + (open ? '' : ' to ' + D.short(r.end)) : describe(r)) + '">' +
       '<span class="brand-logo mp-logo" aria-hidden="true"></span>' +
-      '<span class="mp-top"><span class="mp-type">' + (med ? medType(14) : esc(r.type.toUpperCase())) + '</span>' + (med && medOn(r.med, S.today) ? '<span class="mp-now mp-med-now">Now</span>' : '') + (isExpired(r) ? '<span class="mp-exp">Expired</span>' : '') + (onNow(r) ? '<span class="mp-now"><i class="now-dot"></i>Now</span>' : '') +
-        (isChanged(r) ? '<span class="mp-chg">' + icon('alert', 13) + 'Changed</span>' : '') + (med ? '' : wpChip(r.status).replace(' id="wpSt"', '')) + '</span>' +
+      '<span class="mp-top"><span class="mp-type">' + (med ? medType() : esc(r.type.toUpperCase())) + '</span>' + (med && medOn(r.med, S.today) ? '<span class="mp-now mp-med-now">Now</span>' : '') + (isExpired(r) ? '<span class="mp-exp">Expired</span>' : '') + (onNow(r) ? '<span class="mp-now"><i class="now-dot"></i>Now</span>' : '') +
+        (isChanged(r) ? '<span class="mp-chg">' + icon('alert', 13) + 'Changed</span>' : '') + (med ? '' : wpChip(stOf(r)).replace(' id="wpSt"', '')) + '</span>' +
       '<span class="mp-dates"><span class="mp-d"><b>' + big(r.start) + '</b><i>' + wk(r.start) + '</i></span><span class="mp-arrow">' + icon('arrow', 16) + '</span>' +
-        (open ? '<span class="mp-d"><b>NO END</b><i>&nbsp;</i></span>' : '<span class="mp-d"><b>' + big(r.end) + '</b><i>' + wk(r.end) + '</i></span><span class="mp-n"><b>' + n + '</b>' + (n === 1 ? 'day' : 'days') + '</span>') + '</span>' +
+        (open ? '<span class="mp-d"><b>NO END</b><i>&nbsp;</i></span>' : '<span class="mp-d"><b>' + big(r.end) + '</b><i>' + wk(r.end) + '</i></span>') +
+        (med ? '<span class="mp-n mp-medx">' + medX(22) + '</span>' : open ? '' : '<span class="mp-n"><b>' + n + '</b>' + (n === 1 ? 'day' : 'days') + '</span>') + '</span>' +
       (med ? '<span class="mp-cut" aria-hidden="true"></span><span class="mp-info">' + icon('clipboard', 14) + '<span class="mp-loc">' + (r.note ? esc(r.note) : 'No notes') + '</span></span>' :
       '<span class="mp-cut" aria-hidden="true"></span>' +
       '<span class="mp-info">' + icon('pin', 14) + '<span class="mp-loc">' + (r.location ? esc(r.location) : 'No location') + '</span>' +
@@ -7559,19 +7588,20 @@
   function dayGroupsHtml(list) {
     list = list.slice().sort((a, b) => stackRank(a) - stackRank(b) || ROLES.indexOf(userOf(a.userId).role) - ROLES.indexOf(userOf(b.userId).role) || byLast(a, b));
     const groups = typeNames().map(t => [t, list.filter(r => r.type === t && r.status !== 'Denied')])
-      .filter(g => g[1].length || g[0] === 'Leave' || g[0] === 'Pass').concat([['Denied', list.filter(r => r.status === 'Denied')]]);
+      .filter(g => g[1].length || g[0] === 'Leave' || g[0] === 'Pass').concat([['Denied', list.filter(r => r.status === 'Denied' && !isCanc(r))], ['Canceled', list.filter(isCanc)]]);
     return groups.map(g => {
       const name = g[0], rows = g[1];
-      if (name === 'Denied' && !rows.length) return '';
-      if (name !== 'Denied' && !S.f.type.includes(name)) return '';
-      return '<div class="dl-sec"><div class="dl-h ' + (name === 'Denied' ? 'denied' : tcls(name)) + '"><span class="sw"></span>' + (name === 'Denied' ? 'Denied' : 'On ' + esc(name.toLowerCase())) +
+      const off = name === 'Denied' || name === 'Canceled';
+      if (off && !rows.length) return '';
+      if (!off && !S.f.type.includes(name)) return '';
+      return '<div class="dl-sec"><div class="dl-h ' + (off ? 'denied' : tcls(name)) + '"><span class="sw"></span>' + (off ? name : 'On ' + esc(name.toLowerCase())) +
         '<span class="ct">' + rows.length + '</span></div>' +
         (rows.length ? '<ul class="dl-list">' + rows.map(r => {
           const u = userOf(r.userId);
           return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
             '<span class="dl-who">' + memberPuck(u) + '</span>' +
             '<span class="dl-meta">' + esc(roleName(u.role)) + ' · ' + tkRange(r) + '</span>' +
-            '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>';
+            stBadge(r) + '</button></li>';
         }).join('') + '</ul>' : '<div class="dl-none">No one</div>') + '</div>';
     }).join('');
   }
@@ -8071,13 +8101,15 @@
      rank · position · unit under it — and the status (chip, or the admin's status slider, level with the name) sit at
      the top, under the type. o.who / o.whoSub are plain text. o = { type, start, end, location, note, priv (show location / notes), who (HTML), status, id, cf }.
      With an id and conflict info (cf), the filled days are buttons that show who else is out (confDay). */
-  const WP_ST = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'], Cancelled: ['x', 'off'] };
+  const WP_ST = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'], Cancelled: ['x', 'off'], Canceled: ['x', 'off'] };
   const wpChip = st => { const m = WP_ST[st] || WP_ST.Pending; return '<span class="wp-st wp-st-' + m[1] + '" id="wpSt">' + icon(m[0], 14) + esc(st) + '</span>'; };
   function walletPass(o) {
     const n = D.days(o.start, o.end), big = d => esc(D.f(d, { month: 'short', day: 'numeric' }).toUpperCase());
     const wk = d => esc(D.f(d, { weekday: 'long' }) + (d.slice(0, 4) !== S.today.slice(0, 4) ? ' · ' + d.slice(0, 4) : ''));
     const months = [];
-    for (let m = D.monthStart(o.start); m <= o.end && months.length < (o.noEnd ? 1 : 3); m = D.addMonths(m, 1)) months.push(m); // no end yet: just the start month
+    // At most two months: from this month when it's under way (else its first month), and the next.
+    const m0 = D.monthStart(S.today > o.start && S.today <= o.end ? S.today : o.start);
+    for (let m = m0; m <= o.end && months.length < 2; m = D.addMonths(m, 1)) months.push(m);
     const cal = months.map((m0, mi) => {
       const gs = D.weekStart(m0), mon = m0.slice(0, 7);
       let cells = DOW.map(x => '<span class="wp-dw">' + x[0] + '</span>').join('');
@@ -8094,10 +8126,10 @@
       return '<div class="wp-mon"><div class="wp-mh"><span>' + esc(D.f(m0, { month: 'long', year: 'numeric' })) + '</span></div><div class="wp-cal">' + cells + '</div></div>';
     }).join('');
     const cut = '<div class="wp-cut" aria-hidden="true"></div>';
-    return '<article class="wpass wp-' + tcls(o.type) + '" aria-label="' + esc(o.type + ', ' + D.short(o.start) + ' to ' + D.short(o.end)) + '">' +
+    return '<article class="wpass wp-' + tcls(o.type) + (o.status === 'Canceled' ? ' wp-canceled' : '') + '" aria-label="' + esc(o.type + ', ' + D.short(o.start) + ' to ' + D.short(o.end)) + '">' +
       // The squadron patch (126 EARS, gold / navy) as a big faint watermark from the top-left, behind the text.
-      '<div class="wp-sec wp-top"><div class="wp-brand"><span class="brand-logo wp-logo" aria-hidden="true"></span><div><div class="wp-app">BREW CITY PAL</div><div class="wp-type">' + (o.med ? medType(26) : esc(o.type.toUpperCase())) + (o.end < S.today ? '<span class="wp-exp">Expired</span>' : '') + '</div></div></div>' +
-        (o.noEnd ? '' : '<div class="wp-r"><div class="wp-lab">Days</div><div class="wp-n">' + n + '</div></div>') + '</div>' +
+      '<div class="wp-sec wp-top"><div class="wp-brand"><span class="brand-logo wp-logo" aria-hidden="true"></span><div><div class="wp-app">BREW CITY PAL</div><div class="wp-type">' + (o.med ? medType() : esc(o.type.toUpperCase())) + (o.end < S.today ? '<span class="wp-exp">Expired</span>' : '') + '</div></div></div>' +
+        (o.med ? '<div class="wp-r wp-medx">' + medX(30) + '</div>' : '<div class="wp-r"><div class="wp-lab">Days</div><div class="wp-n">' + n + '</div></div>') + '</div>' +
       // Status: a chip for members; admins get the Approved | Pending | Denied slider right here (o.decide).
       '<div class="wp-sec wp-foot"><div class="wp-who"><div class="wp-name">' + esc(o.who) + '</div>' + (o.whoSub ? '<div class="wp-sub">' + esc(o.whoSub) + '</div>' : '') + '</div>' + (o.med ? '' : o.decide || wpChip(o.status)) + '</div>' +
       '<div class="wp-sec wp-cals">' + cal + '</div>' + cut +
@@ -8130,12 +8162,13 @@
     const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r);
     // Footer (DESIGN.md): admins get a decision row on top (the status slider), then Delete · Edit · Close —
     // destructive on the left, Cancel in the middle, the main action on the far right.
-    const decide = managesReq(r) && r.status !== 'Cancelled' ? statusSlider(r, 'setStatus', '', false) : ''; // on the pass
+    const decide = managesReq(r) && r.status !== 'Cancelled' && !isCanc(r) ? statusSlider(r, 'setStatus', '', false) : ''; // on the pass
     const edit = canEdit(r) ? '<button class="btn act act-lbl act-edit" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>' : '';
     const del = canDelete(r) ? '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' : '';
+    const cxl = canCancel(r) ? '<button class="btn del act act-lbl" data-act="cancelTrip" data-id="' + esc(r.id) + '" aria-label="Cancel ' + esc(r.type) + '" title="Cancel ' + esc(r.type) + '">' + icon('x', 15) + '<span class="bl">Cancel ' + esc(r.type) + '</span></button>' : '';
     // Always a Close at the bottom (Delete · Edit · Close, or on its own when there is nothing to do).
     // Delete · Edit · Close (Close last, on the right).
-    const main = '<div class="mf-row">' + del + edit + '<button class="btn act act-lbl' + (del || edit ? '' : ' mf-close') + '" data-act="closeModal" aria-label="Close" title="Close">' + icon('x', 15) + '<span class="bl">Close</span></button></div>';
+    const main = '<div class="mf-row">' + del + cxl + edit + '<button class="btn act act-lbl' + (del || edit ? '' : ' mf-close') + '" data-act="closeModal" aria-label="Close" title="Close">' + icon('x', 15) + '<span class="bl">Close</span></button></div>';
     const foot = main;
     // Same layout as the request form (DESIGN.md §Request details): who, type, calendar, dates, notes — read-only.
     // The request as a wallet pass, with Add to Calendar right under it; notices, conflicts and actions follow.
@@ -8144,7 +8177,7 @@
     const priv = managesReq(r) || r.userId === S.me, showCf = r.status !== 'Cancelled' && n <= 92 && !(r.status === 'Approved' && !S.isAdmin);
     const html = modalHead(esc(r.type) + ' Details', r.type === 'Leave' ? 'calendar' : 'clipboard') +
       '<div class="modal-b req-view">' +
-      walletPass({ type: r.type, start: r.start, end: r.end, location: r.location, note: r.note, priv, who: calName(u), whoSub: memberSub(u), status: r.status, decide, id: r.id, cf: showCf ? reqConflicts(r) : null }) +
+      walletPass({ type: r.type, start: r.start, end: r.end, location: r.location, note: r.note, priv, who: calName(u), whoSub: memberSub(u), status: stOf(r), decide, id: r.id, cf: showCf ? reqConflicts(r) : null }) +
       calAddHtml(r, true) +
       (blackoutDaysOf(r).length && r.status !== 'Cancelled' ? (r.boOk === 'true'
         ? '<div class="msg i">' + icon('check', 15) + '<span>Falls on blackout days (' + esc(blackoutDaysOf(r).map(D.short).join(', ')) + ') — allowed by an admin.</span></div>'
@@ -8250,7 +8283,7 @@
           '<td><span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '</span></td>' +
           '<td>' + D.short(r.start) + (r.end !== r.start ? ' – ' + D.short(r.end) : '') + ' ' + r.start.slice(0, 4) + '</td>' +
           '<td class="num">' + D.days(r.start, r.end) + '</td>' +
-          '<td><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></td></tr>').join('') + '</tbody></table></div>'
+          '<td>' + stBadge(r) + '</td></tr>').join('') + '</tbody></table></div>'
       : '<div class="note muted">No requests yet.</div>';
     // Clean layout: who (badge, name, rank · position) + View year; Leave & passes; PIN; Admin access (if any); Details.
     const meta = [u.rank, roleName(u.role)].filter(Boolean).join(' · ');
@@ -8394,7 +8427,7 @@
         '<div class="bor-top"><div class="bor-who">' + memberPuck(u) + '</div>' +
           '<div class="bor-when"><span class="badge t-' + r.type.toLowerCase() + ' t-ltr" title="' + r.type + '">' + r.type[0] + '</span>' + esc(sd(r.start, r.end)) +
             ' <span class="muted">· ' + plural(D.days(r.start, r.end), 'day') + '</span></div>' +
-          '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></div>' +
+          stBadge(r) + '</div>' +
         // Status slider (Approved = allowed over the blackout, also for one that's already approved), then Delete · Edit dates.
         '<div class="bor-dec">' + statusSlider(r, 'boSet', '', true) + '</div>' +
         '<div class="bor-acts bor-acts2" role="group" aria-label="Resolve ' + esc(nameText(u)) + '">' +
@@ -8425,7 +8458,7 @@
       '<div class="rv"><span class="lbl">Reason &amp; Notes</span><div class="note">' + (b.note ? esc(b.note) : '<span class="muted">No reason given.</span>') + '</div></div>' +
       (S.isAdmin ? '<div class="rv"><span class="lbl">Requests to Review</span>' + (hits.length
         ? '<ul class="dl-list">' + hits.map(r => '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '"><span class="dl-who">' + memberPuck(userOf(r.userId)) + '</span>' +
-            '<span class="dl-meta">' + r.type + ' · ' + tkRange(r) + '</span><span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>').join('') + '</ul>'
+            '<span class="dl-meta">' + r.type + ' · ' + tkRange(r) + '</span>' + stBadge(r) + '</button></li>').join('') + '</ul>'
         : '<div class="note muted">None — nothing on these days needs a decision.</div>') +
         (hits.length ? '<button class="btn primary sm" data-act="boResolveOpen" data-id="' + esc(b.id) + '" style="margin-top:8px">' + icon('alert', 14) + 'Resolve Conflicts</button>' : '') + '</div>' : '') +
       '</div></div><div class="modal-f">' + foot + '</div>';
@@ -9488,6 +9521,13 @@
         'apiSetStatus', S.token, id, v);
       setTimeout(() => { render(); if (inReq && S.modal === 'req') openRequest(id); }, wait);
       toast(v === 'Pending' ? 'Back to pending' : 'Request ' + v.toLowerCase(), 'ok', 1500);
+    },
+    async cancelTrip(el) {
+      const r = findReq(el.dataset.id); if (!r) return;
+      const what = r.type.toLowerCase();
+      if (!await askConfirm('Cancel this ' + what + '?', { ok: 'Cancel ' + r.type, danger: true, list: ['Shown crossed out as Canceled', 'Frees its slot'] })) return;
+      save(() => { Object.assign(r, { status: 'Denied', canceled: 'true', decidedBy: S.me, decidedAt: nowIso() }); }, 'apiCancelTrip', S.token, r.id);
+      closeModal(); render(); toast(r.type + ' canceled', 'ok', 1500);
     },
     async cancelReq(el) {
       if (!await askConfirm('Delete this request?', { list: ['Removed from the schedule'] })) return;
