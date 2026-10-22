@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792708154"></script>
+    <script src="config.js?v=1792708266"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792708154';
+      window.PAL_BUILD = '1792708266';
       (function () {
         function check(launch) {
           try {
@@ -3553,8 +3553,9 @@
   @media (max-width: 400px) { .wp-arrow { margin-bottom: 22px; } }
   /* All Requests: the Medical band header chip and rows (stripes like the bars, label pill, the symbol in the first column). */
   /* The Medical band chip = the Medical filter toggle (on): stripes, gray edge, fully round, white label with red text (both modes). */
-  .badge.t-med { background: var(--med-stripes) !important; box-shadow: inset 0 0 0 1.5px var(--med-edge) !important; border: 0 !important; border-radius: 999px; padding: 3px 5px; }
-  .badge.t-med .med-lbl, :root[data-theme="dark"] .badge.t-med .med-lbl { background: #ffffff; color: #b42318; padding: 1px 9px; font-weight: 800; }
+  /* Concentric: the same 3px gap on every side between the outer edge and the white pill, both fully round. */
+  .badge.t-med { display: inline-flex; align-items: center; background: var(--med-stripes) !important; box-shadow: inset 0 0 0 1.5px var(--med-edge) !important; border: 0 !important; border-radius: 999px; padding: 3px !important; height: auto !important; line-height: 1; }
+  .badge.t-med .med-lbl, :root[data-theme="dark"] .badge.t-med .med-lbl { display: block; background: #ffffff; color: #b42318; padding: 3px 10px; border-radius: 999px; font-weight: 800; line-height: 14px; }
   tr.t-ty-medical .st-in .msym { margin: 0 auto; }
   .ty-med-tag { background: var(--med-stripes); box-shadow: inset 0 0 0 1.5px var(--med-edge); display: inline-grid; place-items: center; }
   .ty-med-tag .msym { --msym-bg: #ffffff; }
