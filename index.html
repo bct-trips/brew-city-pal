@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792658415"></script>
+    <script src="config.js?v=1792658696"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792658415';
+      window.PAL_BUILD = '1792658696';
       (function () {
         function check(launch) {
           try {
@@ -2887,6 +2887,19 @@
   .pin-r .pin-btn.pin-btn-set { background: #b42318; color: #ffffff; }
   .pin-unset { display: inline-flex; align-items: center; height: 22px; margin-left: 24px; padding: 0 8px; border-radius: 11px; font-size: 12.5px; font-weight: 800;
     background: var(--gold); color: var(--navy); }
+  /* Settings rows with a switch, like Android / iOS settings: the label (and its one-line description) fills the left,
+     the switch sits at the far right on the same line and never wraps under it. Anything that belongs to the setting
+     (Send Test Notification) goes on its own line underneath, left-aligned. */
+  .cfg-row-tog:has(> .m3sw) { align-items: center; flex-wrap: nowrap; }
+  .cfg-row-tog:has(> .m3sw) > div { flex: 1 1 auto; min-width: 0; }
+  .push-row.push-sw { display: block; }
+  .push-sw .cfg-row-tog { width: 100%; }
+  .push-sw .cfg-row-tog p { flex: none; }
+  .push-sw .cfg-row-tog .meta { font-size: 13.5px; }
+  .push-sw > .push-btns { margin-top: 10px; }
+  .push-row:has(> .push-btns > .m3sw) { flex-wrap: nowrap; }
+  .push-row:has(> .push-btns > .m3sw) > p { flex: 1 1 auto; min-width: 0; }
+  .push-btns:has(> .m3sw) { flex: none; margin-left: auto; }
 </style>
 
   </head>
