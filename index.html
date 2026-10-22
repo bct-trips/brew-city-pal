@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792695424"></script>
+    <script src="config.js?v=1792695727"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792695424';
+      window.PAL_BUILD = '1792695727';
       (function () {
         function check(launch) {
           try {
@@ -3168,7 +3168,7 @@
   .wp-st-ok { background: #e3f4e8; color: #14532d; } .wp-st-pend { background: #fff3d6; color: #7a4a00; }
   .wp-st-no { background: #fde2df; color: #8c1d18; } .wp-st-off { background: #e7e8ec; color: #3f4350; }
   .wp-mon + .wp-mon { margin-top: 12px; }
-  .wp-mh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 14px; font-weight: 800; }
+  .wp-mh { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; font-size: 19px; line-height: 26px; font-weight: 900; letter-spacing: .01em; }
   .wp-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; }
   .wp-dw { font-size: 11px; font-weight: 700; opacity: .6; line-height: 20px; }
   .wp-d { height: 28px; line-height: 28px; border-radius: 6px; font-size: 13px; font-weight: 600; border: 0; padding: 0; background: none; color: inherit; font-family: inherit; }
@@ -3212,6 +3212,12 @@
   /* Squadron patch on the pass (the sign-in logo: gold / navy with the 126th banner), top-left beside the name and type. */
   .wp-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .wpass .wp-logo { flex: none; width: 64px; height: 62px; margin: -4px 0; background-size: contain; background-repeat: no-repeat; background-position: center; }
+
+  /* The squadron patch as a big faint watermark coming in from the top-left, behind the text and the calendar
+     (z-index -1 inside the top section, so it never tints the words). */
+  .wpass .wp-logo { position: absolute; z-index: -1; top: -70px; left: -90px; width: 360px; height: 352px; margin: 0; opacity: .14; pointer-events: none; }
+  .wpass > * { position: relative; z-index: 1; }
+  .wpass .wp-brand { position: static; }
 </style>
 
   </head>
@@ -6203,41 +6209,11 @@
   /* ================================================================ */
   /* Stats (admin): per-person request metrics                          */
   /* ================================================================ */
-  /** Fiscal year (1 Oct – 30 Sep) containing day d: [start, end, 'FY27']. */
-  function fyOf(d) {
-    const y = Number(d.slice(0, 4)), fy = Number(d.slice(5, 7)) >= 10 ? y + 1 : y;
-    return [(fy - 1) + '-10-01', fy + '-09-30', 'FY' + String(fy).slice(2)];
-  }
-  /**
-   * Leave-days counter shown under every request calendar (request form and request details).
-   * Counts the member's Leave days in the fiscal year of the selection: approved + pending (other requests),
-   * plus the days of the current selection when it is Leave. excludeId = the request being edited / viewed,
-   * so it is counted once, as the selection.
-   */
-  function leaveTally(userId, type, start, end, excludeId) {
-    if (!userId) return '';
-    const anchor = D.valid(start) ? start : S.today, [fs, fe, label] = fyOf(anchor);
-    const inFy = (a, b) => { const x = D.max(a, fs), y = D.min(b, fe); return x <= y ? D.days(x, y) : 0; };
-    let appr = 0, pend = 0;
-    IDX.live.forEach(r => {
-      if (r.userId !== userId || r.type !== 'Leave' || r.id === excludeId) return;
-      if (r.status === 'Approved') appr += inFy(r.start, r.end);
-      else if (r.status === 'Pending') pend += inFy(r.start, r.end);
-    });
-    const hasSel = D.valid(start) && D.valid(end) && end >= start;
-    const sel = hasSel && type === 'Leave' ? inFy(start, end) : 0;
-    const who = userId === S.me ? 'Your' : esc(lastName(userOf(userId))) + '’s';
-    return '<div class="lv-tally" aria-live="polite"><div class="lt-h">' + who + ' leave days · ' + label + '</div>' +
-      '<span class="lt-n"><b>' + appr + '</b> approved</span><span class="lt-n"><b>' + pend + '</b> pending</span>' +
-      (type === 'Leave'
-        ? '<span class="lt-n lt-sel"><b>+' + sel + '</b> ' + (hasSel ? 'this request' : 'pick dates') + '</span>'
-        : '<span class="lt-n lt-sel">Passes don’t use leave days</span>') +
-      '<span class="lt-total">' + plural(appr + pend + sel, 'day') + '</span></div>';
-  }
+  /** Calendar year containing day d: [start, end, '2026'] (the app doesn't use fiscal years). */
+  function yearOf(d) { const y = d.slice(0, 4); return [y + '-01-01', y + '-12-31', y]; }
   function periodRange(p) {
-    const y = Number(S.today.slice(0, 4)), m = Number(S.today.slice(5, 7));
-    if (p === 'fy') { const fy = m >= 10 ? y + 1 : y; return [(fy - 1) + '-10-01', fy + '-09-30', 'FY' + String(fy).slice(2) + ' (1 Oct ' + (fy - 1) + ' – 30 Sep ' + fy + ')']; }
-    if (p === 'cy') return [y + '-01-01', y + '-12-31', 'Calendar Year ' + y];
+    const y = Number(S.today.slice(0, 4));
+    if (p === 'cy' || p === 'fy') return [y + '-01-01', y + '-12-31', 'Calendar Year ' + y];
     if (p === '12m') return [D.add(S.today, -365), '9999-12-31', 'Past 12 months + upcoming'];
     return ['0000-01-01', '9999-12-31', 'All Time'];
   }
@@ -6377,11 +6353,10 @@
   }
   /** Period choices in plain words: [key, title, what it covers]. */
   function rosterPeriodRows() {
-    const y = Number(S.today.slice(0, 4)), m = Number(S.today.slice(5, 7)), fy = m >= 10 ? y + 1 : y;
+    const y = Number(S.today.slice(0, 4));
     const long = d => D.f(d, { month: 'short', day: 'numeric', year: 'numeric' });
     return [
       ['12m', 'Last 12 Months', 'Since ' + long(D.add(S.today, -365)) + ', plus upcoming'],
-      ['fy', 'Fiscal Year ' + fy, long((fy - 1) + '-10-01') + ' – ' + long(fy + '-09-30')],
       ['cy', 'Calendar Year ' + y, long(y + '-01-01') + ' – ' + long(y + '-12-31')],
       ['all', 'All Time', 'Every request on record']
     ];
@@ -6443,7 +6418,6 @@
   function renderPeople() {
     const P = S.people;
     // Same bar as All Requests: search pill · period segmented control · "Inactive" filter toggle (all 40px, DESIGN.md §Buttons).
-    const fy = fyOf(S.today)[2], cy = S.today.slice(0, 4);
     return '<section class="page"><div class="lbar stats-bar">' +
       '<div class="lsearch">' + icon('search', 16) + '<input type="search" placeholder="Search name, rank, unit…" value="' + esc(P.q) + '" data-model="people.q" data-live="peopleRefresh" aria-label="Search members"></div>' +
       // One Filters menu (period, positions, units, inactive), like the calendar's.
@@ -7641,11 +7615,11 @@
           ? '<button type="button" class="' + cls + '" data-act="confDay" data-date="' + d + '" data-id="' + esc(o.id) + '" aria-label="' + esc(conflictText(d, c)) + '" title="' + esc(conflictText(d, c)) + '">' + Number(d.slice(8)) + '</button>'
           : '<span class="' + cls + '">' + Number(d.slice(8)) + '</span>';
       }
-      return '<div class="wp-mon"><div class="wp-mh"><span>' + esc(D.f(m0, { month: 'long', year: 'numeric' })) + '</span>' + (mi ? '' : '<span class="wp-lab">' + esc(fyOf(o.start)[2]) + '</span>') + '</div><div class="wp-cal">' + cells + '</div></div>';
+      return '<div class="wp-mon"><div class="wp-mh"><span>' + esc(D.f(m0, { month: 'long', year: 'numeric' })) + '</span></div><div class="wp-cal">' + cells + '</div></div>';
     }).join('');
     const cut = '<div class="wp-cut" aria-hidden="true"></div>';
     return '<article class="wpass wp-' + tcls(o.type) + '" aria-label="' + esc(o.type + ', ' + D.short(o.start) + ' to ' + D.short(o.end)) + '">' +
-      // The squadron patch (126 EARS, gold / navy) top-left, like an airline's logo on a boarding pass.
+      // The squadron patch (126 EARS, gold / navy) as a big faint watermark from the top-left, behind the text.
       '<div class="wp-sec wp-top"><div class="wp-brand"><span class="brand-logo wp-logo" aria-hidden="true"></span><div><div class="wp-app">BREW CITY PAL</div><div class="wp-type">' + esc(o.type.toUpperCase()) + '</div></div></div>' +
         '<div class="wp-r"><div class="wp-lab">Days</div><div class="wp-n">' + n + '</div></div></div>' +
       // Status: a chip for members; admins get the Approved | Pending | Denied slider right here (o.decide).
@@ -7776,7 +7750,7 @@
     const u = S.users.find(x => x.id === uid);
     if (!u) return;
     S.cardUid = uid;
-    const [fs, fe, fyl] = fyOf(S.today);
+    const [fs, fe, fyl] = yearOf(S.today);
     const reqs = S.requests.filter(r => r.userId === uid && r.status !== 'Cancelled').sort((a, b) => a.start < b.start ? 1 : -1);
     const inFy = r => { const x = D.max(r.start, fs), y = D.min(r.end, fe); return x <= y ? D.days(x, y) : 0; };
     const sum = st => reqs.filter(r => r.type === 'Leave' && r.status === st).reduce((t, r) => t + inFy(r), 0);
