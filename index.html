@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792688589"></script>
+    <script src="config.js?v=1792688890"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792688589';
+      window.PAL_BUILD = '1792688890';
       (function () {
         function check(launch) {
           try {
@@ -3083,8 +3083,10 @@
   .stsl.vw-sl .vw-ct { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #b45309; color: #fff; font-size: 12px; font-weight: 800; }
   .stsl.vw-sl.st-open .stsl-o.on .vw-ct { background: var(--navy); color: var(--gold); }
   .lbar .filters > .vw-sl { order: 9; }
-  /* Phones: the switch gets its own full-width row under Filters, three equal parts. */
-  @media (max-width: 700px) { .lbar .filters:has(> .vw-sl) { flex-wrap: wrap; row-gap: 8px; } .lbar .filters > .vw-sl { flex: 1 1 100%; display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); } .lbar .filters > .vw-sl .stsl-o { width: 100%; } .stsl.vw-sl .stsl-o:not(.on) .stsl-t { display: inline; } } /* phones: room for every word */
+  /* Phones: not in the bar — it's in the Filters sheet, full width in three equal parts, same icons-and-word behavior. */
+  @media (max-width: 700px) { .lbar .filters > .vw-sl { display: none; } }
+  .fs-sect .stsl.vw-sl { display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fs-sect .stsl.vw-sl .stsl-o { width: 100%; }
 
   /* Filtered-view banners: a slim 32px strip (not a toolbar) — 16px icon, one line of 13.5px text, a 28px ✕. */
   .conf-banner { height: 32px; min-height: 32px; box-sizing: border-box; gap: 8px; padding: 0 2px 0 12px; font-size: 13.5px; line-height: 18px; }
@@ -4740,6 +4742,7 @@
     const st = fState(sc), parts = [];
     const pick = (g, opts) => { const sel = st[g]; if (sel && sel.length !== opts.length) parts.push(sel.length ? opts.filter(o => sel.includes(o[0])).map(o => o[1]).join(', ') : 'No ' + g); };
     if (st.conf || (st === S.mf && S.mineConf && S.mineMode === 'cal')) parts.push('Conflicts');
+    if (sc === 'list' && S.isAdmin && S.openOnly) parts.push('Pending');
     if (st.person) parts.push(personLabel(st));
     else if (st.role && !S.priv) pick('role', FILTERS[1].opts);
     pick('status', FILTERS[0].opts);
@@ -4758,7 +4761,7 @@
       : plural(n, 'request') + ' over the daily max', 'confOff', 'Leave conflict mode');
   }
   /** Open Requests (All Requests): only pending requests and ones in an unresolved conflict are listed. */
-  const openBanner = n => S.isAdmin && S.openOnly ? modeBanner('clock', 'Viewing Open Requests Only', plural(n, 'request') + ' pending or in an unresolved conflict', 'openOnly', 'Show all requests') : '';
+  const openBanner = n => S.isAdmin && S.openOnly ? modeBanner('clock', 'Viewing Pending Requests Only', plural(n, 'request') + ' pending or in an unresolved conflict', 'openOnly', 'Show all requests') : '';
   /** My Requests → Calendar → Show Conflicts: other members' overlapping leave and passes are added. */
   const mineConfBanner = () => S.view === 'mine' && S.mineConf && S.mineMode === 'cal' ? modeBanner('alert', 'Viewing Conflicts', 'other members’ leave and passes that overlap yours', 'mineConf', 'Hide conflicts') : '';
   /** "Everyone" row badge: one square per position (up to four). */
@@ -4806,6 +4809,8 @@
       '<button type="button" class="' + (st[F.g].includes(o[0]) ? 'on' : '') + '" aria-pressed="' + st[F.g].includes(o[0]) + '" data-act="fToggle" data-g="' + F.g + '" data-v="' + o[0] + '"' + scAttr(sc) + '>' + o[1] + '</button>').join('') + '</div>';
     const html = modalHead('Filters', 'sliders') + '<div class="modal-b fs-body">' +
       (wideFilters() ? '' : sect('Show', typeToggle(sc))) +
+      // Phones, All Requests (admins): the Conflicts | Pending | All switch lives here (the bar has no room for it).
+      (sc === 'list' && S.isAdmin && !wideFilters() ? sect('Requests', openBtn()) : '') +
       sect('Status', chips(groups[0])) +
       (groups.some(f => f.g === 'role') ? sect('Position', badgeDrop('role', sc)) + sect('Person', personSelect('in-sheet', sc)) : '') +
       // Calendar / All Requests: Conflict mode (only leave that's over the daily max; pick a person to see who they conflict with).
@@ -6013,7 +6018,7 @@
     window.addEventListener('orientationchange', onResize);
   })();
   /** Admin: show only open requests (pending, or in an unresolved conflict), with how many there are. */
-  /** All Requests view switch (admins): Conflicts (red) | Open (yellow) | All (green). Conflicts = conflict mode; Open =
+  /** All Requests view switch (admins): Conflicts (red) | Pending (yellow) | All (green). Conflicts = conflict mode; Pending =
    *  pending, or in a conflict that isn't resolved (with how many); All = everything. A red banner says when it's not All. */
   function openBtn() {
     const F = S.f, n = IDX.live.filter(r => isOpenReq(r) && F.role.includes(userOf(r.userId).role) && F.type.includes(r.type) && personConfOk(r, F)).length;
@@ -6021,7 +6026,7 @@
     const o = (k, ic, word, tip) => '<button type="button" role="radio" aria-checked="' + (v === k) + '" class="stsl-o' + (v === k ? ' on' : '') + '" data-act="listView" data-v="' + k + '" title="' + tip + '">' +
       icon(ic, 15) + '<span class="stsl-t">' + word + '</span>' + (k === 'open' && n ? '<b class="vw-ct">' + n + '</b>' : '') + '</button>';
     return '<div class="stsl vw-sl st-' + v + '" role="radiogroup" aria-label="Show"><span class="stsl-thumb" aria-hidden="true"></span>' +
-      o('conf', 'alert', 'Conflicts', 'Only requests over the daily max') + o('open', 'clock', 'Open', 'Pending, or in a conflict that isn’t resolved') + o('all', 'list', 'All', 'Every request') + '</div>';
+      o('conf', 'alert', 'Conflicts', 'Only requests over the daily max') + o('open', 'clock', 'Pending', 'Pending, or in a conflict that isn’t resolved') + o('all', 'list', 'All', 'Every request') + '</div>';
   }
   const reqBar = () => '<div class="req-bar"><button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
   function renderAll() {
@@ -8827,7 +8832,7 @@
     listView(el) {
       const v = el.dataset.v, sl = el.closest('.stsl');
       if (sl) { sl.className = sl.className.replace(/\bst-\w+/, 'st-' + v); sl.querySelectorAll('.stsl-o').forEach(b => { const on = b === el; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); }); placeThumb(sl, true); }
-      setTimeout(() => { S.f.conf = v === 'conf'; S.openOnly = v === 'open'; render(); }, reduceMotion() ? 0 : 220);
+      setTimeout(() => { S.f.conf = v === 'conf'; S.openOnly = v === 'open'; render(); if (S.modal === 'filters') openFilterSheet(S.fsScope, true); }, reduceMotion() ? 0 : 220);
     },
     listRefresh() { store.set('list', S.list); const b = $('#listBody'); if (b) b.innerHTML = renderListBody(); },
     mineRefresh() { const b = $('#mineBody'); if (!b) return; const at = document.activeElement; render(); const i = $('[data-model="mine.q"]'); if (i && at && at.dataset && at.dataset.model === 'mine.q') { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } },
