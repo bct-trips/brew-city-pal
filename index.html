@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792671121"></script>
+    <script src="config.js?v=1792671527"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792671121';
+      window.PAL_BUILD = '1792671527';
       (function () {
         function check(launch) {
           try {
@@ -6510,9 +6510,10 @@
   }
 
   /* ---------- Auto-save for Email Notifications and the Daily Email Report ----------
-     No Save buttons: each change saves on its own. Typing in an address waits a moment (autoLater). The status line
-     (#emStat / #rpStat) shows Saving… → Saved, or what's missing (no address yet), or the server's error. The card is
-     never redrawn after a save, so the cursor stays where it is. */
+     No Save buttons: each change saves on its own. Typing in an address waits a moment (autoLater). Like every other
+     setting, saving shows in the snackbar at the bottom: Saving… → Saved, or the server's error. Only what's missing
+     (no address yet, nothing in Covers) shows in the card (#emStat / #rpStat), next to the problem. The card is never
+     redrawn after a save, so the cursor stays where it is. */
   const AUTO_T = {};
   function autoLater(key, fn, ms) { clearTimeout(AUTO_T[key]); AUTO_T[key] = setTimeout(fn, ms); }
   const okEmail = v => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
@@ -6525,9 +6526,9 @@
     const any = EMAIL_KINDS.some(k => e[k[0]]);
     if (any && !okEmail(e.email)) { if (loud) autoStat('emStat', 'warn', e.email ? 'Check the email address.' : 'Enter your email address to start.'); return false; }
     const prefs = { email: e.email, hour: e.hour, min: e.min || 0, tz: e.tz }; EMAIL_KINDS.forEach(k => { prefs[k[0]] = !!e[k[0]]; });
-    autoStat('emStat', '', 'Saving…');
-    try { apply(await call('apiSetEmailPrefs', S.token, prefs)); autoStat('emStat', 'ok', 'Saved'); return true; }
-    catch (x) { autoStat('emStat', 'bad', x.message); return false; }
+    autoStat('emStat', '', ''); toast('Saving…', 'busy', 0);
+    try { apply(await call('apiSetEmailPrefs', S.token, prefs)); toast('Saved', 'ok', 1400); return true; }
+    catch (x) { toast(x.message, 'error', 5000); return false; }
   }
   /** Save the daily report on screen (same rules), then re-check its schedule. */
   async function rpPersist(loud) {
@@ -6536,13 +6537,13 @@
     const i = $('#rpEmail'); if (i) r.email = i.value.trim();
     if (r.on && !okEmail(r.email)) { if (loud) autoStat('rpStat', 'warn', r.email ? 'Check the email address.' : 'Enter your email address to start the report.'); return false; }
     if (r.on && !(r.rules || []).some(x => (x.types || []).length)) { if (loud) autoStat('rpStat', 'warn', 'Pick at least one type in Covers.'); return false; }
-    autoStat('rpStat', '', 'Saving…');
+    autoStat('rpStat', '', ''); toast('Saving…', 'busy', 0);
     try {
       apply(await call('apiSaveReport', S.token, { on: r.on, email: r.email, hour: r.hour, min: r.min || 0, tz: r.tz, rules: r.rules || [] }));
-      autoStat('rpStat', 'ok', 'Saved');
+      toast('Saved', 'ok', 1400);
       if (r.on) { S.rpStatus = undefined; const b = $('#rpStatusBox'); if (b) b.outerHTML = rpStatusHtml(r); }
       return true;
-    } catch (x) { autoStat('rpStat', 'bad', x.message); return false; }
+    } catch (x) { toast(x.message, 'error', 5000); return false; }
   }
   function emailPanel() {
     const devTz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } })();
