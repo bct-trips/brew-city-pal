@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792685593"></script>
+    <script src="config.js?v=1792686771"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792685593';
+      window.PAL_BUILD = '1792686771';
       (function () {
         function check(launch) {
           try {
@@ -3008,6 +3008,61 @@
   /* Roster: the Squadron total is a summary row under the column titles (tonal, bold), not a sticky footer. */
   .rtable tbody.tot-body td { background: var(--card-2); border-bottom: 2px solid var(--line); padding-top: 9px; padding-bottom: 9px; font-weight: 800; }
   .rtable tbody.tot-body td.stk, .rtable tbody.tot-body td:first-child { background: var(--card-2); }
+
+  /* ---------- Member card (Roster → tap a member), Material 3 dialog ----------
+     Header = the member (badge · name · rank · position), Year and ✕ on the right. Body on a 24px gutter; sections are
+     title (primary, 14/20) + supporting line (muted, 14/20), 16px apart, split by full-width dividers only. Access is an
+     M3 list (leading icon · headline + supporting · trailing actions, 56px rows, no inner dividers). Details are a 3-column
+     grid of 48px fields with the label 6px above. Footer: destructive text buttons left, Save & Close right. */
+  .modal-h:has(.mc-hd) { padding: 16px 16px 16px 24px; gap: 12px; }
+  .modal-h #modalTitle:has(.mc-hd) { flex: 1; min-width: 0; margin: 0; }
+  .mc-hd { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  .mc-hd .idb { --tag: 26px; flex: none; }
+  .mc-hd-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .mc-hd-n { font-size: 22px; line-height: 28px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc-hd-m { font-size: 14px; line-height: 20px; font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .modal-h .mc-year { flex: none; height: 40px; }
+  .modal-b.mc-body { padding: 0 24px 8px; }
+  .mc-body .mc-sec { padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .mc-body .mc-sec:last-child { border-bottom: 0; }
+  .mc-body .mc-sec h4 { margin: 0; font-size: 14px; line-height: 20px; font-weight: 700; letter-spacing: .01em; }
+  .mc-sup { margin: 2px 0 12px; font-size: 14px; line-height: 20px; color: var(--muted); }
+  .mc-sup b { color: var(--ink); font-weight: 700; }
+  .mc-sup .req { margin: 0 2px 0 0; }
+  .mc-body .mc-sec > .note { margin: 0; font-size: 14px; line-height: 20px; color: var(--muted); }
+  .mc-body .mc-sec:not(.mc-details) > h4 + .mc-list { margin-top: 4px; }
+  .mc-body .mc-li { min-height: 56px; padding: 8px 0; gap: 16px; border-top: 0; }
+  .mc-li-ic { flex: none; display: grid; place-items: center; width: 24px; color: var(--muted); }
+  .mc-body .mc-li-t { gap: 2px; }
+  .mc-body .mc-li-t b { font-size: 16px; line-height: 24px; font-weight: 600; }
+  .mc-body .mc-li-t span { font-size: 14px; line-height: 20px; }
+  .mc-body .mc-li-a { gap: 8px; }
+  .mc-body .mc-li-a .btn, .mc-body .mc-adm .seg { height: 40px; min-height: 40px; }
+  .mc-body .mc-adm .seg button { min-height: 0; height: 100%; padding: 0 14px; font-size: 14px; }
+  .mc-body #mcPinRow { margin: 0 0 8px 40px; }
+  .mc-body .mc-adm + .rgrid, .mc-body .mc-adm + * { margin-left: 40px; }
+  .mc-body .mc-details { gap: 16px 16px; }
+  .mc-body .mc-details > h4 { margin-bottom: -14px; }
+  .mc-body .mc-details > .mc-sup { grid-column: 1 / -1; order: 0; margin: 0; }
+  .mc-body .mc-details .field { display: flex; flex-direction: column; gap: 6px; }
+  .mc-body .mc-details .field > label { margin: 0; font-size: 13.5px; line-height: 18px; }
+  .mc-body .mc-details input, .mc-body .mc-details select { height: 48px; min-height: 48px; padding: 0 14px; font-size: 16px; border-radius: 12px; box-sizing: border-box; }
+  .modal-f.mc-foot { padding: 12px 24px 16px; gap: 8px; align-items: center; }
+  .modal-f.mc-foot > .btn:not(.mc-save) { height: 40px; padding: 0 12px; }
+  .modal-f.mc-foot > .btn:first-child:not(.mc-save) { margin-left: -12px; }
+  .modal-f.mc-foot > .mc-save { height: 48px; padding: 0 24px; }
+  @media (max-width: 600px) {
+    .modal-h:has(.mc-hd) { padding: 12px 8px 12px 16px; }
+    .mc-hd { gap: 12px; } .mc-hd .idb { --tag: 22px; }
+    .mc-hd-n { font-size: 20px; line-height: 26px; }
+    .modal-h .mc-year .ic + * , .modal-h .mc-year { font-size: 14px; }
+    .modal-b.mc-body { padding: 0 16px 8px; }
+    .mc-body .mc-li { flex-wrap: wrap; row-gap: 8px; }
+    .mc-body .mc-li-a { width: 100%; padding-left: 40px; justify-content: flex-start; box-sizing: border-box; }
+    .mc-body #mcPinRow, .mc-body .mc-adm + * { margin-left: 0; }
+    .modal-f.mc-foot { padding: 12px 16px 16px; }
+    .modal-f.mc-foot > .btn:first-child:not(.mc-save) { margin-left: 0; }
+  }
 </style>
 
   </head>
@@ -7566,14 +7621,15 @@
     const adm = (S.admins || {})[uid];
     // Team admins can't change an org admin, or a team admin who manages more than their own team.
     const canSetAdm = uid !== S.me && (S.isOrg || (S.isAdmin && (!adm || (adm.level === 'team' && scopeWithin(adm.scope, S.adminScope)))));
-    const html = modalHead(esc(nameText(u, true)), 'user') + '<div class="modal-b mc-body">' +
-      '<div class="mc-top">' + idBadge(u) + '<div class="mc-who"><b>' + esc(nameText(u)) + '</b>' +
-        '<span class="meta">' + esc(meta) + (u.active ? '' : ' <span class="badge">Inactive</span>') + '</span></div>' +
-        '<button class="btn sm" data-act="memberYear" data-id="' + esc(uid) + '">' + icon('calendar', 16) + 'Year</button></div>' +
-      '<section class="mc-sec"><h4>Leave &amp; Passes <span class="meta">' + fyl + ' · <b>' + sum('Approved') + '</b> days approved · <b>' + sum('Pending') + '</b> pending</span></h4>' + table + '</section>' +
+    // M3 dialog: the header IS the member (badge, name, rank · position) with Year beside the ✕ — no second name block.
+    const hero = '<span class="mc-hd">' + idBadge(u) + '<span class="mc-hd-t"><span class="mc-hd-n">' + esc(nameText(u)) + '</span>' +
+      '<span class="mc-hd-m">' + esc(meta) + (u.active ? '' : ' · <span class="badge">Inactive</span>') + '</span></span></span>';
+    const html = modalHead(hero, '', '<button class="btn sm mc-year" data-act="memberYear" data-id="' + esc(uid) + '">' + icon('calendar', 16) + 'Year</button>') +
+      '<div class="modal-b mc-body">' +
+      '<section class="mc-sec"><h4>Leave &amp; Passes</h4><p class="mc-sup">' + fyl + ' · <b>' + sum('Approved') + '</b> days approved · <b>' + sum('Pending') + '</b> pending</p>' + table + '</section>' +
       // Access: one line each — what it is and where it stands on the left, its actions on the right (M3 list items).
       '<section class="mc-sec"><h4>Access</h4><div class="mc-list">' +
-        '<div class="mc-li"><div class="mc-li-t"><b>PIN</b><span>' + (u.mustChange ? 'Default — sets their own at next sign-in' : 'Their own') + '</span></div>' +
+        '<div class="mc-li"><span class="mc-li-ic">' + icon('key', 20) + '</span><div class="mc-li-t"><b>PIN</b><span>' + (u.mustChange ? 'Default — sets their own at next sign-in' : 'Their own') + '</span></div>' +
           '<div class="mc-li-a"><button class="btn sm" data-act="resetPin" data-id="' + esc(uid) + '">' + icon('key', 15) + 'Reset</button>' +
           '<button class="btn sm" data-act="mcPinShow">' + icon('pencil', 15) + 'Set PIN</button></div></div>' +
         '<div id="mcPinRow" hidden>' + PIN_HINT + '<div class="mc-pin"><input id="mcPin1" ' + NEW_PIN + ' placeholder="PIN" aria-label="PIN">' +
@@ -7584,13 +7640,13 @@
         (uid !== S.me ? (() => {
           const lvl = S.admDraft === uid ? 'team' : adm ? adm.level : '', cells = adm && adm.level === 'team' ? scopeCells(adm.scope) : [];
           const opts = (S.isOrg ? [['org', 'Org Admin']] : []).concat([['team', 'Team Admin'], ['', 'None']]);
-          return '<div class="mc-li mc-adm"><div class="mc-li-t"><b>Admin</b><span>' + (lvl === 'org' ? 'Every team' : lvl === 'team' ? (cells.length ? esc(scopeText({ cells })) : 'Tick what they manage') : 'Not an admin') + ((S.alertIds || []).includes(uid) ? ' · gets alerts' : '') + '</span></div>' +
+          return '<div class="mc-li mc-adm"><span class="mc-li-ic">' + icon('shield', 20) + '</span><div class="mc-li-t"><b>Admin</b><span>' + (lvl === 'org' ? 'Every team' : lvl === 'team' ? (cells.length ? esc(scopeText({ cells })) : 'Tick what they manage') : 'Not an admin') + ((S.alertIds || []).includes(uid) ? ' · gets alerts' : '') + '</span></div>' +
             (canSetAdm ? '<div class="mc-li-a">' + seg(opts, lvl, 'admLevel', ' data-id="' + esc(uid) + '"') + '</div>' : '') + '</div>' +
             (lvl === 'team' && canSetAdm ? ruleGrid('adm:' + uid) : '');
         })() : '') +
       '</div></section>' +
       // Details: Last · First · Middle, then Rank · Position · Unit (a tight grid; two columns on phones).
-      '<section class="mc-sec mc-details"><h4>Details <span class="meta">' + REQ_NOTE.replace('<p class="req-note">', '').replace('</p>', '') + '</span></h4>' +
+      '<section class="mc-sec mc-details"><h4>Details</h4><p class="mc-sup">' + REQ_NOTE.replace('<p class="req-note">', '').replace('</p>', '') + '</p>' +
         userFields('ue', u, false).replace(' autofocus', '').replace(REQ_NOTE, '') + '<div class="err" id="ueErr"></div></section>' +
       '</div>' +
       // Actions (M3 dialog): destructive on the left, Save & Close on the right; the ✕ at the top closes without saving.
