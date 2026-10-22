@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792699762"></script>
+    <script src="config.js?v=1792699851"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792699762';
+      window.PAL_BUILD = '1792699851';
       (function () {
         function check(launch) {
           try {
@@ -3373,6 +3373,11 @@
   .rtable th.num .th-sort { justify-content: center; text-align: center; }
   .rtable td.num:not(.pdate) { text-align: center; }
   .rtable td.stk.strong, .rtable td.strong.stk { font-size: 16px; font-weight: 800; }
+
+  /* Pucks line up: the position letter (P / B / O…) is always one square, and the unit (MKE / PIT…) always the same
+     width (wide enough for 3 letters; a longer unit code still fits), so names start at the same spot on every row. */
+  .idb > .idb-r { width: var(--tag); min-width: var(--tag); padding: 0; box-sizing: border-box; }
+  .idb > .idb-u { min-width: calc(var(--tag) * 1.9 + 1.5px); padding: 0 4px; box-sizing: border-box; justify-content: center; text-align: center; }
 </style>
 
   </head>
