@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792706963"></script>
+    <script src="config.js?v=1792707095"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792706963';
+      window.PAL_BUILD = '1792707095';
       (function () {
         function check(launch) {
           try {
@@ -3433,16 +3433,10 @@
   .adm-ic.adm-team, :root[data-theme="dark"] .adm-ic.adm-team { background: #FCC22B; color: #0A2351 !important; }
   .st-mark { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-left: 5px; border-radius: 50%; vertical-align: -2px; flex: none; box-shadow: 0 0 0 1.5px #ffffff; }
   .st-mark .ic { width: 11px; height: 11px; stroke-width: 3.4; }
-  .st-med { background: #b42318; color: #ffffff; }
   .mc-li-ic.mc-med { color: #b42318; }
 
   /* Medical = a white circle with a red cross after the puck, where the admin crown / stamp sit. A dark border plus a
      thin white ring keep it visible on white, on navy bars and in dark mode. */
-  .adm-ic.st-med, :root[data-theme="dark"] .adm-ic.st-med { background: #ffffff; border: 1.5px solid #0b1730; box-sizing: border-box; color: #d42020 !important; }
-  .adm-ic.st-med .sol, .mc-med .sol { display: block; }
-  .adm-ic.st-med + .adm-ic { margin-left: 4px; }
-  .cs-bar .adm-ic.st-med, .mn + .adm-ic.st-med { width: 17px; height: 17px; margin-left: 3px; }
-  .cs-bar .adm-ic.st-med .sol, .mn + .adm-ic.st-med .sol { width: 10px; height: 10px; }
   /* Admin marks: filled glyphs (outline icons washed out at this size). */
   .adm-ic .ic { fill: currentColor; stroke-width: 1.6; }
   /* Medical details on the member card (Start / End, then a Lowers … Max switch per capped type), indented under the row. */
@@ -3494,9 +3488,7 @@
     --wp-line: color-mix(in srgb, var(--mp-ink) 28%, transparent);
     background: var(--mp-card) !important; color: var(--mp-ink); border: 2px solid var(--med-edge) !important; box-shadow: 0 2px 8px rgba(0,0,0,.15) !important; }
   .med-type { display: inline-flex; align-items: center; gap: .3em; color: var(--mp-red); }
-  .med-x { display: inline-grid; place-items: center; flex: none; width: 1.15em; height: 1.15em; border-radius: 50%; background: #ffffff; color: #d42020;
     box-shadow: 0 0 0 1.5px var(--med-edge); }
-  .med-x svg { width: 62%; height: 62%; }
   .wp-ty-medical .wp-type { -webkit-text-stroke: .8px currentColor; }
   .wp-ty-medical .wp-in { background: var(--med-b); color: var(--mp-ink); }
   .wp-ty-medical .mp-logo, .wpass.wp-ty-medical .wp-logo { opacity: .08; }
@@ -3510,10 +3502,9 @@
   tr.st-canceled td.pdate, tr.st-canceled td.num, tr.st-canceled .idb-n { text-decoration: line-through; }
   tr.st-canceled td:not(.acts-cell) { opacity: .75; }
   .mpass.mp-canceled .mp-dates b, .mpass.mp-canceled .mp-type, .wpass.wp-canceled .wp-big, .wpass.wp-canceled .wp-type, .wpass.wp-canceled .wp-n { text-decoration: line-through; text-decoration-thickness: 3px; }
-  /* The Canceled tag: solid near-black with white text and a white ring — stands out on navy, gold, white and dark. */
-  .wp-st.wp-st-off, .mpass .wp-st-off { background: #1b1e23 !important; color: #ffffff !important; box-shadow: 0 0 0 1.5px #ffffff; font-weight: 800; }
-  .badge.s-canceled, :root[data-theme="dark"] .badge.s-canceled { background: #1b1e23; color: #ffffff; box-shadow: 0 0 0 1.5px var(--line-strong); }
-  :root[data-theme="dark"] .badge.s-canceled { background: #eceef2; color: #1b1e23; }
+  /* The Canceled tag: solid red with white text and a white ring — stands out on navy, gold, white and dark. */
+  .wp-st.wp-st-off, .mpass .wp-st-off { background: #b42318 !important; color: #ffffff !important; box-shadow: 0 0 0 1.5px #ffffff; font-weight: 800; }
+  .badge.s-canceled, :root[data-theme="dark"] .badge.s-canceled { background: #b42318; color: #ffffff; box-shadow: none; }
   .mpass.mp-canceled { opacity: .8; }
   /* Medical pass: the medical stripes across the top, fading out before MEDICAL (no hard edge). */
   .wpass.wp-ty-medical::before, .mpass.wp-ty-medical::before { content: ""; position: absolute; z-index: 0; inset: 0 0 auto 0; pointer-events: none;
@@ -3523,13 +3514,26 @@
   .wpass.wp-ty-medical > :not(.wp-logo):not(.mp-logo), .mpass.wp-ty-medical > :not(.wp-logo):not(.mp-logo) { position: relative; z-index: 1; }
   .wpass.wp-ty-medical .wp-top { padding-top: 30px; }
   /* Medical passes: the red-cross mark sits where Leave / Pass show the day count. */
-  .mp-n.mp-medx { display: grid; place-items: center; margin-left: auto; }
   .wp-medx { display: grid; place-items: center; align-self: center; }
-  /* On passes: the red cross inside a red ring (no fill behind it). */
-  .mp-medx .med-x, .wp-medx .med-x { background: none; border-radius: 50%; color: var(--mp-red); box-shadow: inset 0 0 0 3px var(--mp-red); }
-  .mp-medx .med-x { width: 40px; height: 40px; } .mp-medx .med-x svg { width: 58%; height: 58%; }
-  .wp-medx .med-x { width: 56px; height: 56px; box-shadow: inset 0 0 0 4px var(--mp-red); } .wp-medx .med-x svg { width: 58%; height: 58%; }
   .wpass.wp-canceled .wp-in { background: color-mix(in srgb, var(--wp-ink) 18%, transparent); color: var(--wp-ink); text-decoration: line-through; } /* canceled: its days plain, struck */
+  /* The Medical symbol (medSym): red ring + red cross, no fill. Light red in dark mode. */
+  :root { --msym: #c81e1e; } :root[data-theme="dark"] { --msym: #ff6b60; }
+  .msym { display: block; flex: none; color: var(--msym); }
+  .st-med { display: inline-grid; place-items: center; flex: none; margin-left: 8px; vertical-align: middle; }
+  .st-med + .adm-ic { margin-left: 4px; }
+  /* On stripes or colored bars, fill the ring so it stays visible: light in light mode, dark in dark mode. */
+  :is(.evs, .cs-bar, .wpuck, .mn, .day-groups .dl-h, .wpass, .mpass) .msym, .mn + .st-med .msym, .cs-bar + .st-med .msym,
+  .idb + .st-med .msym { --msym-bg: #ffffff; }
+  :root[data-theme="dark"] :is(.evs, .cs-bar, .wpuck, .mn, .day-groups .dl-h, .wpass, .mpass) .msym,
+  :root[data-theme="dark"] :is(.mn + .st-med, .cs-bar + .st-med, .idb + .st-med) .msym { --msym-bg: #23272e; }
+  :is(.cs-bar, .evs, .wpuck) .st-med, .mn + .st-med { margin-left: 3px; }
+  :is(.cs-bar, .evs, .wpuck) .st-med .msym, .mn + .st-med .msym { width: 16px; height: 16px; }
+  /* Passes: the symbol big, where Leave / Pass show the day count. */
+  .mp-n.mp-medx { display: grid; place-items: center; margin-left: auto; }
+  .mp-medx .msym { width: 38px; height: 38px; }
+  .wp-medx .msym { width: 54px; height: 54px; }
+  /* Inside a puck's white name box it isn't on stripes: no fill, the light-mode red. */
+  :root .idb-n .med-dot .msym, :root[data-theme="dark"] .idb-n .med-dot .msym { --msym-bg: none; color: #c81e1e; }
 </style>
 
   </head>
@@ -5808,11 +5812,15 @@
   const medEvents = () => S.medical || [];
   const medOn = (m, d) => m.start <= d && (!m.end || d <= m.end);
   const injuredNow = u => !!u && medEvents().some(m => m.userId === u.id && medOn(m, S.today));
-  const medMark = u => injuredNow(u) ? '<span class="adm-ic st-med" role="img" aria-label="Medical" title="Medical (injured)">' + redCross(15) + '</span>' : '';
+  /** THE Medical symbol, everywhere: a red ring with a red cross, no fill. On stripes (calendar bars, pass tops) CSS sets
+   *  --msym-bg so the inside of the ring is filled light (light mode) or dark (dark mode) and it stays visible. */
+  const medSym = (n, cls) => '<svg class="msym' + (cls ? ' ' + cls : '') + '" width="' + n + '" height="' + n + '" viewBox="0 0 24 24" aria-hidden="true">' +
+    '<circle cx="12" cy="12" r="10.6" fill="var(--msym-bg, none)" stroke="currentColor" stroke-width="2.4"/><path d="M10 5.8h4v4.2h4.2v4H14v4.2h-4V14H5.8v-4H10z" fill="currentColor"/></svg>';
+  const medMark = u => injuredNow(u) ? '<span class="st-med" role="img" aria-label="Medical" title="Medical (injured)">' + medSym(20) + '</span>' : '';
   /** A Medical event shaped like a request, for the calendar bars (no end yet = shown a year out). */
   const medReq = m => ({ id: m.id, userId: m.userId, type: 'Medical', start: m.start, end: m.end || D.add(S.today, 365), status: 'Approved', note: m.note || '', location: '', boOk: 'true', med: m });
   /** On a Medical bar: a small red cross after the name, where the green "on now" dot sits on leave. */
-  const medDot = '<i class="med-dot" title="Medical"><svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2.5h6v6.5h6.5v6H15v6.5H9V15H2.5V9H9z" fill="#d42020"/></svg></i>';
+  const medDot = '<i class="med-dot" title="Medical">' + medSym(13) + '</i>';
   const canMed = uid => { const u = userOf(uid); return S.isAdmin && !!u && (S.isOrg || inScope(S.adminScope, u)); };
   /** Admins (Admin Mode): extra calendar filter chips for Medical and Blackouts (S.f.hide = the ones turned off). */
   const EXTRA_T = ['Medical', 'Blackout'];
@@ -5821,7 +5829,7 @@
   /** The big type line on a Medical pass: MEDICAL (heavy, red). */
   const medType = () => '<span class="med-type">MEDICAL</span>';
   /** The red-cross mark, big, where Leave / Pass passes show their day count. */
-  const medX = n => '<span class="med-x" aria-hidden="true"><svg width="' + n + '" height="' + n + '" viewBox="0 0 24 24"><path d="M9 2.5h6v6.5h6.5v6H15v6.5H9V15H2.5V9H9z" fill="currentColor"/></svg></span>';
+  const medX = n => medSym(n, 'msym-pass');
   const extraTypes = sc => S.isAdmin && sc !== 'mine' ? EXTRA_T : [];
   const fHidden = t => S.isAdmin && (S.f.hide || []).includes(t);
   /** Day view: Medical — the same list as On Leave / On Pass: each Medical event on day d and its dates. */
