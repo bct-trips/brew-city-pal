@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792700436"></script>
+    <script src="config.js?v=1792700518"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792700436';
+      window.PAL_BUILD = '1792700518';
       (function () {
         function check(launch) {
           try {
@@ -3411,6 +3411,9 @@
   .qc-day { gap: 0; }
   /* Dates in list lines, ticket style ("OCT 22 → OCT 26"). */
   .tk { font-weight: 900; letter-spacing: .02em; color: var(--ink); white-space: nowrap; }
+
+  /* Sign-in, create account and setup: one-line inputs are search-style pills (48px, outlined) like every other form. */
+  .login input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(.sr), .login select { height: 48px; min-height: 48px; border-radius: 24px; padding: 0 18px; box-sizing: border-box; }
 </style>
 
   </head>
