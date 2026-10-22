@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792671785"></script>
+    <script src="config.js?v=1792672074"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792671785';
+      window.PAL_BUILD = '1792672074';
       (function () {
         function check(launch) {
           try {
@@ -2926,6 +2926,14 @@
   .see-grid .sg-cn { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .02em; text-transform: none; }
   .see-grid .sg-row { position: sticky; left: 0; z-index: 1; background: var(--card); text-align: left; font-weight: 700; white-space: nowrap; }
   .see-grid .sg-row .idb { vertical-align: middle; }
+  /* The position names share their row's stripe (they're header cells, so the table stripes skip them). */
+  .see-grid tbody th.sg-row { border-bottom: 1px solid var(--line); } /* row lines run under the names too */
+  .see-grid tbody tr:nth-child(even) th.sg-row { background: color-mix(in srgb, var(--card-2) 55%, var(--card)); }
+  /* The grid fills its card at every width — a snug name column, the check-box columns sharing the rest evenly. */
+  .see-grid .rtable { width: 100%; table-layout: fixed; }
+  .see-grid .sg-corner { width: 200px; }
+  .see-grid .sg-col, .see-grid td.ag-k { text-align: center; }
+  @media (max-width: 480px) { .see-grid .sg-corner { width: 150px; } .see-grid .rtable.ag th.sg-col, .see-grid .rtable.ag td.ag-k { width: auto; min-width: 0; max-width: none; } }
   @media (max-width: 480px) { .see-grid .sg-cn { display: none; } .see-grid .rtable.ag th.sg-col, .see-grid .rtable.ag td.ag-k { width: 40px; min-width: 40px; max-width: 40px; padding: 6px 2px; } .see-grid .rtable.ag .sg-row, .see-grid .rtable.ag .sg-corner { padding: 6px 8px 6px 10px; } } /* phones: badges identify the columns */
   /* Request details header: Add to Calendar (icon + words; phones: just the icon), next to the days pill. */
   .modal-h .hd-cal { flex: none; height: 36px; gap: 6px; padding: 0 12px; text-decoration: none; font-size: 14px; }
