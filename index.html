@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792695268"></script>
+    <script src="config.js?v=1792695424"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792695268';
+      window.PAL_BUILD = '1792695424';
       (function () {
         function check(launch) {
           try {
@@ -3208,6 +3208,10 @@
   .wp-name { font-size: 24px; line-height: 34px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .wp-sub { font-size: 13px; line-height: 18px; font-weight: 600; opacity: .8; }
   .wpass .wp-foot > .wp-st { margin-top: 2px; }
+
+  /* Squadron patch on the pass (the sign-in logo: gold / navy with the 126th banner), top-left beside the name and type. */
+  .wp-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .wpass .wp-logo { flex: none; width: 64px; height: 62px; margin: -4px 0; background-size: contain; background-repeat: no-repeat; background-position: center; }
 </style>
 
   </head>
@@ -7641,7 +7645,8 @@
     }).join('');
     const cut = '<div class="wp-cut" aria-hidden="true"></div>';
     return '<article class="wpass wp-' + tcls(o.type) + '" aria-label="' + esc(o.type + ', ' + D.short(o.start) + ' to ' + D.short(o.end)) + '">' +
-      '<div class="wp-sec wp-top"><div><div class="wp-app">BREW CITY PAL</div><div class="wp-type">' + esc(o.type.toUpperCase()) + '</div></div>' +
+      // The squadron patch (126 EARS, gold / navy) top-left, like an airline's logo on a boarding pass.
+      '<div class="wp-sec wp-top"><div class="wp-brand"><span class="brand-logo wp-logo" aria-hidden="true"></span><div><div class="wp-app">BREW CITY PAL</div><div class="wp-type">' + esc(o.type.toUpperCase()) + '</div></div></div>' +
         '<div class="wp-r"><div class="wp-lab">Days</div><div class="wp-n">' + n + '</div></div></div>' +
       // Status: a chip for members; admins get the Approved | Pending | Denied slider right here (o.decide).
       '<div class="wp-sec wp-foot"><div class="wp-who"><div class="wp-name">' + esc(o.who) + '</div>' + (o.whoSub ? '<div class="wp-sub">' + esc(o.whoSub) + '</div>' : '') + '</div>' + (o.decide || wpChip(o.status)) + '</div>' +
@@ -8118,8 +8123,8 @@
         const wn = one ? [calName(one), memberSub(one)] : w.creating ? [w.nu.name.split(' ').pop(), memberSub(w.nu) + ' · new member'] : [plural(ids.length, 'member'), who + ' · one request each'];
         body = '<div class="review">' +
         walletPass({ type: w.type, start: w.start, end: w.end, location: String(w.location || '').trim(), note: w.note.trim(), priv: true, who: wn[0], whoSub: wn[1], status: 'Pending', decide: wizDecides() ? statusSlider({ id: '', status: w.status || 'Pending' }, 'wizStatus', '', false) : '' }) +
-        (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>'
-          : '<div class="msgs"><div class="msg i">' + icon('check', 15) + '<span>Dates look good — no conflicts.</span></div></div>') +
+        // Warnings only (no "no conflicts" line: the pass's calendar shows conflicts).
+        (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '') +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
       }
       foot = '<button class="btn" data-act="wizEdit">' + icon('pencil', 18) + 'Edit</button>' +
