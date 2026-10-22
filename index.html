@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792700518"></script>
+    <script src="config.js?v=1792700816"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792700518';
+      window.PAL_BUILD = '1792700816';
       (function () {
         function check(launch) {
           try {
@@ -3394,7 +3394,7 @@
 
   /* Settings: the top card is the member's big badge itself (the Profile menu's header) — full width, the cards'
      corners and spacing, no caption. */
-  .pm-bh.set-badge { height: 56px; font-size: 22px; border: 1.5px solid #0b1730; border-radius: 16px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .pm-bh.set-badge { width: 100%; max-width: 720px; margin-left: auto; margin-right: auto; box-sizing: border-box; height: 56px; font-size: 22px; border: 1.5px solid #0b1730; border-radius: 16px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
   .pm-bh.set-badge .bh-r { width: 56px; } .pm-bh.set-badge .bh-u { min-width: 76px; }
   .pm-bh.set-badge .bh-n { line-height: 56px; text-align: left; padding: 0 18px; }
 
