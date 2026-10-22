@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792686771"></script>
+    <script src="config.js?v=1792687770"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792686771';
+      window.PAL_BUILD = '1792687770';
       (function () {
         function check(launch) {
           try {
@@ -2228,6 +2228,9 @@
   .open-btn { flex: none; gap: 6px; }
   .open-btn .open-ct { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #b45309; color: #fff; font-size: 12.5px; font-weight: 800; }
   .open-btn.on .open-ct { background: var(--sel-ink); }
+  /* On: red, like the Conflicts button (the page is showing only part of the requests; a red banner says so). */
+  .btn.chip-tog.open-btn.on, .btn.chip-tog.open-btn.on:hover { background-color: var(--no-bg); border-color: var(--no-bg); color: var(--no-ink) !important; }
+  .btn.open-btn.on .open-ct { background: var(--no-ink); color: var(--no-bg); }
   /* Roster: period dropdown (button + small menu) in the bar. */
   .pdrop { position: relative; flex: none; }
   .pdrop-btn { height: 40px; gap: 8px; padding: 0 12px 0 14px; }
@@ -4469,7 +4472,7 @@
         // Center: date navigator [ ‹ | label ⌄ | › ]
         '<div class="cb-center">' + dateNav + '</div>' +
       '</div>' +
-      (confOn ? confBanner(calRequests().length) : '') +
+      (confOn ? confBanner(calRequests().length) : '') + mineConfBanner() +
       '<div class="cal-split"><div class="cal-body" id="calBody">' + body + '</div>' + (showPanel
         ? '<aside class="dpanel' + (panelAnim ? ' dp-anim' : '') + '" aria-label="Day details">' + renderDay(S.dayPanel, true) + '</aside>' : '') + '</div>' +
       // Phones: a full-width Add Request bar under the calendar (the calendar shrinks to make room).
@@ -4718,13 +4721,20 @@
     return parts;
   }
     icon('alert', 18) + '<span class="bl">Conflicts</span></button>';
+  /** Filtered-view banner: a red bar under the filters saying the page shows only part of the requests (Conflict Mode,
+   *  Open Requests, My Requests' Show Conflicts), with an ✕ that turns that view off. */
+  const modeBanner = (ic, title, detail, act, off) => '<div class="conf-banner" role="status">' + icon(ic, 18) + '<span><b>' + title + '</b>' + (detail ? ' · ' + detail : '') + '</span>' +
+    '<button type="button" class="btn icon-btn conf-x" data-act="' + act + '" aria-label="' + off + '" title="' + off + '">' + icon('x', 18) + '</button></div>';
   /** Conflict mode banner: red bar with the count and an ✕ to leave the mode. */
   function confBanner(n) {
     if (!S.f.conf) return '';
-    return '<div class="conf-banner" role="status">' + icon('alert', 18) + '<span><b>Conflict Mode</b> · ' + (personIds(S.f).length === 1 ? esc(fullName(userOf(S.f.person))) + ' and who they conflict with · ' : S.f.person ? esc(personLabel(S.f)) + ' · ' + plural(n, 'request')
-      : plural(n, 'request') + ' over the daily max') + '</span>' +
-      '<button type="button" class="btn icon-btn conf-x" data-act="confOff" aria-label="Leave conflict mode" title="Leave conflict mode">' + icon('x', 18) + '</button></div>';
+    return modeBanner('alert', 'Viewing Conflicts Only', personIds(S.f).length === 1 ? esc(fullName(userOf(S.f.person))) + ' and who they conflict with · ' : S.f.person ? esc(personLabel(S.f)) + ' · ' + plural(n, 'request')
+      : plural(n, 'request') + ' over the daily max', 'confOff', 'Leave conflict mode');
   }
+  /** Open Requests (All Requests): only pending requests and ones in an unresolved conflict are listed. */
+  const openBanner = n => S.isAdmin && S.openOnly ? modeBanner('clock', 'Viewing Open Requests Only', plural(n, 'request') + ' pending or in an unresolved conflict', 'openOnly', 'Show all requests') : '';
+  /** My Requests → Calendar → Show Conflicts: other members' overlapping leave and passes are added. */
+  const mineConfBanner = () => S.view === 'mine' && S.mineConf && S.mineMode === 'cal' ? modeBanner('alert', 'Viewing Conflicts', 'other members’ leave and passes that overlap yours', 'mineConf', 'Hide conflicts') : '';
   /** "Everyone" row badge: one square per position (up to four). */
   const allBadge = () => '<span class="idb idb-all" aria-hidden="true">' + ROLES.slice(0, 4).map(r => '<span class="idb-r ' + roleCls(r) + '">' + esc(roleL(r)) + '</span>').join('') + '</span>';
   /* Default filters: the member's default positions, all statuses, Leave and Pass, nobody picked, conflict mode off.
@@ -5987,7 +5997,7 @@
     const L = S.list;
     return '<section class="page list-page' + (S.f.conf ? ' conf-mode' : '') + '">' +
       listBar('<input id="q" type="search" placeholder="Search name, unit, note…" value="' + esc(L.q) + '" data-model="list.q" data-live="listRefresh" aria-label="Search requests">', FILTERS, 'list') +
-      confBanner(filteredList().length) +
+      confBanner(filteredList().length) + openBanner(filteredList().length) +
       '<div class="tbl-page" id="listBody">' + renderListBody() + '</div>' + reqBar() + '</section>';
   }
 
