@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792664810"></script>
+    <script src="config.js?v=1792665171"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792664810';
+      window.PAL_BUILD = '1792665171';
       (function () {
         function check(launch) {
           try {
@@ -2912,6 +2912,7 @@
      Unlocked = red pill (#b42318, white 6.5:1). */
   .lksl.st-lck .stsl-thumb { background: #15803d; }
   .lksl.st-unl .stsl-thumb { background: #b42318; }
+  .lksl .stsl-o.on, .lksl { cursor: pointer; } /* any tap flips it (twoWay) */
   .lksl { flex: none; grid-template-columns: none; }
   .pm-row.pm-adm { cursor: default; }
   .pm-row.pm-adm .pm-l { flex: 1 1 auto; }
@@ -9090,7 +9091,7 @@
     // "I have read this warning" check boxes inside a sheet (Restore From Backup).
     const ack = ev.target.closest('#modal .ack');
     if (ack) { ev.preventDefault(); toggleAck(ack); return; }
-    const el = ev.target.closest('[data-act]');
+    const el = twoWay(ev.target) || ev.target.closest('[data-act]');
     if (!el || el.disabled) return;
     const fn = A[el.dataset.act];
     if (!fn) return;
@@ -9100,6 +9101,16 @@
     if (S.offline && OFFLINE_ACTS.has(el.dataset.act)) { offlineNote(); return; }
     fn(el, ev);
   });
+  /** Two-option toggles (a single-choice button group with two options, or the Locked | Unlocked slider) flip on any tap:
+   *  tapping the side that's already chosen, or the track around it, picks the other one. Returns that other option. */
+  function twoWay(t) {
+    const g = t.closest && t.closest('.seg-slide:not(.nav), .lksl'); if (!g) return null;
+    const opts = [...g.children].filter(b => b.matches('button[data-act]'));
+    if (opts.length !== 2) return null;
+    const hit = t.closest('button[data-act]');
+    if (hit && !hit.classList.contains('on')) return null; // the other side: it already switches
+    return opts.find(b => !b.classList.contains('on')) || null;
+  }
   document.addEventListener('click', ev => {
     if (S.periodOpen && !(ev.target.closest && ev.target.closest('.pdrop'))) { S.periodOpen = false; render(); }
   }, true);
