@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792707095"></script>
+    <script src="config.js?v=1792707154"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792707095';
+      window.PAL_BUILD = '1792707154';
       (function () {
         function check(launch) {
           try {
@@ -3534,6 +3534,8 @@
   .wp-medx .msym { width: 54px; height: 54px; }
   /* Inside a puck's white name box it isn't on stripes: no fill, the light-mode red. */
   :root .idb-n .med-dot .msym, :root[data-theme="dark"] .idb-n .med-dot .msym { --msym-bg: none; color: #c81e1e; }
+  /* The mark after a member's puck: always white inside the ring (light and dark), like the puck's name box. */
+  :root .st-med .msym, :root[data-theme="dark"] .st-med .msym { --msym-bg: #ffffff; color: #c81e1e; }
 </style>
 
   </head>
