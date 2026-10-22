@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792676055"></script>
+    <script src="config.js?v=1792676163"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792676055';
+      window.PAL_BUILD = '1792676163';
       (function () {
         function check(launch) {
           try {
@@ -3569,8 +3569,8 @@
     $$('[data-act]').forEach(b => { if (!OFFLINE_ACTS.has(b.dataset.act) || !('disabled' in b)) return;
       if (S.offline) { if (!b.disabled) { b.disabled = true; b.dataset.offOff = '1'; } } else if (b.dataset.offOff) { b.disabled = false; delete b.dataset.offOff; } });
   }
-  const offlineBar = () => S.offline ? '<div class="offline-bar" id="offlineBar" role="status">' + icon('alert', 16) + 'Viewing Cached Data</div>' : '';
-  const offlineNote = () => toast('Offline · viewing cached data', 'info', 2400);
+  const offlineBar = () => S.offline ? '<div class="offline-bar" id="offlineBar" role="status">' + icon('alert', 16) + 'Viewing Offline</div>' : '';
+  const offlineNote = () => toast('Viewing Offline', 'info', 2400);
   const TIMED_OUT = 'The server didn’t answer in time. Check your connection and try again.';
   /* ---------- Button spinners ----------
      busy(btn, work): while a server call runs, the button that started it shows a spinner in place of its icon and
