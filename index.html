@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792706728"></script>
+    <script src="config.js?v=1792706862"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792706728';
+      window.PAL_BUILD = '1792706862';
       (function () {
         function check(launch) {
           try {
@@ -3521,10 +3521,11 @@
   /* Medical passes: the red-cross mark sits where Leave / Pass show the day count. */
   .mp-n.mp-medx { display: grid; place-items: center; margin-left: auto; }
   .wp-medx { display: grid; place-items: center; align-self: center; }
-  /* Just the red cross on passes: no circle or white disc behind it. */
-  .mp-medx .med-x, .wp-medx .med-x { background: none; box-shadow: none; border-radius: 0; color: var(--mp-red); }
-  .mp-medx .med-x { width: 34px; height: 34px; } .mp-medx .med-x svg { width: 100%; height: 100%; }
-  .wp-medx .med-x { width: 48px; height: 48px; } .wp-medx .med-x svg { width: 100%; height: 100%; }
+  /* On passes: the red cross inside a red ring (no fill behind it). */
+  .mp-medx .med-x, .wp-medx .med-x { background: none; border-radius: 50%; color: var(--mp-red); box-shadow: inset 0 0 0 3px var(--mp-red); }
+  .mp-medx .med-x { width: 40px; height: 40px; } .mp-medx .med-x svg { width: 58%; height: 58%; }
+  .wp-medx .med-x { width: 56px; height: 56px; box-shadow: inset 0 0 0 4px var(--mp-red); } .wp-medx .med-x svg { width: 58%; height: 58%; }
+  .wpass.wp-canceled .wp-in { background: color-mix(in srgb, var(--wp-ink) 18%, transparent); color: var(--wp-ink); text-decoration: line-through; } /* canceled: its days plain, struck */
 </style>
 
   </head>
@@ -8118,7 +8119,7 @@
         if (i === 35 && d.slice(0, 7) !== mon) break;
         if (d.slice(0, 7) !== mon) { cells += '<span></span>'; continue; }
         const inR = d >= o.start && d <= o.end, c = o.cf && o.cf.get(d), isBad = (c && c.bad) || (o.bad && o.bad.has(d));
-        const cls = 'wp-d' + (inR ? ' wp-in' + (o.med ? '' : isBad ? ' wp-bad' : ' wp-ok') : '') + (d === o.start ? ' wp-s' : '') + (d === o.end ? ' wp-e' : '');
+        const cls = 'wp-d' + (inR ? ' wp-in' + (o.med || o.status === 'Canceled' ? '' : isBad ? ' wp-bad' : ' wp-ok') : '') + (d === o.start ? ' wp-s' : '') + (d === o.end ? ' wp-e' : '');
         cells += inR && c && o.id
           ? '<button type="button" class="' + cls + '" data-act="confDay" data-date="' + d + '" data-id="' + esc(o.id) + '" aria-label="' + esc(conflictText(d, c)) + '" title="' + esc(conflictText(d, c)) + '">' + Number(d.slice(8)) + '</button>'
           : '<span class="' + cls + '">' + Number(d.slice(8)) + '</span>';
@@ -8177,7 +8178,7 @@
     const priv = managesReq(r) || r.userId === S.me, showCf = r.status !== 'Cancelled' && n <= 92 && !(r.status === 'Approved' && !S.isAdmin);
     const html = modalHead(esc(r.type) + ' Details', r.type === 'Leave' ? 'calendar' : 'clipboard') +
       '<div class="modal-b req-view">' +
-      walletPass({ type: r.type, start: r.start, end: r.end, location: r.location, note: r.note, priv, who: calName(u), whoSub: memberSub(u), status: stOf(r), decide, id: r.id, cf: showCf ? reqConflicts(r) : null }) +
+      walletPass({ type: r.type, start: r.start, end: r.end, location: r.location, note: r.note, priv, who: calName(u), whoSub: memberSub(u), status: stOf(r), decide, id: r.id, cf: showCf && !isCanc(r) ? reqConflicts(r) : null }) +
       calAddHtml(r, true) +
       (blackoutDaysOf(r).length && r.status !== 'Cancelled' ? (r.boOk === 'true'
         ? '<div class="msg i">' + icon('check', 15) + '<span>Falls on blackout days (' + esc(blackoutDaysOf(r).map(D.short).join(', ')) + ') — allowed by an admin.</span></div>'
