@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792701460"></script>
+    <script src="config.js?v=1792701751"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792701460';
+      window.PAL_BUILD = '1792701751';
       (function () {
         function check(launch) {
           try {
@@ -3438,6 +3438,15 @@
   .st-mark .ic { width: 11px; height: 11px; stroke-width: 3.4; }
   .st-med { background: #b42318; color: #ffffff; }
   .mc-li-ic.mc-med { color: #b42318; }
+
+  /* Medical = a red circle with a white Star of Life after the puck, where the admin crown / stamp sit (the name stays white). */
+  .adm-ic.st-med, :root[data-theme="dark"] .adm-ic.st-med { background: #b42318; color: #ffffff !important; }
+  .adm-ic.st-med .sol, .mc-med .sol { display: block; }
+  .adm-ic.st-med + .adm-ic { margin-left: 4px; }
+  .cs-bar .adm-ic.st-med, .mn + .adm-ic.st-med { width: 17px; height: 17px; margin-left: 3px; }
+  .cs-bar .adm-ic.st-med .sol, .mn + .adm-ic.st-med .sol { width: 11px; height: 11px; }
+  /* Admin marks: filled glyphs (outline icons washed out at this size). */
+  .adm-ic .ic { fill: currentColor; stroke-width: 1.6; }
 </style>
 
   </head>
@@ -5275,7 +5284,7 @@
       // At most three names, then "… +N" (hover the bar for everyone).
       const shown = b.list.slice(0, 3), extra = b.list.length - shown.length;
       const names = shown.map(r => '<span class="mn" role="button" tabindex="0" ' + tapAttr(r) + ' title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-        barMarks(r) + esc(calName(userOf(r.userId))) + medMark(userOf(r.userId)) + nowDot(r, from, to) + (withStatus && !onNow(r, from, to) ? statusIcon(r.status) : '') + '</span>').join('<span class="rp-dot" aria-hidden="true">·</span>') +
+        barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (withStatus && !onNow(r, from, to) ? statusIcon(r.status) : '') + '</span>' + medMark(userOf(r.userId))).join('<span class="rp-dot" aria-hidden="true">·</span>') +
         (extra ? '<span class="rp-dot" aria-hidden="true">·</span><span class="mn mn-more" role="button" tabindex="0" data-act="groupList" data-ids="' + esc(allIds) + '" title="Show all ' + list.length + '" aria-label="Show everyone on this request (' + list.length + ')">… +' + extra + '</span>' : '');
       return '<span class="idb pb gbb' + (same ? ' st-' + r0.status.toLowerCase() : '') + '"><span class="idb-r ' + roleCls(b.u.role) + '" aria-hidden="true">' + L + '</span>' +
         '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(b.u.unit) + '</span>' +
@@ -5680,11 +5689,14 @@
   /** A member as their puck — [P|MKE|Last name], like All Requests and the calendar (no status marks). */
   const memberPuck = u => { const un = unitsList().find(x => x.code === u.unit);
     return '<span class="idb pb" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(roleL(u.role)) + '</span>' +
-      '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span><span class="idb-n"><span class="idb-t">' + esc(calName(u)) + '</span>' + medMark(u) + '</span></span>' +
+      '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span><span class="idb-n"><span class="idb-t">' + esc(calName(u)) + '</span></span></span>' + medMark(u) +
       '<span class="sr">' + esc(fullName(u)) + '</span>'; };
-  /** Medical (injured): a red circle with a white cross after the name. The server only sends it to admins over the
-   *  member (org admins: everyone; team admins: their team), so it shows wherever a name does — for them alone. */
-  const medMark = u => u && u.injured ? '<span class="st-mark st-med" role="img" aria-label="Medical" title="Medical (injured)">' + icon('medical', 12) + '</span>' : '';
+  /** Medical (injured): a red circle with a white Star of Life after the puck (where the admin crown / stamp sit). The server only sends it to admins over the member (org admins: everyone; team admins:
+   *  their team), so it shows wherever a name does — for them alone. */
+  const medMark = u => u && u.injured ? '<span class="adm-ic st-med" role="img" aria-label="Medical" title="Medical (injured)">' + starOfLife(14) + '</span>' : '';
+  /** The Star of Life: three crossed bars (a six-armed star), plain — white in the red circle, red on its own. */
+  const starOfLife = (n, fill) => '<svg class="sol" width="' + n + '" height="' + n + '" viewBox="0 0 24 24" aria-hidden="true">' +
+    [0, 60, 120].map(a => '<rect x="8.9" y="1" width="6.2" height="22" rx="1"' + (a ? ' transform="rotate(' + a + ' 12 12)"' : '') + ' fill="' + (fill || '#ffffff') + '"/>').join('') + '</svg>';
   /* Full person badge on calendar bars: [P|MKE|Lastname] as one chip. Approved = green border. */
   /** Green "going on now" dot after a name — only on the bar that covers today (from–to = the dates that bar shows). */
   // On leave / pass right now = APPROVED and today is inside the dates (pending or denied isn't "on leave", even on those days).
@@ -5699,8 +5711,8 @@
     const un = unitsList().find(x => x.code === u.unit);
     return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(L) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
-      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + medMark(u) + nowDot(r, from, to) +
-        (tbl && !onNow(r) ? statusIcon(r.status).replace('class="sti ', 'class="sti m-st ') : '') + (withStatus ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>';
+      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + nowDot(r, from, to) +
+        (tbl && !onNow(r) ? statusIcon(r.status).replace('class="sti ', 'class="sti m-st ') : '') + (withStatus ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>' + medMark(u);
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
@@ -8128,7 +8140,7 @@
           '<input id="mcPin2" ' + NEW_PIN + ' placeholder="Again" aria-label="PIN again">' +
           '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div></div><div class="err" id="mcPinErr"></div>' +
         // Medical (injured): a switch for admins over this member; the mark shows next to their name, to admins only.
-        (S.isAdmin && (S.isOrg || inScope(S.adminScope, u)) ? '<div class="mc-li"><span class="mc-li-ic mc-med">' + icon('medical', 20) + '</span><div class="mc-li-t"><b>Medical</b><span>' +
+        (S.isAdmin && (S.isOrg || inScope(S.adminScope, u)) ? '<div class="mc-li"><span class="mc-li-ic mc-med">' + starOfLife(24, '#b42318') + '</span><div class="mc-li-t"><b>Medical</b><span>' +
           (u.injured ? 'Injured — admins see a medical mark by their name' : 'Not injured') + '</span></div><div class="mc-li-a">' + sw(!!u.injured, 'setInjured', 'Medical (injured)', ' data-id="' + esc(uid) + '"') + '</div></div>' : '') +
         // Admin: Org Admin | Team Admin | None (team admins: Team Admin | None), then — for a team admin — the grid of
         // unit + position pairs they manage. Every change saves at once.
