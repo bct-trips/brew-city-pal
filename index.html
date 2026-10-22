@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792688469"></script>
+    <script src="config.js?v=1792688589"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792688469';
+      window.PAL_BUILD = '1792688589';
       (function () {
         function check(launch) {
           try {
@@ -4809,7 +4809,8 @@
       sect('Status', chips(groups[0])) +
       (groups.some(f => f.g === 'role') ? sect('Position', badgeDrop('role', sc)) + sect('Person', personSelect('in-sheet', sc)) : '') +
       // Calendar / All Requests: Conflict mode (only leave that's over the daily max; pick a person to see who they conflict with).
-      (sc !== 'mine' && !S.priv ? sect('Conflicts', '<button type="button" class="btn chip-tog fs-conf' + (S.f.conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + !!S.f.conf + '">' +
+      // All Requests (admins): Conflicts lives in the bar's Conflicts | Open | All switch, not here.
+      (sc !== 'mine' && !S.priv && !(sc === 'list' && S.isAdmin) ? sect('Conflicts', '<button type="button" class="btn chip-tog fs-conf' + (S.f.conf ? ' on' : '') + '" data-act="confToggle" data-scope="' + (sc || 'cal') + '" aria-pressed="' + !!S.f.conf + '">' +
         (S.f.conf ? icon('check', 18) : icon('alert', 18)) + 'Conflict Mode</button><p class="fs-help">' + (S.f.conf ? 'Showing only leave that’s over the daily max. Pick a person above to see who they conflict with.' : 'Show only leave that’s over the daily max.') + '</p>') : '') +
       // My Requests calendar: also show other members' leave / passes (same position) that overlap mine.
       (sc === 'mine' && S.mineMode === 'cal' ? sect('Conflicts', '<button type="button" class="btn chip-tog fs-conf' + (S.mineConf ? ' on' : '') + '" data-act="mineConf" aria-pressed="' + !!S.mineConf + '">' +
@@ -5888,9 +5889,8 @@
 
   function renderListBody() {
     const arr = sortRows(filteredList(), S.list);
-    const nc = arr.filter(r => conflictDays(r).some(d => conflictState(d, userOf(r.userId).role) === 'bad')).length;
-    // No "N requests" count; the line only appears for requests in conflict and / or the "Default Order" link.
-    const parts = (nc ? '<span class="cfl-count">' + icon('alert', 13) + plural(nc, 'request') + ' in conflict</span>' : '') + sortNote(S.list, 'list');
+    // No count line (the red banner says when the list is filtered); only the "Default Order" link when a column sort is on.
+    const parts = sortNote(S.list, 'list');
     return (parts ? '<div class="tbl-count">' + parts.replace(/^ · /, '') + '</div>' : '') + reqTable(arr, 'list');
   }
   /* List page bar — same controls and order as the calendar bar:
