@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792659522"></script>
+    <script src="config.js?v=1792659812"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792659522';
+      window.PAL_BUILD = '1792659812';
       (function () {
         function check(launch) {
           try {
@@ -6941,18 +6941,19 @@
           sw(pst !== 'off', 'pushToggle', 'Push notifications', pst === 'busy' ? ' disabled aria-busy="true"' : '') + '</div>'
       : pushMsg ? '<div class="n-note"><p>' + esc(pushMsg) + '</p>' +
           (pst === 'install' ? '<button class="btn primary" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Homescreen</button>' : '') + '</div>' : '';
-    return '<h3>' + icon('bell', 16) + ' Notifications</h3>' + pushRow +
+    // "Notify Me When…" only picks which pushes come (the inbox keeps everything), so it shows only while push is on.
+    return '<h3>' + icon('bell', 16) + ' Notifications</h3>' + pushRow + (pst !== 'on' ? '' :
       '<div class="n-sect"><div class="lbl">Notify Me When My Request Is</div><div class="push-btns">' +
         [['approved', 'Approved'], ['denied', 'Denied'], ['edited', 'Changed']].map(k => {
           const on = S.notePrefs[k[0]] !== false;
           return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="notePref" data-v="' + k[0] + '">' + (on ? icon('check', 18) : '') + k[1] + '</button>';
-        }).join('') + '</div></div>';
+        }).join('') + '</div></div>');
   }
-  /** Admin Alerts (anyone with admin status): its own card — title + switch, then the alert rows (unit · position ·
-   *  alerts), shown dimmed while alerts are off so they can be set up first. */
+  /** Admin Alerts (anyone with admin status): its own card — title + switch; while on, the alert rows (unit · position ·
+   *  alerts) below it. Off collapses the card to just its title and switch, like the email cards. */
   function alertsPanelHtml() {
     return '<div class="cfg-row-tog"><div><h3>' + icon('shield', 16) + ' Admin Alerts' + tip('New requests, edits, deletions and sign-ups for the members in the rows below (team admins: only their team).') + '</h3></div>' +
-      sw(S.adminAlerts, 'adminAlerts', 'Admin Alerts') + '</div>' + alertRulesHtml();
+      sw(S.adminAlerts, 'adminAlerts', 'Admin Alerts') + '</div>' + (S.adminAlerts ? alertRulesHtml() : '');
   }
   const redrawAlerts = () => { const p = $('#alertsPanel'); if (p) p.innerHTML = alertsPanelHtml(); };
   /** My alert rows: [{units, roles, kinds}] (an empty list = any). Nothing saved yet: my own unit and position. */
@@ -6961,9 +6962,9 @@
   RG.alerts = { cols: ALERT_KINDS, key: 'kinds', any: true, get lim() { return myScope(); }, blank: () => ({ kinds: ALL_KINDS() }),
     rows: alertRules, set: rows => saveAlertRules(rows), redraw: redrawAlerts };
   /** Admin alerts: one editable row per unit · position (each can be Any) with the alerts it sends as on / off chips,
-   *  a Delete per row and Add Alert. Shown in admin mode even while alerts are off (dimmed), so they can be set up first. */
+   *  a Delete per row and Add Alert. Shown only while Admin Alerts is on. */
   function alertRulesHtml() {
-    return '<div class="push-row alert-rules' + (S.adminAlerts ? '' : ' is-off') + '">' + ruleGrid('alerts') + '</div>';
+    return '<div class="push-row alert-rules">' + ruleGrid('alerts') + '</div>';
   }
   function saveAlertRules(rules) {
     save(() => { S.alertScope = { rules }; }, 'apiSetAlertScope', S.token, { rules });
