@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792690763"></script>
+    <script src="config.js?v=1792694615"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792690763';
+      window.PAL_BUILD = '1792694615';
       (function () {
         function check(launch) {
           try {
@@ -3134,6 +3134,17 @@
   .wiz-sheet .wiz-dates { gap: 12px; margin: 4px 0 12px; }
   .wiz-sheet .wiz-dates .field.pf { margin: 0; }
   .wiz-dates .pill-date > input[type="date"] { width: auto; height: 46px; border: 0; padding: 11px 0; border-radius: 0; }
+
+  /* "Not Saved" alert: above everything (dialogs, the Submitting cover), a big red header with the alert icon, what
+     wasn't saved, the reason, and OK. */
+  .ns-wrap { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 24px; background: rgba(4, 12, 28, .6); }
+  .ns-wrap[hidden] { display: none; }
+  .ns-card { width: 100%; max-width: 380px; overflow: hidden; border-radius: 24px; background: var(--card); color: var(--ink); box-shadow: 0 24px 60px rgba(0,0,0,.45); animation: pop .14s ease-out; }
+  .ns-top { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 24px 20px; background: #b3261e; color: #ffffff; }
+  .ns-top h2 { margin: 0; font-size: 28px; line-height: 34px; font-weight: 900; letter-spacing: .01em; text-transform: uppercase; }
+  .ns-what { margin: 20px 24px 8px; font-size: 16px; line-height: 24px; font-weight: 700; text-align: center; }
+  .ns-why { margin: 0 24px; font-size: 14px; line-height: 20px; color: var(--muted); text-align: center; }
+  .ns-ok { display: flex; width: calc(100% - 48px); height: 48px; margin: 20px 24px 24px; justify-content: center; border-radius: 24px; background: #b3261e; border-color: #b3261e; color: #ffffff; font-size: 16px; font-weight: 800; }
 </style>
 
   </head>
@@ -3750,6 +3761,20 @@
      failed, it reloads from the server (undoing what didn't save) and shows the error. While saves are pending the
      Profile icon spins and closing the page asks for confirmation. */
   let saveChain = Promise.resolve(), lastSaved = null, resync = false;
+  /** A save the server refused (or couldn't take): a big red "Not Saved" alert over everything, with what happened and
+   *  why, until it's dismissed — not just a snackbar. S.nsWhat (set by the caller) says what wasn't saved. */
+  let nsAt = 0;
+  function notSaved(why, what) {
+    what = what || S.nsWhat || 'Your change wasn’t saved, so it has been undone.'; S.nsWhat = null; nsAt = Date.now();
+    let el = document.getElementById('nsAlert');
+    if (!el) { el = document.createElement('div'); el.id = 'nsAlert'; el.className = 'ns-wrap'; document.body.appendChild(el); }
+    el.innerHTML = '<div class="ns-card" role="alertdialog" aria-modal="true" aria-labelledby="nsT" aria-describedby="nsW">' +
+      '<div class="ns-top">' + icon('alert', 40) + '<h2 id="nsT">Not Saved</h2></div>' +
+      '<p class="ns-what" id="nsW">' + esc(what) + '</p>' + (why ? '<p class="ns-why">' + esc(why) + '</p>' : '') +
+      '<button type="button" class="btn ns-ok">OK</button></div>';
+    el.hidden = false;
+    const ok = el.querySelector('.ns-ok'); ok.onclick = () => { el.hidden = true; }; ok.focus();
+  }
   function save(mutate, fn) {
     const args = Array.prototype.slice.call(arguments, 1);
     if (S.offline) { offlineNote(); return Promise.resolve(null); } // nothing changes while the server can't be reached
@@ -3759,7 +3784,7 @@
     S.pending = (S.pending || 0) + 1; S.syncErr = false; saveGen++; syncUI();
     const done = saveChain.then(() => call.apply(null, args)).then(
       data => { lastSaved = data; return data; },
-      e => { resync = true; toast(e.message, 'error', 6000); return null; });
+      e => { resync = true; notSaved(e.message); return null; });
     saveChain = done.then(async () => {
       S.pending--;
       if (!S.pending) {
@@ -8036,8 +8061,7 @@
         // A big Leave (navy) / Pass (yellow) banner at the top so the type can't be missed, with who it's for under it.
         '<div class="rv-type rv-' + tcls(w.type) + '"><span class="rv-tt">' + icon(w.type === 'Pass' ? 'clock' : 'calendar', 22) + esc(w.type) + '</span>' +
           '<span class="rv-for">For ' + esc(who) + (w.creating ? ' · new member' : wizIds().length > 1 ? ' · one request each' : '') + '</span></div>' +
-        '<div class="rv"><span class="lbl">Travel &amp; Absence Dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
-          '<div style="margin-top:4px;font-weight:700">' + plural(c.n, 'day') + '</div></div>' +
+        '<div class="rv"><span class="lbl">Dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div></div>' +
         '<div class="rv"><span class="lbl">Location</span><div class="note">' + esc(String(w.location || '').trim()) + '</div></div>' +
         '<div class="rv"><span class="lbl">Trip Reason &amp; Notes</span><div class="note">' + (w.note.trim() ? esc(w.note.trim()) : '<span class="muted">No note provided.</span>') + '</div></div>' +
         (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>'
@@ -9467,6 +9491,7 @@
         if (wizDecides() && w.status && w.status !== 'Pending') payload.status = w.status; // the server keeps your own Pending
         many = S.isAdmin && !w.creating && ids.length > 1 ? ids.length : 0;
         showBlocker('Submitting…');
+        S.nsWhat = 'This ' + w.type.toLowerCase() + ' request was NOT submitted. The form is still open, so you can try again.';
         if (many) done = save(null, 'apiCreateRequests', S.token, payload, ids);
         else {
           if (S.isAdmin && w.creating) payload.newUser = w.nu;
@@ -9477,7 +9502,14 @@
       const data = await done;
       await saveChain; // let the confirmed data apply
       hideBlocker();
-      if (!data) { if (S.wiz) $('#wizErr') && ($('#wizErr').textContent = 'Not saved — check your connection and try again.'); return; }
+      if (!data) {
+        // The save's own alert says why; offline (nothing was sent) gets the same big alert here.
+        if (Date.now() - nsAt > 3000) notSaved('You’re offline — check your connection.', S.nsWhat);
+        S.nsWhat = null;
+        if (S.wiz) $('#wizErr') && ($('#wizErr').textContent = 'Not saved — try again.');
+        return;
+      }
+      S.nsWhat = null;
       closeModal();
       if (!w.editId && isCalView()) S.cursor = w.start;
       render();
