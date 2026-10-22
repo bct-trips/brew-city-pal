@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792688137"></script>
+    <script src="config.js?v=1792688469"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792688137';
+      window.PAL_BUILD = '1792688469';
       (function () {
         function check(launch) {
           try {
@@ -3085,6 +3085,13 @@
   .lbar .filters > .vw-sl { order: 9; }
   /* Phones: the switch gets its own full-width row under Filters, three equal parts. */
   @media (max-width: 700px) { .lbar .filters:has(> .vw-sl) { flex-wrap: wrap; row-gap: 8px; } .lbar .filters > .vw-sl { flex: 1 1 100%; display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); } .lbar .filters > .vw-sl .stsl-o { width: 100%; } .stsl.vw-sl .stsl-o:not(.on) .stsl-t { display: inline; } } /* phones: room for every word */
+
+  /* Filtered-view banners: a slim 32px strip (not a toolbar) — 16px icon, one line of 13.5px text, a 28px ✕. */
+  .conf-banner { height: 32px; min-height: 32px; box-sizing: border-box; gap: 8px; padding: 0 2px 0 12px; font-size: 13.5px; line-height: 18px; }
+  .conf-banner > .ic { width: 16px; height: 16px; flex: none; }
+  .conf-banner > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conf-banner .btn.icon-btn.conf-x { width: 28px !important; height: 28px !important; min-width: 28px; min-height: 28px; padding: 0; flex: none; }
+  .conf-banner .conf-x .ic { width: 16px; height: 16px; }
 </style>
 
   </head>
