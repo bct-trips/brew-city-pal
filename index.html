@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792671617"></script>
+    <script src="config.js?v=1792671785"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792671617';
+      window.PAL_BUILD = '1792671785';
       (function () {
         function check(launch) {
           try {
@@ -2758,13 +2758,12 @@
   .seg:not(.nav) { gap: 0; }
   .seg:not(.nav) > button.on + button.on { border-top-left-radius: 0; border-bottom-left-radius: 0; }
   .seg:not(.nav) > button.on:has(+ button.on) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-  /* Dropdowns and on/off toggles speak the same language: the same tinted, outlined track; when on (a filter is set,
-     a toggle is on), a tonal pill fills the track 2px inside its edge, like a selected button-group option. */
+  /* Dropdowns and on/off toggles: off = the tinted, outlined track; on (a filter is set, a toggle is on) = the solid
+     tonal fill with a matching border (no inner ring — it read as a dark border). */
   .fsel, .fdrop-btn, .btn.chip-tog { border: 1px solid var(--outline); background-color: var(--card-2); color: var(--muted); font-weight: 700;
     transition: background-color .28s cubic-bezier(.3, .8, .25, 1), box-shadow .28s cubic-bezier(.3, .8, .25, 1), color .2s; }
   .fsel:not(.on):hover, .fdrop-btn:not(.on):hover, .btn.chip-tog:not(.on):hover { background-color: var(--card-2); color: var(--ink); }
-  .fsel.on, .fdrop-btn.on, .btn.chip-tog.on { border-color: var(--outline); background-color: var(--sel-bg); color: var(--sel-ink); font-weight: 800;
-    box-shadow: inset 0 0 0 2px var(--card-2); }
+  .fsel.on, .fdrop-btn.on, .btn.chip-tog.on { border-color: var(--sel-bg); background-color: var(--sel-bg); color: var(--sel-ink); font-weight: 800; box-shadow: none; } /* filled, no inner ring */
   .fdrop-btn.wiz-who:not(.on) { color: var(--ink); } /* a form field: its value reads at full contrast */
   @media (prefers-reduced-motion: reduce) { .fsel, .fdrop-btn, .btn.chip-tog { transition: none; } }
   /* Touch screens: no hover look. A tap leaves :hover stuck on the button, so a toggle you just turned off would
@@ -4471,7 +4470,9 @@
     const r = btn.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
     pop.classList.add('pop-float');
     pop.style.maxHeight = ''; pop.style.top = ''; pop.style.bottom = '';
-    const w = Math.min(Math.max(r.width, pop.offsetWidth || 0, 220), vw - 16);
+    // As wide as its button (at least 240px, never wider than the screen) — not its own CSS width, which once fixed
+    // would measure against the whole screen.
+    const w = Math.min(Math.max(r.width, 240), vw - 16);
     pop.style.width = w + 'px';
     // "Fixed" is measured from the nearest ancestor that makes a containing block (a sheet's blur or its opening
     // zoom), not always the screen: shift by that box so the list lands right under the button either way.
