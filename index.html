@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792664732"></script>
+    <script src="config.js?v=1792664810"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792664732';
+      window.PAL_BUILD = '1792664810';
       (function () {
         function check(launch) {
           try {
@@ -6133,8 +6133,8 @@
         '<td class="num">' + plural(Number(t.max) || 0, 'day') + '</td>' +
         '<td>' + (t.mode === 'limit' ? 'Limit' : 'Warn') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
-          '<button class="btn sm act" data-act="editType" data-name="' + esc(t.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
           sw(!t.disabled, 'toggleType', t.name + ' enabled', ' data-name="' + esc(t.name) + '"') +
+          '<button class="btn sm act" data-act="editType" data-name="' + esc(t.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
           (used || builtIn ? '' : '<button class="btn sm del act" data-act="deleteType" data-name="' + esc(t.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td></tr>';
     }).join('') +
@@ -6173,9 +6173,9 @@
         '<td class="num">' + used + '</td>' +
         '<td>' + (managersOf({ role: name }).map(u => esc(nameText(u))).join(', ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
+          sw(!r.disabled, 'toggleRole', name + ' enabled', ' data-name="' + esc(name) + '"') +
           '<button class="btn sm act" data-act="editRole" data-name="' + esc(name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
           '<button class="btn sm act" data-act="roleManagers" data-name="' + esc(name) + '" title="Position managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
-          sw(!r.disabled, 'toggleRole', name + ' enabled', ' data-name="' + esc(name) + '"') +
           (used || builtIn ? '' : '<button class="btn sm del act" data-act="deleteRole" data-name="' + esc(name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td></tr>';
     }).join('');
@@ -6252,9 +6252,9 @@
         '<td class="num">' + used + '</td>' +
         '<td>' + (managersOf({ unit: un.code }).map(u => esc(nameText(u))).join(', ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts">' +
+          sw(!un.disabled, 'toggleUnit', un.code + ' enabled', ' data-code="' + esc(un.code) + '"') +
           '<button class="btn sm act" data-act="editUnit" data-code="' + esc(un.code) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' +
           '<button class="btn sm act" data-act="teamAdmins" data-code="' + esc(un.code) + '" title="Team managers (team admins)">' + icon('shield', 13) + '<span class="bl">Managers</span></button>' +
-          sw(!un.disabled, 'toggleUnit', un.code + ' enabled', ' data-code="' + esc(un.code) + '"') +
           (used ? '' : '<button class="btn sm del act" data-act="deleteUnit" data-code="' + esc(un.code) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td></tr>';
     }).join('');
