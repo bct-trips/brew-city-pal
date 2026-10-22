@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792694941"></script>
+    <script src="config.js?v=1792695173"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792694941';
+      window.PAL_BUILD = '1792695173';
       (function () {
         function check(launch) {
           try {
@@ -3196,6 +3196,13 @@
   :root[data-theme="dark"] .btn.wp-add { background: #ffffff; border-color: #ffffff; color: #111216; }
   .btn.wp-add[aria-disabled="true"] { opacity: .55; pointer-events: none; }
   @media (max-width: 400px) { .wp-big { font-size: 28px; line-height: 34px; } .wp-sec { padding-left: 16px; padding-right: 16px; } .wp-cut { margin: 0 16px; } .wp-cut::before { left: -27px; } .wp-cut::after { right: -27px; } }
+
+  /* Status on the pass: admins get the status slider in place of the chip — a light track so it reads on navy and gold. */
+  .wpass .wp-foot { flex-wrap: wrap; row-gap: 10px; }
+  .wpass .stsl { flex: none; height: 34px; background: #ffffff; border-color: rgba(10,35,81,.25); }
+  .wpass .stsl .stsl-o:not(.on) { color: #3f4350; }
+  .cc-detail:empty { display: none; }
+  .wpass + .cc-detail { margin: -4px 0 12px; }
 </style>
 
   </head>
@@ -7574,23 +7581,6 @@
   /* ---------- Approval conflict calendar ---------- */
   /** Per day of r: who else of the same position is out (approved/pending), whether the daily max is exceeded,
    *  and any of the member's own overlapping requests (duplicates). */
-  /** "Conflicts With" table: every request this one clashes with on any of its days (over the daily max, or the member's
-   *  own overlapping requests) — name, type, dates, days, status; tap a row to open it. Admin mode, or schedules not
-   *  hidden. With Hide user schedules on, members only see how many other requests are involved. */
-  function conflictsWithHtml(r) {
-    const cs = [...reqConflicts(r).values()].filter(c => c.bad), seen = new Set(), who = [];
-    cs.forEach(c => c.peers.concat(c.dups).forEach(x => { if (!seen.has(x.id)) { seen.add(x.id); who.push(x); } }));
-    if (S.priv && !S.isAdmin) { const n = Math.max(0, ...cs.map(c => c.n)); return n ? '<div class="cc-with"><span class="cc-with-h">Conflicts With</span><span class="muted">' + plural(n, 'other request') + '</span></div>' : ''; }
-    if (!who.length) return cs.some(c => c.bo) ? '<div class="cc-with"><span class="cc-with-h">Conflicts With</span><span class="muted">Blackout Days</span></div>' : '';
-    who.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || byPosName(a, b));
-    return '<div class="cc-with"><span class="cc-with-h">Conflicts With</span><div class="tbl-wrap bo-tbl cc-tbl"><table class="rtable"><thead><tr>' +
-      '<th scope="col">Name</th><th scope="col">Type</th><th scope="col">Dates</th><th scope="col" class="num">Days</th><th scope="col">Status</th></tr></thead><tbody>' +
-      who.map(x => { const u = userOf(x.userId);
-        return '<tr data-act="openReq" data-id="' + esc(x.id) + '" tabindex="0" aria-label="' + esc(describe(x)) + '"><td class="strong">' + personBadge(x, false) + '</td>' +
-          '<td><span class="badge t-' + tcls(x.type) + '">' + esc(x.type) + '</span></td>' +
-          '<td>' + esc(D.short(x.start)) + ' → ' + esc(D.short(x.end)) + '</td><td class="num">' + D.days(x.start, x.end) + '</td>' +
-          '<td><span class="badge s-' + x.status.toLowerCase() + '">' + x.status + '</span></td></tr>'; }).join('') + '</tbody></table></div></div>';
-  }
   function reqConflicts(r) {
     const u = userOf(r.userId), q = quota(u.role, r.type), out = new Map();
     for (let d = r.start; d <= r.end; d = D.add(d, 1)) {
@@ -7622,7 +7612,7 @@
      The request as a pass pulled from a digital wallet: Leave = navy with gold days, Pass = gold with navy days. Top: app
      name, the type, and the length; then the month calendar with the dates filled in; a perforation; Depart → Return in
      big type with the weekdays; Location and Notes (only for the member and their admins). The member's puck and the
-     status chip sit at the top, under the type. o = { type, start, end, location, note, priv (show location / notes), who (HTML), status, id, cf }.
+     status (chip, or the admin's status slider) sit at the top, under the type. o = { type, start, end, location, note, priv (show location / notes), who (HTML), status, id, cf }.
      With an id and conflict info (cf), the filled days are buttons that show who else is out (confDay). */
   const WP_ST = { Approved: ['check', 'ok'], Pending: ['clock', 'pend'], Denied: ['ban', 'no'], Cancelled: ['x', 'off'] };
   const wpChip = st => { const m = WP_ST[st] || WP_ST.Pending; return '<span class="wp-st wp-st-' + m[1] + '" id="wpSt">' + icon(m[0], 14) + esc(st) + '</span>'; };
@@ -7649,7 +7639,8 @@
     return '<article class="wpass wp-' + tcls(o.type) + '" aria-label="' + esc(o.type + ', ' + D.short(o.start) + ' to ' + D.short(o.end)) + '">' +
       '<div class="wp-sec wp-top"><div><div class="wp-app">BREW CITY PAL</div><div class="wp-type">' + esc(o.type.toUpperCase()) + '</div></div>' +
         '<div class="wp-r"><div class="wp-lab">Days</div><div class="wp-n">' + n + '</div></div></div>' +
-      '<div class="wp-sec wp-foot"><div class="wp-who"><div class="wp-lab">Member</div><div class="wp-whov">' + o.who + '</div></div>' + wpChip(o.status) + '</div>' +
+      // Status: a chip for members; admins get the Approved | Pending | Denied slider right here (o.decide).
+      '<div class="wp-sec wp-foot"><div class="wp-who"><div class="wp-lab">Member</div><div class="wp-whov">' + o.who + '</div></div>' + (o.decide || wpChip(o.status)) + '</div>' +
       '<div class="wp-sec wp-cals">' + cal + '</div>' + cut +
       '<div class="wp-sec wp-dates"><div><div class="wp-lab">Depart</div><div class="wp-big">' + big(o.start) + '</div><div class="wp-wk">' + wk(o.start) + '</div></div>' +
         '<span class="wp-arrow">' + icon('arrow', 20) + '</span>' +
@@ -7666,22 +7657,21 @@
     const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r);
     // Footer (DESIGN.md): admins get a decision row on top (the status slider), then Delete · Edit · Close —
     // destructive on the left, Cancel in the middle, the main action on the far right.
-    const decide = managesReq(r) && r.status !== 'Cancelled'
-      ? statusSlider(r, 'setStatus', '', true)
-      : '';
+    const decide = managesReq(r) && r.status !== 'Cancelled' ? statusSlider(r, 'setStatus', '', false) : ''; // on the pass
     const edit = canEdit(r) ? '<button class="btn act act-lbl act-edit" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>' : '';
     const del = canDelete(r) ? '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' : '';
     // Always a Close at the bottom (Delete · Edit · Close, or on its own when there is nothing to do).
     // Delete · Edit · Close (Close last, on the right).
     const main = '<div class="mf-row">' + del + edit + '<button class="btn act act-lbl' + (del || edit ? '' : ' mf-close') + '" data-act="closeModal" aria-label="Close" title="Close">' + icon('x', 15) + '<span class="bl">Close</span></button></div>';
-    const foot = (decide ? '<div class="mf-row mf-decide">' + decide + '</div>' : '') + main;
-    const bad = [...reqConflicts(r).values()].filter(c => c.bad).length;
+    const foot = main;
     // Same layout as the request form (DESIGN.md §Request details): who, type, calendar, dates, notes — read-only.
     // The request as a wallet pass, with Add to Calendar right under it; notices, conflicts and actions follow.
     const priv = managesReq(r) || r.userId === S.me, showCf = r.status !== 'Cancelled' && n <= 92;
     const html = modalHead(esc(r.type) + ' Details', r.type === 'Leave' ? 'calendar' : 'clipboard') +
       '<div class="modal-b req-view">' +
-      walletPass({ type: r.type, start: r.start, end: r.end, location: r.location, note: r.note, priv, who: userPuck(u), status: r.status, id: r.id, cf: showCf ? reqConflicts(r) : null }) +
+      walletPass({ type: r.type, start: r.start, end: r.end, location: r.location, note: r.note, priv, who: userPuck(u), status: r.status, decide, id: r.id, cf: showCf ? reqConflicts(r) : null }) +
+      // Tap a red (conflict) day on the pass: who else is out that day shows here.
+      (showCf ? '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>' : '') +
       calAddHtml(r, true) +
       (isCaution(r) ? '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(cautionText(r)) + '</span></div>' : '') +
       (blackoutDaysOf(r).length && r.status !== 'Cancelled' ? (r.boOk === 'true'
@@ -7692,9 +7682,6 @@
       (isChanged(r) ? '<div class="msg w chg-msg">' + icon('alert', 15) + '<span>' + esc(changeText(r)) +
         (r.userId === S.me ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('check', 13) + ' Got It</button>' : ' The member hasn’t acknowledged this yet.' + (S.isAdmin ? ' <button class="btn sm" data-act="ackChange" data-id="' + esc(r.id) + '">' + icon('x', 13) + ' Clear notice</button>' : '')) + '</span></div>' : '') +
       (dupsOf(r).length ? '<div class="msg e">' + icon('alert', 15) + '<span>Overlap: this member also has ' + esc(dupText(r)) + '. A member can’t be on leave and a pass (or two requests) at the same time.</span></div>' : '') +
-      // Conflicts: the summary, then tap a filled day on the pass to see who else is out (a red day = a conflict).
-      (showCf ? (bad ? conflictsWithHtml(r) : '<div class="cc-sum ok">' + icon('check', 15) + 'No conflicts on any requested day</div>') +
-          '<div id="ccDetail" class="cc-detail" aria-live="polite"></div>' : '') +
       '</div>' + (foot ? '<div class="modal-f modal-f-rows">' + foot + '</div>' : '');
     openModal('req', html);
     calAddWire(r);
@@ -8126,11 +8113,9 @@
         const ids = wizIds(), one = !w.creating && ids.length === 1 && userOf(ids[0]);
         const whoHtml = one ? userPuck(one) : esc(who) + (w.creating ? ' · new member' : ids.length > 1 ? ' · one request each' : '');
         body = '<div class="review">' +
-        walletPass({ type: w.type, start: w.start, end: w.end, location: String(w.location || '').trim(), note: w.note.trim(), priv: true, who: whoHtml, status: wizDecides() ? (w.status || 'Pending') : 'Pending' }) +
+        walletPass({ type: w.type, start: w.start, end: w.end, location: String(w.location || '').trim(), note: w.note.trim(), priv: true, who: whoHtml, status: 'Pending', decide: wizDecides() ? statusSlider({ id: '', status: w.status || 'Pending' }, 'wizStatus', '', false) : '' }) +
         (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>'
           : '<div class="msgs"><div class="msg i">' + icon('check', 15) + '<span>Dates look good — no conflicts.</span></div></div>') +
-        // Admins entering a request for someone else decide it right here: Approved, Pending (default) or Denied.
-        (wizDecides() ? '<div class="rv rv-st"><span class="lbl">Status</span>' + statusSlider({ id: '', status: w.status || 'Pending' }, 'wizStatus', '', true) + '</div>' : '') +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
       }
       foot = '<button class="btn" data-act="wizEdit">' + icon('pencil', 18) + 'Edit</button>' +
@@ -8975,6 +8960,13 @@
     async setStatus(el) {
       const id = el.dataset.id, cur = findReq(id), v = el.dataset.v;
       if (!cur || cur.status === v) return; // already that status
+      // Undoing a decision asks first: moving off Approved or off Denied (from Pending it just changes).
+      if (cur.status === 'Approved' || cur.status === 'Denied') {
+        const who = nameText(userOf(cur.userId)), was = cur.status.toLowerCase(), what = cur.type.toLowerCase() + ' ' + D.short(cur.start) + (cur.end !== cur.start ? ' – ' + D.short(cur.end) : '');
+        const q = v === 'Pending' ? 'Set ' + who + '’s ' + was + ' ' + what + ' back to Pending?' : (v === 'Denied' ? 'Deny ' : 'Approve ') + who + '’s ' + was + ' ' + what + '?';
+        if (!await askConfirm(q, { ok: v === 'Pending' ? 'Set to Pending' : v === 'Denied' ? 'Deny' : 'Approve', danger: v === 'Denied',
+          list: ['They’ll be notified that it’s ' + (v === 'Pending' ? 'pending again' : v.toLowerCase())] })) return;
+      }
       // Approving from a list/calendar: no conflict → approve straight away; over the daily max → open the conflict
       // resolver for that day; overlap with the member's own other request → open the request to sort it out.
       if (v === 'Approved' && !el.closest('#modal')) {
@@ -9511,7 +9503,7 @@
     },
     /* A NEW request waits for the server behind the full-screen "Submitting…" cover, so nobody closes the app before it's
        saved; if it fails, the form stays open with the error. Edits (requests and blackouts) are optimistic. */
-    wizStatus(el) { S.wiz.status = el.dataset.v; slideStatus(el, el.dataset.v); const c = $('#wpSt'); if (c) c.outerHTML = wpChip(el.dataset.v); },
+    wizStatus(el) { S.wiz.status = el.dataset.v; slideStatus(el, el.dataset.v); },
     async wizSubmit() {
       const w = S.wiz, c = wizCheck();
       if (c.errs.length) { $('#wizErr').textContent = c.errs[0]; return; }
