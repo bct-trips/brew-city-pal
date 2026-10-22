@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792698007"></script>
+    <script src="config.js?v=1792698585"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792698007';
+      window.PAL_BUILD = '1792698585';
       (function () {
         function check(launch) {
           try {
@@ -3253,16 +3253,18 @@
   #modal .modal.pass-sheet::before, #modal .modal.pass-sheet::after { display: none !important; }
   .pass-sheet > .modal-h { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
   #modal .pass-sheet > .modal-b, #modal .wiz-sheet.pass-sheet > .modal-b { padding: 0 !important; background: transparent; overflow-y: auto; border-radius: 20px; }
-  #modal .pass-sheet > .modal-f { padding: 12px 0 0; background: transparent; border-top: 0; }
+  /* The footer keeps its bar (tinted, like every dialog's footer): under the pass on desktop, across the bottom on phones. */
+  #modal .pass-sheet > .modal-f { margin-top: 12px; padding: 12px 16px; background: var(--card-2); border-top: 0; border-radius: 20px; }
   .pass-sheet .wpass { margin: 0 0 12px; max-width: none; }
   .pass-sheet .wp-cut { margin: 0 20px; } .pass-sheet .wp-cut::before, .pass-sheet .wp-cut::after { display: none; }
-  .pass-sheet .modal-f .btn:not(.ok):not(.primary) { background: var(--card); border-color: var(--card); }
-  .pass-sheet .modal-f .stsl, .pass-sheet .btn.wp-add { box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+  .pass-sheet .btn.wp-add { box-shadow: 0 6px 18px rgba(0,0,0,.25); }
   .pass-sheet .cc-detail:not(:empty) { margin: 0 0 12px; padding: 12px 16px; border-radius: 16px; background: var(--card); }
   .pass-sheet .msg { box-shadow: 0 6px 18px rgba(0,0,0,.2); }
   .pass-sheet #wizErr:not(:empty) { padding: 10px 14px; border-radius: 12px; background: var(--card); }
   .pass-sheet .btn.wp-add { margin-bottom: 0; }
-  @media (max-width: 600px) { #modal .modal.pass-sheet { margin: 0 auto 12px; padding: 0 12px; max-width: 402px; box-sizing: border-box; } }
+  @media (max-width: 600px) { #modal .modal.pass-sheet { margin: 0 auto; padding: 0 12px; max-width: none; width: 100%; box-sizing: border-box; }
+    #modal .modal.pass-sheet > .modal-b { max-width: 378px; width: 100%; margin: 0 auto; }
+    #modal .pass-sheet > .modal-f { margin: 12px -12px 0; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); border-radius: 20px 20px 0 0; } }
 
   /* Day popup (tap a day on the pass): a small card above the day, like the Profile menu. */
   .day-pop { position: fixed; z-index: 300; width: min(300px, calc(100vw - 16px)); max-height: 50vh; overflow-y: auto; padding: 12px 14px; border-radius: 16px;
