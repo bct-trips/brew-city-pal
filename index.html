@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792702617"></script>
+    <script src="config.js?v=1792704837"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792702617';
+      window.PAL_BUILD = '1792704837';
       (function () {
         function check(launch) {
           try {
@@ -3453,14 +3453,30 @@
   .mc-med-x .wiz-dates { margin: 0 0 4px; }
   .mc-body .mc-li.mc-sub, .mc-li.mc-sub { min-height: 48px; padding: 4px 0; }
   /* Day view: Medical — same list as On Leave / On Pass, slate-gray header. */
-  .day-groups .dl-h.med { background: #5b6472; color: #ffffff; }
-  .badge.s-med { height: 26px; padding: 0 10px; border-radius: 13px; border-color: transparent; font-weight: 800; background: #e6e8ec; color: #343a46; }
-  :root[data-theme="dark"] .badge.s-med { background: rgba(255, 255, 255, .12); color: #e6e8ec; }
   /* Switch rows keep the switch at the far right on phones too (rule 10). */
   .mc-li:has(> .mc-li-a > .m3sw:only-child) { flex-wrap: nowrap; }
   .mc-li-a:has(> .m3sw:only-child), .mc-body .mc-li-a:has(> .m3sw:only-child) { width: auto; padding-left: 0; margin-left: auto; justify-content: flex-end; }
   .mc-med-x > .err:empty { display: none; }
-  .dl-row .badge.s-med + .badge.s-med { margin-left: 6px; }
+  /* Request form → Medical: who (puck), and the Lowers … Max switch rows. */
+  .wiz-for { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+  .wiz-sheet .mc-li.mc-sub { border-top: 0; }
+  /* Admins: four type chips (Leave, Pass, Medical, Blackout) fit without clipping. */
+  .seg.tgroup:has(> .tchip:nth-child(4)) .tchip { padding: 0 12px; }
+  .wiz-type .seg:has(> button:nth-of-type(4)) > button { padding-left: 4px; padding-right: 4px; min-width: 0; }
+  /* Medical = medical colors: white with dark gray diagonal stripes and red text — on bars, the day list header, the
+     calendar's Medical chip and the request form's Medical choice (all look alike). */
+  :root { --med-stripes: repeating-linear-gradient(135deg, #ffffff 0 7px, #8a9099 7px 9px); }
+  .evs.ty-medical, .cs-bar.ty-medical, .wk-bar.ty-medical, [class*="ev"].ty-medical, .day-groups .dl-h.ty-medical,
+  .tchip-ty-medical.on, .seg.tgroup .tchip-ty-medical.on, .wt-ty-medical .seg-thumb { background: var(--med-stripes) !important; }
+  .day-groups .dl-h.ty-medical, .tchip-ty-medical.on, .seg.tgroup .tchip-ty-medical.on, .wt-ty-medical button.on { color: #b42318 !important; font-weight: 800; text-shadow: 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff; }
+  .day-groups .dl-h.ty-medical { border: 0 !important; }
+  .day-groups .dl-h.ty-medical .ct { background: #b42318; color: #ffffff; text-shadow: none; }
+  .ty-medical, .tchip-ty-medical { border-color: transparent !important; box-shadow: none !important; }
+  .med-dot { display: inline-grid; place-items: center; flex: none; margin-left: 4px; vertical-align: -1px; }
+  .med-dot svg { display: block; }
+  @media (min-width: 701px) { .filters > .seg.tgroup, .filters > .seg.tgroup > .tchip { flex: none; } }
+  .fs-body .seg.tgroup { display: flex; }
+  .fs-body .seg.tgroup .tchip { flex: 1 1 auto; min-width: 0; padding: 0 8px; }
 </style>
 
   </head>
@@ -3597,12 +3613,13 @@
   /** CSS class for a type's color: built-ins keep 'leave' / 'pass'; added types get 'ty-<slug>' (rules generated below). */
   const tSlug = t => 'ty-' + String(t).toLowerCase().replace(/[^a-z0-9]/g, '');
   const tcls = t => t === 'Leave' ? 'leave' : t === 'Pass' ? 'pass' : tSlug(t);
-  const TYPE_HEX = { leave: '#0A2351', pass: '#FFB612', navy: '#0A2351', gold: '#FFB612', crimson: '#9f1239', teal: '#0f766e', purple: '#6b21a8', slate: '#334155', orange: '#c2410c', black: '#111111', green: '#166534' };
-  const LIGHT_STYLES = ['gold', 'pass'];
+  const TYPE_HEX = { leave: '#0A2351', pass: '#FFB612', navy: '#0A2351', gold: '#FFB612', crimson: '#9f1239', teal: '#0f766e', purple: '#6b21a8', slate: '#334155', orange: '#c2410c', black: '#111111', green: '#166534', medical: '#ffffff', blackout: '#b42318' };
+  const LIGHT_STYLES = ['gold', 'pass', 'medical'];
   /** Copy every Leave style rule (or Pass, for light colors) for each added type, in that type's color, so bars, badges,
    *  table rows and day groups all pick it up without per-type CSS. */
   function typeCss() {
-    const custom = TYPE_LIST.filter(t => t.name !== 'Leave' && t.name !== 'Pass');
+    // Medical and Blackout get the same generated rules (bars, chips, day-list headers) in their own colors.
+    const custom = TYPE_LIST.filter(t => t.name !== 'Leave' && t.name !== 'Pass').concat([{ name: 'Medical', style: 'medical' }, { name: 'Blackout', style: 'blackout' }]);
     let el = document.getElementById('typeCss');
     if (!el) { el = document.createElement('style'); el.id = 'typeCss'; document.head.appendChild(el); }
     if (!custom.length) { el.textContent = ''; return; }
@@ -3611,7 +3628,7 @@
     const sheets = [...document.styleSheets].filter(sh => { try { return sh.ownerNode && sh.ownerNode.id !== 'typeCss' && sh.cssRules; } catch (e) { return false; } });
     custom.forEach(t => {
       const hex = TYPE_HEX[t.style] || '#334155', light = LIGHT_STYLES.includes(t.style), base = light ? 'pass' : 'leave', slug = tSlug(t.name);
-      const ink = light ? '#111111' : '#ffffff', hex2 = mix(hex, light ? .35 : .22);
+      const ink = t.style === 'medical' ? '#c81e1e' : light ? '#111111' : '#ffffff', hex2 = t.style === 'medical' ? '#ffffff' : mix(hex, light ? .35 : .22);
       const re = new RegExp('([.-])' + base + '(?![\\w-])', 'g');
       const val = txt => light
         ? txt.replace(/var\(--gold-2\)/g, hex2).replace(/var\(--gold\)/g, hex).replace(/var\(--navy\)/g, ink)
@@ -3883,6 +3900,7 @@
   /** ' bo' class for any blackout on day d (shown striped on every calendar), plus its kind for the stripe color: one
    *  type's blackouts only → that type's color; an all-types blackout, or blackouts for different types → red. */
   const boCls = (d, type) => {
+    if (fHidden('Blackout')) return ''; // Admin Mode: Blackout chip turned off
     const bs = blackoutsOn(d, type); if (!bs.length) return '';
     const kinds = new Set(bs.map(boKind));
     return ' bo bo-' + (kinds.size === 1 ? [...kinds][0] : 'all');
@@ -3924,7 +3942,8 @@
    *  leave or passes in my position that overlap my own leave or passes (same type). */
   function mineCalRequests() {
     const F = S.mf, myRole = (IDX.users.get(S.me) || {}).role;
-    const mine = IDX.live.filter(r => r.userId === S.me && F.status.includes(r.status) && F.type.includes(r.type));
+    const mine = IDX.live.filter(r => r.userId === S.me && F.status.includes(r.status) && F.type.includes(r.type))
+      .concat(medEvents().filter(m => m.userId === S.me).map(medReq)); // my own Medical events
     if (!S.mineConf) return mine;
     const active = mine.filter(r => r.status !== 'Denied');
     const others = IDX.live.filter(r => r.userId !== S.me && r.status !== 'Denied' && F.type.includes(r.type) && userOf(r.userId).role === myRole &&
@@ -3978,7 +3997,8 @@
   }
   function calRequests() {
     if (S.view === 'mine') return mineCalRequests();
-    return IDX.live.filter(r => S.f.status.includes(r.status) && S.f.role.includes(userOf(r.userId).role) && S.f.type.includes(r.type) && personConfOk(r, S.f));
+    return IDX.live.filter(r => S.f.status.includes(r.status) && S.f.role.includes(userOf(r.userId).role) && S.f.type.includes(r.type) && personConfOk(r, S.f))
+      .concat(fHidden('Medical') ? [] : medEvents().map(medReq).filter(r => S.f.role.includes(userOf(r.userId).role) && personConfOk(r, S.f)));
   }
 
   /* ================================================================ */
@@ -4174,7 +4194,7 @@
     document.body.appendChild(el);
   }
   function hideBlocker() { const el = document.getElementById('blocker'); if (el) el.remove(); }
-  const findReq = id => S.requests.find(r => r.id === id);
+  const findReq = id => S.requests.find(r => r.id === id) || (medEvents().some(m => m.id === id) ? medReq(medEvents().find(m => m.id === id)) : undefined);
   const nowIso = () => new Date().toISOString();
 
   /* Trust boundary: the Sheet can be edited by hand, so enumerated fields are forced to known values before any of them
@@ -4218,7 +4238,7 @@
     S.vapid = data.vapidPublicKey || S.vapid || ''; S.adminAlerts = !!data.adminAlerts;
     // Hide user schedules (members only): the server sent just my requests, day availability for my position, and my
     // conflicts as counts. Everyone else's names and requests aren't on this device at all.
-    S.medCuts = data.medCuts || []; S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
+    S.medCuts = data.medCuts || []; S.medical = data.medical || []; S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
     S.notePrefs = data.notePrefs || S.notePrefs || { approved: true, denied: true, edited: true };
     if (data.emailPrefs) S.emailPrefs = data.emailPrefs;
     S.nameNeed = data.nameNeed || '';
@@ -4880,7 +4900,7 @@
       '<div class="calbar">' +
         // Left: Add Request first (same spot as on List and My Requests), then the view switch and Today; the filters on
         // the right. Phones hide this Add Request (they use the full-width bar).
-        '<div class="cb-start"><div class="cb-left"><button class="btn req-btn" data-act="newReq" title="Start a new leave or pass request">' + icon('plus', 16) + 'Add Request</button>' +
+        '<div class="cb-start"><div class="cb-left"><button class="btn req-btn" data-act="newReq" title="' + (S.isAdmin ? 'Add leave, a pass, medical or a blackout' : 'Start a new leave or pass request') + '">' + icon('plus', 16) + (S.isAdmin ? 'Add Event' : 'Add Request') + '</button>' +
         '<div class="cb-views">' +
           (S.cal === 'day' ? '<button class="btn back-month" data-act="backMonth">' + icon('left', 18) + 'Month</button>' : '') +
           // View switch as icons: Week (columns) · Month (calendar) · Qtr (four blocks); the name is the tooltip / label.
@@ -4903,7 +4923,7 @@
         ? '<aside class="dpanel' + (panelAnim ? ' dp-anim' : '') + '" aria-label="Day details">' + renderDay(S.dayPanel, true) + '</aside>' : '') + '</div>' +
       // Phones: a full-width Add Request bar under the calendar (the calendar shrinks to make room).
       '<div class="req-bar">' + (S.cal === 'day' ? '<button class="btn back-btn" data-act="dayBack">' + icon('left', 18) + 'Back</button>' : '') +
-        '<button class="btn req-btn" data-act="' + (S.cal === 'day' ? 'newReqOn' : 'newReq') + '" data-date="' + S.cursor + '">' + icon('plus', 18) + 'Add Request</button></div></section>';
+        '<button class="btn req-btn" data-act="' + (S.cal === 'day' ? 'newReqOn' : 'newReq') + '" data-date="' + S.cursor + '">' + icon('plus', 18) + (S.isAdmin ? 'Add Event' : 'Add Request') + '</button></div></section>';
   }
 
   /*
@@ -4932,7 +4952,8 @@
   const fState = sc => sc === 'mine' ? S.mf : S.f;
   const scAttr = sc => sc && sc !== 'cal' ? ' data-scope="' + sc + '"' : '';
   function toggleFilter(g, v, sc) {
-    const st = fState(sc), cur = st[g], on = cur.includes(v);
+    if (g === 'type' && EXTRA_T.includes(v)) g = 'hide'; // Medical / Blackout chips: on = not hidden
+    const st = fState(sc), cur = st[g] || [], on = cur.includes(v);
     st[g] = on ? cur.filter(x => x !== v) : cur.concat([v]);
     render();
     if (S.modal === 'filters') openFilterSheet(sc, true);
@@ -4940,8 +4961,8 @@
   /* Leave / Pass: a joined button group of two independent on/off toggles (both may be off). */
   function typeToggle(sc) {
     const st = fState(sc);
-    return '<div class="seg tgroup" role="group" aria-label="Show event types">' + liveTypes().map(v => {
-      const on = st.type.includes(v);
+    return '<div class="seg tgroup" role="group" aria-label="Show event types">' + liveTypes().concat(extraTypes(sc)).map(v => {
+      const on = EXTRA_T.includes(v) ? !(st.hide || []).includes(v) : st.type.includes(v);
       return '<button type="button" class="tchip tchip-' + tcls(v) + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="fToggle" data-g="type" data-v="' + v + '"' + scAttr(sc) + '>' + v + '</button>';
     }).join('') + '</div>';
   }
@@ -5147,6 +5168,7 @@
     else if (st.role && !S.priv) pick('role', FILTERS[1].opts);
     pick('status', FILTERS[0].opts);
     if (!wideFilters()) pick('type', FILTERS[2].opts);
+    if (!wideFilters() && sc !== 'mine' && S.isAdmin && (st.hide || []).length) parts.push('No ' + st.hide.join(', '));
     return parts;
   }
     icon('alert', 18) + '<span class="bl">Conflicts</span></button>';
@@ -5184,11 +5206,12 @@
     if ('person' in st) st.person = '';
     if ('conf' in st) st.conf = false;
     if ('med' in st) st.med = 'all';
+    if (st === S.f) st.hide = [];
   }
   function isDefaultFilters(st) {
     const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
     return same(st.status, FILTERS[0].opts.map(o => o[0])) && typeNames().every(t => st.type.includes(t)) &&
-      (!st.role || S.priv || same(st.role, defaultRoles())) && !st.person && !st.conf && (!st.med || st.med === 'all' || !medFilterOn()) && !(st === S.mf && S.mineConf && S.mineMode === 'cal');
+      (!st.role || S.priv || same(st.role, defaultRoles())) && !st.person && !st.conf && !(st.hide || []).length && (!st.med || st.med === 'all' || !medFilterOn()) && !(st === S.mf && S.mineConf && S.mineMode === 'cal');
   }
   function filterButton(sc) {
     const parts = filterSummary(sc);
@@ -5256,7 +5279,7 @@
   // Vertical stacking order on the calendar: a focused request first, then Leave, Pass, and denied
   // requests last. Within a type, bars that include you sort first.
   /** Stacking order: Leave, Pass, then added event types, denied last (a real array — the lane packer concatenates it). */
-  const stackList = () => typeNames().concat(['Denied']);
+  const stackList = () => typeNames().concat(['Medical', 'Denied']);
   function pinnedIds() {
     const ids = [];
     if (S.focus && IDX.live.some(r => r.id === S.focus)) ids.push(S.focus);
@@ -5312,7 +5335,7 @@
       // At most three names, then "… +N" (hover the bar for everyone).
       const shown = b.list.slice(0, 3), extra = b.list.length - shown.length;
       const names = shown.map(r => '<span class="mn" role="button" tabindex="0" ' + tapAttr(r) + ' title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' +
-        barMarks(r) + esc(calName(userOf(r.userId))) + nowDot(r, from, to) + (withStatus && !onNow(r, from, to) ? statusIcon(r.status) : '') + '</span>' + medMark(userOf(r.userId))).join('<span class="rp-dot" aria-hidden="true">·</span>') +
+        barMarks(r) + esc(calName(userOf(r.userId))) + (r.med ? medDot : nowDot(r, from, to)) + (withStatus && !onNow(r, from, to) && !r.med ? statusIcon(r.status) : '') + '</span>' + (r.med ? '' : medMark(userOf(r.userId)))).join('<span class="rp-dot" aria-hidden="true">·</span>') +
         (extra ? '<span class="rp-dot" aria-hidden="true">·</span><span class="mn mn-more" role="button" tabindex="0" data-act="groupList" data-ids="' + esc(allIds) + '" title="Show all ' + list.length + '" aria-label="Show everyone on this request (' + list.length + ')">… +' + extra + '</span>' : '');
       return '<span class="idb pb gbb' + (same ? ' st-' + r0.status.toLowerCase() : '') + '"><span class="idb-r ' + roleCls(b.u.role) + '" aria-hidden="true">' + L + '</span>' +
         '<span class="idb-u ub-' + (un ? un.style : 'slate') + '" aria-hidden="true">' + esc(b.u.unit) + '</span>' +
@@ -5333,7 +5356,7 @@
     const row = r => { const u = userOf(r.userId);
       return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(r.id) + '" aria-label="' + esc(describe(r)) + '">' +
         '<span class="dl-who">' + memberPuck(u) + '</span>' +
-        '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span></button></li>'; };
+        (r.med ? '' : '<span class="badge s-' + r.status.toLowerCase() + '">' + r.status + '</span>') + '</button></li>'; };
     const sections = roles.map(role => {
       const rs = list.filter(r => userOf(r.userId).role === role).sort((a, b) => (a.userId === S.me ? 0 : 1) - (b.userId === S.me ? 0 : 1) || byPosName(a, b));
       return '<div class="dl-sec"><div class="dl-h"><span>' + esc(roleGroup(role)) + '</span><span class="ct">' + rs.length + '</span></div><ul class="dl-list">' + rs.map(row).join('') + '</ul></div>';
@@ -5719,34 +5742,34 @@
     return '<span class="idb pb" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(roleL(u.role)) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span><span class="idb-n"><span class="idb-t">' + esc(calName(u)) + '</span></span></span>' + medMark(u) +
       '<span class="sr">' + esc(fullName(u)) + '</span>'; };
-  /** Medical (injured): a white circle with a red cross after the puck (where the admin crown / stamp sit). The server only sends it to admins over the member (org admins: everyone; team admins:
-   *  their team), so it shows wherever a name does — for them alone. */
-  /** Injured today (the server only sends injuries whose End hasn't passed; one that starts later isn't marked yet). */
-  const injuredNow = u => !!(u && u.injured && (!u.injuredFrom || u.injuredFrom <= S.today));
+  /* ---------- Medical events ----------
+     Injuries are events (their own sheet): the server sends them only to admins over the member and to the member. Each
+     has Start / End and the event types whose daily max it lowers by 1 on its days (cut). On calendars they show as
+     gray Medical bars; after the name, a white circle with a red cross while it's on. */
+  const medEvents = () => S.medical || [];
+  const medOn = (m, d) => m.start <= d && (!m.end || d <= m.end);
+  const injuredNow = u => !!u && medEvents().some(m => m.userId === u.id && medOn(m, S.today));
   const medMark = u => injuredNow(u) ? '<span class="adm-ic st-med" role="img" aria-label="Medical" title="Medical (injured)">' + redCross(15) + '</span>' : '';
-  /** Member card, Medical on: Start / End dates (End empty = until cleared), then a switch per event type with a daily max
-   *  for their position — on = this injury lowers that max by 1 on those days. Types with no max get no switch. */
-  function medDetail(u) {
-    const id = ' data-id="' + esc(u.id) + '"', cut = u.injuredCut || [];
-    const date = (k, label, v) => '<div class="field pf"><label for="mcMed' + k + '">' + label + '</label><div class="pill-in pill-date"><input id="mcMed' + k + '" type="date" value="' + esc(v || '') + '" data-change="setInjDates"' + id + '>' + icon('calendar', 18) + '</div></div>';
-    return '<div class="mc-med-x"><div class="wiz-dates">' + date('S', 'Start', u.injuredFrom || S.today) + date('E', 'End', u.injuredUntil) + '</div><div class="err" id="mcMedErr"></div>' +
-      typeNames().filter(t => quota(u.role, t)).map(t => { const on = cut.includes(t);
-        return '<div class="mc-li mc-sub"><div class="mc-li-t"><b>Lowers ' + esc(t) + ' Max</b></div>' +
-          '<div class="mc-li-a">' + sw(on, 'setInjCut', 'Lowers ' + t + ' max', id + ' data-v="' + esc(t) + '"') + '</div></div>'; }).join('') + '</div>';
-  }
-  /** Day view: Medical — the same list as On Leave / On Pass: each injured member lowering a daily max on day d (admins
-   *  over them only), their dates, and a badge per max it lowers. */
+  /** A Medical event shaped like a request, for the calendar bars (no end yet = shown a year out). */
+  const medReq = m => ({ id: m.id, userId: m.userId, type: 'Medical', start: m.start, end: m.end || D.add(S.today, 365), status: 'Approved', note: m.note || '', location: '', boOk: 'true', med: m });
+  /** On a Medical bar: a small red cross after the name, where the green "on now" dot sits on leave. */
+  const medDot = '<i class="med-dot" title="Medical"><svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2.5h6v6.5h6.5v6H15v6.5H9V15H2.5V9H9z" fill="#d42020"/></svg></i>';
+  const canMed = uid => { const u = userOf(uid); return S.isAdmin && !!u && (S.isOrg || inScope(S.adminScope, u)); };
+  /** Admins (Admin Mode): extra calendar filter chips for Medical and Blackouts (S.f.hide = the ones turned off). */
+  const EXTRA_T = ['Medical', 'Blackout'];
+  const extraTypes = sc => S.isAdmin && sc !== 'mine' ? EXTRA_T : [];
+  const fHidden = t => S.isAdmin && (S.f.hide || []).includes(t);
+  /** Day view: Medical — the same list as On Leave / On Pass: each Medical event on day d and its dates. */
   function medDayHtml(d) {
-    const rows = S.users.filter(u => u.injured && (!u.injuredFrom || u.injuredFrom <= d) && (!u.injuredUntil || d <= u.injuredUntil))
-      .map(u => [u, (u.injuredCut || []).filter(t => quota(u.role, t))]).filter(x => x[1].length)
-      .sort((a, b) => ROLES.indexOf(a[0].role) - ROLES.indexOf(b[0].role) || lastName(a[0]).localeCompare(lastName(b[0])));
+    if (fHidden('Medical')) return '';
+    const rows = medEvents().filter(m => medOn(m, d) && S.f.role.includes(userOf(m.userId).role) && medOk(userOf(m.userId), S.f.med) && (!S.f.person || personIds(S.f).includes(m.userId)))
+      .sort((a, b) => ROLES.indexOf(userOf(a.userId).role) - ROLES.indexOf(userOf(b.userId).role) || lastName(userOf(a.userId)).localeCompare(lastName(userOf(b.userId))));
     if (!rows.length) return '';
-    return '<div class="dl-sec"><div class="dl-h med"><span class="sw"></span>Medical<span class="ct">' + rows.length + '</span></div><ul class="dl-list">' + rows.map(x => {
-      const u = x[0];
-      return '<li><button class="dl-row" data-act="memberCard" data-id="' + esc(u.id) + '" aria-label="' + esc(fullName(u) + ': Medical') + '">' +
-        '<span class="dl-who">' + memberPuck(Object.assign({}, u, { injuredFrom: '' })) + '</span>' +
-        '<span class="dl-meta">' + esc(roleName(u.role)) + ' · ' + tkDay(u.injuredFrom || S.today) + ' → ' + (u.injuredUntil ? tkDay(u.injuredUntil) : '<b class="tk">NO END</b>') + '</span>' +
-        x[1].map(t => '<span class="badge s-med">' + esc(t) + ' −1</span>').join('') + '</button></li>';
+    return '<div class="dl-sec"><div class="dl-h ' + tcls('Medical') + '"><span class="sw"></span>Medical<span class="ct">' + rows.length + '</span></div><ul class="dl-list">' + rows.map(m => {
+      const u = userOf(m.userId);
+      return '<li><button class="dl-row" data-act="openReq" data-id="' + esc(m.id) + '" aria-label="' + esc(fullName(u) + ': Medical') + '">' +
+        '<span class="dl-who">' + memberPuck(u) + '</span>' +
+        '<span class="dl-meta">' + esc(roleName(u.role)) + ' · ' + tkDay(m.start) + ' → ' + (m.end ? tkDay(m.end) : '<b class="tk">NO END</b>') + '</span></button></li>';
     }).join('') + '</ul></div>';
   }
   /** The medical red cross: a solid red plus. */
@@ -5755,7 +5778,7 @@
   /** Green "going on now" dot after a name — only on the bar that covers today (from–to = the dates that bar shows). */
   // On leave / pass right now = APPROVED and today is inside the dates (pending or denied isn't "on leave", even on those days).
   // The green dot sits to the RIGHT of the name, in the ✓'s place, on every bar of that request (all weeks).
-  const onNow = r => r.status === 'Approved' && isNow(r);
+  const onNow = r => r.status === 'Approved' && !r.med && isNow(r);
   const nowDot = (r, from, to) => onNow(r, from, to) ? '<i class="now-dot" title="On ' + r.type.toLowerCase() + ' now"></i>' : '';
   // withStatus 'table': request tables, where the status mark rides on the badge only on phones (`.m-st`); desktop keeps it
   // in the first column.
@@ -5765,8 +5788,8 @@
     const un = unitsList().find(x => x.code === u.unit);
     return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(L) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
-      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + nowDot(r, from, to) +
-        (tbl && !onNow(r) ? statusIcon(r.status).replace('class="sti ', 'class="sti m-st ') : '') + (withStatus ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>' + medMark(u);
+      '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + (r.med ? medDot : nowDot(r, from, to)) +
+        (tbl && !onNow(r) && !r.med ? statusIcon(r.status).replace('class="sti ', 'class="sti m-st ') : '') + (withStatus && !r.med ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>' + (r.med ? '' : medMark(u));
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
@@ -6115,7 +6138,7 @@
         '<div class="rm-grid">';
     return '<div class="dayv' + (panel ? ' dayv-panel' : '') + '" id="' + (panel ? 'dayPanelScroll' : 'dayScroll') + '">' + top +
         meters + '</div></div>' +
-      '<div class="dayv-in">' + blackoutsOn(d).map(b => '<div class="msg e bo-day bo-' + boKind(b) + '">' + icon('ban', 15) + '<span><b>' + esc(boLabel(b)) + '</b>' + (b.note ? ' — ' + esc(b.note) : '') + '</span></div>').join('') +
+      '<div class="dayv-in">' + (fHidden('Blackout') ? [] : blackoutsOn(d)).map(b => '<div class="msg e bo-day bo-' + boKind(b) + '">' + icon('ban', 15) + '<span><b>' + esc(boLabel(b)) + '</b>' + (b.note ? ' — ' + esc(b.note) : '') + '</span></div>').join('') +
       // No overlap / over-the-max notes here: conflicts are handled by the conflict resolver.
       '</div><div class="day-groups">' + (reqs.length ? dayGroupsHtml(reqs) : '<div class="empty">No one is scheduled out on this day.</div>') + medDayHtml(d) +
       '</div></div>';
@@ -6361,7 +6384,7 @@
     // Wide screens: Add Request first (as in the calendar's bar), so My Requests' List | Calendar switch stays in the same
     // place in both modes. Phones hide this one and use the full-width Add Request bar.
     return '<div class="lbar">' +
-      '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button>' +
+      '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + (S.isAdmin ? 'Add Event' : 'Add Request') + '</button>' +
       '<div class="lsearch">' + icon('search', 16) + search + '</div>' +
       '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'list' && S.isAdmin ? openBtn() : '') + (sc === 'mine' ? mineSwitch() : '') + '</div></div>';
   }
@@ -6408,6 +6431,7 @@
       }
       if (!b.clientWidth) return; // hidden: check when it's shown
       if (b.textContent !== full) b.textContent = full;
+      if (b.closest('.tgroup') && (wideFilters() || b.closest('.fs-body'))) return; // type chips size to their words (bar on wide screens, the Filters sheet)
       const r = document.createRange(); r.selectNodeContents(b);
       const cs = getComputedStyle(b), room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
       if (r.getBoundingClientRect().width > room - 8) b.textContent = shortWord(full);
@@ -6485,7 +6509,7 @@
     return '<div class="stsl vw-sl st-' + v + '" role="radiogroup" aria-label="Show"><span class="stsl-thumb" aria-hidden="true"></span>' +
       o('conf', 'alert', 'Conflicts', 'Only requests over the daily max') + o('open', 'clock', 'Pending', 'Pending, or in a conflict that isn’t resolved') + o('all', 'list', 'All', 'Every request') + '</div>';
   }
-  const reqBar = () => '<div class="req-bar"><button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + 'Add Request</button></div>';
+  const reqBar = () => '<div class="req-bar"><button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + (S.isAdmin ? 'Add Event' : 'Add Request') + '</button></div>';
   function renderAll() {
     const L = S.list;
     return '<section class="page list-page' + (S.f.conf ? ' conf-mode' : '') + '">' +
@@ -6544,7 +6568,7 @@
     const old = list.filter(r => r.end < cut).sort((a, b) => byStart(b, a));
     return '<div class="scroll mwallet">' +
       '<h3 class="mw-h">Upcoming <span class="mw-ct">' + up.length + '</span></h3>' +
-      (up.length ? '<div class="mw-list">' + up.map(miniPass).join('') + '</div>' : '<p class="mw-empty">Nothing coming up. Tap Add Request to plan your next one.</p>') +
+      (up.length ? '<div class="mw-list">' + up.map(miniPass).join('') + '</div>' : '<p class="mw-empty">Nothing coming up. Tap ' + (S.isAdmin ? 'Add Event' : 'Add Request') + ' to plan your next one.</p>') +
       // Filters → Show Expired: everything that ended more than 2 days ago, newest first.
       (S.mineExpired ? '<h3 class="mw-h mw-h2">Expired <span class="mw-ct">' + old.length + '</span></h3>' +
         (old.length ? '<div class="mw-list mw-past">' + old.map(miniPass).join('') + '</div>' : '<p class="mw-empty">No expired leave or passes.</p>') : '') +
@@ -8048,6 +8072,8 @@
   }
 
   function openRequest(id) {
+    const m = medEvents().find(x => x.id === id);
+    if (m) { if (canMed(m.userId)) openMedicalWizard(id); return; } // members: their own Medical shows on the calendar only
     const r = S.requests.find(x => x.id === id);
     if (!r) return;
     S.reqOpen = id;
@@ -8195,9 +8221,6 @@
         '<div id="mcPinRow" hidden>' + PIN_HINT + '<div class="mc-pin"><input id="mcPin1" ' + NEW_PIN + ' placeholder="PIN" aria-label="PIN">' +
           '<input id="mcPin2" ' + NEW_PIN + ' placeholder="Again" aria-label="PIN again">' +
           '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div></div><div class="err" id="mcPinErr"></div>' +
-        // Medical (injured): a switch for admins over this member; the mark shows next to their name, to admins only.
-        (S.isAdmin && (S.isOrg || inScope(S.adminScope, u)) ? '<div class="mc-li"><span class="mc-li-ic mc-med">' + redCross(22) + '</span><div class="mc-li-t"><b>Medical</b></div><div class="mc-li-a">' + sw(!!u.injured, 'setInjured', 'Medical (injured)', ' data-id="' + esc(uid) + '"') + '</div></div>' +
-          (u.injured ? medDetail(u) : '') : '') +
         // Admin: Org Admin | Team Admin | None (team admins: Team Admin | None), then — for a team admin — the grid of
         // unit + position pairs they manage. Every change saves at once.
         (uid !== S.me ? (() => {
@@ -8274,6 +8297,22 @@
       mini: D.monthStart(start || S.today), picking: !!start && !end, error: ''
     };
     renderWizard();
+  }
+  /** Admins: the request form in Medical mode, editing a Medical event (new ones start from Add Event → Medical). */
+  function openMedicalWizard(id) {
+    const m = medEvents().find(x => x.id === id); if (!m) return;
+    S.wiz = {
+      step: 1, type: 'Medical', editMedId: m.id, assigneeId: m.userId, assignees: [m.userId], creating: false, medCut: (m.cut || []).slice(),
+      nu: { name: '', rank: '', role: 'Pilot', unit: 'MKE', pin: '' },
+      start: m.start, end: m.end || '', note: m.note || '', location: '', mini: D.monthStart(m.start), picking: false, error: ''
+    };
+    renderWizard();
+  }
+  /** Medical: a switch per event type that has a daily max for the chosen members' positions (on = lowers it by 1). */
+  function medCutRows() {
+    const w = S.wiz, roles = [...new Set(wizIds().map(id => userOf(id).role))];
+    return typeNames().filter(t => roles.some(r => quota(r, t))).map(t => '<div class="mc-li mc-sub"><div class="mc-li-t"><b>Lowers ' + esc(t) + ' Max</b></div>' +
+      '<div class="mc-li-a">' + sw((w.medCut || []).includes(t), 'wizMedCut', 'Lowers ' + t + ' max', ' data-v="' + esc(t) + '"') + '</div></div>').join('');
   }
   /** Admins: the request form in Blackout mode — new (no id) or editing an existing blackout. */
   function openBlackoutWizard(id, start) {
@@ -8374,7 +8413,7 @@
   function whoPopHtml() {
     const w = S.wiz;
     const people = S.users.filter(u => u.active && !(w.editId && u.id === w.assigneeId) && manages(u)); // team admins: only their team
-    return whoListHtml(people, new Set(wizPickList()), 'whoPick', w.editId ? '' : '<button type="button" class="who-row who-new" data-act="wizCreate">' + icon('userPlus', 18) + '<span class="pp-n"><b>Add New Member</b></span></button>');
+    return whoListHtml(people, new Set(wizPickList()), 'whoPick', w.editId || w.type === 'Medical' ? '' : '<button type="button" class="who-row who-new" data-act="wizCreate">' + icon('userPlus', 18) + '<span class="pp-n"><b>Add New Member</b></span></button>');
   }
   /** The member chooser list (search box, then Me and each position's members as name pucks): Request For and
    *  Managers → Add Manager. act: the action a tap runs (data-id = member); top: rows shown above the groups. */
@@ -8415,6 +8454,8 @@
       errs.push('Select departure and return dates.');
     } else if (w.end < w.start) {
       errs.push('Return date must be on or after the departure date.');
+    } else if (w.type === 'Medical') {
+      n = D.days(w.start, w.end); // no slots, blackouts or overlaps: an injury isn't time off
     } else if (w.type === 'Blackout') {
       n = D.days(w.start, w.end);
       if (n > 366) errs.push('A blackout can be at most a year long.');
@@ -8458,14 +8499,17 @@
   function renderWizard() {
     const w = S.wiz;
     if (w.step !== 3) w.step = 'form';
-    const isBo = w.type === 'Blackout';
+    const isBo = w.type === 'Blackout', isMed = w.type === 'Medical';
     const wn = D.valid(w.start) && D.valid(w.end) && w.end >= w.start ? D.days(w.start, w.end) : 0;
-    const head = modalHead(isBo ? (w.editBoId ? 'Edit Blackout' : 'New Blackout') : w.editId ? 'Edit Request' : 'New Request', w.editId || w.editBoId ? 'pencil' : isBo ? 'ban' : 'plus',
-      isBo ? '' : dayPill(wn, w.type)); // the request's length, big, in the header
+    const head = modalHead(isBo ? (w.editBoId ? 'Edit Blackout' : 'New Blackout') : isMed ? (w.editMedId ? 'Edit Medical' : 'New Medical') : w.editId ? 'Edit Request' : S.isAdmin ? 'New Event' : 'New Request',
+      w.editId || w.editBoId || w.editMedId ? 'pencil' : isBo ? 'ban' : isMed ? 'medical' : 'plus',
+      isBo || isMed ? '' : dayPill(wn, w.type)); // the request's length, big, in the header
     let body = '', foot = '';
     if (w.step === 'form') {
       if (isBo) {
         // Blackout: no member; choose what it blocks. (Editing a blackout can't turn it into a request.)
+      } else if (w.editMedId) {
+        body += '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Medical For</div><div class="wiz-for">' + memberPuck(userOf(w.assigneeId)) + '</div></div>';
       } else if (w.editId) {
         body += '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request For</div><div style="font-weight:700">' + esc(fullName(userOf(w.assigneeId))) + '</div>' +
           (S.isAdmin ? '<div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who wiz-add" data-act="whoDrop" aria-haspopup="listbox" aria-expanded="false" aria-label="Add members to this request">' + whoBtnInner() + '</button>' +
@@ -8473,7 +8517,7 @@
           (w.editStatus === 'Approved' ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>This request is already approved. Admin edits keep it approved.</span></div>' : '') +
           (w.editStatus === 'Denied' && !S.isAdmin ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>Saving changes resubmits this denied request as Pending.</span></div>' : '') + '</div>';
       } else if (S.isAdmin) {
-        body += '<div class="sect"><div class="lbl">' + icon('users', 14) + ' Request For</div>' +
+        body += '<div class="sect"><div class="lbl">' + icon('users', 14) + (isMed ? ' Medical For' : ' Request For') + '</div>' +
           (w.creating
             ? '<div class="newuser">' + userFields('nu', w.nu, true) + '</div><button class="btn ghost sm" data-act="wizExisting" style="margin-top:6px">' + icon('left', 14) + ' Choose an existing member instead</button>'
             : '<div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who" data-act="whoDrop" aria-haspopup="listbox" aria-expanded="false" aria-label="Request For">' + whoBtnInner() + '</button>' +
@@ -8481,25 +8525,32 @@
           '</div>';
       }
       // Admins can also add a blackout from here (not when editing a request or a blackout).
-      const types = TYPE_LIST.filter(t => !t.disabled || t.name === w.type).map(t => [t.name, esc(t.name)]).concat(S.isAdmin && !w.editId && !w.editBoId ? [['Blackout', 'Blackout']] : []);
-      body += (w.editBoId ? '' : '<div class="sect"><div class="lbl">Type</div><div class="wiz-type wiz-tsel wt-' + tcls(w.type) + '">' + seg(types, w.type, 'wizEditType') + '</div></div>') +
+      const types = TYPE_LIST.filter(t => !t.disabled || t.name === w.type).map(t => [t.name, esc(t.name)]).concat(S.isAdmin && !w.editId && !w.editBoId ? [['Medical', 'Medical'], ['Blackout', 'Blackout']] : []);
+      body += (w.editBoId || w.editMedId ? '' : '<div class="sect"><div class="lbl">Type</div><div class="wiz-type wiz-tsel wt-' + tcls(w.type) + '">' + seg(types, w.type, 'wizEditType') + '</div></div>') +
         (isBo ? '<div class="sect"><div class="lbl">Blacks Out</div><div class="wiz-type">' + seg(typeNames().map(t => [t, esc(t)]).concat([['Both', 'All']]), w.boTypes, 'wizBoTypes') + '</div></div>' +
           // Applies To: only these members are blocked by it (and only they see it). Nothing picked = everyone.
           '<div class="sect"><div class="lbl">Applies To</div>' + ruleGrid('bo') +
             '<p class="meta sc-note">' + ((w.boRows || []).length ? 'Only these people see it and are blocked by it' + (boLim() ? ' (limited to your team).' : '.') : boLim() ? 'No rows: your whole team.' : 'No rows: everyone.') + '</p></div>' : '') +
         renderWizDates() +
+        (isMed ? '<div id="wizMedCut">' + medCutRows() + '</div>' : '') +
         // Location: required on leave / passes; private like the note (only the member and their admins see it).
         // Pill fields like the search box (.pf): label above; Location is a short one-line pill with a pin; the notes are a
         // rounded box (longer text). The error shows on the field with its message under it.
-        (isBo ? '' : '<div class="field pf"><label for="wzL">Location' + REQ + '</label><div class="pill-in">' + icon('pin', 18) +
+        (isBo || isMed ? '' : '<div class="field pf"><label for="wzL">Location' + REQ + '</label><div class="pill-in">' + icon('pin', 18) +
           '<input id="wzL" maxlength="80" autocomplete="off" placeholder="e.g. Disneyland" value="' + esc(w.location || '') + '" data-model="wiz.location" data-live="wizLoc" aria-required="true" aria-describedby="wzLSup"></div><div class="pf-sup" id="wzLSup"></div></div>') +
-        '<div class="field pf"><label for="wzN">' + (isBo ? 'Reason &amp; Notes' : 'Trip Reason &amp; Notes') + ' <span class="pf-opt">Optional</span></label><textarea id="wzN" class="pf-box" maxlength="' + (isBo ? 80 : 500) + '" data-model="wiz.note" placeholder="' + (isBo ? 'e.g. ORE week, UTA' : 'Destination, reason, contact info…') + '">' + esc(w.note) + '</textarea></div>' +
+        '<div class="field pf"><label for="wzN">' + (isBo ? 'Reason &amp; Notes' : isMed ? 'Notes' : 'Trip Reason &amp; Notes') + ' <span class="pf-opt">Optional</span></label><textarea id="wzN" class="pf-box" maxlength="' + (isBo ? 80 : 500) + '" data-model="wiz.note" placeholder="' + (isBo ? 'e.g. ORE week, UTA' : isMed ? '' : 'Destination, reason, contact info…') + '">' + esc(w.note) + '</textarea></div>' +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div>';
-      foot = '<button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="wizReview">Review ' + icon('right', 18) + '</button>';
+      foot = (w.editMedId ? '<button class="btn del" data-act="delMedical">' + icon('trash', 16) + 'Delete</button>' : '') +
+        '<button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="wizReview">Review ' + icon('right', 18) + '</button>';
     } else {
       const c = wizCheck();
       const who = wizWho();
-      if (isBo) body = '<div class="review">' +
+      if (isMed) body = '<div class="review">' +
+        '<div class="rv"><span class="lbl">Medical</span><div class="wiz-for">' + wizIds().map(id => memberPuck(userOf(id))).join(' ') + '</div></div>' +
+        '<div class="rv"><span class="lbl">Dates</span><div class="big">' + tkDay(w.start) + ' → ' + tkDay(w.end) + '</div></div>' +
+        (w.note.trim() ? '<div class="rv"><span class="lbl">Notes</span><div class="note">' + esc(w.note.trim()) + '</div></div>' : '') +
+        '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
+      else if (isBo) body = '<div class="review">' +
         '<div class="rv"><span class="lbl">Blackout</span><div class="big">' + boBadge({ types: w.boTypes }, 'font-size:12px') + '</div></div>' +
         '<div class="rv"><span class="lbl">Dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
           '<div style="margin-top:4px;font-weight:700">' + plural(c.n, 'day') + '</div></div>' +
@@ -8518,11 +8569,11 @@
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
       }
       foot = '<button class="btn" data-act="wizEdit">' + icon('pencil', 18) + 'Edit</button>' +
-        '<button class="btn ok" data-act="wizSubmit">' + icon('check', 18) + (w.editId || w.editBoId ? 'Save' : isBo ? 'Add Blackout' : 'Submit') + '</button>';
+        '<button class="btn ok" data-act="wizSubmit">' + icon('check', 18) + (w.editId || w.editBoId || w.editMedId ? 'Save' : isBo ? 'Add Blackout' : isMed ? 'Add Medical' : 'Submit') + '</button>';
     }
     openModal('wizard', head + '<div class="modal-b">' + body + '</div><div class="modal-f">' + foot + '</div>', true);
     $('#modal .modal').classList.add('wiz-sheet'); // compact layout: the whole form fits a phone screen without scrolling
-    if (w.step === 3 && !isBo) $('#modal .modal').classList.add('pass-sheet'); // Review: the pass alone, no dialog frame
+    if (w.step === 3 && !isBo && !isMed) $('#modal .modal').classList.add('pass-sheet'); // Review: the pass alone, no dialog frame
   }
   /* Step 2: pick dates on the calendar (or type them in the fields below it). Only blocking problems show here;
      the summary, warnings and trip notes are on the Review step. */
@@ -8530,8 +8581,8 @@
     const w = S.wiz;
     return '<div id="wizMini">' + renderMini() + '</div>' +
       // Date pills: the date on the left, a calendar icon on the right; tapping anywhere opens the date picker.
-      '<div class="wiz-dates"><div class="field pf"><label for="wzS">Departure</label><div class="pill-in pill-date"><input id="wzS" type="date" value="' + esc(w.start) + '" data-model="wiz.start" data-change="wizDates">' + icon('calendar', 18) + '</div></div>' +
-      '<div class="field pf"><label for="wzE">Return</label><div class="pill-in pill-date"><input id="wzE" type="date" value="' + esc(w.end) + '" data-model="wiz.end" data-change="wizDates">' + icon('calendar', 18) + '</div></div></div>' +
+      '<div class="wiz-dates"><div class="field pf"><label for="wzS">' + (w.type === 'Medical' || w.type === 'Blackout' ? 'Start' : 'Departure') + '</label><div class="pill-in pill-date"><input id="wzS" type="date" value="' + esc(w.start) + '" data-model="wiz.start" data-change="wizDates">' + icon('calendar', 18) + '</div></div>' +
+      '<div class="field pf"><label for="wzE">' + (w.type === 'Medical' || w.type === 'Blackout' ? 'End' : 'Return') + '</label><div class="pill-in pill-date"><input id="wzE" type="date" value="' + esc(w.end) + '" data-model="wiz.end" data-change="wizDates">' + icon('calendar', 18) + '</div></div></div>' +
       '<div id="wizStatus">' + renderWizStatus() + '</div>';
   }
   /** Slot state of a day for the request being made: 'ok' (green), 'over' (adding it overbooks, orange), 'full' (approved leave
@@ -9270,6 +9321,7 @@
       el.classList.toggle('on', on); el.setAttribute('aria-selected', on);
       el.querySelector('.who-ck').innerHTML = on ? icon('check', 16) : '';
       const b = $('#modal [data-act="whoDrop"]'); if (b) b.innerHTML = whoBtnInner();
+      const mc = $('#wizMedCut'); if (mc) mc.innerHTML = medCutRows(); // Medical: the Lowers … Max switches follow the members' positions
       if (S.whoFirst && on) { S.whoFirst = false; closeWhoDrop(); }
     },
     whoFilter(el) {
@@ -9745,30 +9797,6 @@
       render();
     },
     editUser(el) { openUserEditor(el.dataset.id); },
-    setInjured(el) {
-      const u = S.users.find(x => x.id === el.dataset.id); if (!u) return;
-      const on = !u.injured;
-      save(() => Object.assign(u, on ? { injured: true, injuredFrom: S.today, injuredUntil: '', injuredCut: [] } : { injured: false, injuredFrom: '', injuredUntil: '', injuredCut: [] }),
-        'apiSetInjured', S.token, u.id, on, S.today, '', []);
-      render(); if (S.modal === 'member') openMemberCard(u.id);
-      toast(nameText(u) + (on ? ' marked Medical' : ' — Medical cleared'), 'ok', 1500);
-    },
-    /** Medical Start / End changed: saves at once (End before Start is refused here, before the server). */
-    setInjDates(el) {
-      const u = S.users.find(x => x.id === el.dataset.id); if (!u) return;
-      const from = ($('#mcMedS') || {}).value || S.today, until = ($('#mcMedE') || {}).value || '';
-      const endEl = $('#mcMedE'), errEl = $('#mcMedErr');
-      if (until && until < from) { if (endEl) endEl.setAttribute('aria-invalid', 'true'); if (errEl) errEl.textContent = 'End must be on or after Start.'; return; } // on the field, not a toast
-      save(() => Object.assign(u, { injuredFrom: from, injuredUntil: until }), 'apiSetInjured', S.token, u.id, true, from, until, u.injuredCut || []);
-      render(); if (S.modal === 'member') openMemberCard(u.id);
-    },
-    /** Medical: this injury lowers (or stops lowering) one event type's daily max. */
-    setInjCut(el) {
-      const u = S.users.find(x => x.id === el.dataset.id); if (!u) return;
-      const t = el.dataset.v, cut = (u.injuredCut || []).filter(x => x !== t).concat((u.injuredCut || []).includes(t) ? [] : [t]);
-      save(() => { u.injuredCut = cut; }, 'apiSetInjured', S.token, u.id, true, u.injuredFrom || S.today, u.injuredUntil || '', cut);
-      render(); if (S.modal === 'member') openMemberCard(u.id);
-    },
     async saveUser(el) {
       const u = readUserFields('ue'); u.id = el.dataset.id || '';
       const err = $('#ueErr');
@@ -9892,9 +9920,10 @@
         if (!w.nu.last) return err('Enter at least the new member’s last name.');
         if (S.users.find(u => u.name.toLowerCase() === w.nu.name.toLowerCase() && u.unit === w.nu.unit)) return err(w.nu.name + ' (' + w.nu.unit + ') is already on the roster — choose them from the list.');
       }
-      if (S.isAdmin && !w.creating && w.type !== 'Blackout' && !wizIds().length) return err('Choose who this request is for.');
-      if (!D.valid(w.start)) return err('Pick your departure date on the calendar.');
-      if (!D.valid(w.end)) return err('Now pick your return date — tap the same day again for a one-day request.');
+      if (S.isAdmin && !w.creating && w.type !== 'Blackout' && !wizIds().length) return err(w.type === 'Medical' ? 'Choose who this is for.' : 'Choose who this request is for.');
+      if (w.type === 'Medical' && w.creating) return err('Choose an existing member.');
+      if (!D.valid(w.start)) return err(w.type === 'Medical' ? 'Pick the start date on the calendar.' : 'Pick your departure date on the calendar.');
+      if (!D.valid(w.end)) return err(w.type === 'Medical' ? 'Now pick the end date.' : 'Now pick your return date — tap the same day again for a one-day request.');
       const c = wizCheck();
       if (c.errs.length) {
         // A missing location: the field itself turns red with the message under it (M3 error state).
@@ -9904,10 +9933,18 @@
       w.error = ''; w.step = 3; renderWizard();
     },
     wizBoTypes(el) { S.wiz.boTypes = el.dataset.v; renderWizard(); },
+    wizMedCut(el) { const w = S.wiz, t = el.dataset.v, c = w.medCut || []; w.medCut = c.includes(t) ? c.filter(x => x !== t) : c.concat([t]); const mc = $('#wizMedCut'); if (mc) mc.innerHTML = medCutRows(); },
+    async delMedical() {
+      const w = S.wiz, id = w && w.editMedId; if (!id) return;
+      if (!await askConfirm('Delete this medical event?')) return;
+      save(() => { S.medical = medEvents().filter(x => x.id !== id); }, 'apiDeleteMedical', S.token, id);
+      closeModal(); render(); toast('Medical deleted', 'ok', 1800);
+    },
     wizEditType(el) {
       const was = S.wiz.type;
       S.wiz.type = el.dataset.v;
       // Switching the request form to Blackout: it starts with the same defaults as Admin → Add Blackout.
+      if (was === 'Medical' || S.wiz.type === 'Medical') { S.wiz.medCut = S.wiz.medCut || []; S.wiz.note = ($('#wzN') || {}).value || S.wiz.note; S.wiz.location = ($('#wzL') || {}).value || S.wiz.location; renderWizard(); return; }
       if (was === 'Blackout' || S.wiz.type === 'Blackout') { S.wiz.boTypes = S.wiz.boTypes || 'Both'; S.wiz.boRows = S.wiz.boRows || []; S.wiz.note = ($('#wzN') || {}).value || S.wiz.note; renderWizard(); return; }
       $$('#modal [data-act="wizEditType"]').forEach(b => b.classList.toggle('on', b.dataset.v === S.wiz.type));
       // The pill takes the type's color (Leave navy, Pass gold) as it glides over (placeSeg runs from the click).
@@ -9937,6 +9974,19 @@
     async wizSubmit() {
       const w = S.wiz, c = wizCheck();
       if (c.errs.length) { $('#wizErr').textContent = c.errs[0]; return; }
+      if (w.type === 'Medical') {
+        const ids = wizIds(), types = typeNames(), cut = (w.medCut || []).filter(t => types.includes(t));
+        const m = { id: w.editMedId || '', userIds: ids, start: w.start, end: w.end, cut, note: w.note.trim().slice(0, 500) };
+        // Optimistic: shows at once; the server's copy replaces it.
+        save(() => {
+          const keep = medEvents().filter(x => x.id !== m.id);
+          S.medical = keep.concat(m.id ? [{ id: m.id, userId: w.assigneeId, start: m.start, end: m.end, cut, note: m.note }]
+            : ids.map((id, i) => ({ id: 'tmp_' + Date.now() + i, userId: id, start: m.start, end: m.end, cut, note: m.note })));
+        }, 'apiSaveMedical', S.token, m);
+        closeModal(); if (isCalView()) S.cursor = w.start; render();
+        toast(w.editMedId ? 'Medical updated' : 'Medical added', 'ok', 2000);
+        return;
+      }
       if (w.type === 'Blackout') {
         const rows = (w.boRows || []).map(r => ({ units: r.units.slice(), roles: r.roles.slice() })), cells = rows.length ? boCells(rows) : [];
         if (rows.length && !cells.length) { $('#wizErr').textContent = 'Those rows cover nobody you manage. Pick units or positions on your team.'; return; }
