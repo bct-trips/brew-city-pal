@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792656077"></script>
+    <script src="config.js?v=1792656377"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792656077';
+      window.PAL_BUILD = '1792656377';
       (function () {
         function check(launch) {
           try {
@@ -2737,7 +2737,7 @@
   /* Button groups, final: every segmented group looks and moves like the status slider. A tinted track with a 2px inset,
      no dividers; the selected option is a rounded pill (tonal fill, bold); unselected options are muted. Single-choice
      groups glide the pill (left + width) to the option you pick; multi-select groups (filters) fill each chosen pill. */
-  .seg:not(.nav) { padding: 2px; gap: 2px; background: var(--card-2); border: 1px solid var(--outline); }
+  .seg:not(.nav) { padding: 2px; gap: 2px; background: var(--card-2); border: 1px solid var(--outline); border-radius: 999px; } /* fully round at any height, so the track and the pill inside share one curve */
   .seg:not(.nav) > button, .seg.tgroup .tchip { height: 100%; border: 0 !important; border-radius: 999px; color: var(--muted); font-weight: 700; transition: color .2s, background-color .2s; }
   .seg:not(.nav) > button:not(.on):hover, .seg.tgroup .tchip:not(.on):hover { background: transparent; color: var(--ink); }
   .seg:not(.nav) > button.on { background: var(--sel-bg); color: var(--sel-ink); font-weight: 800; }
@@ -5472,6 +5472,28 @@
     th.style.left = on.offsetLeft + 'px'; th.style.width = on.offsetWidth + 'px'; th.style.opacity = '1';
     if (!animate) { void th.offsetWidth; th.style.transition = ''; }
   }
+  /** Button-group labels that don't fit: a one-word label (8+ letters, e.g. a position like "Maintenance") whose button
+   *  is too narrow to hold it with breathing room shows a short form instead — its first 5 letters, minus trailing vowels
+   *  ("Maint", "Intel", "Oper"). The full word stays as the tooltip and the accessible name. Re-checked on every redraw
+   *  and resize; it only ever writes when the text actually changes (so it never re-triggers itself). */
+  const shortWord = w => { let t = w.slice(0, 5); while (t.length > 3 && /[aeiouy]$/i.test(t)) t = t.slice(0, -1); return t; };
+  function fitSegLabels() {
+    document.querySelectorAll('.seg:not(.nav) > button').forEach(b => {
+      if (b.children.length) return; // icons or markup: leave it alone
+      let full = b.dataset.full;
+      if (!full) {
+        full = b.textContent.trim();
+        if (full.length < 8 || /\s/.test(full)) return;
+        b.dataset.full = full; if (!b.title) b.title = full; b.setAttribute('aria-label', full);
+      }
+      if (!b.clientWidth) return; // hidden: check when it's shown
+      if (b.textContent !== full) b.textContent = full;
+      const r = document.createRange(); r.selectNodeContents(b);
+      const cs = getComputedStyle(b), room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      if (r.getBoundingClientRect().width > room - 8) b.textContent = shortWord(full);
+    });
+  }
+  window.addEventListener('resize', () => fitSegLabels());
   /** Segmented buttons (single choice): the highlight pill glides from where it last was to the chosen button —
    *  even when the group is redrawn (its last spot is remembered per group, data-sk). */
   const segLast = {};
@@ -5503,7 +5525,7 @@
       if (!raf) raf = requestAnimationFrame(() => { raf = 0; document.querySelectorAll('.stsl:not([data-placed])').forEach(sl => placeThumb(sl, false)); });
       // Segmented pills: a timer, not a frame, so they're placed even in a background tab (until then the group keeps
       // its plain selected highlight).
-      if (!tmr) tmr = setTimeout(() => { tmr = 0; document.querySelectorAll('.seg-slide:not([data-placed]), .seg-slide[data-pre]').forEach(sg => placeSeg(sg, false)); }, 0);
+      if (!tmr) tmr = setTimeout(() => { tmr = 0; fitSegLabels(); document.querySelectorAll('.seg-slide:not([data-placed]), .seg-slide[data-pre]').forEach(sg => placeSeg(sg, false)); }, 0);
     }).observe(document.body, { childList: true, subtree: true });
     // A choice changed in place (no redraw): slide to it.
     document.addEventListener('click', ev => {
