@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792707520"></script>
+    <script src="config.js?v=1792707899"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792707520';
+      window.PAL_BUILD = '1792707899';
       (function () {
         function check(launch) {
           try {
@@ -3551,6 +3551,13 @@
   .wp-arrow { opacity: 1; margin-bottom: 23px; }
   .wp-arrow .ic { display: block; width: 28px; height: 28px; stroke-width: 3; }
   @media (max-width: 400px) { .wp-arrow { margin-bottom: 22px; } }
+  /* All Requests: the Medical band header chip and rows (stripes like the bars, label pill, the symbol in the first column). */
+  .badge.t-med { background: var(--med-stripes) !important; box-shadow: inset 0 0 0 1.5px var(--med-edge); padding: 2px 6px; color: var(--med-ink); }
+  .badge.t-med .med-lbl { padding: 0 6px; }
+  tr.t-ty-medical .st-in .msym { margin: 0 auto; }
+  .ty-med-tag { background: var(--med-stripes); box-shadow: inset 0 0 0 1.5px var(--med-edge); display: inline-grid; place-items: center; }
+  .ty-med-tag .msym { --msym-bg: #ffffff; }
+  :root[data-theme="dark"] .ty-med-tag .msym { --msym-bg: #23272e; }
 </style>
 
   </head>
@@ -6276,6 +6283,15 @@
 
   /** Needs an admin decision: pending, or in a conflict that isn't resolved yet. */
   const isOpenReq = r => r.status === 'Pending' || openConflictOf(r);
+  /** All Requests: the Medical events the filters show (position, person, Injured filter, search), as rows. */
+  function listMedical() {
+    const F = S.f, q = S.list.q.trim().toLowerCase();
+    return medEvents().map(m => Object.assign(medReq(m), { end: m.end || D.add(S.today, 365) })).filter(r => {
+      const u = userOf(r.userId);
+      if (!u || !F.role.includes(u.role) || !personConfOk(r, F)) return false;
+      return !q || (u.rank + ' ' + u.name + ' ' + u.unit + ' medical ' + (r.note || '')).toLowerCase().indexOf(q) >= 0;
+    });
+  }
   function filteredList() {
     const L = S.list, F = S.f, q = L.q.trim().toLowerCase(), open = S.isAdmin && S.openOnly;
     return IDX.live.filter(r => {
@@ -6375,7 +6391,21 @@
     // Compact marks next to the name (instead of wide badges): Overlap (orange), changed by admin (pencil).
     const marks = r => (dupsOf(r).length ? '<span class="cfl cfl-sm cfl-warn" title="' + esc('Overlap: ' + dupText(r)) + '" aria-label="Overlap">' + icon('alert', 13) + '</span>' : '') +
       (isChanged(r) ? '<span class="cfl cfl-sm cfl-chg" title="Dates changed by admin" aria-label="Dates changed by admin">' + icon('pencil', 13) + '</span>' : '');
+    // Medical rows (admins, All Requests): the symbol, puck, Start / End (NO END if none), days, notes; Edit opens it.
+    const medRow = r => {
+      const u = userOf(r.userId), m = r.med, open = !m.end;
+      return '<tr class="t-' + tcls('Medical') + (medOn(m, S.today) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(fullName(u) + ', Medical, ' + D.short(m.start) + (open ? '' : ' to ' + D.short(m.end))) + '">' +
+        '<td class="st-ic-c"><div class="st-in">' + medSym(18) + '</div></td>' +
+        '<td class="strong stk"><div class="stk-in">' + memberPuck(u) + '</div></td>' +
+        '<td class="num pdate">' + passDate(m.start) + '</td>' +
+        '<td class="num pdate">' + (open ? '<b>NO END</b><i>&nbsp;</i>' : passDate(m.end)) + '</td>' +
+        '<td class="num"><span class="days">' + (open ? '—' : D.days(m.start, m.end)) + '</span></td>' +
+        (showNote ? '<td class="note" title="' + esc(m.note || '') + '"><div class="clamp">' + (m.note ? esc(m.note) : '<span class="muted">—</span>') + '</div></td>' : '') +
+        '<td></td>' +
+        '<td class="acts-cell"><div class="row-acts">' + (canMed(m.userId) ? '<button class="btn sm act" data-act="editMedical" data-id="' + esc(m.id) + '" aria-label="Edit medical for ' + esc(u.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' : '<span class="muted">—</span>') + '</div></td></tr>';
+    };
     const rowHtml = (r, showType) => {
+      if (r.med) return medRow(r);
       const u = userOf(r.userId), n = D.days(r.start, r.end), cd = conflictDays(r), st2 = r.status.toLowerCase();
       let acts = '';
       if (isCanc(r)) acts += stBadge(r); // canceled: no decision slider, just the pill
@@ -6428,7 +6458,7 @@
         if (band && !st.userSorted) { act.sort(byPosName); rest.sort(byStart); }
         if (band) list = act.concat(rest);
       }
-      const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : '<span class="badge t-' + tcls(type) + '">' + esc(type) + '</span>' +
+      const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : type === 'Medical' ? '<span class="badge t-' + tcls(type) + ' t-med">' + MED_LBL + '</span>' : '<span class="badge t-' + tcls(type) + '">' + esc(type) + '</span>' +
         (nAct ? '<span class="grp-now"><i class="now-dot" aria-hidden="true"></i>' + nAct + ' active</span>' : '');
       const empty = '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + (type === 'Past' ? 'Nothing past to show.' : 'No ' + esc(type.toLowerCase()) + ' to show.') + '</span></td></tr>';
       const more = '<tr class="grp-more"><td colspan="' + n + '"><button type="button" class="linkbtn grp-more-in" data-act="grpMore" data-table="' + key + '" data-v="' + type + '">' +
@@ -6462,7 +6492,11 @@
     };
     // One band per event type (Leave, Pass, then added types that have requests or are enabled), then Past.
     const tl = typeNames().filter(t => !typeInfo(t).disabled || cur.some(r => r.type === t));
-    const body = boGroup() + tl.map(t => group(t, cur.filter(r => r.type === t))).join('') + group('Past', past);
+    // All Requests (admins): Medical between the types and Past — ongoing / upcoming ones here, ended ones in Past.
+    const meds = table === 'list' && S.isAdmin && !fHidden('Medical') ? listMedical() : [];
+    const medCur = meds.filter(r => !r.med.end || r.med.end >= S.today), medPast = meds.filter(r => r.med.end && r.med.end < S.today);
+    const body = boGroup() + tl.map(t => group(t, cur.filter(r => r.type === t))).join('') + (table === 'list' && S.isAdmin && !fHidden('Medical') ? group('Medical', medCur) : '') +
+      group('Past', past.concat(medPast));
     return '<div class="tbl-wrap" id="tbl-' + key + '" data-table="' + key + '"><table class="rtable"><thead><tr>' + head + '</tr></thead>' + body + '</table></div>';
   }
 
@@ -6980,6 +7014,9 @@
           (used || builtIn ? '' : '<button class="btn sm del act ico" data-act="deleteType" data-name="' + esc(t.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>') +
         '</div></td><td class="on-cell">' + sw(!t.disabled, 'toggleType', t.name + ' enabled', ' data-name="' + esc(t.name) + '"') + '</td></tr>';
     }).join('') +
+      // Medical (special, admin only), above Blackout.
+      '<tr class="ty-med"><td><span class="badge t-ltr ty-med-tag">' + medSym(16) + '</span></td><td class="strong">Medical</td><td class="num"><span class="muted">—</span></td>' +
+        '<td><span class="muted">Admin Only</span></td><td class="acts-cell"><div class="row-acts"><span class="muted">Add Event → Medical</span></div></td><td class="on-cell"></td></tr>' +
       '<tr class="ty-bo"><td><span class="badge bo-badge t-ltr">' + icon('ban', 12) + '</span></td><td class="strong">Blackout</td><td class="num"><span class="muted">—</span></td>' +
         '<td><span class="muted">Admin Only</span></td><td class="acts-cell"><div class="row-acts"><span class="muted">Set in Blackout dates</span></div></td><td class="on-cell"></td></tr>';
     return '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Tag</th><th scope="col">Type</th><th scope="col" class="num">Max Length</th>' +
@@ -7479,7 +7516,7 @@
       '<div class="panel"><h3>' + icon('eye', 16) + ' Who Sees Whose Schedules' + tip('Each row is a position; tick the positions whose schedules it can see. Everyone always sees their own requests and each day’s open or full leave slots. Admins always see everyone they manage.') + '</h3>' +
         seeGridHtml() + '</div>' +
 
-      // Event types: Leave, Pass and added ones (max length, Warn / Limit), plus Blackout (special, admin only).
+      // Event types: Leave, Pass and added ones (max length, Warn / Limit), plus Blackout and Medical (special, admin only).
       '<div class="panel"><div class="cfg-h"><h3>' + icon('calendar', 16) + ' Event Types' + tip('Max days per request: Limit blocks longer ones; Warn allows them but flags them. Per-position daily limits are in Positions.') + '</h3>' +
         '<button class="btn primary" data-act="newType">' + icon('plus', 18) + 'New Type</button></div>' +
         adminTypes() + '</div>' +
@@ -8662,11 +8699,13 @@
     } else {
       const c = wizCheck();
       const who = wizWho();
-      if (isMed) body = '<div class="review">' +
-        '<div class="rv"><span class="lbl">Medical</span><div class="wiz-for">' + wizIds().map(id => memberPuck(userOf(id))).join(' ') + '</div></div>' +
-        '<div class="rv"><span class="lbl">Dates</span><div class="big">' + tkDay(w.start) + ' → ' + tkDay(w.end) + '</div></div>' +
-        (w.note.trim() ? '<div class="rv"><span class="lbl">Notes</span><div class="note">' + esc(w.note.trim()) + '</div></div>' : '') +
-        '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
+      if (isMed) { // Review = the Medical pass, like Leave / Pass review
+        const ids = wizIds(), one = ids.length === 1 && userOf(ids[0]);
+        const roles = [...new Set(ids.map(id => userOf(id).role))];
+        body = '<div class="review">' + walletPass({ type: 'Medical', med: true, start: w.start, end: w.end, note: w.note.trim(),
+          cut: (w.medCut || []).filter(t => roles.some(r => quota(r, t))), who: one ? calName(one) : plural(ids.length, 'member'), whoSub: one ? memberSub(one) : who, status: 'Approved' }) +
+          '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
+      }
       else if (isBo) body = '<div class="review">' +
         '<div class="rv"><span class="lbl">Blackout</span><div class="big">' + boBadge({ types: w.boTypes }, 'font-size:12px') + '</div></div>' +
         '<div class="rv"><span class="lbl">Dates</span><div class="big">' + D.f(w.start, { weekday: 'short', month: 'short', day: 'numeric' }) + ' ' + icon('arrow', 15) + ' ' + D.f(w.end, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + '</div>' +
@@ -8690,7 +8729,7 @@
     }
     openModal('wizard', head + '<div class="modal-b">' + body + '</div><div class="modal-f">' + foot + '</div>', true);
     $('#modal .modal').classList.add('wiz-sheet'); // compact layout: the whole form fits a phone screen without scrolling
-    if (w.step === 3 && !isBo && !isMed) $('#modal .modal').classList.add('pass-sheet'); // Review: the pass alone, no dialog frame
+    if (w.step === 3 && !isBo) $('#modal .modal').classList.add('pass-sheet'); // Review: the pass alone, no dialog frame
   }
   /* Step 2: pick dates on the calendar (or type them in the fields below it). Only blocking problems show here;
      the summary, warnings and trip notes are on the Review step. */
