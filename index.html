@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792659812"></script>
+    <script src="config.js?v=1792660468"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792659812';
+      window.PAL_BUILD = '1792660468';
       (function () {
         function check(launch) {
           try {
@@ -1078,13 +1078,6 @@
   .qd.av-open, .qd.av-open.wknd { background: var(--av-open); }
   .qd.av-over, .qd.av-over.wknd { background: var(--av-over); }
   .qd.av-full, .qd.av-full.wknd { background: var(--av-full); }
-  .qkey { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; padding: 4px 12px 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
-  .qk-t { font-weight: 800; color: var(--on-surface); text-transform: uppercase; letter-spacing: .06em; font-size: 12px; }
-  .qk { display: inline-flex; align-items: center; gap: 6px; }
-  .qk i { width: 14px; height: 14px; border-radius: 4px; }
-  .qk.av-open i { background: var(--av-open); box-shadow: inset 0 0 0 2px var(--av-open-dot); }
-  .qk.av-over i { background: var(--av-over); box-shadow: inset 0 0 0 2px var(--av-over-dot); }
-  .qk.av-full i { background: var(--av-full); box-shadow: inset 0 0 0 2px var(--av-full-dot); }
 
   /* Request and Stats tables: Last Name (.stk) stays pinned to the left edge while the rest scrolls sideways. */
   .rtable .stk { position: sticky; left: 0; box-shadow: inset -1px 0 0 var(--line), 6px 0 8px -6px rgba(0, 0, 0, .35); }
@@ -2858,19 +2851,7 @@
     .m3-li-static .m3-li-btn { grid-column: 2; justify-self: start; }
   }
   .m3-note, .m3-note * { white-space: normal; overflow-wrap: anywhere; }
-  /* Qtr on phones: the pull-for-next / previous-quarter pill, and the new quarter sliding in. */
-  .q-pull { position: absolute; left: 50%; z-index: 6; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px;
-    border-radius: 18px; background: var(--card-2); color: var(--ink); border: 1px solid var(--outline); font-size: 14px; font-weight: 700;
-    box-shadow: var(--shadow); white-space: nowrap; pointer-events: none; opacity: calc(.35 + .65 * var(--pull, 0));
-    transform: translate(-50%, calc((1 - var(--pull, 0)) * var(--q-from))); }
-  .q-pull-end { bottom: 12px; --q-from: 24px; }
-  .q-pull-top { top: 12px; --q-from: -24px; }
-  .q-pull.ready { background: var(--sel-bg); color: var(--sel-ink); border-color: var(--sel-bg); }
   #calBody { position: relative; }
-  .quad.q-in-up { animation: qInUp .28s cubic-bezier(.3, .8, .25, 1); }
-  .quad.q-in-down { animation: qInDown .28s cubic-bezier(.3, .8, .25, 1); }
-  @keyframes qInUp { from { transform: translateY(48px); opacity: .3; } }
-  @keyframes qInDown { from { transform: translateY(-48px); opacity: .3; } }
   /* PIN panels (Admin: Default, Team Admin = yellow; Org Admin = red; Settings: My PIN = plain). Title + ⓘ on the left,
      one button on the right: Change PIN (tonal) or Set PIN (filled, when not set). Filled colors: navy on yellow 9.3:1,
      white on red 6.5:1. */
@@ -2923,6 +2904,24 @@
   .auto-st.auto-ok { color: var(--ok); font-weight: 700; }
   .auto-st.auto-warn { color: var(--warn); font-weight: 700; }
   .auto-st.auto-bad { color: var(--bad); font-weight: 700; }
+  /* Phones: the calendar runs 18px down behind the dock, so the dock's rounded top corners show calendar (the weekend
+     columns' color in Month) instead of a dark gap. Month keeps every visible row the same size: the grid gets 18px of
+     bottom padding and only the last week reaches down into it, its own content held clear of the dock. Scrolling views
+     (Week, Qtr, Day) get the same 18px of room at the end so nothing hides under the dock. */
+  @media (max-width: 700px) {
+    .cal > .cal-split { margin-bottom: -18px; }
+    .cal > .calbar { z-index: 6; }
+    .month.compact .month-grid { padding-bottom: 18px; }
+    .month.compact .month-grid > .week-row:last-child { margin-bottom: -18px; }
+    .month.compact .month-grid > .week-row:last-child > * { padding-bottom: 18px; }
+    .quad { padding-bottom: 0; }
+    .quad > :last-child { padding-bottom: 18px; } /* the last month card runs behind the dock, so its corners show the card */
+    .dayv, .dayv-panel { padding-bottom: 18px; }
+    /* List pages (All Requests, My Requests, Roster): the table / list runs behind the dock the same way, with 18px of
+       room at its end so the last row still scrolls clear. */
+    .page > .lbar { margin-top: -18px; z-index: 6; }
+    .page:has(> .lbar) .tbl-wrap, .page:has(> .lbar) .scroll { padding-bottom: 18px; }
+  }
 </style>
 
   </head>
@@ -2981,7 +2980,6 @@
     sheet: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/>',
     arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
     down: '<path d="m6 9 6 6 6-6"/>',
-    up: '<path d="m18 15-6-6-6 6"/>',
     chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
     clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     crown: '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
@@ -3228,12 +3226,12 @@
     return S.f.role.filter(r => quota(r));
   }
   /** The Open / Overbooked / Full key shown above Qtr and Month Stats, and the slots' name for day labels. */
+  /** What the availability tint is about, for day labels ("Leave slots (P, B) open"). No key bar is drawn: the
+   *  green / orange / red day colors speak for themselves in Month Stats and Qtr. */
   function availKey() {
     const aRoles = availRoles();
     const slotsName = aRoles.length === 1 ? esc(aRoles[0]) + ' slots' : 'Leave slots (' + aRoles.map(r => esc(roleL(r))).join(', ') + ')';
-    const key = aRoles.length ? '<div class="qkey"><span class="qk-t">' + slotsName + '</span>' +
-      '<span class="qk av-open"><i></i>Open</span><span class="qk av-over"><i></i>Overbooked</span><span class="qk av-full"><i></i>Full</span></div>' : '';
-    return { slotsName, key };
+    return { slotsName };
   }
   function dayAvail(d) {
     return availRoles().map(r => availClass(d, r)).filter(Boolean).sort((x, y) => AV_RANK[y] - AV_RANK[x])[0] || '';
@@ -4798,12 +4796,12 @@
   /* Month, Stats mode: each day shows P / B / O meters (count vs daily max) for the current filters, tinted like Qtr —
      green Open, yellow Overbooked, red Full — with the same key above. */
   function renderMonthStats() {
-    const { slotsName, key } = availKey();
+    const { slotsName } = availKey();
     const ms = D.monthStart(S.cursor), month = ms.slice(0, 7), gs = D.weekStart(ms);
     const weeks = Math.ceil((D.dow(ms) + D.diff(ms, D.addMonths(ms, 1))) / 7);
     const reqs = calRequests().filter(countable);
     const roles = ROLES.filter(r => S.f.role.includes(r));
-    let html = key + '<div class="month compact"><div class="dow-row">' + DOW.map(d => '<div>' + d[0] + '</div>').join('') + '</div>' +
+    let html = '<div class="month compact"><div class="dow-row">' + DOW.map(d => '<div>' + d[0] + '</div>').join('') + '</div>' +
       '<div class="month-grid" style="--weeks:' + weeks + '">';
     for (let w = 0; w < weeks; w++) {
       html += '<div class="week-row">';
@@ -5115,7 +5113,7 @@
     // Phone month: pick how many bar lanes fit each week row, then redraw if that changed.
     const pg = $('.month.compact.strips .month-grid');
     if (pg && pg.children.length) {
-      const rowH = pg.clientHeight / pg.children.length;
+      const rowH = (pg.clientHeight - (parseFloat(getComputedStyle(pg).paddingBottom) || 0)) / pg.children.length; // not the room behind the dock
       const lanes = Math.max(1, Math.min(3, Math.floor((rowH - 25) / 25))); // 28px day number + 22px bars with 3px gaps
       if (lanes !== (S.phoneLanes || 3)) { S.phoneLanes = lanes; $('#calBody').innerHTML = renderMonth(); paintSel(); }
       return;
@@ -5149,13 +5147,13 @@
     // Full (red) = approved fill every slot; Overbooked (orange) = requests (approved + pending) fill or exceed the slots
     // but approvals don't; Open (green) = requests still leave a slot free. Counts ignore the status/type filters (they are facts about the day).
     const avail = d => dayAvail(d);
-    const { slotsName, key } = availKey();
+    const { slotsName } = availKey();
     const bar = (r, d) => {
       const first = d === r.start, last = d === r.end, lbl = first || D.dow(d) === 0 || d.slice(8) === '01';
       const cls = ['qbar', tcls(r.type), 'st-' + r.status.toLowerCase(), first ? 'b-s' : '', last ? 'b-e' : ''].join(' ');
       return '<span class="' + cls + '" role="button" tabindex="0" data-act="openReq" data-id="' + esc(r.id) + '" title="' + esc(describe(r)) + '" aria-label="' + esc(describe(r)) + '">' + (lbl ? '<span>' + r.type + '</span>' : '') + '</span>';
     };
-    return key + '<div class="quad' + (person ? ' q-person' : '') + '">' + months.map(m0 => {
+    return '<div class="quad' + (person ? ' q-person' : '') + '">' + months.map(m0 => {
       const gs = D.weekStart(m0), mon = m0.slice(0, 7);
       let cells = '';
       for (let i = 0; i < 42; i++) {
@@ -7666,8 +7664,9 @@
     setTimeout(() => el.remove(), 650);
   }
   /* Swipe left / right on the calendar (touch), or grab and drag it with the mouse (desktop): next / previous day, week or
-     month. Qtr: on phones (one month across) a swipe moves one month; on wide screens the next / previous quarter is drawn
-     beside it and follows the drag, like Month. Week view has its own drag (the strip scrolls). */
+     month. Qtr (four months from the one you're on) always moves four months, like its arrows: on phones the four
+     months scroll up and down and a sideways swipe jumps; on wide screens the next / previous four are drawn beside it
+     and follow the drag, like Month. Week view has its own drag (the strip scrolls). */
   (function () {
     let sx = 0, sy = 0, st = 0, on = false, mouse = false;
     let drag = false; // the calendar is following the finger / pointer sideways
@@ -7757,55 +7756,10 @@
         }, 230);
         return;
       }
-      moveCursor(dx < 0 ? 1 : -1, isCompact() ? 1 : 0, drag ? dx * 0.85 : 0); // Qtr: one month on phones, else a quarter
+      moveCursor(dx < 0 ? 1 : -1, 0, drag ? dx * 0.85 : 0); // 0 = Qtr's full four months, like the arrows
       drag = false;
     }
   })();
-  /* Phones, Qtr: the four months scroll; keep pulling past the last one (or above the first) and a pill shows "Pull for
-     next quarter" → "Release for Feb – May 2027". Let go past the line and the next / previous quarter loads (at its top,
-     or its bottom when going back). No rubber-band anywhere, so this pill is the only thing that moves. */
-  (function () {
-    const PULL = 84; // px of pull to switch
-    let st = null; // { y, el, dir, cue }
-    const label = dir => { const c = D.addMonths(S.cursor, 4 * dir), last = D.addMonths(c, 3);
-      return D.f(c, { month: 'short' }) + ' – ' + D.f(last, { month: 'short', year: 'numeric' }); };
-    document.addEventListener('touchstart', ev => {
-      st = null;
-      if (!isCalView() || S.cal !== 'quad' || !isCompact() || S.modal || ev.touches.length !== 1) return;
-      const el = ev.target.closest && ev.target.closest('.quad'); if (!el) return;
-      const atTop = el.scrollTop <= 0, atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-      if (atTop || atEnd) st = { y: ev.touches[0].clientY, x: ev.touches[0].clientX, el, atTop, atEnd, dir: 0, cue: null, pull: 0 };
-    }, { passive: true });
-    document.addEventListener('touchmove', ev => {
-      if (!st) return;
-      const dy = ev.touches[0].clientY - st.y, dx = ev.touches[0].clientX - st.x;
-      if (Math.abs(dx) > Math.abs(dy)) { drop(); return; } // sideways: that's a month swipe
-      const dir = dy < 0 && st.atEnd ? 1 : dy > 0 && st.atTop ? -1 : 0;
-      if (!dir) { drop(); return; }
-      st.dir = dir; st.pull = Math.min(140, Math.abs(dy) * 0.6);
-      if (!st.cue) {
-        st.cue = document.createElement('div'); st.cue.className = 'q-pull ' + (dir > 0 ? 'q-pull-end' : 'q-pull-top'); st.cue.setAttribute('aria-hidden', 'true');
-        st.el.parentElement.appendChild(st.cue);
-      }
-      const ready = st.pull >= PULL;
-      st.cue.innerHTML = icon(dir > 0 ? 'down' : 'up', 16) + '<span>' + (ready ? 'Release for ' + esc(label(dir)) : 'Pull for ' + (dir > 0 ? 'next' : 'previous') + ' quarter') + '</span>';
-      st.cue.classList.toggle('ready', ready);
-      st.cue.style.setProperty('--pull', String(Math.min(1, st.pull / PULL)));
-    }, { passive: true });
-    function drop() { if (st && st.cue) st.cue.remove(); st = null; }
-    document.addEventListener('touchend', () => {
-      if (!st) return;
-      const go = st.dir && st.pull >= PULL, dir = st.dir;
-      drop();
-      if (!go) return;
-      hideToast(); S.sel = null; S.weekLeft = null;
-      S.cursor = D.addMonths(S.cursor, 4 * dir);
-      render();
-      const q = document.querySelector('.quad');
-      if (q) { q.scrollTop = dir > 0 ? 0 : q.scrollHeight; if (!reduceMotion()) q.classList.add(dir > 0 ? 'q-in-up' : 'q-in-down'); }
-    }, { passive: true });
-  })();
-
   /* Phones: pull a bottom-sheet dialog down to close it — but only when the swipe STARTS with its content already
      scrolled to the top (a swipe that's scrolling the content up never closes it). */
   (function () {
