@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792700816"></script>
+    <script src="config.js?v=1792701045"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792700816';
+      window.PAL_BUILD = '1792701045';
       (function () {
         function check(launch) {
           try {
@@ -1974,7 +1974,9 @@
   .srv-bad { background: #b42318; cursor: default; }
   .srv-upd { background: var(--gold); color: var(--navy); cursor: pointer; }
   /* A shared bar carried over from last week starts exactly where other carried-over bars do (badges line up). */
-  .evs.grp.end, .evs.grp.mid { padding-left: 11px !important; }
+  /* Shared bars carried over from the previous week: the puck starts 15px into the day, like every other bar
+     (1px margin + 14px; their content's 3px outline room is pulled back by the same 3px). */
+  .evs.grp.end, .evs.grp.mid { padding-left: 14px !important; }
   /* Request review: the type is a big colored banner (Leave navy, Pass yellow), not a small badge. */
   .rv-type { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 14px; }
   .rv-type.rv-leave { background: var(--leave); color: #ffffff; }
@@ -5495,7 +5497,8 @@
       const cls = ['cell', d.slice(0, 7) !== month ? 'out' : '', d === S.today ? 'today' : '', (i === 0 || i === 6) ? 'wknd' : '', dayWarn(d), boCls(d).trim()].join(' ');
       html += '<div class="' + cls + '" data-act="pickDay" data-date="' + d + '"' + (blackoutsOn(d).length ? ' title="' + esc(boTitle(d)) + '"' : '') + '>' +
         '<div class="cell-head"><button class="dnum" data-act="gotoDay" data-date="' + d + '" aria-label="Open day view for ' + D.f(d, { weekday: 'long', month: 'long', day: 'numeric' }) + '">' + Number(d.slice(8)) + '</button>' +
-        (S.priv ? '' : '<span class="qday">' + seeRoles().filter(r => ROLE_DEF[r] || quota(r) || countOn(d, r)).map(r => qChip(d, r) + cappedTypes(r).filter(t => t !== 'Leave' && countOn(d, r, t)).map(t => qChip(d, r, t)).join('')).join('') + '</span>') +
+        // Count chips: only the positions the filters show.
+        (S.priv ? '' : '<span class="qday">' + seeRoles().filter(r => S.f.role.includes(r) && (ROLE_DEF[r] || quota(r) || countOn(d, r))).map(r => qChip(d, r) + cappedTypes(r).filter(t => t !== 'Leave' && countOn(d, r, t)).map(t => qChip(d, r, t)).join('')).join('') + '</span>') +
         '</div>' +
         (hidden[i] ? '<button class="more" data-act="dayList" data-date="' + d + '" aria-label="Show all ' + (hidden[i]) + ' more on ' + D.short(d) + '">+' + hidden[i] + '<span class="wide"> more</span></button>' : '') +
         '</div>';
