@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792702469"></script>
+    <script src="config.js?v=1792702617"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792702469';
+      window.PAL_BUILD = '1792702617';
       (function () {
         function check(launch) {
           try {
@@ -3452,10 +3452,14 @@
   .mc-med-x { margin: 0 0 8px 40px; display: grid; gap: 4px; }
   .mc-med-x .wiz-dates { margin: 0 0 4px; }
   .mc-body .mc-li.mc-sub, .mc-li.mc-sub { min-height: 48px; padding: 4px 0; }
-  /* Day view: Medical — same list as On Leave / On Pass, red header. */
-  .day-groups .dl-h.med { background: #b42318; color: #ffffff; }
-  .badge.s-med { height: 26px; padding: 0 10px; border-radius: 13px; border-color: transparent; font-weight: 800; background: #fde2df; color: #8c1d18; }
-  :root[data-theme="dark"] .badge.s-med { background: rgba(255, 99, 88, .18); color: #ffb4ab; }
+  /* Day view: Medical — same list as On Leave / On Pass, slate-gray header. */
+  .day-groups .dl-h.med { background: #5b6472; color: #ffffff; }
+  .badge.s-med { height: 26px; padding: 0 10px; border-radius: 13px; border-color: transparent; font-weight: 800; background: #e6e8ec; color: #343a46; }
+  :root[data-theme="dark"] .badge.s-med { background: rgba(255, 255, 255, .12); color: #e6e8ec; }
+  /* Switch rows keep the switch at the far right on phones too (rule 10). */
+  .mc-li:has(> .mc-li-a > .m3sw:only-child) { flex-wrap: nowrap; }
+  .mc-li-a:has(> .m3sw:only-child), .mc-body .mc-li-a:has(> .m3sw:only-child) { width: auto; padding-left: 0; margin-left: auto; justify-content: flex-end; }
+  .mc-med-x > .err:empty { display: none; }
   .dl-row .badge.s-med + .badge.s-med { margin-left: 6px; }
 </style>
 
@@ -5725,7 +5729,7 @@
   function medDetail(u) {
     const id = ' data-id="' + esc(u.id) + '"', cut = u.injuredCut || [];
     const date = (k, label, v) => '<div class="field pf"><label for="mcMed' + k + '">' + label + '</label><div class="pill-in pill-date"><input id="mcMed' + k + '" type="date" value="' + esc(v || '') + '" data-change="setInjDates"' + id + '>' + icon('calendar', 18) + '</div></div>';
-    return '<div class="mc-med-x"><div class="wiz-dates">' + date('S', 'Start', u.injuredFrom || S.today) + date('E', 'End', u.injuredUntil) + '</div>' +
+    return '<div class="mc-med-x"><div class="wiz-dates">' + date('S', 'Start', u.injuredFrom || S.today) + date('E', 'End', u.injuredUntil) + '</div><div class="err" id="mcMedErr"></div>' +
       typeNames().filter(t => quota(u.role, t)).map(t => { const on = cut.includes(t);
         return '<div class="mc-li mc-sub"><div class="mc-li-t"><b>Lowers ' + esc(t) + ' Max</b></div>' +
           '<div class="mc-li-a">' + sw(on, 'setInjCut', 'Lowers ' + t + ' max', id + ' data-v="' + esc(t) + '"') + '</div></div>'; }).join('') + '</div>';
@@ -5741,7 +5745,7 @@
       const u = x[0];
       return '<li><button class="dl-row" data-act="memberCard" data-id="' + esc(u.id) + '" aria-label="' + esc(fullName(u) + ': Medical') + '">' +
         '<span class="dl-who">' + memberPuck(Object.assign({}, u, { injuredFrom: '' })) + '</span>' +
-        '<span class="dl-meta">' + esc(roleName(u.role)) + ' · ' + tkDay(u.injuredFrom || S.today) + (u.injuredUntil ? ' → ' + tkDay(u.injuredUntil) : '') + '</span>' +
+        '<span class="dl-meta">' + esc(roleName(u.role)) + ' · ' + tkDay(u.injuredFrom || S.today) + ' → ' + (u.injuredUntil ? tkDay(u.injuredUntil) : '<b class="tk">NO END</b>') + '</span>' +
         x[1].map(t => '<span class="badge s-med">' + esc(t) + ' −1</span>').join('') + '</button></li>';
     }).join('') + '</ul></div>';
   }
@@ -8192,8 +8196,7 @@
           '<input id="mcPin2" ' + NEW_PIN + ' placeholder="Again" aria-label="PIN again">' +
           '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div></div><div class="err" id="mcPinErr"></div>' +
         // Medical (injured): a switch for admins over this member; the mark shows next to their name, to admins only.
-        (S.isAdmin && (S.isOrg || inScope(S.adminScope, u)) ? '<div class="mc-li"><span class="mc-li-ic mc-med">' + redCross(22) + '</span><div class="mc-li-t"><b>Medical</b><span>' +
-          (u.injured ? 'Injured · ' + (u.injuredFrom ? D.short(u.injuredFrom) : 'Today') + ' → ' + (u.injuredUntil ? D.short(u.injuredUntil) : 'No end date') : 'Not injured') + '</span></div><div class="mc-li-a">' + sw(!!u.injured, 'setInjured', 'Medical (injured)', ' data-id="' + esc(uid) + '"') + '</div></div>' +
+        (S.isAdmin && (S.isOrg || inScope(S.adminScope, u)) ? '<div class="mc-li"><span class="mc-li-ic mc-med">' + redCross(22) + '</span><div class="mc-li-t"><b>Medical</b></div><div class="mc-li-a">' + sw(!!u.injured, 'setInjured', 'Medical (injured)', ' data-id="' + esc(uid) + '"') + '</div></div>' +
           (u.injured ? medDetail(u) : '') : '') +
         // Admin: Org Admin | Team Admin | None (team admins: Team Admin | None), then — for a team admin — the grid of
         // unit + position pairs they manage. Every change saves at once.
@@ -9754,7 +9757,8 @@
     setInjDates(el) {
       const u = S.users.find(x => x.id === el.dataset.id); if (!u) return;
       const from = ($('#mcMedS') || {}).value || S.today, until = ($('#mcMedE') || {}).value || '';
-      if (until && until < from) { toast('End date must be on or after the start date', 'err', 2500); openMemberCard(u.id); return; }
+      const endEl = $('#mcMedE'), errEl = $('#mcMedErr');
+      if (until && until < from) { if (endEl) endEl.setAttribute('aria-invalid', 'true'); if (errEl) errEl.textContent = 'End must be on or after Start.'; return; } // on the field, not a toast
       save(() => Object.assign(u, { injuredFrom: from, injuredUntil: until }), 'apiSetInjured', S.token, u.id, true, from, until, u.injuredCut || []);
       render(); if (S.modal === 'member') openMemberCard(u.id);
     },
