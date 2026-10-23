@@ -110,14 +110,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792751739"></script>
+    <script src="config.js?v=1792751978"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792751739';
+      window.PAL_BUILD = '1792751978';
       (function () {
         function check(launch) {
           try {
@@ -3689,6 +3689,8 @@
   .pm-bh .bh-marks { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 4px; }
   .pm-bh .bh-marks:empty { display: none; }
   .pm-bh .bh-marks .st-med, .pm-bh .bh-marks .adm-ic { margin-left: 0; }
+  /* The big badge's name box stays light in dark mode, so its crown keeps the light-mode colors (gold on black). */
+  :root[data-theme="dark"] .pm-bh .adm-ic.adm-org { background: #111111 !important; color: #FCC22B !important; }
   .mc-tb .adm-ic { margin-left: 0; }
   /* Day panel week strip: taller dates with bigger type that fill the space under the header (less dead gap). */
   .dayv-panel .dp-h { padding-bottom: 2px; margin-bottom: 0; }
@@ -3766,7 +3768,7 @@
   </head>
   <body>
     <div id="app">
-      <div class="splash"><div class="brand-logo logo-loading" role="img" aria-label="126th Expeditionary Air Refueling Squadron"></div><div class="splash-t">Loading…</div></div>
+      <div class="splash"><div class="brand-logo logo-loading" role="img" aria-label="126th EARS"></div><div class="splash-t">Loading…</div></div>
     </div>
     <div id="modal"></div>
     <div id="toast" role="status" aria-live="polite"></div>
