@@ -328,14 +328,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792772694"></script>
+    <script src="config.js?v=1792773261"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792772694';
+      window.PAL_BUILD = '1792773261';
       (function () {
         function check(launch) {
           try {
@@ -7771,7 +7771,7 @@
     if (st === undefined) {
       S.rpStatus = null;
       const put = () => { const b = $('#rpStatusBox'); if (b && S.rpDraft) b.outerHTML = rpStatusHtml(S.rpDraft); };
-      call('apiReportStatus', S.token).then(x => { S.rpStatus = x; put(); }).catch(() => { S.rpStatus = { failed: true }; put(); });
+      callServer('apiReportStatus', S.token).then(x => { S.rpStatus = x; put(); }).catch(() => { S.rpStatus = { failed: true }; put(); });
       setTimeout(() => { if (S.rpStatus === null) { S.rpStatus = { failed: true }; put(); } }, 10000); // never stuck on Checking…
     }
     const line = (cls, ic, html) => '<div class="rp-status rp-' + cls + '" id="rpStatusBox">' + icon(ic, 16) + '<span>' + html + '</span></div>';
@@ -8207,6 +8207,9 @@
     const start = D.valid(w.start) ? w.start : '', end = D.valid(w.end) && w.end >= start ? w.end : '';
     w.draftId = w.draftId || 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     const d = { id: w.draftId, type: w.type, start, end, note: String(w.note || ''), location: String(w.location || ''), assignees: wizIds() };
+    const was = (S.drafts || []).find(x => x.id === d.id);
+    const sig = x => [x.type, x.start, x.end, x.note, x.location, (x.assignees || []).join(',')].join('\u0001');
+    if (was && sig(was) === sig(d)) return; // unchanged: nothing to send
     S.drafts = (S.drafts || []).filter(x => x.id !== d.id).concat([d]);
     draftCall('apiSaveDraft', d);
     if (S.view === 'mine' || S.view === 'all') redrawPage(); // shows in My Requests now, not after the server answers
@@ -8485,7 +8488,7 @@
   async function loadNotes() {
     if (S.notesLoading || !S.token) return;
     S.notesLoading = true;
-    try { takeNotes(await call('apiNotifications', S.token)); }
+    try { takeNotes(await callServer('apiNotifications', S.token)); }
     catch (e) { S.notes = S.notes || []; }
     S.notesLoading = false; redrawNotes(); renderNavOnly();
   }
@@ -9620,7 +9623,8 @@
     return { errs, warns, n, bad };
   }
   /* Request form: one page (who · type · calendar & dates · notes) → Review (summary, warnings, Submit). */
-  function renderWizard() {
+  function renderWizard() { renderWizard_(); markOffline(); }
+  function renderWizard_() {
     const w = S.wiz;
     if (w.step !== 3) w.step = 'form';
     const isBo = w.type === 'Blackout', isMed = w.type === 'Medical';
@@ -10613,7 +10617,7 @@
       const wait = slideStatus(el, v), inReq = S.modal === 'req';
       save(() => { const r = findReq(id); if (r) Object.assign(r, { status: v, decidedBy: v === 'Pending' ? '' : S.me, decidedAt: v === 'Pending' ? '' : nowIso() }); },
         'apiSetStatus', S.token, id, v);
-      setTimeout(() => { render(); if (inReq && S.modal === 'req') openRequest(id); }, wait);
+      setTimeout(() => { render(); if (inReq && S.modal === 'req' && S.reqOpen === id) openRequest(id); }, wait);
       toast(v === 'Pending' ? 'Back to pending' : 'Request ' + v.toLowerCase(), 'ok', 1500);
     },
     async cancelTrip(el) {
@@ -11235,7 +11239,7 @@
           const how0 = payload.status === 'Approved' ? 'approved' : payload.status === 'Denied' ? 'denied' : 'pending approval';
           const what = many ? many + ' ' + payload.type.toLowerCase() + ' requests' : payload.type;
           // Saving… now; the green success message only once the server has it (a failure shows NOT SAVED instead).
-          sent.then(data => { if (data) { dropDraft(); render(); toast(what + ' submitted — ' + how0, 'success', 3200); } else hideToast(); });
+          sent.then(data => { if (!data) hideToast(); else { dropDraft(); render(); if (data.created === 0) toast('Already requested — ' + (data.skipped > 1 ? 'they each have' : 'there’s already') + ' a ' + payload.type.toLowerCase() + ' on these dates', 'warn', 3600); else toast((data.skipped ? data.created + ' of ' + what : what) + ' submitted — ' + how0, 'success', 3200); } });
           closeModal();
           if (isCalView()) S.cursor = w.start;
           render();
