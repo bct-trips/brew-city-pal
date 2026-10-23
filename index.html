@@ -318,14 +318,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792771133"></script>
+    <script src="config.js?v=1792771379"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792771133';
+      window.PAL_BUILD = '1792771379';
       (function () {
         function check(launch) {
           try {
@@ -5743,19 +5743,20 @@
     const d = (mine === 'Pilot' || mine === 'Boom' || !mine ? ['Pilot', 'Boom'] : [mine]).filter(r => see.includes(r));
     return d.length ? d : see.slice();
   }
-  function setDefaultFilters(st) {
+  function setDefaultFilters(st, keepConf) {
     if (st === S.mf) { S.mineConf = false; S.mineExpired = false; }
     st.status = FILTERS[0].opts.map(o => o[0]); st.type = typeNames().slice();
     if (st.role) st.role = S.priv ? ROLES.slice() : defaultRoles();
     if ('person' in st) st.person = '';
-    if ('conf' in st) st.conf = false;
+    if ('conf' in st && !keepConf) st.conf = false;
     if ('med' in st) st.med = 'all';
     if (st === S.f) st.hide = [];
   }
-  function isDefaultFilters(st) {
+  /** keepConf: List (admins) — Conflicts belongs to the Conflicts | Pending | All switch, so it isn't a filter here. */
+  function isDefaultFilters(st, keepConf) {
     const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
     return same(st.status, FILTERS[0].opts.map(o => o[0])) && typeNames().every(t => st.type.includes(t)) &&
-      (!st.role || S.priv || same(st.role, defaultRoles())) && !st.person && !st.conf && !(st.hide || []).length && (!st.med || st.med === 'all' || !medFilterOn()) && !(st === S.mf && S.mineConf && S.mineMode === 'cal') && !(st === S.mf && S.mineExpired && S.mineMode !== 'cal');
+      (!st.role || S.priv || same(st.role, defaultRoles())) && !st.person && (keepConf || !st.conf) && !(st.hide || []).length && (!st.med || st.med === 'all' || !medFilterOn()) && !(st === S.mf && S.mineConf && S.mineMode === 'cal') && !(st === S.mf && S.mineExpired && S.mineMode !== 'cal');
   }
   function filterButton(sc) {
     const parts = filterSummary(sc);
@@ -5766,7 +5767,7 @@
       (person ? personPillInner(st).replace(/<\/span>$/, (parts.length > 1 ? ' · ' + esc(parts.slice(1).join(' · ')) : '') + '</span>')
         : icon('sliders', 16) + '<span>' + esc(parts.length ? parts.join(' · ') : 'Filters') + '</span>') + icon('down', 14) + '</button>' +
       // Clear filters: back to the defaults (my default positions, everyone, all statuses, Leave and Pass). Only when filters differ from that.
-      (!isDefaultFilters(st) ? '<button type="button" class="btn fall-clear" data-act="clearFilters"' + scAttr(sc) + ' aria-label="Clear filters and show everything" title="Clear filters">' + icon('x', 18) + '<span class="bl">Clear</span></button>' : '');
+      (!isDefaultFilters(st, sc === 'list' && admView()) ? '<button type="button" class="btn fall-clear" data-act="clearFilters"' + scAttr(sc) + ' aria-label="Clear filters and show everything" title="Clear filters">' + icon('x', 18) + '<span class="bl">Clear</span></button>' : '');
   }
   function openFilterSheet(sc, inPlace) {
     S.openDrop = null; S.fsScope = sc || 'cal';
@@ -10321,9 +10322,9 @@
       closeModal(); render();
     },
     openFilters(el) { openFilterSheet(el.dataset.scope); },
-    clearFilters(el) { setDefaultFilters(fState(el.dataset.scope)); render(); },
+    clearFilters(el) { const sc = el.dataset.scope; setDefaultFilters(fState(sc), sc === 'list' && admView()); render(); },
     // The sheet's Reset = Clear filters: back to the defaults (Pilots + Booms, everyone, all statuses, Leave and Pass).
-    resetFilters(el) { setDefaultFilters(fState(el.dataset.scope)); render(); openFilterSheet(el.dataset.scope, true); },
+    resetFilters(el) { const sc = el.dataset.scope; setDefaultFilters(fState(sc), sc === 'list' && admView()); render(); openFilterSheet(el.dataset.scope, true); },
     ppFilter() {
       const q = (S.ppq || '').trim().toLowerCase();
       $$('#modal .pp-row:not(.pp-add)').forEach(r => { r.hidden = !!q && r.dataset.q.indexOf(q) < 0; });
