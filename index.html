@@ -215,14 +215,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792759199"></script>
+    <script src="config.js?v=1792759414"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792759199';
+      window.PAL_BUILD = '1792759414';
       (function () {
         function check(launch) {
           try {
@@ -8420,7 +8420,8 @@
   ] : [
     { view: 'calendar', sel: '.nav [data-v="calendar"]', title: 'Calendar', text: 'Tap Calendar to see everyone’s leave and passes by day.' },
     { view: 'calendar', sel: '.calbar .cb-views > .seg', title: 'Week, Month or Quarter', text: 'Switch between Week, Month and Quarter views here.' },
-    { view: 'calendar', filters: true, sel: '#modal .modal', avoid: '#modal .modal', title: 'Filters', text: 'Tap Filters to pick what the calendar shows: event types, statuses, positions or one person. Reset puts it back.' },
+    { view: 'calendar', sel: '.calbar .filters > .fall', title: 'Filters', text: 'Tap Filters to choose what the calendar shows.' },
+    { view: 'calendar', filters: true, sel: '#modal .modal', avoid: '#modal .modal', title: 'Filter Options', text: 'Pick event types, statuses, positions or one person. Reset puts it back.' },
     S.priv ? null : { view: 'all', sel: '.nav [data-v="all"]', title: 'List', text: 'Everyone’s leave and passes in one list you can search and filter.' },
     { view: 'mine', sel: '.nav [data-v="mine"]', title: 'My Requests', text: 'Your own leave, passes and drafts.' },
     { view: 'mine', sel: '#mineBody .mp-active, #mineBody .wp-st', multi: true, title: 'Active, Approved, Pending or Denied', text: 'The top corner of each card shows where it stands: a green Active pill while you’re on it, then Approved, Pending (orange) or Denied (red). Tap a card to see the whole pass.' },
