@@ -110,14 +110,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792753045"></script>
+    <script src="config.js?v=1792753258"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792753045';
+      window.PAL_BUILD = '1792753258';
       (function () {
         function check(launch) {
           try {
@@ -8015,7 +8015,7 @@
   function openDraft(id) {
     const d = (S.drafts || []).find(x => x.id === id); if (!d) return;
     openWizard(d.start, d.end);
-    const ids = S.isAdmin ? (d.assignees || []) : [S.me];
+    const ids = S.isAdmin ? (d.assignees || []) : [S.me].concat((d.assignees || []).filter(x => x !== S.me)); // members: always themselves first
     Object.assign(S.wiz, { type: d.type, note: d.note || '', location: d.location || '', assignees: ids, assigneeId: ids[0] || '', draftId: d.id, resumed: true, picking: !!d.start && !d.end });
     renderWizard();
   }
@@ -8978,6 +8978,7 @@
   function whoBtnInner() {
     const w = S.wiz;
     if (w.editId) return icon('userPlus', 16) + '<span>Add Members</span>' + icon('down', 14); // the added ones list under it
+    if (!S.isAdmin) return icon('userPlus', 16) + '<span>Additional Users</span>' + icon('down', 14); // members: you + the people listed under it
     const ids = wizIds();
     return (ids.length > 1 ? '<span class="who-n">' + ids.length + '</span><span>' + esc(ids.map(id => lastName(userOf(id))).join(', ')) + '</span>'
       : ids.length ? memberPuck(userOf(ids[0]))
@@ -8987,7 +8988,16 @@
    *  canceled request starts them at Pending) and a minus button to take them off again. */
   const addedSt = id => { const w = S.wiz; return (w.extraSt || {})[id] || (w.editStatus === 'Approved' ? 'Approved' : 'Pending'); };
   function addedListHtml() {
-    const x = (S.wiz && S.wiz.extra) || [];
+    const w = S.wiz;
+    // A member's new request: they are always on it — pinned at the top with no minus — then their Additional Users,
+    // each with a minus (no status: member requests start Pending).
+    if (w && !w.editId && !S.isAdmin) {
+      const others = (w.assignees || []).filter(id => id !== S.me);
+      return '<div class="wiz-added" role="list" aria-label="Request for">' + '<div class="wa-row" role="listitem">' + memberPuck(userOf(S.me)) + '</div>' +
+        others.map(id => { const u = userOf(id);
+          return '<div class="wa-row" role="listitem">' + memberPuck(u) + '<span class="wa-acts"><button type="button" class="btn sm del act ico wa-del" data-act="wizXDel" data-id="' + esc(id) + '" aria-label="Remove ' + esc(fullName(u)) + '" title="Remove">' + icon('minus', 16) + '</button></span></div>'; }).join('') + '</div>';
+    }
+    const x = (w && w.extra) || [];
     return x.length ? '<div class="wiz-added" role="list" aria-label="Members to add">' + x.map(id => { const u = userOf(id);
       return '<div class="wa-row" role="listitem">' + memberPuck(u) + '<span class="wa-acts">' + statusSlider({ id, status: addedSt(id) }, 'wizXStatus') +
         '<button type="button" class="btn sm del act ico wa-del" data-act="wizXDel" data-id="' + esc(id) + '" aria-label="Remove ' + esc(fullName(u)) + '" title="Remove">' + icon('minus', 16) + '</button></span></div>'; }).join('') + '</div>' : '';
@@ -9004,8 +9014,8 @@
   const redrawAdded = () => { const a = $('#wizAdded'); if (a) a.innerHTML = addedListHtml(); fitAdded(); };
   function whoPopHtml() {
     const w = S.wiz;
-    const people = S.users.filter(u => u.active && !(w.editId && u.id === w.assigneeId) && (w.editId ? canAddTo(u) : manages(u))); // team admins: only their team
-    return whoListHtml(people, new Set(wizPickList()), 'whoPick', w.editId || w.type === 'Medical' ? '' : '<button type="button" class="who-row who-new" data-act="wizCreate">' + icon('userPlus', 18) + '<span class="pp-n"><b>Add New Member</b></span></button>');
+    const people = S.users.filter(u => u.active && !(w.editId && u.id === w.assigneeId) && (w.editId ? canAddTo(u) : S.isAdmin ? manages(u) : u.id !== S.me)); // team admins: only their team; members: anyone but themselves
+    return whoListHtml(people, new Set(wizPickList()), 'whoPick', w.editId || w.type === 'Medical' || !S.isAdmin ? '' : '<button type="button" class="who-row who-new" data-act="wizCreate">' + icon('userPlus', 18) + '<span class="pp-n"><b>Add New Member</b></span></button>');
   }
   /** The member chooser list (search box, then Me and each position's members as name pucks): Request For and
    *  Managers → Add Manager. act: the action a tap runs (data-id = member); top: rows shown above the groups. */
@@ -9106,6 +9116,11 @@
           (managesReq({ userId: w.assigneeId }) ? '<div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who wiz-add" data-act="whoDrop" aria-haspopup="listbox" aria-expanded="false" aria-label="Add members to this request">' + whoBtnInner() + '</button>' +
             '<div class="who-pop" id="whoPop" hidden></div></div><div id="wizAdded">' + addedListHtml() + '</div>' : '') +
           '</div>';
+      } else if (!S.isAdmin) {
+        // Members (and admins in User Mode): always for yourself; Additional Users adds others to the same request.
+        body += '<div class="sect"><div class="lbl">' + icon('users', 14) + ' Request For</div>' +
+          '<div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who wiz-add" data-act="whoDrop" aria-haspopup="listbox" aria-expanded="false" aria-label="Additional Users">' + whoBtnInner() + '</button>' +
+          '<div class="who-pop" id="whoPop" hidden></div></div><div id="wizAdded">' + addedListHtml() + '</div></div>';
       } else if (S.isAdmin) {
         body += '<div class="sect"><div class="lbl">' + icon('users', 14) + (isMed ? ' Medical For' : ' Request For') + '</div>' +
           (w.creating
@@ -9783,7 +9798,8 @@
       if (S.ppMode === 'assign') {
         const w = S.wiz, id = el.dataset.id, list = wizPickList(), on = !list.includes(id);
         const next = on ? list.concat([id]) : list.filter(x => x !== id);
-        if (w.editId) { w.extra = next; redrawAdded(); } else w.assignees = next;
+        if (w.editId) w.extra = next; else w.assignees = next;
+        redrawAdded();
         el.classList.toggle('on', on); el.setAttribute('aria-pressed', on);
         el.querySelector('.pp-ck').innerHTML = on ? icon('check', 18) : '';
         const c = $('#ppCount'); if (c) c.textContent = ppCountText();
@@ -9932,14 +9948,17 @@
     },
     wizXStatus(el) { const w = S.wiz; w.extraSt = w.extraSt || {}; w.extraSt[el.dataset.id] = el.dataset.v; slideStatus(el, el.dataset.v); setTimeout(redrawAdded, 260); }, // redraw after the slide, like the tables
     wizXDel(el) {
-      const w = S.wiz, id = el.dataset.id; w.extra = (w.extra || []).filter(x => x !== id); if (w.extraSt) delete w.extraSt[id];
+      const w = S.wiz, id = el.dataset.id; if (id === S.me && !w.editId) return; // you're always on your own request
+      if (w.editId) w.extra = (w.extra || []).filter(x => x !== id); else { w.assignees = (w.assignees || []).filter(x => x !== id); w.assigneeId = w.assignees[0] || ''; }
+      if (w.extraSt) delete w.extraSt[id];
       redrawAdded(); refreshWizDates();
       const p = $('#whoPop .who-row.on[data-id="' + id + '"]'); if (p) { p.classList.remove('on'); p.setAttribute('aria-selected', 'false'); p.querySelector('.who-ck').innerHTML = ''; }
     },
     whoPick(el) {
       const w = S.wiz, id = el.dataset.id, list = wizPickList(), on = !list.includes(id);
       const next = on ? list.concat([id]) : list.filter(x => x !== id);
-      if (w.editId) { w.extra = next; redrawAdded(); } else w.assignees = next;
+      if (w.editId) w.extra = next; else w.assignees = next;
+      redrawAdded();
       el.classList.toggle('on', on); el.setAttribute('aria-selected', on);
       el.querySelector('.who-ck').innerHTML = on ? icon('check', 16) : '';
       const b = $('#modal [data-act="whoDrop"]'); if (b) b.innerHTML = whoBtnInner();
@@ -10668,7 +10687,7 @@
       } else {
         const ids = wizIds();
         if (wizDecides() && w.status && w.status !== 'Pending') payload.status = w.status; // the server keeps your own Pending
-        many = S.isAdmin && !w.creating && ids.length > 1 ? ids.length : 0;
+        many = !w.creating && ids.length > 1 ? ids.length : 0; // admins: several members; members: themselves + Additional Users
         if (!w.creating) {
           // Optimistic: the request shows at once and the form closes; the server saves it in the background. A failure
           // brings back the server's copy (so it disappears again), keeps the draft, and says Not Saved.
