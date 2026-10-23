@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792744577"></script>
+    <script src="config.js?v=1792745179"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792744577';
+      window.PAL_BUILD = '1792745179';
       (function () {
         function check(launch) {
           try {
@@ -4413,7 +4413,7 @@
     S.vapid = data.vapidPublicKey || S.vapid || ''; S.adminAlerts = !!data.adminAlerts;
     // Hide user schedules (members only): the server sent just my requests, day availability for my position, and my
     // conflicts as counts. Everyone else's names and requests aren't on this device at all.
-    S.medCuts = data.medCuts || []; S.medical = data.medical || []; S.drafts = data.drafts || []; S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
+    S.medCuts = data.medCuts || []; S.medical = data.medical || []; S.drafts = mergeDrafts(data.drafts || []); S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
     S.notePrefs = data.notePrefs || S.notePrefs || { approved: true, denied: true, edited: true };
     if (data.emailPrefs) S.emailPrefs = data.emailPrefs;
     S.nameNeed = data.nameNeed || '';
@@ -7734,12 +7734,12 @@
         (opts.ack ? ackBox('cdlgAck', opts.ack) : '') +
         // pin: a PIN box (its label); the action stays off until 4+ digits are typed, and the dialog resolves to the PIN.
         (opts.pin ? '<div class="field cdlg-pin"><label for="cdlgPin">' + esc(opts.pin) + '</label><input id="cdlgPin" ' + NEW_PIN + '></div>' : '') +
-        '<div class="cdlg-f"><button type="button" class="btn" data-c="0">Cancel</button>' +
+        '<div class="cdlg-f"><button type="button" class="btn" data-c="0">' + esc(opts.cancel || 'Cancel') + '</button>' +
         '<button type="button" class="btn ' + (danger ? 'bad' : 'primary') + '" data-c="1"' + (opts.ack || opts.pin ? ' disabled' : '') + '>' + esc(ok) + '</button></div></div>';
       const pinVal = () => (wrap.querySelector('#cdlgPin') || {}).value || '';
       const done = v => { document.removeEventListener('keydown', key, true); wrap.remove(); try { if (prev && prev.focus) prev.focus(); } catch (e) { /* gone */ } resolve(v && opts.pin ? pinVal() : v); };
       const key = ev => {
-        if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); done(false); }
+        if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); done(opts.stay !== undefined ? opts.stay : false); } // stay: Esc / outside = neither button
         else if (ev.key === 'Enter') {
           ev.preventDefault(); ev.stopPropagation();
           const f = document.activeElement, go = wrap.querySelector('[data-c="1"]');
@@ -7753,7 +7753,7 @@
         const a = ev.target.closest('.ack');
         if (a) { toggleAck(a); wrap.querySelector('[data-c="1"]').disabled = a.getAttribute('aria-checked') !== 'true'; return; }
         const b = ev.target.closest('[data-c]');
-        if (b) { if (!b.disabled) done(b.dataset.c === '1'); } else if (ev.target === wrap) done(false);
+        if (b) { if (!b.disabled) done(b.dataset.c === '1'); } else if (ev.target === wrap) done(opts.stay !== undefined ? opts.stay : false);
       });
       document.addEventListener('keydown', key, true);
       document.body.appendChild(wrap);
@@ -7771,27 +7771,63 @@
   const liveDrafts = () => (S.drafts || []).filter(d => !draftLast(d) || draftLast(d) >= S.today);
   /** Save the form as my draft (same draft each time: its id is made here, so Review, closing and resuming all update
    *  one draft). Always silent. */
+  /** Is the open form a new Leave / Pass (or added type) with something in it — dates, a location or notes? */
+  function draftable() {
+    const w = S.wiz;
+    if (!w || w.submitted || w.editId || w.editBoId || w.editMedId || w.creating || w.type === 'Blackout' || w.type === 'Medical') return false;
+    const nb = $('#wzN'), lb = $('#wzL'); if (nb) w.note = nb.value; if (lb) w.location = lb.value;
+    return D.valid(w.start) || !!String(w.location || '').trim() || !!String(w.note || '').trim();
+  }
+  /** ✕ / Cancel / swipe on a form with something in it: ask "Save as a Draft?" — Save Draft keeps it (My Requests),
+   *  Discard throws it away, Esc or a tap outside goes back to the form. */
+  async function askSaveDraft() {
+    const w = S.wiz;
+    const v = await askConfirm('Save as a draft?', { ok: 'Save Draft', cancel: 'Discard', stay: 'stay', danger: false });
+    if (v === 'stay' || S.wiz !== w) return;
+    w.askedDraft = true;
+    if (!v) { // Discard: not saved; a draft made just now on Review goes too (a draft you reopened stays as it was)
+      if (w.draftId && !w.resumed) { const id = w.draftId; S.drafts = (S.drafts || []).filter(x => x.id !== id); draftCall('apiDeleteDraft', id); }
+      w.submitted = true;
+    }
+    closeModal();
+    if (S.view === 'mine' || S.view === 'all') render(); // the drafts list matches at once
+  }
   function storeDraft(quiet) {
     const w = S.wiz;
-    if (!w || w.submitted || w.editId || w.editBoId || w.editMedId || w.creating || w.type === 'Blackout' || w.type === 'Medical') return;
-    const nb = $('#wzN'), lb = $('#wzL'); if (nb) w.note = nb.value; if (lb) w.location = lb.value;
+    if (!draftable()) return; // nothing worth keeping
     const start = D.valid(w.start) ? w.start : '', end = D.valid(w.end) && w.end >= start ? w.end : '';
-    if (!start && !String(w.location || '').trim() && !String(w.note || '').trim()) return; // nothing worth keeping
     w.draftId = w.draftId || 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     const d = { id: w.draftId, type: w.type, start, end, note: String(w.note || ''), location: String(w.location || ''), assignees: wizIds() };
     S.drafts = (S.drafts || []).filter(x => x.id !== d.id).concat([d]);
     draftCall('apiSaveDraft', d);
+    if (S.view === 'mine' || S.view === 'all') redrawPage(); // shows in My Requests now, not after the server answers
   }
   const keepDraft = () => storeDraft(true);
   /** Drafts save quietly in the background: shown at once, no Saving… bar or sync ring; a failed save is just retried
    *  the next time the draft is saved (the draft stays on this device meanwhile). */
-  const draftCall = (fn, arg) => { try { call(fn, S.token, arg).then(() => {}, () => {}); } catch (e) { /* offline: keep it locally */ } };
+  // Until the server has a draft save / delete, the local copy wins — so data arriving from another save (or a refresh)
+  // can't make a just-saved draft vanish or a just-deleted one come back.
+  const draftPend = new Map(); // id -> draft (saving) | null (deleting)
+  const draftCall = (fn, arg) => {
+    const id = fn === 'apiSaveDraft' ? arg.id : arg;
+    draftPend.set(id, fn === 'apiSaveDraft' ? arg : null);
+    const done = () => { if (draftPend.get(id) === (fn === 'apiSaveDraft' ? arg : null)) draftPend.delete(id); };
+    try { call(fn, S.token, arg).then(done, done); } catch (e) { /* offline: keep it locally */ }
+  };
+  function mergeDrafts(server) {
+    if (!draftPend.size) return server;
+    const out = server.filter(d => !draftPend.has(d.id));
+    draftPend.forEach((d, id) => { if (d) out.push(d); });
+    return out;
+  }
+  /** Redraw the page under any open dialog (My Requests / All) without touching the dialog. */
+  const redrawPage = () => { if (S.modal) { const keep = S.modal; try { render(); } finally { S.modal = keep; } } else render(); };
   /** Carry on with a draft: the form, filled in as it was left. */
   function openDraft(id) {
     const d = (S.drafts || []).find(x => x.id === id); if (!d) return;
     openWizard(d.start, d.end);
     const ids = S.isAdmin ? (d.assignees || []) : [S.me];
-    Object.assign(S.wiz, { type: d.type, note: d.note || '', location: d.location || '', assignees: ids, assigneeId: ids[0] || '', draftId: d.id, picking: !!d.start && !d.end });
+    Object.assign(S.wiz, { type: d.type, note: d.note || '', location: d.location || '', assignees: ids, assigneeId: ids[0] || '', draftId: d.id, resumed: true, picking: !!d.start && !d.end });
     renderWizard();
   }
   /** A draft in the wallet: the pass shape with the DRAFT tape; no status. */
@@ -7819,7 +7855,8 @@
     if (S.modal === 'person' && S.ppFromSheet) { S.ppFromSheet = false; openFilterSheet(S.ppScope); return; }
     if (S.modal === 'wizard' && S.boReturn) { const b = S.boReturn; S.boReturn = null; S.wiz = null; openBoResolve(b); return; } // edited from the blackout resolver
     if (S.modal === 'wizard' && S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; S.wiz = null; openConflict(cd, S.cfRole); return; }
-    if (S.modal === 'wizard') keepDraft(); // an unfinished new request is kept as a draft
+    if (S.modal === 'wizard' && S.wiz && !S.wiz.askedDraft && draftable()) { askSaveDraft(); return; } // ask first
+    if (S.modal === 'wizard') keepDraft(); // Save Draft (or nothing to keep: no-op)
     hideTip(); S.modal = null; S.wiz = null; $('#modal').innerHTML = '';
     if (modalOpener && document.contains(modalOpener) && modalOpener.focus) modalOpener.focus({ preventScroll: true });
     modalOpener = null;
