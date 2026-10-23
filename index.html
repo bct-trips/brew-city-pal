@@ -110,14 +110,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792752734"></script>
+    <script src="config.js?v=1792753045"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792752734';
+      window.PAL_BUILD = '1792753045';
       (function () {
         function check(launch) {
           try {
@@ -3759,6 +3759,8 @@
      right). The minus takes them off again. */
   .wiz-added { margin-top: 8px; border-top: 1px solid var(--line); }
   .wa-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+  .lbar .filters.rf-filters > * { order: 0; }
+  .lbar .filters.rf-filters { display: contents; } /* Roster: the wrapper only groups Filters + its ✕; the bar lays out as before */
   .wa-row > .idb { flex: none; }
   .wa-acts { display: flex; align-items: center; gap: 8px; flex: none; margin-left: auto; } /* controls on the right edge, names on the left */
   /* Not enough room (fitAdded): the sliders show icons only — the picked option keeps its icon on its color. */
@@ -5557,7 +5559,7 @@
     return d.length ? d : see.slice();
   }
   function setDefaultFilters(st) {
-    if (st === S.mf) S.mineConf = false;
+    if (st === S.mf) { S.mineConf = false; S.mineExpired = false; }
     st.status = FILTERS[0].opts.map(o => o[0]); st.type = typeNames().slice();
     if (st.role) st.role = S.priv ? ROLES.slice() : defaultRoles();
     if ('person' in st) st.person = '';
@@ -5568,7 +5570,7 @@
   function isDefaultFilters(st) {
     const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
     return same(st.status, FILTERS[0].opts.map(o => o[0])) && typeNames().every(t => st.type.includes(t)) &&
-      (!st.role || S.priv || same(st.role, defaultRoles())) && !st.person && !st.conf && !(st.hide || []).length && (!st.med || st.med === 'all' || !medFilterOn()) && !(st === S.mf && S.mineConf && S.mineMode === 'cal');
+      (!st.role || S.priv || same(st.role, defaultRoles())) && !st.person && !st.conf && !(st.hide || []).length && (!st.med || st.med === 'all' || !medFilterOn()) && !(st === S.mf && S.mineConf && S.mineMode === 'cal') && !(st === S.mf && S.mineExpired && S.mineMode !== 'cal');
   }
   function filterButton(sc) {
     const parts = filterSummary(sc);
@@ -7197,7 +7199,9 @@
     const waiting = S.users.filter(u => u.pending).length;
     return '<button type="button" class="fsel fdrop-btn fall rf-btn' + (parts.length ? ' on' : '') + '" data-act="rfOpen" aria-haspopup="dialog" aria-label="Filters: ' + esc(parts.join(' · ') || 'none') + '">' +
       icon('sliders', 16) + '<span>' + esc(parts.join(' · ') || 'Filters') + '</span>' +
-      (waiting ? '<b class="manage-ct" title="Sign-ups waiting for approval">' + waiting + '</b>' : '') + icon('down', 14) + '</button>';
+      (waiting ? '<b class="manage-ct" title="Sign-ups waiting for approval">' + waiting + '</b>' : '') + icon('down', 14) + '</button>' +
+      // Like every filter dropdown: a ✕ joined to it clears the filters whenever any are set.
+      (parts.length ? '<button type="button" class="btn fall-clear" data-act="rfClear" aria-label="Clear filters" title="Clear filters">' + icon('x', 18) + '<span class="bl">Clear</span></button>' : '');
   }
   /** Roster Period: a dropdown (one choice), same look as the badge dropdowns — the button shows the period, the list
    *  each option with its dates; picking one applies it and closes the list. */
@@ -7248,7 +7252,7 @@
     return '<section class="page"><div class="lbar stats-bar">' +
       '<div class="lsearch">' + icon('search', 16) + '<input type="search" placeholder="Search name, rank, unit…" value="' + esc(P.q) + '" data-model="people.q" data-live="peopleRefresh" aria-label="Search members"></div>' +
       // One Filters menu (period, positions, units, inactive), like the calendar's.
-      rosterFilterBtn() +
+      '<div class="filters rf-filters">' + rosterFilterBtn() + '</div>' +
       '<button type="button" class="btn primary manage-btn" data-act="editUser" data-id="">' + icon('userPlus', 18) + 'Add Member</button>' +
       '</div><div class="tbl-page" id="peopleBody">' + renderPeopleBody() + '</div></section>';
   }
@@ -9905,6 +9909,7 @@
     rfInactive() { S.people.inactive = !S.people.inactive; render(); openRosterFilters(true); },
     rfMed(el) { S.people.med = el.dataset.v; render(); openRosterFilters(true); },
     medF(el) { fState(el.dataset.scope).med = el.dataset.v; render(); openFilterSheet(el.dataset.scope, true); },
+    rfClear() { Object.assign(S.people, { period: '12m', roles: null, units: null, inactive: false, med: 'all' }); render(); },
     rfReset() { Object.assign(S.people, { period: '12m', roles: null, units: null, inactive: false, med: 'all' }); render(); openRosterFilters(true); },
     rosterChip(el) {
       const k = el.dataset.k, v = el.dataset.v, P = S.people;
