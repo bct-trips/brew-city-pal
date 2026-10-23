@@ -124,6 +124,9 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
+  /* Conflicts | Pending | All: the Conflicts count is red (white on the red selected pill, so it still shows). */
+  .stsl.vw-sl .vw-ct.vw-ct-conf { background: #b42318; color: #ffffff; }
+  .stsl.vw-sl.st-conf .stsl-o.on .vw-ct-conf { background: #ffffff; color: #b42318; }
   /* Touch screens: no hover pill on the nav tabs — iOS keeps :hover after a tap (e.g. closing a pass sheet over the Profile tab),
      which left a gray pill behind an unselected tab. */
   @media (hover: none) {
@@ -324,14 +327,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792771588"></script>
+    <script src="config.js?v=1792771935"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792771588';
+      window.PAL_BUILD = '1792771935';
       (function () {
         function check(launch) {
           try {
@@ -6762,8 +6765,12 @@
   const isOpenReq = r => r.status === 'Pending' || openConflictOf(r);
   /** The List badge and the Pending view's count: open requests not over yet that you manage and the filters show
    *  (ended ones sit in the closed Past band, so they aren't counted). */
-  const openCount = () => { const F = S.f; return IDX.live.filter(r => isOpenReq(r) && r.end >= S.today && managesReq(r) &&
+  // Both counts ignore which switch option is picked (Conflicts / Pending / All), so neither number disappears when you switch.
+  const viewCount = keep => { const F = Object.assign({}, S.f, { conf: false }); return IDX.live.filter(r => keep(r) && r.end >= S.today && managesReq(r) &&
     F.role.includes(userOf(r.userId).role) && F.type.includes(r.type) && personConfOk(r, F)).length; };
+  const openCount = () => viewCount(isOpenReq);
+  /** Requests over the daily max (not ended, yours to manage, in the filters): the Conflicts option's count. */
+  const confCount = () => viewCount(r => r.status !== 'Denied' && inConflict(r));
   /** All Requests: the Medical events the filters show (position, person, Injured filter, search), as rows. */
   function listMedical() {
     const F = S.f, q = S.list.q.trim().toLowerCase();
@@ -7135,10 +7142,10 @@
   /** All Requests view switch (admins): Conflicts (red) | Pending (yellow) | All (green). Conflicts = conflict mode; Pending =
    *  pending, or in a conflict that isn't resolved (with how many); All = everything. A red banner says when it's not All. */
   function openBtn() {
-    const F = S.f, n = openCount();
+    const F = S.f, n = openCount(), nc = confCount();
     const v = F.conf ? 'conf' : S.openOnly ? 'open' : 'all';
     const o = (k, ic, word, tip) => '<button type="button" role="radio" aria-checked="' + (v === k) + '" class="stsl-o' + (v === k ? ' on' : '') + '" data-act="listView" data-v="' + k + '" title="' + tip + '">' +
-      icon(ic, 15) + '<span class="stsl-t">' + word + '</span>' + (k === 'open' && n ? '<b class="vw-ct">' + n + '</b>' : '') + '</button>';
+      icon(ic, 15) + '<span class="stsl-t">' + word + '</span>' + (k === 'open' && n ? '<b class="vw-ct">' + n + '</b>' : k === 'conf' && nc ? '<b class="vw-ct vw-ct-conf">' + nc + '</b>' : '') + '</button>';
     return '<div class="stsl vw-sl st-' + v + '" role="radiogroup" aria-label="Show"><span class="stsl-thumb" aria-hidden="true"></span>' +
       o('conf', 'alert', 'Conflicts', 'Only requests over the daily max') + o('open', 'clock', 'Pending', 'Pending, or in a conflict that isn’t resolved') + o('all', 'list', 'All', 'Every request') + '</div>';
   }
@@ -11383,14 +11390,14 @@
   /* Keep data fresh: changes made elsewhere (another admin, another tab, the sheet) show up without a reload.
      Refreshes every 60s while visible, when the tab regains focus, and when the request form or a person picker opens.
      The page behind an open dialog re-renders; an open person picker is rebuilt in place with the new list. */
-  let refreshing = false;
+  let refreshing = false, lastRefresh = 0;
   let saveGen = 0;   // bumped by every save(); lets a background refresh detect it raced a save
   let lastBoot = '';
   async function refreshData() {
     if (!S.token || !S.me || S.busy || S.sel || S.pending || refreshing) return;
     const a = document.activeElement;
     if (!S.modal && a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
-    refreshing = true;
+    refreshing = true; lastRefresh = Date.now();
     const gen = saveGen;
     try {
       const data = await callServer('apiBootstrap', S.token); // a background read: no saving ring
@@ -11412,7 +11419,8 @@
   }
   setInterval(() => { if (!document.hidden) refreshData(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshData(); syncWithServer(false); } });
-  window.addEventListener('focus', () => refreshData());
+  // Focus: only when the data is over a minute old — iOS also fires focus inside the app (closing a sheet), which isn't a reason to ask the server.
+  window.addEventListener('focus', () => { if (Date.now() - lastRefresh > 60000) refreshData(); });
 
   /* ================================================================ */
   /* Boot                                                               */
