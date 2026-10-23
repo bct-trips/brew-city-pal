@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792747805"></script>
+    <script src="config.js?v=1792748552"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792747805';
+      window.PAL_BUILD = '1792748552';
       (function () {
         function check(launch) {
           try {
@@ -6533,7 +6533,9 @@
     const st = table === 'mine' ? S.mine : S.list;
     // Notes column: admins, and My Requests (your own notes). Members never see other people's notes.
     const showNote = S.isAdmin || table === 'mine';
-    const cols = COLS.filter(c => c[0] !== 'note' || showNote);
+    // No Status column when every row has the status slider in Actions (admins): the slider already says it.
+    const showStatus = !rows.every(r => isCanc(r) || managesReq(r));
+    const cols = COLS.filter(c => (c[0] !== 'note' || showNote) && (c[0] !== 'status' || showStatus));
     const head = cols.map(c => c[0] === 'st' ? '<th scope="col" class="st-ic-h"><span class="sr">Status</span></th>'
       : table ? sortTh(st, c[0], c[1], 'sortBy', ' data-table="' + table + '"', c[0] === 'days') : '<th scope="col"' + (c[0] === 'last' ? ' class="stk"' : '') + '>' + c[1] + '</th>').join('') +
       '<th scope="col" class="th-acts">Actions</th>';
@@ -6554,7 +6556,7 @@
         '<td class="num pdate">' + (open ? '<b>NO END</b><i>&nbsp;</i>' : passDate(m.end)) + '</td>' +
         '<td class="num"><span class="days">' + (open ? '—' : D.days(m.start, m.end)) + '</span></td>' +
         (showNote ? '<td class="note" title="' + esc(m.note || '') + '"><div class="clamp">' + (m.note ? esc(m.note) : '<span class="muted">—</span>') + '</div></td>' : '') +
-        '<td></td>' +
+        (showStatus ? '<td></td>' : '') +
         '<td class="acts-cell"><div class="row-acts">' + (canMed(m.userId) ? '<button class="btn sm act" data-act="editMedical" data-id="' + esc(m.id) + '" aria-label="Edit medical for ' + esc(u.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>' : '<span class="muted">—</span>') + '</div></td></tr>';
     };
     const rowHtml = (r, showType) => {
@@ -6580,7 +6582,7 @@
           (isCaution(r) ? '<span class="flag caution" title="' + esc(cautionText(r)) + '">' + icon('alert', 13) + '<span class="sr">Caution: ' + esc(cautionText(r)) + '</span></span>' : '') +
           '</td>' +
         (showNote ? '<td class="note" title="' + esc(r.note || '') + '"><div class="clamp">' + (r.note ? esc(r.note) : '<span class="muted">—</span>') + '</div></td>' : '') +
-        '<td><div class="st-cell">' + stBadge(r) + (isCanc(r) ? '' : conflictBadge(r)) + '</div></td>' +
+        (showStatus ? '<td><div class="st-cell">' + stBadge(r) + (isCanc(r) ? '' : conflictBadge(r)) + '</div></td>' : '') +
         '<td class="acts-cell"><div class="row-acts">' + (acts || '<span class="muted">—</span>') + '</div></td></tr>';
     };
     // Grouped like the Week view bands: Leave on top, Pass below, each with a header bar.
