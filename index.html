@@ -159,6 +159,13 @@
   @keyframes tourFinger { 0% { transform: translate(10px, 14px) scale(1.05); opacity: 0; } 25% { transform: none; opacity: 1; } 45% { transform: scale(.92); }
     75% { transform: none; opacity: 1; } 100% { transform: translate(6px, 10px); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .tour-tap, .tour-finger { animation: none; opacity: .9; } }
+  /* Tour, card status step (phones): the example cards stacked like a deck — each shows only its top band with the status pill. */
+  @media (max-width: 599px) {
+    .mw-list.mw-deck { display: flex; flex-direction: column; gap: 0; }
+    .mw-list.mw-deck .mpass:not(:last-child) { max-height: 58px; margin-bottom: -6px; }
+    .mw-list.mw-deck .mpass:not(:last-child) > :is(.mp-dates, .mp-cut, .mp-info) { visibility: hidden; }
+    .mw-list.mw-deck .mpass + .mpass { box-shadow: 0 -6px 14px rgba(0, 0, 0, .35); }
+  }
   .tour.tour-wait .tour-rings, .tour.tour-wait .tour-card { visibility: hidden; } /* until the control stops moving */
   /* Profile step: an example notification sliding into the menu. */
   .pm-n.pm-new { animation: pmNew .45s cubic-bezier(.2, .8, .2, 1); }
@@ -166,7 +173,8 @@
   .pm-n.pm-gone { animation: pmGone .35s ease-in forwards; }
   @keyframes pmGone { to { transform: translateY(-8px); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .pm-n.pm-new, .pm-n.pm-gone { animation: none; } }
-  .tour-card { position: fixed; padding: 20px; border: 1px solid var(--outline); border-radius: 20px; background: var(--card); color: var(--ink);
+  .tour-card { max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; overscroll-behavior: contain;
+    position: fixed; padding: 20px; border: 1px solid var(--outline); border-radius: 20px; background: var(--card); color: var(--ink);
     box-shadow: 0 24px 60px rgba(0, 0, 0, .55); } /* a thin gray edge so it stands out; gold is only for the ring on what you tap */
   /* An alarm step (Wait for It to Save): a red band across the top like the Not Saved alert, and a big copy of the Profile
      icon with its saving ring (a picture-in-picture of what to watch for). */
@@ -244,14 +252,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792763923"></script>
+    <script src="config.js?v=1792765941"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792763923';
+      window.PAL_BUILD = '1792765941';
       (function () {
         function check(launch) {
           try {
@@ -8460,7 +8468,7 @@
     { view: 'mine', form: 'edit', sel: '#modal [data-act="wizReview"]', title: 'Review', text: 'When it looks right, tap Review.' },
     { view: 'mine', form: 'review', sel: '#modal [data-act="wizSubmit"]', title: 'Submit', text: 'Review shows your request as a pass, with any conflict days in red. Tap Submit to send it, or Edit to change it.',
     },
-    { view: 'mine', sel: '.nav [data-v="profile"]', sync: true, alarm: true, title: 'Wait for It to Save',
+    { view: 'mine', sel: '.nav [data-v="profile"]', sync: true, alarm: true, mid: true, title: 'Wait for It to Save',
       text: 'After you tap Submit, this gold ring spins around your profile while it saves. Keep the app open until it stops.' }
   ] : [
     { view: 'calendar', sel: '.nav [data-v="calendar"]', title: 'Calendar', text: 'Tap Calendar to see everyone’s leave and passes by day.' },
@@ -8468,7 +8476,7 @@
     { view: 'calendar', sel: '.calbar .filters > .fall', title: 'Filters', text: 'Tap Filters to choose what the calendar shows.' },
     S.priv ? null : { view: 'all', sel: '.nav [data-v="all"]', title: 'List', text: 'Everyone’s leave and passes in one list you can search and filter.' },
     { view: 'mine', sel: '.nav [data-v="mine"]', title: 'My Requests', text: 'Your own leave, passes and drafts.' },
-    { view: 'mine', sel: '#mineBody .mp-active, #mineBody .wp-st', multi: true, title: 'Active, Approved, Pending or Denied', text: 'The top corner of each card shows where it stands: a green Active pill while you’re on it, then Approved, Pending (orange) or Denied (red). Tap a card to see the whole pass.' },
+    { view: 'mine', sel: '#mineBody .mp-active, #mineBody .wp-st', multi: true, deck: true, title: 'Active, Approved, Pending or Denied', text: 'The top corner of each card shows where it stands: a green Active pill while you’re on it, then Approved, Pending (orange) or Denied (red). Tap a card to see the whole pass.' },
     Object.assign(reqStep(), { side: 'req' }),
     { menu: true, sel: '#pmenu, .nav [data-v="profile"]', multi: true, avoid: '#pmenu', anim: 'notes', title: 'Your Profile',
       text: 'Tap your profile for your notifications, light or dark mode' + (S.myAdmin ? ', Admin or User mode' : '') + ', and Settings for email and notification preferences.' }
@@ -8562,6 +8570,8 @@
       if (S.modal !== 'wizard' || S.wiz.step !== want || !$('#wizMini, #modal [data-act="wizSubmit"]')) { S.wiz.step = want; renderWizard(); } // same form: keep it (no redraw, no jump)
     }
     let ov = document.getElementById('tour');
+    // deck: the example cards squeezed up like a deck of cards (phones), so every status pill shows above the tour card.
+    $$('#mineBody .mw-list').forEach(l => l.classList.toggle('mw-deck', !!st.deck));
     if (!ov) { ov = document.createElement('div'); ov.id = 'tour'; ov.className = 'tour'; document.body.appendChild(ov); }
     const last = i === steps.length - 1;
     // sync: the Profile icon shows the saving ring (the real one in the nav, and a big copy in the card).
@@ -8658,11 +8668,23 @@
     const all2 = ar ? boxes.concat([{ L: ar.left, T: ar.top, R: ar.right, B: ar.bottom }]) : boxes;
     const u = { L: Math.min(...all2.map(b => b.L)), T: Math.min(...all2.map(b => b.T)), R: Math.max(...all2.map(b => b.R)), B: Math.max(...all2.map(b => b.B)) };
     const x = Math.max(16, Math.min(W - cw - 16, (u.L + u.R) / 2 - cw / 2));
+    card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;top:0'; // its real width first, so the height is the height it will have
     const room = 220, below = H - u.B, above = u.T, ch = card.offsetHeight || 240; // a tall area (a list): the card sits over its lower part
     const low = Math.round(Math.min(u.T + (u.B - u.T) * .6, H - ch - 16));
-    if (ar && above >= ch + 24) { card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;bottom:' + (H - u.T + 12) + 'px'; return; } // above the menu
+    if (ar && above >= ch + 24) { card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;bottom:' + (H - u.T + 12) + 'px'; return fitTourCard(card); } // above the menu
+    // mid (phones): the card in the middle of the screen, still clear of the ring — not down under your thumb.
+    if (st.mid && W < 600 && (H - ch) / 2 + ch <= u.T - 12) { card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;top:' + Math.round((H - ch) / 2) + 'px'; return fitTourCard(card); }
     card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;' + (below < room && above < room ? 'top:' + low + 'px'
       : (u.T + u.B) / 2 < H / 2 && below >= room ? 'top:' + (u.B + 12) + 'px' : 'bottom:' + (H - u.T + 12) + 'px');
+    fitTourCard(card);
+  }
+  /** Never past a screen edge (or under the iPhone's status bar / home bar): slide it back in; too tall, it scrolls. */
+  function fitTourCard(card) {
+    let pr = document.getElementById('safeProbe');
+    if (!pr) { pr = document.createElement('div'); pr.id = 'safeProbe'; pr.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)'; document.body.appendChild(pr); }
+    const cs = getComputedStyle(pr), top = 16 + (parseFloat(cs.paddingTop) || 0), bot = innerHeight - 16 - (parseFloat(cs.paddingBottom) || 0);
+    const r = card.getBoundingClientRect();
+    if (r.bottom > bot || r.top < top) { card.style.bottom = ''; card.style.top = Math.max(top, Math.min(r.top, bot - r.height)) + 'px'; }
   }
   window.addEventListener('resize', () => { if (document.getElementById('tour')) placeTour(); });
   function tourEnd() {
