@@ -240,14 +240,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792760441"></script>
+    <script src="config.js?v=1792760753"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792760441';
+      window.PAL_BUILD = '1792760753';
       (function () {
         function check(launch) {
           try {
@@ -8524,7 +8524,11 @@
     if (st.filters && S.modal !== 'filters') openFilterSheet('cal'); // the calendar's Filters, open to show its options
     // The request form with example details (never kept or sent): the form, then its Review.
     if (st.form) {
-      if (!S.wiz || !S.wiz.tourDemo) { { const s0 = D.add(D.monthStart(D.addMonths(S.today, 1)), 4); openWizard(s0, D.add(s0, 9)); } /* a 10-day leave (the max), all in one month */ Object.assign(S.wiz, { tourDemo: true, location: 'Disneyland Paris', note: 'Family trip', picking: false }); if (!S.isAdmin) { const mate = S.users.find(u => u.active && u.id !== S.me); S.wiz.assignees = [S.me].concat(mate ? [mate.id] : []); } } // an example teammate shows the minus
+      if (!S.wiz || !S.wiz.tourDemo) { { const s0 = D.add(D.monthStart(D.addMonths(S.today, 1)), 4); openWizard(s0, D.add(s0, 9)); } /* a 10-day leave (the max), all in one month */ Object.assign(S.wiz, { tourDemo: true, location: 'Disneyland Paris', note: 'Family trip', picking: false }); if (!S.isAdmin) { // an example teammate shows the minus: anyone you can see, picked at random (same unit and position when schedules are hidden)
+        const me = userOf(S.me), pool = S.users.filter(u => u.active && u.id !== S.me && (!S.priv || (u.unit === me.unit && u.role === me.role)));
+        S.tourMate = S.tourMate && pool.some(u => u.id === S.tourMate) ? S.tourMate : (pool[Math.floor(Math.random() * pool.length)] || {}).id;
+        S.wiz.assignees = [S.me].concat(S.tourMate ? [S.tourMate] : []); }
+        S.wiz.step = 0; } // just opened with the example filled in: draw it once below
       const want = st.form === 'review' ? 3 : 'form';
       if (S.modal !== 'wizard' || S.wiz.step !== want || !$('#wizMini, #modal [data-act="wizSubmit"]')) { S.wiz.step = want; renderWizard(); } // same form: keep it (no redraw, no jump)
     }
