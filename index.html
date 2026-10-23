@@ -145,6 +145,19 @@
     -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M1.4%200H14V28H1.4Q0%2028%20.7%2026.8L8.6%2015.4Q9.3%2014%208.6%2012.6L.7%201.2Q0%200%201.4%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000 0 0) right / calc(100% - 14px) 100% no-repeat;
     mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M1.4%200H14V28H1.4Q0%2028%20.7%2026.8L8.6%2015.4Q9.3%2014%208.6%2012.6L.7%201.2Q0%200%201.4%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000 0 0) right / calc(100% - 14px) 100% no-repeat; }
 
+  /* ---- Welcome tour: a dimmed page with a spotlight on the control (gold ring) and a card beside it. ---- */
+  .tour { position: fixed; inset: 0; z-index: 500; }
+  .tour-spot { position: fixed; border-radius: 24px; box-shadow: 0 0 0 9999px rgba(4, 12, 28, .62); outline: 3px solid var(--gold); outline-offset: 0; pointer-events: none;
+    transition: left .25s, top .25s, width .25s, height .25s; }
+  .tour-card { position: fixed; padding: 20px; border-radius: 20px; background: var(--card); color: var(--ink); box-shadow: 0 24px 60px rgba(0, 0, 0, .45); }
+  .tour-n { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .tour-card h3 { margin: 4px 0 8px; font-size: 20px; line-height: 26px; }
+  .tour-card p { margin: 0 0 16px; font-size: 15px; line-height: 22px; color: var(--on-surface-variant); }
+  .tour-f { display: flex; justify-content: flex-end; gap: 8px; }
+  .tour-q { margin: 8px 0; font-size: 17px; line-height: 24px; font-weight: 700; }
+  .tour-set .panel { margin: 0 0 12px; }
+  .modal-f .spacer { flex: 1 1 auto; }
+
   /* ---- Variants (same shape, their own color) ---- */
   /* A picked person: the yellow person pill (calendar person filter, Filters button, its ✕). */
   .fp:not(.fp-conf):has(.fp-clear) .fperson, .fdrop-btn.fall.fp-active, .filters > .fall.fp-active + .fall-clear,
@@ -167,14 +180,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792754479"></script>
+    <script src="config.js?v=1792754880"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792754479';
+      window.PAL_BUILD = '1792754880';
       (function () {
         function check(launch) {
           try {
@@ -4600,6 +4613,7 @@
     // A mode switch still on its way (switchAdmin): an older reply arriving first can't flip the mode back.
     if (S.modeFlip) { S.isAdmin = S.modeFlip.on; S.adminScope = S.modeFlip.scope; S.isOrg = S.isAdmin && !S.adminScope; }
     S.teamPinSet = !!data.teamPinSet; S.admins = data.admins || {}; S.alertScope = data.alertScope || null; S.report = data.report || null;
+    if (data.tour && !S.tourOn && !S.tourDone) { S.tourDone = true; setTimeout(startTour, 600); } // new account: the welcome tour
     S.myAdmin = data.myAdmin || null; // my admin status: alerts and daily report are mine to set in Settings, admin mode or not
     S.users = (data.users || []).map(cleanUser); S.requests = (data.requests || []).map(cleanReq);
     S.settings = Object.assign(S.settings, data.settings || {}); S.sheetUrl = data.sheetUrl || '';
@@ -5175,7 +5189,7 @@
       if (l.scrollWidth > room) l.textContent = l.dataset.short;
     });
   }
-  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); fitNav(); fitCalbar(); fitAdded(); markScrolled(); markOpenDay(); fitTables(); }); };
+  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); fitNav(); fitCalbar(); fitAdded(); if (document.getElementById('tour')) placeTour(); markScrolled(); markOpenDay(); fitTables(); }); };
   /** The calendar bar never cuts anything off. Measured, not guessed from the screen width:
    *  1. wide: [Add Request · views · Today]  [‹ date ›] centered  [filters];
    *  2. .cb-tight: still the desktop calendar, one packed row like the List bar — [Add Request] [‹ date ›] [views] [Today] … [filters]
@@ -8338,6 +8352,68 @@
   /* ---------- Profile menu: a drop-up that opens out of the Profile tab (not a dialog) ----------
      Who you are, then Notifications · Appearance (Light / Dark / System) · Settings · Sign out. Tapping outside, Esc or
      any item (except Appearance) closes it. */
+  /* ---------- Welcome tour: once per account (server flag "tour"), at the first sign-in of a new account ----------
+     1. Notifications — set up now? (the same panels as Settings: push — or Add to Homescreen when it isn't installed —,
+        email, and for anyone with admin status Admin Alerts and the Daily Email Report).
+     2–5. A spotlight on the real controls: calendar views, List, My Requests, then Profile → Settings.
+     Skip Tour leaves at any step; finishing or skipping tells the server, so it never shows again on any device. */
+  const tourSteps = () => [
+    { view: 'calendar', sel: '.calbar .cb-views > .seg', title: 'Calendar', text: 'Switch between Week, Month and Quarter views.' },
+    S.priv ? null : { view: 'all', sel: '.nav [data-v="all"]', title: 'List', text: 'Everyone’s leave and passes in one list you can search and filter.' },
+    { view: 'mine', sel: '.nav [data-v="mine"]', title: 'My Requests', text: 'Your own leave, passes and drafts.' },
+    { menu: true, sel: '#pmenu [data-act="openSettings"]', title: 'Settings', text: 'Open your profile, then Settings, to change your email and notification preferences.' }
+  ].filter(Boolean);
+  function startTour() {
+    if (S.tourOn) return; S.tourOn = true;
+    openModal('tour', modalHead('Welcome to Brew City PAL', 'home').replace('data-act="closeModal"', 'data-act="tourSkip"') +
+      '<div class="modal-b tour-b"><p class="tour-q">Set up email and push notifications now?</p></div>' +
+      '<div class="modal-f"><button class="btn" data-act="tourSkip">Skip Tour</button><span class="spacer"></span>' +
+        '<button class="btn" data-act="tourNext" data-v="0">Not Now</button><button class="btn btn-next" data-act="tourSetup">Set Up</button></div>');
+  }
+  function tourSetup() {
+    openModal('tour', modalHead('Notifications', 'bell').replace('data-act="closeModal"', 'data-act="tourSkip"') +
+      '<div class="modal-b tour-b tour-set">' + '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' +
+        (S.myAdmin ? '<div class="panel" id="alertsPanel">' + alertsPanelHtml() + '</div>' : '') + emailPanel() + (S.myAdmin ? reportPanel() : '') + '</div>' +
+      '<div class="modal-f"><button class="btn" data-act="tourSkip">Skip Tour</button><span class="spacer"></span>' +
+        '<button class="btn btn-next" data-act="tourNext" data-v="0">Next ' + icon('right', 18) + '</button></div>', true);
+  }
+  function tourShow(i) {
+    const steps = tourSteps(), st = steps[i];
+    if (!st) return tourEnd();
+    S.tourStep = i; closeModal(); closeProfileMenu();
+    if (st.view && S.view !== st.view) { S.view = st.view; render(); }
+    if (st.menu) { const b = $('.nav [data-v="profile"]'); if (b && !$('#pmenu')) b.click(); }
+    let ov = document.getElementById('tour');
+    if (!ov) { ov = document.createElement('div'); ov.id = 'tour'; ov.className = 'tour'; document.body.appendChild(ov); }
+    const last = i === steps.length - 1;
+    ov.innerHTML = '<div class="tour-spot"></div><div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tourT">' +
+      '<div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div><h3 id="tourT">' + esc(st.title) + '</h3><p>' + esc(st.text) + '</p>' +
+      '<div class="tour-f">' + (last ? '' : '<button class="btn" data-act="tourSkip">Skip Tour</button>') +
+        '<button class="btn btn-next" data-act="tourNext" data-v="' + (i + 1) + '">' + (last ? 'Done' : 'Next ' + icon('right', 18)) + '</button></div></div>';
+    setTimeout(placeTour, 60); setTimeout(placeTour, 400); // after the page / menu has drawn
+    const n = ov.querySelector('[data-act="tourNext"]'); if (n) n.focus();
+  }
+  /** Spotlight the step's control and put the card beside it (below it when it's in the top half, above otherwise). */
+  function placeTour() {
+    const ov = document.getElementById('tour'); if (!ov) return;
+    const st = tourSteps()[S.tourStep] || {}, t = st.sel && [...document.querySelectorAll(st.sel)].find(e => e.offsetWidth);
+    const spot = ov.querySelector('.tour-spot'), card = ov.querySelector('.tour-card');
+    ov.style.background = t ? '' : 'rgba(4, 12, 28, .62)';
+    if (!t) { spot.style.display = 'none'; card.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)'; return; }
+    const r = t.getBoundingClientRect(), pad = 6;
+    spot.style.cssText = 'display:block;left:' + (r.left - pad) + 'px;top:' + (r.top - pad) + 'px;width:' + (r.width + pad * 2) + 'px;height:' + (r.height + pad * 2) + 'px';
+    const cw = Math.min(340, innerWidth - 32), x = Math.max(16, Math.min(innerWidth - cw - 16, r.left + r.width / 2 - cw / 2));
+    card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;' + (r.top + r.height / 2 < innerHeight / 2 ? 'top:' + (r.bottom + pad + 12) + 'px' : 'bottom:' + (innerHeight - r.top + pad + 12) + 'px');
+  }
+  window.addEventListener('resize', () => { if (document.getElementById('tour')) placeTour(); });
+  function tourEnd() {
+    const ov = document.getElementById('tour'); if (ov) ov.remove();
+    closeModal(); closeProfileMenu();
+    if (!S.tourOn) return;
+    S.tourOn = false; S.tour = false;
+    call('apiTourDone', S.token).catch(() => {}); // once per account: the server remembers
+    if (S.view !== 'calendar') { S.view = 'calendar'; render(); }
+  }
   function closeProfileMenu() {
     const m = document.getElementById('pmenu');
     if (m) m.remove();
@@ -8568,6 +8644,9 @@
       startupPanel() +
 
       pinPanel('me', 'key', 'My PIN', '', true, '') +
+
+      // Take the welcome tour again (it starts with the notifications setup).
+      '<div class="panel tour-again"><button type="button" class="btn btn-next block" data-act="tourAgain">' + icon('info', 18) + 'Take the Tour</button></div>' +
 
       '</div></section>';
   }
@@ -9727,6 +9806,10 @@
     // Delete one notification, or all of them: gone at once, then removed on the server.
     noteDel(el) { dropNotes([el.dataset.id]); },
     openNotes() { openNotesDrawer(); },
+    tourSetup() { tourSetup(); },
+    tourNext(el) { tourShow(Number(el.dataset.v) || 0); },
+    tourSkip() { tourEnd(); },
+    tourAgain() { S.tourOn = false; startTour(); },
     openSettings() { closeModal(); S.view = 'profile'; S.sel = null; render(); const sc = $('#profileScroll'); if (sc) sc.scrollTop = 0; },
     async notesClear() { if (await askConfirm('Delete all notifications?', {})) dropNotes('all'); },
     nav(el) {
