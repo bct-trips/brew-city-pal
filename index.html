@@ -165,9 +165,10 @@
   .tour-item:hover { background: color-mix(in srgb, var(--ink) 5%, var(--gap-c)); }
   .tour-item.done { border-color: #15803d; }
   .tour-item .ti-t { flex: 1 1 auto; min-width: 0; }
-  .tour-item .ti-go, .tour-item .ti-ok { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px 0 14px; border-radius: 16px; font-size: 14px; font-weight: 800; white-space: nowrap; }
+  .tour-item .ti-go, .tour-item .ti-ok, .tour-item .ti-skip { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px 0 14px; border-radius: 16px; font-size: 14px; font-weight: 800; white-space: nowrap; }
   .tour-item .ti-go { background: var(--ctl-fill); color: var(--ctl-ink); }
   .tour-item .ti-ok { padding: 0 14px 0 10px; background: #15803d; color: #ffffff; }
+  .tour-item .ti-skip { padding: 0 14px; border: var(--ctl-line); background: var(--gap-c); color: var(--ctl-off-ink); } /* left early: gray, can start again */
 
   /* ---- Active pill on a pass card: anything you're on today (approved leave / pass, medical) — solid green, white text
      (5.0:1). Never "Now" or "Live". */
@@ -198,14 +199,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792757854"></script>
+    <script src="config.js?v=1792757964"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792757854';
+      window.PAL_BUILD = '1792757964';
       (function () {
         function check(launch) {
           try {
@@ -8422,15 +8423,15 @@
   }
   /** The tour's start: pick a section — Initial Setup, Tour the Interface, How to Add a Request (✓ once done); Close ends it. */
   /** Esc / tap outside / swipe down in a tour dialog: back one level (an item → the list → the start screen → out). */
-  function tourUp() { const l = S.tourLvl; if (l === 'item') tourHub(); else if (l === 'hub') tourMenu(); else tourEnd(); }
+  function tourUp() { const l = S.tourLvl; if (l === 'item') tourHub(); else if (l === 'hub') tourSecSkip('setup'); else tourEnd(); }
   function tourMenu() {
     tourClear(); S.tourLvl = 'menu';
     const rows = [['setup', 'bell', 'Set Up Notifications'], ['ui', 'home', 'Tour the Interface'], ['req', 'plus', S.isAdmin ? 'How to Add an Event' : 'How to Add a Request']];
     openModal('tour', tourX(modalHead('Welcome to Brew City PAL', 'home')) +
-      '<div class="modal-b tour-b"><div class="tour-items">' + rows.map(r => { const done = S.tourSeen && S.tourSeen[r[0]];
-        return '<button type="button" class="tour-item' + (done ? ' done' : '') + '" data-act="tourSec" data-v="' + r[0] + '">' + icon(r[1], 20) + '<span class="ti-t">' + r[2] + '</span>' +
-          (done ? '<span class="ti-ok">' + icon('check', 16) + 'Done</span>' : '<span class="ti-go">Start' + icon('right', 16) + '</span>') + '</button>'; }).join('') + '</div></div>' +
-      '<div class="modal-f"><span class="spacer"></span><button class="btn" data-act="tourSkip">' + (S.tourSeen && Object.keys(S.tourSeen).length ? 'Close' : 'Skip Tour') + '</button></div>');
+      '<div class="modal-b tour-b"><div class="tour-items">' + rows.map(r => { const st = S.tourSeen && S.tourSeen[r[0]]; // true = finished, 'skipped' = left early
+        return '<button type="button" class="tour-item' + (st === true ? ' done' : '') + '" data-act="tourSec" data-v="' + r[0] + '">' + icon(r[1], 20) + '<span class="ti-t">' + r[2] + '</span>' +
+          (st === true ? '<span class="ti-ok">' + icon('check', 16) + 'Done</span>' : st === 'skipped' ? '<span class="ti-skip">Skipped</span>' : '<span class="ti-go">Start' + icon('right', 16) + '</span>') + '</button>'; }).join('') + '</div></div>' +
+      '<div class="modal-f"><span class="spacer"></span><button class="btn" data-act="tourSkip">Skip Tour</button></div>');
   }
   function tourSec(k) {
     if (k === 'setup') return tourHub();
@@ -8438,15 +8439,17 @@
   }
   /** A section's last step: tick it on the start screen and go back there. */
   function tourSecDone() { S.tourSeen = S.tourSeen || {}; S.tourSeen[S.tourSec] = true; tourMenu(); }
+  /** Left a section before its end (Skip, or Back off its first screen): "Skipped" on the start screen, unless it was already done. */
+  function tourSecSkip(k) { S.tourSeen = S.tourSeen || {}; k = k || S.tourSec; if (S.tourSeen[k] !== true) S.tourSeen[k] = 'skipped'; tourMenu(); }
   // The dialog's ✕ goes back one level: an item → the notifications list → the tour's start screen → out of the tour.
   const tourX = (h, act) => h.replace('data-act="closeModal"', 'data-act="' + (act || 'tourSkip') + '"');
   function tourHub() {
     const ov = document.getElementById('tour'); if (ov) ov.remove(); clearInterval(S.tourTick); S.tourLvl = 'hub';
-    openModal('tour', tourX(modalHead('Set Up Notifications', 'bell'), 'tourMenu') +
+    openModal('tour', tourX(modalHead('Set Up Notifications', 'bell'), 'tourSecSkip" data-v="setup') +
       '<div class="modal-b tour-b"><div class="tour-items">' + setupItems().map(it =>
         '<button type="button" class="tour-item' + (it.done ? ' done' : '') + '" data-act="tourItem" data-v="' + it.k + '">' + icon(it.ic, 20) + '<span class="ti-t">' + it.title + '</span>' +
           (it.done ? '<span class="ti-ok">' + icon('check', 16) + 'On</span>' : '<span class="ti-go">Set Up' + icon('right', 16) + '</span>') + '</button>').join('') + '</div></div>' +
-      '<div class="modal-f"><button class="btn" data-act="tourMenu">' + icon('left', 18) + 'Back</button><span class="spacer"></span>' +
+      '<div class="modal-f"><button class="btn" data-act="tourSecSkip" data-v="setup">' + icon('left', 18) + 'Back</button><span class="spacer"></span>' +
         '<button class="btn btn-next" data-act="tourSetupDone">Done</button></div>');
   }
   function tourItem(k) {
@@ -8474,7 +8477,7 @@
     const last = i === steps.length - 1;
     ov.innerHTML = '<div class="tour-spot"></div><div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tourT">' +
       '<div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div><h3 id="tourT">' + esc(st.title) + '</h3><p>' + esc(st.text) + '</p>' +
-      '<div class="tour-f"><button class="btn" data-act="tourBack" data-v="' + (i - 1) + '">' + icon('left', 18) + 'Back</button><span class="spacer"></span>' + (last ? '' : '<button class="btn" data-act="tourMenu">Skip</button>') +
+      '<div class="tour-f"><button class="btn" data-act="tourBack" data-v="' + (i - 1) + '">' + icon('left', 18) + 'Back</button><span class="spacer"></span>' + (last ? '' : '<button class="btn" data-act="tourSecSkip">Skip</button>') +
         '<button class="btn btn-next" data-act="tourNext" data-v="' + (i + 1) + '">' + (last ? 'Done' : 'Next ' + icon('right', 18)) + '</button></div></div>';
     // Bring the control into view (inside a scrolling form too), then follow it while things slide in.
     setTimeout(() => { const t = st.sel && [...document.querySelectorAll(st.sel)].find(e => e.offsetWidth); if (t && t.scrollIntoView) t.scrollIntoView({ block: 'center', inline: 'nearest' }); }, 30);
@@ -9905,7 +9908,8 @@
     openNotes() { openNotesDrawer(); },
     tourHub() { tourHub(); },
     tourItem(el) { tourItem(el.dataset.v); },
-    tourBack(el) { const i = Number(el.dataset.v); if (i < 0) tourMenu(); else tourShow(i); },
+    tourBack(el) { const i = Number(el.dataset.v); if (i < 0) tourSecSkip(); else tourShow(i); },
+    tourSecSkip(el) { tourSecSkip(el && el.dataset.v); },
     tourMenu() { tourMenu(); },
     tourSec(el) { tourSec(el.dataset.v); },
     tourSetupDone() { S.tourSeen = S.tourSeen || {}; S.tourSeen.setup = true; tourMenu(); },
