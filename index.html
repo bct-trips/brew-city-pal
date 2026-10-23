@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792744312"></script>
+    <script src="config.js?v=1792744577"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792744312';
+      window.PAL_BUILD = '1792744577';
       (function () {
         function check(launch) {
           try {
@@ -7770,7 +7770,7 @@
   const draftLast = d => d.end || d.start;
   const liveDrafts = () => (S.drafts || []).filter(d => !draftLast(d) || draftLast(d) >= S.today);
   /** Save the form as my draft (same draft each time: its id is made here, so Review, closing and resuming all update
-   *  one draft). quiet: no "Saved" message (Review saves it silently). */
+   *  one draft). Always silent. */
   function storeDraft(quiet) {
     const w = S.wiz;
     if (!w || w.submitted || w.editId || w.editBoId || w.editMedId || w.creating || w.type === 'Blackout' || w.type === 'Medical') return;
@@ -7779,10 +7779,13 @@
     if (!start && !String(w.location || '').trim() && !String(w.note || '').trim()) return; // nothing worth keeping
     w.draftId = w.draftId || 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     const d = { id: w.draftId, type: w.type, start, end, note: String(w.note || ''), location: String(w.location || ''), assignees: wizIds() };
-    save(() => { S.drafts = (S.drafts || []).filter(x => x.id !== d.id).concat([d]); }, 'apiSaveDraft', S.token, d);
-    if (!quiet) toast('Saved as a draft', 'ok', 1600);
+    S.drafts = (S.drafts || []).filter(x => x.id !== d.id).concat([d]);
+    draftCall('apiSaveDraft', d);
   }
-  const keepDraft = () => storeDraft(false);
+  const keepDraft = () => storeDraft(true);
+  /** Drafts save quietly in the background: shown at once, no Saving… bar or sync ring; a failed save is just retried
+   *  the next time the draft is saved (the draft stays on this device meanwhile). */
+  const draftCall = (fn, arg) => { try { call(fn, S.token, arg).then(() => {}, () => {}); } catch (e) { /* offline: keep it locally */ } };
   /** Carry on with a draft: the form, filled in as it was left. */
   function openDraft(id) {
     const d = (S.drafts || []).find(x => x.id === id); if (!d) return;
@@ -9582,14 +9585,14 @@
     openDraft(el) { openDraft(el.dataset.id); },
     async delDraftRow(el) {
       const id = el.dataset.id; if (!await askConfirm('Delete this draft?')) return;
-      save(() => { S.drafts = (S.drafts || []).filter(x => x.id !== id); }, 'apiDeleteDraft', S.token, id);
+      S.drafts = (S.drafts || []).filter(x => x.id !== id); draftCall('apiDeleteDraft', id);
       render(); toast('Draft deleted', 'ok', 1500);
     },
     async delDraft() {
       const w = S.wiz, id = w && w.draftId; if (!id) return;
       if (!await askConfirm('Delete this draft?')) return;
       w.submitted = true; // closing now must not save it again
-      save(() => { S.drafts = (S.drafts || []).filter(x => x.id !== id); }, 'apiDeleteDraft', S.token, id);
+      S.drafts = (S.drafts || []).filter(x => x.id !== id); draftCall('apiDeleteDraft', id);
       closeModal(); render(); toast('Draft deleted', 'ok', 1500);
     },
     /** Member card → Add Event: the event form with this member already picked. */
@@ -10355,7 +10358,7 @@
       w.submitted = true; // closing after this isn't "unfinished" (no draft)
       // The draft goes once the request is safely saved (a failed save keeps it, so nothing is lost).
       const draftId = w.draftId;
-      const dropDraft = () => { if (draftId) save(() => { S.drafts = (S.drafts || []).filter(x => x.id !== draftId); }, 'apiDeleteDraft', S.token, draftId); };
+      const dropDraft = () => { if (draftId) { S.drafts = (S.drafts || []).filter(x => x.id !== draftId); draftCall('apiDeleteDraft', draftId); } };
       if (w.type === 'Medical') {
         const ids = wizIds(), types = typeNames(), cut = (w.medCut || []).filter(t => types.includes(t));
         const m = { id: w.editMedId || '', userIds: ids, start: w.start, end: w.end, cut, note: w.note.trim().slice(0, 500) };
@@ -10420,7 +10423,7 @@
           const how0 = payload.status === 'Approved' ? 'approved' : payload.status === 'Denied' ? 'denied' : 'pending approval';
           const what = many ? many + ' ' + payload.type.toLowerCase() + ' requests' : payload.type;
           // Saving… now; the green success message only once the server has it (a failure shows NOT SAVED instead).
-          sent.then(data => { if (data) { dropDraft(); toast(what + ' submitted — ' + how0, 'success', 3200); } else hideToast(); });
+          sent.then(data => { if (data) { dropDraft(); render(); toast(what + ' submitted — ' + how0, 'success', 3200); } else hideToast(); });
           closeModal();
           if (isCalView()) S.cursor = w.start;
           render();
