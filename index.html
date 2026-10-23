@@ -124,14 +124,12 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
-  /* Offline: Add Request / Add Event stays itself (label faded) with a gold "⚠ Offline" chip laid over its right end,
-     so it's clearly the Add button, and clearly why it can't be used. */
-  .btn.req-btn:disabled, .req-bar .req-btn:disabled { position: relative; opacity: 1; background: color-mix(in srgb, var(--go-bg) 55%, var(--gap-c)); border-color: transparent; box-shadow: none; }
-  .btn.req-btn:disabled > :not(.off-chip) { opacity: .55; }
-  .calbar .req-btn:disabled, .lbar .req-btn:disabled { padding-right: 100px; } /* room for the chip on the compact button */
-  .off-chip { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px 0 8px; border-radius: 12px;
-    background: var(--gold); color: var(--navy); font-size: 12px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
-  .off-chip .ic { width: 14px; height: 14px; }
+  /* Offline: Add Request / Add Event goes gray — outlined, muted label, a ban mark instead of the plus, and a muted
+     "Offline" tag at its right end — so it clearly can't be used, and clearly why. (Not green, not a feature chip.) */
+  .btn.req-btn:disabled, .req-bar .req-btn:disabled { position: relative; opacity: 1; background: var(--gap-c); border: var(--ctl-line); color: var(--muted); box-shadow: none; }
+  .calbar .req-btn:disabled, .lbar .req-btn:disabled { padding-right: 116px; } /* room for the tag on the compact button */
+  .off-chip { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 12px;
+    border: 1px solid var(--outline); color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
   /* Multi-select dropdowns (Additional Users, person and badge filters): Cancel · Done at the foot, right-aligned (Material). */
   .who-f { flex: none; display: flex; justify-content: flex-end; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--line); background: inherit; }
   .who-f .btn.sm { height: 36px; padding: 0 14px; }
@@ -340,14 +338,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792776062"></script>
+    <script src="config.js?v=1792776261"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792776062';
+      window.PAL_BUILD = '1792776261';
       (function () {
         function check(launch) {
           try {
@@ -4591,8 +4589,9 @@
     // Add Request / Add Event: says why it's off — "Offline" with the alert mark — instead of just looking faded.
     $$('.req-btn').forEach(b => {
       const chip = b.querySelector('.off-chip');
-      if (S.offline) { if (!chip) { b.insertAdjacentHTML('beforeend', '<span class="off-chip" aria-hidden="true">' + icon('alert', 14) + 'Offline</span>'); b.title = 'No connection — requests can be added once the server is reachable'; } }
-      else if (chip) { chip.remove(); b.removeAttribute('title'); }
+      const plus = b.querySelector('.ic');
+      if (S.offline) { if (!chip) { if (plus) plus.outerHTML = icon('ban', 18); b.insertAdjacentHTML('beforeend', '<span class="off-chip" aria-hidden="true">Offline</span>'); b.title = 'No connection — requests can be added once the server is reachable'; } }
+      else if (chip) { chip.remove(); if (plus) plus.outerHTML = icon('plus', 18); b.removeAttribute('title'); }
     });
   }
   const offlineBar = () => S.offline ? '<div class="offline-bar" id="offlineBar" role="status">' + icon('alert', 16) + 'Viewing Offline</div>' : '';
