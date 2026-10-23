@@ -202,14 +202,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792758595"></script>
+    <script src="config.js?v=1792758777"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792758595';
+      window.PAL_BUILD = '1792758777';
       (function () {
         function check(launch) {
           try {
@@ -3857,6 +3857,7 @@
   .wa-compact .stsl-o .stsl-t { display: none; }
   .wa-compact .stsl-o.on .ic { display: inline-block; }
   .wa-compact .stsl:not(.lg) .stsl-o.on { width: auto; padding: 0 12px; }
+  .tour-again { margin: 8px 0 16px; } /* Take the Tour: a plain button at the end of Settings, not in a card */
 }
 </style>
 
@@ -8765,7 +8766,7 @@
       pinPanel('me', 'key', 'My PIN', '', true, '') +
 
       // Take the welcome tour again (it starts with the notifications setup).
-      '<div class="panel tour-again"><button type="button" class="btn btn-next block" data-act="tourAgain">' + icon('info', 18) + 'Take the Tour</button></div>' +
+      '<div class="tour-again"><button type="button" class="btn btn-next block" data-act="tourAgain">' + icon('info', 18) + 'Take the Tour</button></div>' +
 
       '</div></section>';
   }
