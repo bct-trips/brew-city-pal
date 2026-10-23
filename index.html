@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792745953"></script>
+    <script src="config.js?v=1792746696"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792745953';
+      window.PAL_BUILD = '1792746696';
       (function () {
         function check(launch) {
           try {
@@ -4365,10 +4365,10 @@
     if (live) live.textContent = S.pending ? 'Saving changes…' : S.syncErr ? 'Some changes were not saved.' : '';
     saveBarUI();
   }
-  /** "Saving, please wait…" snackbar (same look as the update one) while any change is still saving in the background.
-   *  You can keep working; it goes away when everything is saved. */
+  /** No separate "Saving, please wait…" bar any more: background saving shows as the spinning ring on the Profile icon
+   *  (netBusy). This just clears an old bar if one is up. */
   function saveBarUI() {
-    const on = !!S.pending && !!S.me;
+    const on = false;
     let b = document.getElementById('saveBar');
     if (on && !b) {
       b = document.createElement('div'); b.id = 'saveBar'; b.className = 'snackbar save-bar'; b.setAttribute('role', 'status'); b.setAttribute('aria-live', 'polite');
@@ -4494,7 +4494,8 @@
     // 'unl' / 'lck': Admin Mode switches, in the slider's colors (red = unlocked, green = locked) so they stand out.
     // 'success': a confirmed save (e.g. a request the server has) — solid green with a check.
     const cls = kind === 'error' ? 'error' : kind === 'success' ? 'success-t' : kind === 'hint' ? 'hint-t' : kind === 'unl' ? 'adm-t adm-unl' : kind === 'lck' ? 'adm-t adm-lck' : '';
-    const ic = kind === 'success' ? icon('check', 18) : kind === 'unl' ? icon('shield', 18) : kind === 'lck' ? icon('user', 18) : kind === 'busy' ? '<span class="spin"></span>' : kind === 'error' ? icon('alert', 16) : kind === 'hint' ? icon('calendar', 16) : kind === 'info' ? icon('info', 16) : icon('check', 16);
+    const ic = kind === 'success' ? icon('check', 18) : kind === 'unl' ? icon('shield', 18) : kind === 'lck' ? icon('user', 18) : kind === 'busy' ? '' : // busy: words only — the activity shows on the Profile icon's ring
+       kind === 'error' ? icon('alert', 16) : kind === 'hint' ? icon('calendar', 16) : kind === 'info' ? icon('info', 16) : icon('check', 16);
     el.innerHTML = '<div class="' + cls + '">' + ic + '<span>' + esc(msg) + '</span></div>';
     el.classList.add('show');
     clearTimeout(toastTimer);
@@ -10485,10 +10486,10 @@
           closeModal();
           if (isCalView()) S.cursor = w.start;
           render();
-          toast('Submitting…', 'busy', 0);
+          toast('Saving…', 'busy', 0);
           return;
         }
-        showBlocker('Submitting…');
+        showBlocker('Saving…');
         S.nsWhat = 'The server was busy. Try again.'; S.nsPlain = true; // a failed submit: just this, no technical reason
         if (many) done = save(null, 'apiCreateRequests', S.token, payload, ids);
         else {
