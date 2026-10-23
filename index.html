@@ -241,14 +241,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792762128"></script>
+    <script src="config.js?v=1792762796"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792762128';
+      window.PAL_BUILD = '1792762796';
       (function () {
         function check(launch) {
           try {
@@ -3722,7 +3722,7 @@
     background: var(--mp-card) !important; color: var(--mp-ink); border: 0 !important; box-shadow: inset 0 0 0 2px var(--med-edge), 0 2px 8px rgba(0,0,0,.15) !important; } /* edge drawn inside: same size as Leave / Pass */
   .med-type { display: inline-flex; align-items: center; gap: .3em; color: var(--mp-red); }
   .wp-ty-medical .wp-type { -webkit-text-stroke: .8px currentColor; }
-  .wp-ty-medical .wp-in { background: var(--med-b); color: var(--mp-ink); }
+  .wp-ty-medical .wp-in { background: #1e8e3e; color: #ffffff; } /* never conflicts: always green (as an open day) */
   .wp-ty-medical .mp-logo, .wpass.wp-ty-medical .wp-logo { opacity: .08; }
   .mp-now.mp-med-now { background: var(--mp-red); color: var(--mp-card); }
   .wp-cuts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
@@ -3743,6 +3743,10 @@
     height: 44px; background: var(--med-stripes);
     -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.55) 45%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.55) 45%, transparent 100%); }
   .wpass.wp-ty-medical::before { height: 64px; }
+  /* The stripes sit inside the 2px edge (so the edge runs unbroken across the top), and the tear-off circles carry the edge too. */
+  .wpass.wp-ty-medical::before, .mpass.wp-ty-medical::before { inset: 2px 2px auto 2px; border-radius: 18px 18px 0 0; }
+  .wpass.wp-ty-medical .wp-cut::before, .wpass.wp-ty-medical .wp-cut::after { box-shadow: inset 0 0 0 2px var(--med-edge); }
+  .mpass.wp-ty-medical::before { border-radius: 16px 16px 0 0; }
   .wpass.wp-ty-medical > :not(.wp-logo):not(.mp-logo):not(.wp-tape), .mpass.wp-ty-medical > :not(.wp-logo):not(.mp-logo) { position: relative; z-index: 1; }
   /* Medical passes: the red-cross mark sits where Leave / Pass show the day count. */
   .wp-medx { display: grid; place-items: center; align-self: center; }
@@ -5322,7 +5326,7 @@
     ? [['people', 'Roster', 'users', 'Roster']].concat(S.isOrg ? [['admin', 'Admin', 'shield', 'Admin']] : [])
     : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
   function renderNav() {
-    const pending = IDX.live.filter(r => r.status === 'Pending' && (!S.isAdmin || managesReq(r))).length;
+    const pending = S.isAdmin ? openCount() : 0;
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
     const items = navItems();
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
@@ -6699,6 +6703,10 @@
 
   /** Needs an admin decision: pending, or in a conflict that isn't resolved yet. */
   const isOpenReq = r => r.status === 'Pending' || openConflictOf(r);
+  /** The List badge and the Pending view's count: open requests not over yet that you manage and the filters show
+   *  (ended ones sit in the closed Past band, so they aren't counted). */
+  const openCount = () => { const F = S.f; return IDX.live.filter(r => isOpenReq(r) && r.end >= S.today && managesReq(r) &&
+    F.role.includes(userOf(r.userId).role) && F.type.includes(r.type) && personConfOk(r, F)).length; };
   /** All Requests: the Medical events the filters show (position, person, Injured filter, search), as rows. */
   function listMedical() {
     const F = S.f, q = S.list.q.trim().toLowerCase();
@@ -7071,7 +7079,7 @@
   /** All Requests view switch (admins): Conflicts (red) | Pending (yellow) | All (green). Conflicts = conflict mode; Pending =
    *  pending, or in a conflict that isn't resolved (with how many); All = everything. A red banner says when it's not All. */
   function openBtn() {
-    const F = S.f, n = IDX.live.filter(r => isOpenReq(r) && F.role.includes(userOf(r.userId).role) && F.type.includes(r.type) && personConfOk(r, F)).length;
+    const F = S.f, n = openCount();
     const v = F.conf ? 'conf' : S.openOnly ? 'open' : 'all';
     const o = (k, ic, word, tip) => '<button type="button" role="radio" aria-checked="' + (v === k) + '" class="stsl-o' + (v === k ? ' on' : '') + '" data-act="listView" data-v="' + k + '" title="' + tip + '">' +
       icon(ic, 15) + '<span class="stsl-t">' + word + '</span>' + (k === 'open' && n ? '<b class="vw-ct">' + n + '</b>' : '') + '</button>';
