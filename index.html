@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792709107"></script>
+    <script src="config.js?v=1792739676"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792709107';
+      window.PAL_BUILD = '1792739676';
       (function () {
         function check(launch) {
           try {
@@ -3489,7 +3489,7 @@
   :root[data-theme="dark"] { --mp-card: #23272e; --mp-ink: #eceef2; --mp-red: #ff8a80; }
   .wpass.wp-ty-medical, .mpass.wp-ty-medical { --wp-bg: var(--mp-card); --wp-ink: var(--mp-ink); --wp-acc: var(--med-b); --wp-acc-ink: var(--mp-ink);
     --wp-line: color-mix(in srgb, var(--mp-ink) 28%, transparent);
-    background: var(--mp-card) !important; color: var(--mp-ink); border: 2px solid var(--med-edge) !important; box-shadow: 0 2px 8px rgba(0,0,0,.15) !important; }
+    background: var(--mp-card) !important; color: var(--mp-ink); border: 0 !important; box-shadow: inset 0 0 0 2px var(--med-edge), 0 2px 8px rgba(0,0,0,.15) !important; } /* edge drawn inside: same size as Leave / Pass */
   .med-type { display: inline-flex; align-items: center; gap: .3em; color: var(--mp-red); }
     box-shadow: 0 0 0 1.5px var(--med-edge); }
   .wp-ty-medical .wp-type { -webkit-text-stroke: .8px currentColor; }
@@ -3515,7 +3515,6 @@
     -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.55) 45%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.55) 45%, transparent 100%); }
   .wpass.wp-ty-medical::before { height: 64px; }
   .wpass.wp-ty-medical > :not(.wp-logo):not(.mp-logo), .mpass.wp-ty-medical > :not(.wp-logo):not(.mp-logo) { position: relative; z-index: 1; }
-  .wpass.wp-ty-medical .wp-top { padding-top: 30px; }
   /* Medical passes: the red-cross mark sits where Leave / Pass show the day count. */
   .wp-medx { display: grid; place-items: center; align-self: center; }
   .wpass.wp-canceled .wp-in { background: color-mix(in srgb, var(--wp-ink) 18%, transparent); color: var(--wp-ink); text-decoration: line-through; } /* canceled: its days plain, struck */
@@ -3534,7 +3533,7 @@
   /* Passes: the symbol big, where Leave / Pass show the day count. */
   .mp-n.mp-medx { display: grid; place-items: center; margin-left: auto; }
   .mp-medx .msym { width: 38px; height: 38px; }
-  .wp-medx .msym { width: 54px; height: 54px; }
+  .wp-medx .msym { width: 44px; height: 44px; } /* fits the top like the Days count, so all three tops are the same height */
   /* Inside a puck's white name box it isn't on stripes: no fill, the light-mode red. */
   :root .idb-n .med-dot .msym, :root[data-theme="dark"] .idb-n .med-dot .msym { --msym-bg: none; color: #c81e1e; }
   /* The mark after a member's puck: always white inside the ring (light and dark), like the puck's name box. */
@@ -6526,6 +6525,7 @@
         icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button>' +
         '</th></tr>' + rowsHtml + '</tbody>';
     };
+    const ownMed = rows.filter(r => r.med); rows = rows.filter(r => !r.med); // My Requests table: my own Medical in its band
     const cur = rows.filter(r => r.end >= S.today), past = rows.filter(r => r.end < S.today);
     // Leave, then Pass (each with today's active ones first), then Past.
     // Blackouts (current and upcoming) get their own band at the top of All Requests and My Requests — everyone sees them.
@@ -6543,9 +6543,9 @@
     // One band per event type (Leave, Pass, then added types that have requests or are enabled), then Past.
     const tl = typeNames().filter(t => !typeInfo(t).disabled || cur.some(r => r.type === t));
     // All Requests (admins): Medical between the types and Past — ongoing / upcoming ones here, ended ones in Past.
-    const meds = table === 'list' && admView() && !fHidden('Medical') ? listMedical() : [];
+    const meds = table === 'list' && admView() && !fHidden('Medical') ? listMedical() : ownMed;
     const medCur = meds.filter(r => !r.med.end || r.med.end >= S.today), medPast = meds.filter(r => r.med.end && r.med.end < S.today);
-    const body = boGroup() + tl.map(t => group(t, cur.filter(r => r.type === t))).join('') + (table === 'list' && admView() && !fHidden('Medical') ? group('Medical', medCur) : '') +
+    const body = boGroup() + tl.map(t => group(t, cur.filter(r => r.type === t))).join('') + ((table === 'list' && admView() && !fHidden('Medical')) || medCur.length ? group('Medical', medCur) : '') +
       group('Past', past.concat(medPast));
     return '<div class="tbl-wrap" id="tbl-' + key + '" data-table="' + key + '"><table class="rtable"><thead><tr>' + head + '</tr></thead>' + body + '</table></div>';
   }
@@ -6698,10 +6698,14 @@
 
   /** My Requests: List | Calendar switch, in the filter row (where the calendar's Events | Stats switch is elsewhere).
    *  Phones show "Cal". Show conflicts lives in the filter sheet. */
+  /** My Requests list: Cards (the wallet) or Table (the classic banded table). Your pick is remembered; until then
+   *  wide screens start on the table and phones on the cards. */
+  const mineView = () => { const v = S.mineView || store.get('mineView', ''); return v === 'cards' || v === 'table' ? v : wideFilters() ? 'table' : 'cards'; };
   function mineSwitch() {
-    if (S.priv) return ''; // Hide user schedules: My Requests is list-only (its calendar would just repeat the Calendar tab)
-    return '<div class="mine-mode">' + seg([['list', 'List'], ['cal', '<span class="wide">Calendar</span><span class="narrow">Cal</span>']], S.mineMode === 'cal' ? 'cal' : 'list', 'mineMode')
-      .replace('role="group"', 'role="group" aria-label="My Requests view"') + '</div>';
+    const cur = S.mineMode === 'cal' ? 'cal' : mineView();
+    // Hide user schedules: no calendar here (it would just repeat the Calendar tab), so only Cards | Table.
+    const opts = [['cards', 'Cards'], ['table', 'Table']].concat(S.priv ? [] : [['cal', '<span class="wide">Calendar</span><span class="narrow">Cal</span>']]);
+    return '<div class="mine-mode">' + seg(opts, cur, 'mineMode').replace('role="group"', 'role="group" aria-label="My Requests view"') + '</div>';
   }
   function renderMine() {
     if (S.mineMode === 'cal') return renderCalendar();
@@ -6718,7 +6722,7 @@
         changedMine.map(r => '<button class="linkbtn" data-act="openReq" data-id="' + esc(r.id) + '">' + r.type + ' ' + D.short(r.start) + ' → ' + D.short(r.end) + '</button>').join(' · ') +
         '<div class="meta" style="white-space:normal">Open each one to see what changed, then tap “Got it”.</div></div></div>' : '') +
       // My leave and passes as a wallet of compact passes (tap one for the full pass).
-      '<div class="tbl-page" id="mineBody">' + mineWallet(shown) + '</div>' + reqBar() + '</section>';
+      '<div class="tbl-page" id="mineBody">' + (mineView() === 'table' ? reqTable(sortRows(shown, S.mine), 'mine') : mineWallet(shown)) + '</div>' + reqBar() + '</section>';
   }
   /* ---------- My Requests: the wallet ----------
      Every request as a compact pass in the ticket's language (Leave navy / Pass gold, the patch as a faint watermark,
@@ -9313,7 +9317,11 @@
     /* Multi-select filters: chips on wide screens, checkbox dropdowns on narrow ones. */
     fToggle(el) { toggleFilter(el.dataset.g, el.dataset.v, el.dataset.scope); },
     fCheck(el) { toggleFilter(el.dataset.g, el.dataset.v, el.dataset.scope); },
-    mineMode(el) { S.mineMode = el.dataset.v; S.dayPanel = null; if (S.cal === 'day') S.cal = 'month'; render(); },
+    mineMode(el) {
+      const v = el.dataset.v;
+      if (v === 'cards' || v === 'table') { S.mineMode = 'list'; S.mineView = v; store.set('mineView', v); } else S.mineMode = v;
+      S.dayPanel = null; if (S.cal === 'day') S.cal = 'month'; render();
+    },
     grpToggle(el) {
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
       if (k === 'mine') c[t] = t === 'Past' ? (c.Past === 'open' ? 'closed' : 'open') : c[t] === 'closed' ? 'open' : 'closed'; // My Requests: bands open, Past collapsed
