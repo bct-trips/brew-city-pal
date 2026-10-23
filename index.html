@@ -132,8 +132,6 @@
   .seg.fstat > button:not(.on) .ic { color: var(--muted); }
   /* Profile tab selected (its gold pill): the saving ring turns brick so it shows against the gold. */
   .nav button[data-v="profile"]:is(.on, [aria-expanded="true"]) .nav-ic:is(.syncing, .tour-sync)::before { border-top-color: #a3402c; border-right-color: #a3402c; }
-  /* Take the Tour: as wide as the Settings cards above it, not the whole page. */
-  .profile-page .tour-again { max-width: 720px; margin-left: auto; margin-right: auto; }
   .wpass { --gap-c: #ffffff; }
 
   /* ---- Toggle group: border · space · selected button ----
@@ -326,14 +324,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792770888"></script>
+    <script src="config.js?v=1792770953"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792770888';
+      window.PAL_BUILD = '1792770953';
       (function () {
         function check(launch) {
           try {
@@ -3958,7 +3956,6 @@
   .wa-compact .stsl-o .stsl-t { display: none; }
   .wa-compact .stsl-o.on .ic { display: inline-block; }
   .wa-compact .stsl:not(.lg) .stsl-o.on { width: auto; padding: 0 12px; }
-  .tour-again { margin: 8px 0 16px; } /* Take the Tour: a plain button at the end of Settings, not in a card */
 }
 </style>
 
@@ -8795,6 +8792,7 @@
       // Admin Mode: label on the left, the Locked | Unlocked slider on the right.
       '<div class="pm-row pm-adm" role="none">' + icon('shield', 20) + '<span class="pm-l">Mode</span>' + adminSlider() + '</div>' +
       row('openSettings', 'sliders', 'Settings') +
+      row('tourAgain', 'info', 'Take the Tour') +
       row('signOut', 'logout', 'Sign Out').replace('class="pm-row"', 'class="pm-row pm-out"');
     document.body.appendChild(el);
     // Open upward out of the Profile tab, right-aligned with it and kept on screen.
@@ -9008,8 +9006,6 @@
 
       pinPanel('me', 'key', 'My PIN', '', true, '') +
 
-      // Take the welcome tour again (it starts with the notifications setup).
-      '<div class="tour-again"><button type="button" class="btn btn-next block" data-act="tourAgain">' + icon('info', 18) + 'Take the Tour</button></div>' +
 
       '</div></section>';
   }
@@ -10185,7 +10181,7 @@
     tourSetupDone() { S.tourSeen = S.tourSeen || {}; S.tourSeen.setup = true; tourMenu(); },
     tourNext(el) { tourShow(Number(el.dataset.v) || 0); },
     tourSkip() { tourEnd(); },
-    tourAgain() { S.tourOn = false; startTour(); },
+    tourAgain() { closeProfileMenu(); S.tourOn = false; startTour(); }, // from the profile menu
     openSettings() { closeModal(); S.view = 'profile'; S.sel = null; render(); const sc = $('#profileScroll'); if (sc) sc.scrollTop = 0; },
     async notesClear() { if (await askConfirm('Delete all notifications?', {})) dropNotes('all'); },
     nav(el) {
