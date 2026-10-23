@@ -110,14 +110,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792752586"></script>
+    <script src="config.js?v=1792752734"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792752586';
+      window.PAL_BUILD = '1792752734';
       (function () {
         function check(launch) {
           try {
@@ -5602,10 +5602,10 @@
         (S.f.conf ? icon('check', 18) : icon('alert', 18)) + 'Conflict Mode</button>') : '') +
       // My Requests list (the wallet): show the leave and passes that ended more than 2 days ago.
       (sc === 'mine' && S.mineMode !== 'cal' ? sect('Expired', '<button type="button" class="btn chip-tog fs-conf' + (S.mineExpired ? ' on' : '') + '" data-act="mineExpired" aria-pressed="' + !!S.mineExpired + '">' +
-        (S.mineExpired ? icon('check', 18) : '') + 'Show Expired</button><p class="fs-help">Leave and passes that ended more than 2 days ago.</p>') : '') +
+        (S.mineExpired ? icon('check', 18) : '') + 'Show Expired</button>') : '') +
       // My Requests calendar: also show other members' leave / passes (same position) that overlap mine.
       (sc === 'mine' && S.mineMode === 'cal' ? sect('Conflicts', '<button type="button" class="btn chip-tog fs-conf' + (S.mineConf ? ' on' : '') + '" data-act="mineConf" aria-pressed="' + !!S.mineConf + '">' +
-        (S.mineConf ? icon('check', 18) : '') + 'Show Conflicts</button><p class="fs-help">Adds other members’ leave and passes in your position that overlap yours.</p>') : '') +
+        (S.mineConf ? icon('check', 18) : '') + 'Show Conflicts</button>') : '') +
       '</div><div class="modal-f"><button class="btn" data-act="resetFilters"' + scAttr(sc) + '>Reset</button><button class="btn primary" data-act="closeModal">Done</button></div>';
     // When a toggle changes, swap the sheet's contents in place so it doesn't replay its open animation (no flash).
     const box = inPlace && S.modal === 'filters' && $('#modal .modal');
