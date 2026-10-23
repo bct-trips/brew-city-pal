@@ -110,14 +110,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792752086"></script>
+    <script src="config.js?v=1792752212"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792752086';
+      window.PAL_BUILD = '1792752212';
       (function () {
         function check(launch) {
           try {
@@ -3760,7 +3760,11 @@
   .wiz-added { margin-top: 8px; border-top: 1px solid var(--line); }
   .wa-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
   .wa-row > .idb { flex: none; }
-  .wa-acts { display: flex; align-items: center; gap: 8px; flex: none; }
+  .wa-acts { display: flex; align-items: center; gap: 8px; flex: none; margin-left: auto; } /* controls on the right edge, names on the left */
+  /* Not enough room (fitAdded): the sliders show icons only — the picked option keeps its icon on its color. */
+  .wa-compact .stsl-o .stsl-t { display: none; }
+  .wa-compact .stsl-o.on .ic { display: inline-block; }
+  .wa-compact .stsl:not(.lg) .stsl-o.on { width: auto; padding: 0 12px; }
   .wa-row .wa-del.btn.act.ico { width: 34px; min-width: 34px; height: 34px; padding: 0; justify-content: center; border: 1px solid var(--outline); border-radius: 50%; } /* like the table's round Delete */
 }
 </style>
@@ -5115,7 +5119,7 @@
       if (l.scrollWidth > room) l.textContent = l.dataset.short;
     });
   }
-  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); fitNav(); fitCalbar(); markScrolled(); markOpenDay(); fitTables(); }); };
+  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); fitNav(); fitCalbar(); fitAdded(); markScrolled(); markOpenDay(); fitTables(); }); };
   /** The calendar bar never cuts anything off. Measured, not guessed from the screen width:
    *  1. wide: [Add Request · views · Today]  [‹ date ›] centered  [filters];
    *  2. .cb-tight: still the desktop calendar, one packed row like the List bar — [Add Request] [‹ date ›] [views] [Today] … [filters]
@@ -8984,7 +8988,16 @@
       return '<div class="wa-row" role="listitem">' + memberPuck(u) + '<span class="wa-acts">' + statusSlider({ id, status: addedSt(id) }, 'wizXStatus') +
         '<button type="button" class="btn sm del act ico wa-del" data-act="wizXDel" data-id="' + esc(id) + '" aria-label="Remove ' + esc(fullName(u)) + '" title="Remove">' + icon('minus', 16) + '</button></span></div>'; }).join('') + '</div>' : '';
   }
-  const redrawAdded = () => { const a = $('#wizAdded'); if (a) a.innerHTML = addedListHtml(); $$('#wizAdded .stsl').forEach(sl => placeThumb(sl)); };
+  /** Add Members rows: if any row can't fit its name, slider and minus on one line, every row's slider drops its words
+   *  (icons only; the picked one shows its icon on its color), so all rows stay lined up. */
+  function fitAdded() {
+    const box = $('#wizAdded .wiz-added'); if (!box) return;
+    box.classList.remove('wa-compact');
+    const tight = $$('.wa-row', box).some(r => r.scrollWidth > r.clientWidth + 1);
+    box.classList.toggle('wa-compact', tight);
+    $$('.stsl', box).forEach(sl => placeThumb(sl));
+  }
+  const redrawAdded = () => { const a = $('#wizAdded'); if (a) a.innerHTML = addedListHtml(); fitAdded(); };
   function whoPopHtml() {
     const w = S.wiz;
     const people = S.users.filter(u => u.active && !(w.editId && u.id === w.assigneeId) && (w.editId ? canAddTo(u) : manages(u))); // team admins: only their team
