@@ -138,16 +138,18 @@
   /* ---- Pass calendar range ends at a week / month break: a rounded > point where the range runs on, and a rounded >
      notch where it picks up again — the calendar bars' chevrons, with soft corners to match the rounded-square end caps.
      Fixed-size SVG masks (14 × 28: a ~9px-deep point, like the bars, on the day tile's height) so the rounding never stretches. */
+  .wp-in.wp-full { background: #c2560a; color: #ffffff; } /* full (at the daily max): amber, between open green and overbooked red */
   .wp-in.wp-tip { border-top-right-radius: 0; border-bottom-right-radius: 0;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H2.6Q4%200%204.6%201.2L13.3%2012.6Q14%2014%2013.3%2015.4L4.6%2026.8Q4%2028%202.6%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000 0 0) left / calc(100% - 14px) 100% no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H2.6Q4%200%204.6%201.2L13.3%2012.6Q14%2014%2013.3%2015.4L4.6%2026.8Q4%2028%202.6%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000 0 0) left / calc(100% - 14px) 100% no-repeat; }
+    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H2.6Q4%200%204.6%201.2L13.3%2012.6Q14%2014%2013.3%2015.4L4.6%2026.8Q4%2028%202.6%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 14px) 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H2.6Q4%200%204.6%201.2L13.3%2012.6Q14%2014%2013.3%2015.4L4.6%2026.8Q4%2028%202.6%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 14px) 100% no-repeat; }
   .wp-in.wp-notch { border-top-left-radius: 0; border-bottom-left-radius: 0;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M1.4%200H14V28H1.4Q0%2028%20.7%2026.8L8.6%2015.4Q9.3%2014%208.6%2012.6L.7%201.2Q0%200%201.4%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000 0 0) right / calc(100% - 14px) 100% no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M1.4%200H14V28H1.4Q0%2028%20.7%2026.8L8.6%2015.4Q9.3%2014%208.6%2012.6L.7%201.2Q0%200%201.4%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000 0 0) right / calc(100% - 14px) 100% no-repeat; }
+    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M1.4%200H14V28H1.4Q0%2028%20.7%2026.8L8.6%2015.4Q9.3%2014%208.6%2012.6L.7%201.2Q0%200%201.4%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000, #000) right / calc(100% - 14px) 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M1.4%200H14V28H1.4Q0%2028%20.7%2026.8L8.6%2015.4Q9.3%2014%208.6%2012.6L.7%201.2Q0%200%201.4%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000, #000) right / calc(100% - 14px) 100% no-repeat; }
 
   /* ---- Welcome tour: a dimmed page with a spotlight on the control (gold ring) and a card beside it. ---- */
   .tour { position: fixed; inset: 0; z-index: 500; }
   .tour-dim { position: fixed; inset: 0; width: 100%; height: 100%; fill: rgba(4, 12, 28, .62); } /* the page dimmed, with a hole per highlighted control */
+  .tour-dim .tour-ring { fill: var(--gold); } /* the gold rings: one shape, so touching rings merge into one outline */
   .tour-spot { position: fixed; border-radius: 24px; outline: 3px solid var(--gold); outline-offset: 0; pointer-events: none; } /* its gold ring; snaps from item to item (no glide) */
   /* A tap on the Dates step: a gold ripple that grows and fades. */
   .tour-tap { position: fixed; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; border: 3px solid var(--gold); background: rgba(255, 197, 47, .45);
@@ -255,14 +257,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792766336"></script>
+    <script src="config.js?v=1792766911"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792766336';
+      window.PAL_BUILD = '1792766911';
       (function () {
         function check(launch) {
           try {
@@ -8582,7 +8584,7 @@
     const pic = $('.nav [data-v="profile"] .nav-ic');
     if (st.sync && pic) pic.classList.add('tour-sync');
     const pip = st.sync && pic ? '<div class="tour-pip" aria-hidden="true">' + pic.outerHTML.replace('class="nav-ic', 'class="nav-ic tour-sync') + '</div>' : '';
-    ov.innerHTML = '<svg class="tour-dim" aria-hidden="true"><path fill-rule="evenodd"></path></svg><div class="tour-rings"></div><div class="tour-card' + (st.alarm ? ' tour-alarm' : '') + '" role="dialog" aria-modal="true" aria-labelledby="tourT">' +
+    ov.innerHTML = '<svg class="tour-dim" aria-hidden="true"></svg><div class="tour-rings"></div><div class="tour-card' + (st.alarm ? ' tour-alarm' : '') + '" role="dialog" aria-modal="true" aria-labelledby="tourT">' +
       (st.alarm ? '<div class="tour-band">' + icon('alert', 28) + '<h3 id="tourT">' + esc(st.title) + '</h3></div><div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div>' + pip + '<p>' + esc(st.text) + '</p>'
         : '<div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div><h3 id="tourT">' + esc(st.title) + '</h3><p>' + esc(st.text) + '</p>') +
         (st.pages ? '<div class="tour-pip tour-pages" aria-hidden="true">' + st.pages.map(g => '<span class="tp-pg"><span class="nav-ic">' + icon(g[2], 20) + '</span><span>' + esc(g[1]) + '</span></span>').join('') + '</div>' : '') + (st.warn ? '<p class="tour-warn" role="alert">' + icon('alert', 16) + '<b>' + esc(st.warn) + '</b></p>' : '') +
@@ -8671,15 +8673,20 @@
     if (ov.classList.contains('tour-wait')) {
       const sig = boxes.map(b => [b.L, b.T, b.R, b.B].map(Math.round).join(',')).join('|');
       S.tourSteady = sig && sig === S.tourSig ? S.tourSteady + 1 : 0; S.tourSig = sig;
-      if (S.tourSteady < 2 && boxes.length) { svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.firstChild.setAttribute('d', 'M0 0H' + W + 'V' + H + 'H0Z'); return; }
+      if (S.tourSteady < 2 && boxes.length) { svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.innerHTML = '<rect width="' + W + '" height="' + H + '"></rect>'; return; }
       ov.classList.remove('tour-wait');
     }
     const hole = b => { const r = Math.min(b.rad, (b.R - b.L) / 2, (b.B - b.T) / 2);
       return 'M' + (b.L + r) + ' ' + b.T + 'H' + (b.R - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + b.R + ' ' + (b.T + r) + 'V' + (b.B - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (b.R - r) + ' ' + b.B +
         'H' + (b.L + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + b.L + ' ' + (b.B - r) + 'V' + (b.T + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (b.L + r) + ' ' + b.T + 'Z'; };
+    // The dim layer and the gold rings, masked by the union of the holes: rings that touch or overlap (the open profile menu
+    // and its button) merge into one clean outline instead of crossing, and overlapping holes stay open.
+    const holes = boxes.map(hole).join(''), outer = boxes.map(b => hole({ L: b.L - 3, T: b.T - 3, R: b.R + 3, B: b.B + 3, rad: b.rad + 3 })).join('');
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-    svg.firstChild.setAttribute('d', 'M0 0H' + W + 'V' + H + 'H0Z' + boxes.map(hole).join(''));
-    rings.innerHTML = boxes.map(b => '<div class="tour-spot" style="left:' + b.L + 'px;top:' + b.T + 'px;width:' + (b.R - b.L) + 'px;height:' + (b.B - b.T) + 'px;border-radius:' + Math.min(b.rad, (b.B - b.T) / 2) + 'px"></div>').join('');
+    svg.innerHTML = '<defs><mask id="tourMask" maskUnits="userSpaceOnUse" x="0" y="0" width="' + W + '" height="' + H + '"><rect width="' + W + '" height="' + H + '" fill="#fff"></rect>' +
+      '<path d="' + holes + '" fill="#000"></path></mask></defs><rect width="' + W + '" height="' + H + '" mask="url(#tourMask)"></rect>' +
+      (outer ? '<path class="tour-ring" d="' + outer + '" mask="url(#tourMask)"></path>' : '');
+    rings.innerHTML = '';
     const cw = Math.min(340, W - 32);
     if (!boxes.length) { card.style.cssText = 'width:' + cw + 'px;left:50%;top:50%;transform:translate(-50%,-50%)'; return; }
     // avoid: keep the card off that whole thing too (the open profile menu), so you can see what you're tapping.
@@ -9044,8 +9051,8 @@
         const d = D.add(gs, i);
         if (i === 35 && d.slice(0, 7) !== mon) break;
         if (d.slice(0, 7) !== mon) { cells += '<span></span>'; continue; }
-        const inR = d >= o.start && d <= o.end, c = o.cf && o.cf.get(d), isBad = (c && c.bad) || (o.bad && o.bad.has(d));
-        const cls = 'wp-d' + (inR ? ' wp-in' + (o.med || o.status === 'Canceled' ? '' : isBad ? ' wp-bad' : ' wp-ok') : '') + (d === o.start ? ' wp-s' : '') + (d === o.end ? ' wp-e' : '') +
+        const inR = d >= o.start && d <= o.end, c = o.cf && o.cf.get(d), isBad = (c && c.bad) || (o.bad && o.bad.has(d)), isFull = !isBad && o.full && o.full.has(d);
+        const cls = 'wp-d' + (inR ? ' wp-in' + (o.med || o.status === 'Canceled' ? '' : isBad ? ' wp-bad' : isFull ? ' wp-full' : ' wp-ok') : '') + (d === o.start ? ' wp-s' : '') + (d === o.end ? ' wp-e' : '') +
           // The range runs on past this row / month: a > point here, and a > notch where it picks up again (like calendar bars).
           (inR && d !== o.end && (i % 7 === 6 || D.add(d, 1).slice(0, 7) !== mon) ? ' wp-tip' : '') +
           (inR && d !== o.start && (i % 7 === 0 || d.slice(8) === '01') ? ' wp-notch' : '');
@@ -9623,7 +9630,7 @@
         const ids = wizIds(), one = !w.creating && ids.length === 1 && userOf(ids[0]);
         const wn = one ? [calName(one), memberSub(one)] : w.creating ? [w.nu.name.split(' ').pop(), memberSub(w.nu) + ' · new member'] : [plural(ids.length, 'member'), who + ' · one request each'];
         body = '<div class="review">' +
-        walletPass({ draft: true, type: w.type, start: w.start, end: w.end, location: String(w.location || '').trim(), note: w.note.trim(), priv: true, who: wn[0], whoSub: wn[1], status: 'Pending', bad: c.bad, decide: wizDecides() ? statusSlider({ id: '', status: w.status || 'Pending' }, 'wizStatus', '', false) : '' }) +
+        walletPass({ draft: true, type: w.type, start: w.start, end: w.end, location: String(w.location || '').trim(), note: w.note.trim(), priv: true, who: wn[0], whoSub: wn[1], status: 'Pending', bad: w.tourDemo ? tourDays('overbooked') : c.bad, full: w.tourDemo ? tourDays('atmax') : null, decide: wizDecides() ? statusSlider({ id: '', status: w.status || 'Pending' }, 'wizStatus', '', false) : '' }) +
         // Warnings only (no "no conflicts" line: the pass's calendar shows conflicts).
         (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '') +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
@@ -9650,12 +9657,16 @@
    *  Excludes the request being edited. */
   function wizDayState(d) {
     const w = S.wiz, role = wizRole(), q = quota(role, w.type, d);
+    // The tour's example leave shows every color once: open, then 2 full days, 2 overbooked days, then open again.
+    if (w.tourDemo) { const k = D.valid(w.start) ? D.days(w.start, d) - 1 : -1; return k === 3 || k === 4 ? 'atmax' : k === 5 || k === 6 ? 'overbooked' : 'ok'; }
     if (!q) return 'ok';
     const self = w.editId ? S.requests.find(r => r.id === w.editId) : null;
     const own = self && self.type === w.type && self.status !== 'Denied' && d >= self.start && d <= self.end;
     const total = countOn(d, role, w.type) - (own ? 1 : 0) + Math.max(1, wizIds().filter(id => userOf(id).role === role).length);
     return total > q ? 'overbooked' : total === q ? 'atmax' : 'ok';
   }
+  /** The tour's example leave: its days in one color state (amber / red on the Review pass, as on the form). */
+  const tourDays = st => { const w = S.wiz, out = new Set(); for (let d = w.start; d <= w.end; d = D.add(d, 1)) if (wizDayState(d) === st) out.add(d); return out; };
   function renderMini() {
     const w = S.wiz, ms = w.mini, gs = D.weekStart(ms), role = wizRole(), q = quota(role, w.type);
     let html = '<div class="mini"><div class="mini-h"><button class="btn ghost icon-btn" data-act="miniNav" data-v="-1" aria-label="Previous month">' + icon('left', 16) + '</button>' +
@@ -9667,7 +9678,7 @@
       // While only Departure is picked, that day alone is highlighted.
       const inR = D.valid(w.start) && (D.valid(w.end) ? d >= w.start && d <= w.end : d === w.start);
       const edge = d === w.start || d === w.end;
-      const st = q ? wizDayState(d) : 'ok';
+      const st = q || w.tourDemo ? wizDayState(d) : 'ok';
       // Max days: the days you could still add after the start (up to the type's max) get a dashed outline.
       const mxD = maxDays(w.type), mx = !!mxD && D.valid(w.start) && !inR && d > w.start && d <= D.add(w.start, mxD - 1);
       const first = d === w.start, last = d === w.end || (!D.valid(w.end) && d === w.start);
@@ -9679,7 +9690,7 @@
     // The request's length sits at the end of the color key (no separate leave-days box: the form must fit without scrolling).
     const n = D.valid(w.start) && D.valid(w.end) && w.end >= w.start ? D.days(w.start, w.end) : 0;
     const len = ''; // the length shows in the header pill (#hdDays), not here
-    return html + '</div><div class="mini-key">' + (q ? '<span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-atmax"></span>Full</span><span class="mk-i"><span class="mk mk-overbooked"></span>Overbooked</span>' : '') +
+    return html + '</div><div class="mini-key">' + (q || w.tourDemo ? '<span class="mk-i"><span class="mk mk-ok"></span>Open</span><span class="mk-i"><span class="mk mk-atmax"></span>Full</span><span class="mk-i"><span class="mk mk-overbooked"></span>Overbooked</span>' : '') +
       (anyBo ? '<span class="mk-i"><span class="mk mk-bo"></span>Blackout</span>' : '') + len + '</div></div>';
   }
   function renderWizStatus() {
