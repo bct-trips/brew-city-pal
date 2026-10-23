@@ -60,10 +60,10 @@
     --av-open: color-mix(in srgb, #22c55e 24%, var(--card)); --av-over: color-mix(in srgb, #facc15 24%, var(--card)); --av-full: color-mix(in srgb, #f43f5e 26%, var(--card)); /* vivid bases: pastels go muddy over dark */
   }
   /* Pass cards (Review / draft and the final pass): the days are in the pass's own accent — gold on a Leave, navy on a Pass,
-     gray on a Medical card — with no Open / Full / Overbooked colors (they belong to the date picker and the tour, where
+     ink-colored on a Medical card — always the card's text color, with no Open / Full / Overbooked colors (they belong to the date picker and the tour, where
      every card color works; on a gold card a yellow day can never show). */
   .wpass:not(.wp-pass):not(.wp-ty-medical) { --wp-acc: #ffffff; --wp-acc-ink: #0A2351; } /* Leave (navy): white days, like the card's text — not gold */
-  .wpass.wp-ty-medical, .mpass.wp-ty-medical { --wp-acc: var(--med-b); --wp-acc-ink: var(--mp-ink); } /* Medical: the card's own gray (the generated per-type CSS would make it navy) */
+  .wpass.wp-ty-medical, .mpass.wp-ty-medical { --wp-acc: var(--mp-ink); --wp-acc-ink: var(--mp-card); } /* Medical: the days in the card's text color (ink on the card), numerals in the card color */
   .wp-in.wp-ok, .wp-in.wp-full, .wp-in.wp-bad { background: var(--wp-acc); color: var(--wp-acc-ink); }
   .qd.over::after { border-color: transparent var(--day-over) transparent transparent; }
   .wk-q .over, .dl-q .pill.over, .qc-day.over { background: var(--day-over); border-color: var(--day-over); color: var(--day-over-ink); }
@@ -351,14 +351,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792788282"></script>
+    <script src="config.js?v=1792788503"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792788282';
+      window.PAL_BUILD = '1792788503';
       (function () {
         function check(launch) {
           try {
