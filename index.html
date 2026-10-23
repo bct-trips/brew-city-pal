@@ -196,14 +196,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792757122"></script>
+    <script src="config.js?v=1792757377"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792757122';
+      window.PAL_BUILD = '1792757377';
       (function () {
         function check(launch) {
           try {
@@ -8418,8 +8418,10 @@
     if (S.tourDemo) { S.tourDemo = false; render(); }
   }
   /** The tour's start: pick a section — Initial Setup, Tour the Interface, How to Add a Request (✓ once done); Close ends it. */
+  /** Esc / tap outside / swipe down in a tour dialog: back one level (an item → the list → the start screen → out). */
+  function tourUp() { const l = S.tourLvl; if (l === 'item') tourHub(); else if (l === 'hub') tourMenu(); else tourEnd(); }
   function tourMenu() {
-    tourClear();
+    tourClear(); S.tourLvl = 'menu';
     const rows = [['setup', 'bell', 'Set Up Notifications'], ['ui', 'home', 'Tour the Interface'], ['req', 'plus', S.isAdmin ? 'How to Add an Event' : 'How to Add a Request']];
     openModal('tour', tourX(modalHead('Welcome to Brew City PAL', 'home')) +
       '<div class="modal-b tour-b"><div class="tour-items">' + rows.map(r => { const done = S.tourSeen && S.tourSeen[r[0]];
@@ -8433,10 +8435,11 @@
   }
   /** A section's last step: tick it on the start screen and go back there. */
   function tourSecDone() { S.tourSeen = S.tourSeen || {}; S.tourSeen[S.tourSec] = true; tourMenu(); }
-  const tourX = h => h.replace('data-act="closeModal"', 'data-act="tourSkip"'); // the dialog's ✕ = Skip Tour
+  // The dialog's ✕ goes back one level: an item → the notifications list → the tour's start screen → out of the tour.
+  const tourX = (h, act) => h.replace('data-act="closeModal"', 'data-act="' + (act || 'tourSkip') + '"');
   function tourHub() {
-    const ov = document.getElementById('tour'); if (ov) ov.remove(); clearInterval(S.tourTick);
-    openModal('tour', tourX(modalHead('Set Up Notifications', 'bell')) +
+    const ov = document.getElementById('tour'); if (ov) ov.remove(); clearInterval(S.tourTick); S.tourLvl = 'hub';
+    openModal('tour', tourX(modalHead('Set Up Notifications', 'bell'), 'tourMenu') +
       '<div class="modal-b tour-b"><div class="tour-items">' + setupItems().map(it =>
         '<button type="button" class="tour-item' + (it.done ? ' done' : '') + '" data-act="tourItem" data-v="' + it.k + '">' + icon(it.ic, 20) + '<span class="ti-t">' + it.title + '</span>' +
           (it.done ? '<span class="ti-ok">' + icon('check', 16) + 'On</span>' : '<span class="ti-go">Set Up' + icon('right', 16) + '</span>') + '</button>').join('') + '</div></div>' +
@@ -8445,8 +8448,9 @@
   }
   function tourItem(k) {
     const it = setupItems().find(x => x.k === k); if (!it) return tourHub();
+    S.tourLvl = 'item';
     if (k === 'push') refreshPushState().catch(() => {});
-    openModal('tour', tourX(modalHead(it.title, it.ic)) + '<div class="modal-b tour-b tour-set">' + it.html() + '</div>' +
+    openModal('tour', tourX(modalHead(it.title, it.ic), 'tourHub') + '<div class="modal-b tour-b tour-set">' + it.html() + '</div>' +
       '<div class="modal-f"><button class="btn" data-act="tourHub">' + icon('left', 18) + 'Back</button><span class="spacer"></span>' +
         '<button class="btn btn-next" data-act="tourHub">Done</button></div>', true);
   }
@@ -9662,7 +9666,7 @@
         // A draft on Review: pulling it down goes back to the form to keep editing (it isn't thrown away).
         const draft = S.modal === 'wizard' && S.wiz && S.wiz.step === 3;
         m.style.transition = 'transform .18s ease-in'; m.style.transform = 'translateY(100%)';
-        setTimeout(() => { m.style.transform = ''; m.style.transition = ''; if (draft && S.wiz) A.wizEdit(); else closeModal(); }, 180);
+        setTimeout(() => { m.style.transform = ''; m.style.transition = ''; if (draft && S.wiz) A.wizEdit(); else if (S.modal === 'tour') tourUp(); else closeModal(); }, 180);
       } else { m.style.transition = 'transform .2s ease-out'; m.style.transform = ''; }
     }, { passive: true });
   })();
@@ -11015,7 +11019,7 @@
       return;
     }
     const ov = ev.target.closest('[data-overlay]');
-    if (ov && ev.target === ov) { closeModal(); return; }
+    if (ov && ev.target === ov) { if (S.modal === 'tour') tourUp(); else closeModal(); return; }
     // "I have read this warning" check boxes inside a sheet (Restore From Backup).
     const ack = ev.target.closest('#modal .ack');
     if (ack) { ev.preventDefault(); toggleAck(ack); return; }
@@ -11073,6 +11077,7 @@
       return;
     }
     if (ev.key !== 'Escape') return;
+    if (S.modal === 'tour') { tourUp(); return; }
     if (S.modal) { closeModal(); return; }
     if (S.dayPanel && $('.dpanel')) { S.dayPanel = null; store.set('dpClosed', true); render(); return; }
     if (S.sel) { S.sel = null; paintSel(); hideToast(); }
