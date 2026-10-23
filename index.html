@@ -252,14 +252,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792765941"></script>
+    <script src="config.js?v=1792765995"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792765941';
+      window.PAL_BUILD = '1792765995';
       (function () {
         function check(launch) {
           try {
@@ -8476,7 +8476,7 @@
     { view: 'calendar', sel: '.calbar .filters > .fall', title: 'Filters', text: 'Tap Filters to choose what the calendar shows.' },
     S.priv ? null : { view: 'all', sel: '.nav [data-v="all"]', title: 'List', text: 'Everyone’s leave and passes in one list you can search and filter.' },
     { view: 'mine', sel: '.nav [data-v="mine"]', title: 'My Requests', text: 'Your own leave, passes and drafts.' },
-    { view: 'mine', sel: '#mineBody .mp-active, #mineBody .wp-st', multi: true, deck: true, title: 'Active, Approved, Pending or Denied', text: 'The top corner of each card shows where it stands: a green Active pill while you’re on it, then Approved, Pending (orange) or Denied (red). Tap a card to see the whole pass.' },
+    { view: 'mine', sel: '#mineBody .mp-active, #mineBody .wp-st', multi: true, deck: true, title: 'Active, Approved, Pending or Denied', text: 'The top corner of each card shows where it stands. Active appears on approved leave while you’re on it. Pending means it hasn’t been approved yet. Tap a card to see the whole pass.' },
     Object.assign(reqStep(), { side: 'req' }),
     { menu: true, sel: '#pmenu, .nav [data-v="profile"]', multi: true, avoid: '#pmenu', anim: 'notes', title: 'Your Profile',
       text: 'Tap your profile for your notifications, light or dark mode' + (S.myAdmin ? ', Admin or User mode' : '') + ', and Settings for email and notification preferences.' }
