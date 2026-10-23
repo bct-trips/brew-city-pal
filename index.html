@@ -124,6 +124,12 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
+  /* Phones, List: the status filter as three icon-only toggles beside Filters (border · space · button, like the type toggle). */
+  .lbar .filters > .seg.fstat { display: flex; flex: none; height: 40px; }
+  .seg.fstat > button { width: 44px; min-width: 0; padding: 0; justify-content: center; }
+  /* On: the state's deep color on the pale selected fill (light in both modes, so the light-mode text colors); off: muted. */
+  .seg.fstat > button.on.fst-approved .ic { color: #1a6b33; } .seg.fstat > button.on.fst-pending .ic { color: #7a5300; } .seg.fstat > button.on.fst-denied .ic { color: #a1261d; }
+  .seg.fstat > button:not(.on) .ic { color: var(--muted); }
   /* Profile tab selected (its gold pill): the saving ring turns brick so it shows against the gold. */
   .nav button[data-v="profile"]:is(.on, [aria-expanded="true"]) .nav-ic:is(.syncing, .tour-sync)::before { border-top-color: #a3402c; border-right-color: #a3402c; }
   /* Take the Tour: as wide as the Settings cards above it, not the whole page. */
@@ -320,14 +326,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792770498"></script>
+    <script src="config.js?v=1792770888"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792770498';
+      window.PAL_BUILD = '1792770888';
       (function () {
         function check(launch) {
           try {
@@ -2458,9 +2464,7 @@
   .rtable td.stk .stk-in { min-width: max-content; }
   /* Status mark sits right beside the badge: the mark's box is only as wide as the icon, with no extra cell padding. */
   .rtable td.st-ic-c .st-ic { width: 18px; }
-  /* Status mark on the name badge: phones only (desktop shows it in the first column). */
-  .idb-n > .sti.m-st { display: none; }
-  @media (max-width: 700px) { .idb-n > .sti.m-st { display: inline-flex; } .rtable td.st-ic-c .st-ic { display: none; } .rtable th.st-ic-h, .rtable td.st-ic-c { min-width: 0; padding-left: 4px; } }
+  @media (max-width: 700px) { .rtable th.st-ic-h, .rtable td.st-ic-c { padding-left: 8px; } } /* phones too: the status mark sits left of the name */
   .rtable th.st-ic-h, .rtable td.st-ic-c { min-width: 18px; padding-right: 0; }
   .rtable tbody td.stk { padding-left: 8px; }
   /* Phones: the calendar controls (date, views, Today, filters) sit at the bottom, just above Add Request,
@@ -5715,7 +5719,7 @@
     if (sc === 'mine' && S.mineExpired && S.mineMode !== 'cal') parts.push('Expired');
     if (st.person) parts.push(personLabel(st));
     else if (st.role && !S.priv) pick('role', FILTERS[1].opts);
-    pick('status', FILTERS[0].opts);
+    if (!phoneStatus(sc)) pick('status', FILTERS[0].opts); // phones, List: status has its own buttons in the bar
     if (!wideFilters(sc)) pick('type', FILTERS[2].opts);
     if (!wideFilters(sc) && sc !== 'mine' && admView() && (st.hide || []).length) parts.push('No ' + st.hide.join(', '));
     return parts;
@@ -5762,6 +5766,13 @@
     return same(st.status, FILTERS[0].opts.map(o => o[0])) && typeNames().every(t => st.type.includes(t)) &&
       (!st.role || S.priv || same(st.role, defaultRoles())) && !st.person && !st.conf && !(st.hide || []).length && (!st.med || st.med === 'all' || !medFilterOn()) && !(st === S.mf && S.mineConf && S.mineMode === 'cal') && !(st === S.mf && S.mineExpired && S.mineMode !== 'cal');
   }
+  /** Phones, List page: Approved / Pending / Denied are their own icon-only toggles beside Filters (not in the sheet). */
+  const phoneStatus = sc => sc === 'list' && !wideFilters(sc);
+  function statusIconsFilter(sc) {
+    const sel = fState(sc).status;
+    return '<div class="seg fstat" role="group" aria-label="Status filter">' + [['Approved', 'check'], ['Pending', 'clock'], ['Denied', 'ban']].map(([v, ic]) =>
+      '<button type="button" class="fst-' + v.toLowerCase() + (sel.includes(v) ? ' on' : '') + '" aria-pressed="' + sel.includes(v) + '" data-act="fToggle" data-g="status" data-v="' + v + '"' + scAttr(sc) + ' title="' + v + '" aria-label="' + v + '">' + icon(ic, 18) + '</button>').join('') + '</div>';
+  }
   function filterButton(sc) {
     const parts = filterSummary(sc);
     // A person filter hides everyone else, so the button turns Brewers yellow (same as the person pill on desktop).
@@ -5784,7 +5795,7 @@
       (wideFilters(sc) ? '' : sect('Show', typeToggle(sc))) +
       // Phones, All Requests (admins): the Conflicts | Pending | All switch lives here (the bar has no room for it).
       (sc === 'list' && admView() && !wideFilters(sc) ? sect('Requests', openBtn()) : '') +
-      sect('Status', chips(groups[0])) +
+      (phoneStatus(sc) ? '' : sect('Status', chips(groups[0]))) +
       (groups.some(f => f.g === 'role') ? sect('Position', badgeDrop('role', sc)) + sect('Person', personSelect('in-sheet', sc)) : '') +
       // Admins: Medical — everyone, only injured members, or only members who aren't injured.
       (sc !== 'mine' && medFilterOn() ? sect('Medical', medSeg(st.med, 'medF', scAttr(sc))) : '') +
@@ -6356,7 +6367,7 @@
   // The green dot sits to the RIGHT of the name, in the ✓'s place, on every bar of that request (all weeks).
   const onNow = r => r.status === 'Approved' && !r.med && isNow(r);
   const nowDot = (r, from, to) => onNow(r, from, to) ? '<i class="now-dot" title="On ' + r.type.toLowerCase() + ' now"></i>' : '';
-  // withStatus 'table': request tables, where the status mark rides on the badge only on phones (`.m-st`); desktop keeps it
+  // withStatus 'table': request tables, where the status mark sits in its own column left of the name (phones too); desktop keeps it
   // in the first column.
   function personBadge(r, withStatus, from, to) {
     const tbl = withStatus === 'table'; if (tbl) withStatus = false;
@@ -6365,7 +6376,7 @@
     return '<span class="idb pb st-' + r.status.toLowerCase() + '" aria-hidden="true"><span class="idb-r ' + roleCls(u.role) + '">' + esc(L) + '</span>' +
       '<span class="idb-u ub-' + (un ? un.style : 'slate') + '">' + esc(u.unit) + '</span>' +
       '<span class="idb-n">' + barMarks(r) + '<span class="idb-t">' + esc(calName(u)) + '</span>' + (r.med ? medDot : nowDot(r, from, to)) +
-        (tbl && !onNow(r) && !r.med ? statusIcon(r.status).replace('class="sti ', 'class="sti m-st ') : '') + (withStatus && !r.med ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>' + (r.med ? '' : medMark(u));
+        (withStatus && !r.med ? (onNow(r, from, to) ? '' : statusIcon(r.status)) + (isChanged(r) ? '<span class="sti sti-chg" title="Dates changed by admin">' + icon('alert', 14) + '</span>' : '') : '') + '</span></span>' + (r.med ? '' : medMark(u));
   }
   /** Status mark shown after the name on the first day: ✓ approved, clock pending, ✕ denied. */
   function statusIcon(st) {
@@ -7019,7 +7030,7 @@
     return '<div class="lbar">' +
       '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + (S.isAdmin ? 'Add Event' : 'Add Request') + '</button>' +
       '<div class="lsearch">' + icon('search', 16) + search + '</div>' +
-      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'list' && admView() ? openBtn() : '') + (sc === 'mine' ? mineSwitch() : '') + '</div></div>';
+      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (phoneStatus(sc) ? statusIconsFilter(sc) : '') + (sc === 'list' && admView() ? openBtn() : '') + (sc === 'mine' ? mineSwitch() : '') + '</div></div>';
   }
   /** Admin status control: a three-way slider Approved | Pending | Denied. The current status has a solid red / amber /
    *  green fill and shows its word; the other two show only their icon. Used in the request tables, request details and the conflict screen. */
