@@ -45,17 +45,21 @@
      white on red 5.8:1. */
   :root {
     --day-open: #3d7a50; --day-open-ink: #ffffff; --day-full: #dcb04a; --day-full-ink: #1b1e23; --day-over: #a8463d; --day-over-ink: #ffffff; /* muted a touch */
-    /* calendar day tints (a soft wash of the same three) and their dots */
-    --av-open: color-mix(in srgb, var(--day-open) 30%, var(--card)); --av-over: color-mix(in srgb, var(--day-full) 42%, var(--card)); --av-full: color-mix(in srgb, var(--day-over) 32%, var(--card));
+    /* Pastels (the date picker, its key and the pass's days, in dark text, both modes): green and red are the picker's
+       originals; Full is a pastel yellow so it can't pass for red. Dark text on each ≥ 10:1. */
+    --day-open-soft: #86d99a; --day-full-soft: #ffd166; --day-over-soft: #ffb4ab; --day-soft-ink: #17181d;
+    /* calendar day tints (a wash of the same pastels) and their dots */
+    --av-open: color-mix(in srgb, var(--day-open-soft) 55%, var(--card)); --av-over: color-mix(in srgb, var(--day-full-soft) 60%, var(--card)); --av-full: color-mix(in srgb, var(--day-over-soft) 60%, var(--card));
     --av-open-dot: var(--day-open); --av-over-dot: var(--day-full); --av-full-dot: var(--day-over);
-    /* the form's picked days and key (rg-over = Full, rg-full = Overbooked, as named in Styles): the same faded washes as the calendar */
-    --rg-ok: var(--av-open); --rg-ok-ink: var(--ink); --rg-over: var(--av-over); --rg-over-ink: var(--ink); --rg-full: var(--av-full); --rg-full-ink: var(--ink); /* faded: the calendar's washes */
+    /* the form's picked days and key (rg-over = Full, rg-full = Overbooked, as named in Styles): the pastels */
+    --rg-ok: var(--day-open-soft); --rg-ok-ink: var(--day-soft-ink); --rg-over: var(--day-full-soft); --rg-over-ink: var(--day-soft-ink); --rg-full: var(--day-over-soft); --rg-full-ink: var(--day-soft-ink);
   }
-  /* Pass days: the state color faded into the pass's own card (navy / gold / white), in the pass's ink, so the days tint the
-     pass instead of taking it over. */
-  .wp-in.wp-ok { background: color-mix(in srgb, var(--day-open) 55%, var(--wp-bg)); color: var(--wp-ink); }
-  .wpass.wp-ty-medical .wp-in { background: color-mix(in srgb, var(--day-open) 55%, var(--mp-card)); color: var(--mp-ink); } /* medical: always open */
-  .wp-in.wp-bad { background: color-mix(in srgb, var(--day-over) 55%, var(--wp-bg)); color: var(--wp-ink); }
+  :root[data-theme="dark"] { /* dark calendar: a deeper wash of the pastels over the dark page */
+    --av-open: color-mix(in srgb, #22c55e 24%, var(--card)); --av-over: color-mix(in srgb, #facc15 24%, var(--card)); --av-full: color-mix(in srgb, #f43f5e 26%, var(--card)); /* vivid bases: pastels go muddy over dark */
+  }
+  /* Pass days: the same pastels as the date picker, in dark text. */
+  .wp-in.wp-ok, .wpass.wp-ty-medical .wp-in { background: var(--day-open-soft); color: var(--day-soft-ink); } /* medical: always open */
+  .wp-in.wp-bad { background: var(--day-over-soft); color: var(--day-soft-ink); }
   .qd.over::after { border-color: transparent var(--day-over) transparent transparent; }
   .wk-q .over, .dl-q .pill.over, .qc-day.over { background: var(--day-over); border-color: var(--day-over); color: var(--day-over-ink); }
   .wk-q .full { background: var(--day-full); color: var(--day-full-ink); border-radius: 4px; padding: 0 4px; }
@@ -172,7 +176,7 @@
   /* ---- Pass calendar range ends at a week / month break: a rounded > point where the range runs on, and a rounded >
      notch where it picks up again — the calendar bars' chevrons, with soft corners to match the rounded-square end caps.
      Fixed-size SVG masks (14 × 28: a ~9px-deep point, like the bars, on the day tile's height) so the rounding never stretches. */
-  .wp-in.wp-full { background: color-mix(in srgb, var(--day-full) 55%, var(--wp-bg)); color: var(--wp-ink); } /* Full (at the daily max): amber */
+  .wp-in.wp-full { background: var(--day-full-soft); color: var(--day-soft-ink); } /* Full (at the daily max): pastel yellow */
   .wp-in.wp-tip { border-top-right-radius: 0; border-bottom-right-radius: 0;
     -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H2.6Q4%200%204.6%201.2L13.3%2012.6Q14%2014%2013.3%2015.4L4.6%2026.8Q4%2028%202.6%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 14px) 100% no-repeat;
     mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H2.6Q4%200%204.6%201.2L13.3%2012.6Q14%2014%2013.3%2015.4L4.6%2026.8Q4%2028%202.6%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 14px) 100% no-repeat; }
@@ -291,14 +295,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792767931"></script>
+    <script src="config.js?v=1792768118"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792767931';
+      window.PAL_BUILD = '1792768118';
       (function () {
         function check(launch) {
           try {
