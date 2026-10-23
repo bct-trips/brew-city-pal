@@ -126,7 +126,13 @@
   .pm-pop { --gap-c: var(--pm-bg); }
   /* Disabled Add Request / Add Event (offline): the standard disabled button — Material 3's 12% container and 38% label,
      same shape and place, nothing added to it. The Viewing Offline bar says why. */
-  .btn.req-btn:disabled, .req-bar .req-btn:disabled { opacity: 1; background: color-mix(in srgb, var(--ink) 12%, transparent); border-color: transparent; color: color-mix(in srgb, var(--ink) 38%, transparent); box-shadow: none; }
+  .btn.req-btn:disabled, .req-bar .req-btn:disabled, .btn.off:disabled { opacity: 1; background: color-mix(in srgb, var(--ink) 12%, transparent); border-color: transparent; color: color-mix(in srgb, var(--ink) 38%, transparent); box-shadow: none; }
+  .btn.off:disabled .ic { color: inherit; }
+  /* The request form while offline: read-only fields (38% text, 12% edge), no picking. */
+  .wiz-off input:disabled, .wiz-off textarea:disabled, .wiz-off select:disabled { opacity: 1; color: color-mix(in srgb, var(--ink) 38%, transparent); border-color: color-mix(in srgb, var(--ink) 12%, transparent); background: transparent; }
+  .wiz-off .mini-g button:disabled, .wiz-off .seg > button:disabled, .wiz-off .stsl-o:disabled { opacity: 1; cursor: not-allowed; }
+  .wiz-off .seg > button.on:disabled, .wiz-off .seg-thumb { background: color-mix(in srgb, var(--ink) 12%, transparent) !important; color: color-mix(in srgb, var(--ink) 38%, transparent) !important; }
+  .wiz-off .mini-g button.in:disabled { opacity: .5; }
   /* Offline status sliders: the chosen status keeps its place but in the disabled gray (12% pill, 38% word); the other two
      look as they always do when unselected. Nothing moves. */
   .stsl.off .stsl-thumb, .stsl.off .stsl-o.on { background: color-mix(in srgb, var(--ink) 12%, transparent) !important; }
@@ -343,14 +349,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792776587"></script>
+    <script src="config.js?v=1792776955"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792776587';
+      window.PAL_BUILD = '1792776955';
       (function () {
         function check(launch) {
           try {
@@ -874,7 +880,8 @@
   .row-acts .btn { gap: 4px; }
   .btn.del { color: var(--bad); }
   /* On phones the action column would cover most of the screen, so let it scroll with the row. */
-  @media (max-width: 760px) { .rtable .th-acts, .rtable .acts-cell { position: static; box-shadow: none; } }
+  /* Phones: the Actions column isn't pinned to the right edge, but its header stays pinned to the top with the others. */
+  @media (max-width: 760px) { .rtable .acts-cell { position: static; box-shadow: none; } .rtable thead .th-acts { right: auto; box-shadow: none; } }
   .ptable { min-width: 1140px; }
   .rtable th.num .th-sort { justify-content: flex-end; text-align: right; }
   .ptable td.num { text-align: right; padding-right: 16px; }
@@ -4576,7 +4583,8 @@
   const isNetErr = e => !!e && (e.message === TIMED_OUT || /No connection to the server|server had a hiccup|could not be reached|Failed to fetch|NetworkError|Load failed|HTTP 0|network/i.test(e.message));
   /* Offline: the server can't be reached, so the app shows the data saved on this device under a yellow "Viewing Cached
      Data" bar, and nothing that adds or changes requests runs until a call gets through again (then the bar goes). */
-  const OFFLINE_ACTS = new Set(['newReq', 'newReqOn', 'editReq', 'setStatus', 'cfSet', 'cancelReq', 'cfEdit', 'cfApproveAll', 'ackChange', 'wizSubmit', 'wizEdit',
+  // Edit (editReq) and the Review step's Edit (wizEdit) stay on: the form opens read-only (see markOffline), so nothing can be changed.
+  const OFFLINE_ACTS = new Set(['newReq', 'newReqOn', 'setStatus', 'cfSet', 'cancelReq', 'cancelTrip', 'delDraft', 'delDraftRow', 'delMedical', 'cfEdit', 'cfApproveAll', 'ackChange', 'wizSubmit', 'wizReview',
     'newBlackout', 'addBlackout', 'editBlackout', 'delBlackout', 'boAllow', 'boDeny', 'boEdit', 'boResolveOpen', 'allowBlackout']);
   function setOffline(on) {
     if (!!S.offline === !!on) return;
@@ -4589,8 +4597,13 @@
   }
   /** While offline, the buttons that add or change requests are disabled (grayed like any disabled button). */
   function markOffline() {
-    $$('[data-act]').forEach(b => { if (!OFFLINE_ACTS.has(b.dataset.act) || !('disabled' in b)) return;
-      if (S.offline) { if (!b.disabled) { b.disabled = true; b.dataset.offOff = '1'; } } else if (b.dataset.offOff) { b.disabled = false; delete b.dataset.offOff; } });
+    const off = el => { if (S.offline) { if (!el.disabled) { el.disabled = true; el.dataset.offOff = '1'; el.classList.add('off'); } } else if (el.dataset.offOff) { el.disabled = false; delete el.dataset.offOff; el.classList.remove('off'); } };
+    $$('[data-act]').forEach(b => { if (OFFLINE_ACTS.has(b.dataset.act) && 'disabled' in b) off(b); });
+    // The request form (open while offline, or opened from Edit): read-only — every field, picker and switch in it is off,
+    // and so are Review / Submit / Save; Cancel, ✕ and the Review step's Edit (back to the form) still work.
+    const keep = new Set(['closeModal', 'wizEdit', 'miniNav']);
+    if (S.modal === 'wizard') { $('#modal .modal').classList.toggle('wiz-off', !!S.offline);
+      $$('#modal .modal-b button, #modal .modal-b input, #modal .modal-b textarea, #modal .modal-b select, #modal .modal-f button').forEach(el => { if (!keep.has(el.dataset.act)) off(el); }); }
     // Status sliders (Approved | Pending | Denied): the chosen one in the disabled gray, the others as usual — the status can be seen, not changed.
     $$('.stsl').forEach(sl => sl.classList.toggle('off', !!S.offline && !!sl.querySelector('.stsl-o:disabled')));
   }
@@ -8126,6 +8139,7 @@
     }
     // A dialog asking for a PIN focuses its first PIN box (phones too); others focus [autofocus] (not on phones).
     if (kind !== 'restore') autoFocus($('#modal [autofocus]') || [...document.querySelectorAll('#modal input')].find(isPinBox)); // Restore: read the warning first
+    if (S.offline) markOffline(); // a dialog opened while offline: its Delete / Cancel / status slider / form are off too
   }
   /* ---------- Confirm dialog (Material 3 basic dialog, replaces the browser's confirm box) ----------
      askConfirm(message) → Promise<boolean>. Its own layer above any open dialog, so the dialog underneath stays as it
@@ -8324,7 +8338,7 @@
   // The length against the type's max ("4 / 10 days"), so you can see the limit before going over it.
   const dayPill = (n, type) => { const mx = maxDays(type);
     return '<span class="hd-days hd-' + tcls(type) + (mx && n > mx ? ' hd-over' : '') + '" id="hdDays" aria-live="polite">' +
-      (n ? '<b>' + n + '</b>' + (mx ? ' / ' + mx : '') + ' ' + (n === 1 && !mx ? 'day' : 'days') : mx ? 'Max ' + mx + ' days' : 'Pick dates') + '</span>'; };
+      (n ? '<b>' + n + '</b> ' + (n === 1 ? 'day' : 'days') : mx ? 'Max ' + mx + ' days' : 'Pick dates') + '</span>'; }; // just the request's length (red when over the type's max)
 
   /* ---------- Day list: everyone out on a date, by category ---------- */
   /** Day list rows: " · 5 days" after the dates (the number bold). */
