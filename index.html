@@ -47,6 +47,8 @@
     /* Pastels (the date picker, its key and the pass's days, in dark text, both modes): green and red are the picker's
        originals; Full is a pastel yellow so it can't pass for red. Dark text on each ≥ 10:1. */
     --day-open-soft: #86d99a; --day-full-soft: #ffd166; --day-over-soft: #ffb4ab; --day-soft-ink: #17181d;
+    /* the same three as text (a count like the 3 in 3/2): deep enough to read on their wash (≥ 4.9:1); dark mode uses the pastels */
+    --day-open-text: #1a6b33; --day-full-text: #7a5300; --day-over-text: #a1261d;
     /* calendar day tints (a wash of the same pastels) and their dots */
     --av-open: color-mix(in srgb, var(--day-open-soft) 55%, var(--card)); --av-over: color-mix(in srgb, var(--day-full-soft) 60%, var(--card)); --av-full: color-mix(in srgb, var(--day-over-soft) 60%, var(--card));
     --av-open-dot: var(--day-open); --av-over-dot: var(--day-full); --av-full-dot: var(--day-over);
@@ -54,6 +56,7 @@
     --rg-ok: var(--day-open-soft); --rg-ok-ink: var(--day-soft-ink); --rg-over: var(--day-full-soft); --rg-over-ink: var(--day-soft-ink); --rg-full: var(--day-over-soft); --rg-full-ink: var(--day-soft-ink);
   }
   :root[data-theme="dark"] { /* dark calendar: a deeper wash of the pastels over the dark page */
+    --day-open-text: var(--day-open-soft); --day-full-text: var(--day-full-soft); --day-over-text: var(--day-over-soft);
     --av-open: color-mix(in srgb, #22c55e 24%, var(--card)); --av-over: color-mix(in srgb, #facc15 24%, var(--card)); --av-full: color-mix(in srgb, #f43f5e 26%, var(--card)); /* vivid bases: pastels go muddy over dark */
   }
   /* Pass days: the same pastels as the date picker, in dark text. */
@@ -63,20 +66,38 @@
   .wk-q .over, .dl-q .pill.over, .qc-day.over { background: var(--day-over); border-color: var(--day-over); color: var(--day-over-ink); }
   .wk-q .full { background: var(--day-full); color: var(--day-full-ink); border-radius: 4px; padding: 0 4px; }
   .qc-day.full { background: var(--day-full); border-color: var(--day-full); color: var(--day-full-ink); }
-  .qc-day.over.ok { background: var(--day-open); border-color: var(--day-open); color: var(--day-open-ink); } /* over, but the admin resolved it */
-  .meter.full .fill { background: var(--day-full); } .meter.over .fill { background: var(--day-over); } .meter.over .mv { color: #b3261e; } :root[data-theme="dark"] .meter.over .mv { color: var(--day-over); } /* text: the hue deep enough to read */
+  .qc-day.over.ok { background: var(--day-over); border-color: var(--day-over); color: var(--day-over-ink); } /* over, but the admin resolved it: still over */
+  .qc-day.open { background: var(--day-open); border-color: var(--day-open); color: var(--day-open-ink); }
+  .days.days-over { color: var(--day-full-text); font-weight: 900; } /* List / My Requests: a request over its type's max days */
+  .meter.full .fill { background: var(--day-full); } .meter.over .fill { background: var(--day-over); } .meter.over .mv { color: var(--day-over-text); }
   /* Stats meters: a track that shows on any day tint (open / full / overbooked wash, light or dark) and a thin dark edge on
      the fill, so an amber bar on an amber day (or red on red) still reads as a bar. */
   .rm-bar { height: 10px; padding: 2px; border-radius: 5px; background: var(--card); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 25%, transparent); } /* a white capsule with a 2px gap */
   .rm-bar i { border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4); }
-  .quad .qm .rm-bar { height: 7px; padding: 1.5px; border-radius: 4px; }
+  /* Qtr's small days: the original 4px line (no capsule, it doesn't fit) — a dark track in both modes so any fill shows. */
+  .quad .qm .rm-bar, :root[data-theme="dark"] .quad .qm .rm-bar { height: 3px; padding: 0; border-radius: 2px; background: color-mix(in srgb, #0b0c10 55%, transparent); box-shadow: none; }
+  .quad .qm .rm-bar i { border-radius: 2px; box-shadow: none; }
+  /* Qtr: counts only (P 3/2, B 0/2), the count colored by state (no bars — they don't fit); on short days (< 70px, the day
+     measures itself) the date, labels and counts shrink a step so both counts still fit. */
+  .quad:not(.q-person) .qd { container-type: size; }
+  /* Days never shrink below 52px (the date + both counts); on a short screen the Qtr view scrolls instead of squeezing them. */
+  @media (min-width: 761px) {
+    .quad:not(.q-person) { grid-template-rows: repeat(2, minmax(min-content, 1fr)); overflow-y: auto; }
+    .quad:not(.q-person) .qmonth { min-height: min-content; }
+    .quad:not(.q-person) .qg { min-height: auto; grid-auto-rows: minmax(52px, 1fr); }
+  }
+  .quad:not(.q-person) .qm { gap: 3px; padding-bottom: 3px; } .quad .qm .rm-t { line-height: 1; }
+  .quad .qm .rm-bar { display: none; } /* Qtr: no bars — the count's color says it (Month Stats keeps the bars) */
+  @container (max-height: 69px) { .quad:not(.q-person) .qn { height: 15px; line-height: 15px; font-size: 12px; }
+    .quad:not(.q-person) .qm { gap: 2px; padding-bottom: 2px; } .quad .qm .rm-t { font-size: 10px; gap: 2px; }
+    .quad .qm .rm-l { min-width: 12px; height: 12px; padding: 0 2px; font-size: 9px; border-radius: 2px; } }
   /* Dark mode: the bar sits in a near-black capsule with a 2px gap, so a red / amber / green fill never sits on a dark wash of
      its own color. */
   :root[data-theme="dark"] .rm-bar { height: 10px; padding: 2px; border-radius: 5px; background: #0b0c10; box-shadow: none; }
   :root[data-theme="dark"] .rm-bar i { border-radius: 3px; box-shadow: none; }
-  :root[data-theme="dark"] .quad .qm .rm-bar { height: 7px; padding: 1.5px; border-radius: 4px; } /* Qtr's small days: a slimmer capsule */
   .rm.full .rm-bar i { background: var(--day-full); } .rm.over .rm-bar i { background: var(--day-over); }
-  .rm.over .rm-c { color: #b3261e; } :root[data-theme="dark"] .rm.over .rm-c { color: var(--day-over); }
+  /* The count (the 3 in 3/2) in its state's color; the / and the max stay plain. */
+  .rm.over .rm-c { color: var(--day-over-text); } .rm.full .rm-c { color: var(--day-full-text); } .rm:not(.over):not(.full):not(.zero) .rm-c { color: var(--day-open-text); }
   :root[data-theme="dark"] {
     --primary: #b4c5ff; --on-primary: #0f2a63; --primary-container: #2a3f70; --on-primary-container: #dbe2ff;
     --secondary: #FDB827; --secondary-container: #4f3b00; --on-secondary-container: #ffdf9e;
@@ -103,9 +124,8 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
-  /* Profile tab selected: a brick pill instead of gold, so the gold saving ring around the logo shows (white on brick 6.6:1). */
-  .nav.seg-slide:has(button[data-v="profile"].on) > .seg-thumb.nav-thumb,
-  .nav button[data-v="profile"][aria-expanded="true"] .nav-ic, .nav.seg-slide:not([data-placed]) > button[data-v="profile"].on .nav-ic { background-color: #a3402c; }
+  /* Profile tab selected (its gold pill): the saving ring turns brick so it shows against the gold. */
+  .nav button[data-v="profile"]:is(.on, [aria-expanded="true"]) .nav-ic:is(.syncing, .tour-sync)::before { border-top-color: #a3402c; border-right-color: #a3402c; }
   /* Take the Tour: as wide as the Settings cards above it, not the whole page. */
   .profile-page .tour-again { max-width: 720px; margin-left: auto; margin-right: auto; }
   .wpass { --gap-c: #ffffff; }
@@ -300,14 +320,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792769815"></script>
+    <script src="config.js?v=1792770498"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792769815';
+      window.PAL_BUILD = '1792770498';
       (function () {
         function check(launch) {
           try {
@@ -516,10 +536,7 @@
   .qc-day { height: 22px; padding: 0 6px; border-radius: 4px; border: 1px solid var(--line); background: var(--card-2); color: var(--ink);
     font-size: 13px; font-weight: 800; line-height: 20px; font-variant-numeric: tabular-nums; cursor: help; white-space: nowrap; }
   .qc-day.zero { color: var(--muted); font-weight: 600; }
-  .qc-day.full { border-color: var(--warn); color: var(--warn); }
-  .qc-day.over { background: #b42318; border-color: #b42318; color: #fff; }
   .qc-day.over { cursor: pointer; }
-  .qc-day.over.ok { background: #15803d; border-color: #15803d; color: #fff; }
   .qc-day:hover { border-color: var(--ink); }
   .cell.out .qc-day { opacity: .7; }
   .more { position: absolute; left: 3px; right: 3px; bottom: 1px; z-index: 3; height: 16px; white-space: nowrap; overflow: hidden; border: 0; background: var(--card); border-radius: 4px; text-align: left; padding: 0 4px;
@@ -660,7 +677,7 @@
   .qd.blank { background: var(--out-bg); background-image: repeating-linear-gradient(135deg, var(--hatch) 0 2px, transparent 2px 8px); cursor: default; }
   .qd:not(.blank):hover { background: color-mix(in srgb, var(--gold) 10%, var(--card)); }
   .qd.sel { background: color-mix(in srgb, var(--gold) 26%, var(--card)); }
-  .qd.over::after { content: ""; position: absolute; top: 0; right: 0; border-style: solid; border-width: 0 10px 10px 0; border-color: transparent #b42318 transparent transparent; }
+  .qd.over::after { content: ""; position: absolute; top: 0; right: 0; border-style: solid; border-width: 0 10px 10px 0; } /* color: Theme.html (day states) */
   .qn { align-self: flex-start; margin-left: 3px; border: 0; background: none; padding: 0 5px; min-width: 24px; height: 22px; border-radius: 9px; font-size: 14px; font-weight: 700;
     color: var(--ink); cursor: pointer; font-variant-numeric: tabular-nums; }
   .qd.open .qn { color: var(--muted); font-weight: 600; }
@@ -727,10 +744,6 @@
   .rm-bar i { display: block; height: 100%; border-radius: 2px; background: var(--rm); }
   .rm-p { --rm: #0d9488; } .rm-b { --rm: #7c3aed; } .rm-o { --rm: #64748b; }
   :root[data-theme="dark"] .rm-p { --rm: #2dd4bf; } :root[data-theme="dark"] .rm-b { --rm: #a78bfa; } :root[data-theme="dark"] .rm-o { --rm: #94a3b8; }
-  .rm.full .rm-bar i { background: #d97706; }
-  .rm.over .rm-bar i { background: #dc2626; }
-  .rm.over .rm-c { color: #dc2626; }
-  :root[data-theme="dark"] .rm.over .rm-c { color: #f87171; }
   .rm.zero .rm-t { opacity: .55; }
   .month.compact .cell.cc { gap: 4px; }
   .month.compact .cell.cc .rm-t { font-size: 11px; }
@@ -750,7 +763,7 @@
   .wk-num { font-size: 22px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
   .wk-date { font-size: 13px; color: var(--muted); }
   .wk-q { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 6px; font-size: 13px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; margin-top: 2px; }
-  .wk-q .over { color: #fff; background: #b42318; border-radius: 4px; padding: 0 4px; }
+  .wk-q .over { border-radius: 4px; padding: 0 4px; } /* color: Theme.html (day states) */
   .bands { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .band { flex: 1 1 0; min-height: 84px; display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
   .band:last-child { border-bottom: 0; }
@@ -785,8 +798,6 @@
   .meter .mv small { font-size: 15px; color: var(--muted); font-weight: 700; }
   .track { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
   .fill { height: 100%; background: var(--ok); border-radius: 3px; }
-  .meter.full .fill { background: var(--warn); } .meter.over .fill { background: var(--bad); }
-  .meter.over .mv { color: var(--bad); }
   .empty { padding: 26px 12px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px;
     background-image: repeating-linear-gradient(135deg, var(--hatch) 0 2px, transparent 2px 9px); }
 
@@ -926,7 +937,6 @@
 
   /* ---------- Day list ---------- */
   .dl-q { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-  .dl-q .pill.over { background: #b42318; border-color: #b42318; color: #fff; }
   .dl-sec { margin-bottom: 14px; }
   .dl-h { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ink);
     padding-bottom: 6px; border-bottom: 2px solid var(--line); margin-bottom: 4px; }
@@ -1330,10 +1340,7 @@
   /* (Badges never drop the unit; names shorten with … instead.) */
 
   /* ---------- Qtr availability tint (one position: mine, else the first selected) ---------- */
-  :root { --av-open: #b9e6c4; --av-over: #fcc98f; --av-full: #f7aaa4; --av-open-dot: #1e7a3a; --av-over-dot: #c2560a; --av-full-dot: #b3261e; }
-  /* Dark mode: vivid "trading app" good / caution / bad — green #00C805, orange #FF9F0A, red #FF3B30 over the dark surface. */
-  :root[data-theme="dark"] { --av-open: color-mix(in srgb, #00C805 34%, #17181d); --av-over: color-mix(in srgb, #FF9F0A 40%, #17181d); --av-full: color-mix(in srgb, #FF3B30 42%, #17181d);
-    --av-open-dot: #00C805; --av-over-dot: #FF9F0A; --av-full-dot: #FF3B30; }
+  /* Day-state colors (--av-*, --rg-*, --day-*) live in Theme.html — the one store. */
   .qd.av-open, .qd.av-open.wknd { background: var(--av-open); }
   .qd.av-over, .qd.av-over.wknd { background: var(--av-over); }
   .qd.av-full, .qd.av-full.wknd { background: var(--av-full); }
@@ -1518,8 +1525,6 @@
     font-size: 16px; -webkit-appearance: none; appearance: none; text-align: left; }
   .wiz-dates input[type="date"]::-webkit-date-and-time-value { text-align: left; }
   /* Selected range: green where it fits, orange where it would overbook, red where slots are already full. */
-  :root { --rg-ok: #1e7a3a; --rg-ok-ink: #ffffff; --rg-over: #c2560a; --rg-over-ink: #ffffff; --rg-full: #b3261e; --rg-full-ink: #ffffff; }
-  :root[data-theme="dark"] { --rg-ok: #86d99a; --rg-ok-ink: #17181d; --rg-over: #fdba74; --rg-over-ink: #17181d; --rg-full: #ffb4ab; --rg-full-ink: #17181d; }
   .mini-g button.in { border-radius: 0; font-weight: 800; }
   .mini-g button.rg-ok { background: var(--rg-ok); color: var(--rg-ok-ink); }
   .mini-g button.rg-over { background: var(--rg-over); color: var(--rg-over-ink); }
@@ -2155,10 +2160,6 @@
   .pm-pop::after { background: var(--pm-bg); border-right: 1.5px solid var(--pm-edge); border-bottom: 1.5px solid var(--pm-edge); bottom: -8px; }
   /* Names inside a shared badge: a clear gap around the "·" separator. */
   .gbb .rp-dot { margin: 0 8px; }
-  /* P / B / O day chips: solid red over the max, solid orange at the max, solid green with slots open. */
-  .qc-day.over, .qc-day.over.ok { background: #b42318; border-color: #b42318; color: #ffffff; }
-  .qc-day.full { background: #c2410c; border-color: #c2410c; color: #ffffff; }
-  .qc-day.open { background: #15803d; border-color: #15803d; color: #ffffff; }
   /* Hovering the selected item keeps its text color; the pill just deepens a little. */
   .nav button.on:hover, .nav button[aria-expanded="true"]:hover { color: var(--navy); }
   .nav button.on:hover::before, .nav button[aria-expanded="true"]:hover::before { background: var(--gold-2); }
@@ -3466,7 +3467,6 @@
   .wp-d { height: 28px; line-height: 28px; border-radius: 6px; font-size: 13px; font-weight: 600; border: 0; padding: 0; background: none; color: inherit; font-family: inherit; }
   .wp-in { background: var(--wp-acc); color: var(--wp-acc-ink); font-weight: 800; border-radius: 0; }
   .wp-in.wp-s { border-radius: 8px 0 0 8px; } .wp-in.wp-e { border-radius: 0 8px 8px 0; } .wp-in.wp-s.wp-e { border-radius: 8px; }
-  .wp-in.wp-bad { background: #d93025; color: #ffffff; }
   button.wp-d { cursor: pointer; } button.wp-d:focus-visible, button.wp-d.sel { outline: 3px solid var(--wp-ink); outline-offset: -3px; }
   .wp-cut { position: relative; height: 0; margin: 0 20px; border-top: 2px dashed var(--wp-line); }
   .wp-cut::before, .wp-cut::after { content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--card); }
@@ -3512,8 +3512,6 @@
   .wpass .wp-brand { position: static; }
 
   /* Pass calendar: requested days are green when they fit, red on a conflict (over the daily max, blackout, overlap). */
-  .wp-in.wp-ok { background: #1e8e3e; color: #ffffff; }
-  .wp-in.wp-bad { background: #d93025; color: #ffffff; }
 
   /* Request form Type switch: the sliding pill in the type's color — Leave navy / white, Pass gold / navy, Blackout red /
      white — and it glides between them like every other two-way toggle. Custom event types get their own color from
@@ -3781,7 +3779,6 @@
     background: var(--mp-card) !important; color: var(--mp-ink); border: 0 !important; box-shadow: inset 0 0 0 2px var(--med-edge), 0 2px 8px rgba(0,0,0,.15) !important; } /* edge drawn inside: same size as Leave / Pass */
   .med-type { display: inline-flex; align-items: center; gap: .3em; color: var(--mp-red); }
   .wp-ty-medical .wp-type { -webkit-text-stroke: .8px currentColor; }
-  .wp-ty-medical .wp-in { background: #1e8e3e; color: #ffffff; } /* never conflicts: always green (as an open day) */
   .wp-ty-medical .mp-logo, .wpass.wp-ty-medical .wp-logo { opacity: .08; }
   .mp-now.mp-med-now { background: var(--mp-red); color: var(--mp-card); }
   .wp-cuts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
@@ -6911,9 +6908,8 @@
           personBadge(r, 'table') + '</div></td>' +
         '<td class="num pdate">' + passDate(r.start) + '</td>' +
         '<td class="num pdate">' + passDate(r.end) + '</td>' +
-        '<td class="num"><span class="days">' + n + '</span>' +
-          (isCaution(r) ? '<span class="flag caution" title="' + esc(cautionText(r)) + '">' + icon('alert', 13) + '<span class="sr">Caution: ' + esc(cautionText(r)) + '</span></span>' : '') +
-          '</td>' +
+        // Over the type's max days: the number itself in the Full color (no warning icon).
+        '<td class="num"><span class="days' + (isCaution(r) ? ' days-over" title="' + esc(cautionText(r)) : '') + '">' + n + (isCaution(r) ? '<span class="sr"> (' + esc(cautionText(r)) + ')</span>' : '') + '</span></td>' +
         (showNote ? '<td class="note" title="' + esc(r.note || '') + '"><div class="clamp">' + (r.note ? esc(r.note) : '<span class="muted">—</span>') + '</div></td>' : '') +
         (showStatus ? '<td><div class="st-cell">' + stBadge(r) + (isCanc(r) ? '' : conflictBadge(r)) + '</div></td>' : '') +
         '<td class="acts-cell"><div class="row-acts">' + (acts || '<span class="muted">—</span>') + '</div></td></tr>';
