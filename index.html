@@ -35,7 +35,7 @@
     --nav-bg: var(--surface-low); --nav-line: var(--outline-variant); --nav-ink: var(--on-surface-variant);
     --focus: #1b4fd1;
     /* Selected state: a pale Brewers-navy tonal fill (a solid navy fill means Leave). Selected (open) day ring = Brewers yellow. */
-    --sel-bg: #d3dcec; --sel-ink: #12284B; --sel-ring: #FFC52F;
+    --sel-bg: #b9c8e2; --sel-ink: #12284B; --sel-ring: #FFC52F;
     /* Filled go / stop (Add Request, Approve, Deny, conflict). All text pairs ≥ 4.5:1. */
     --go-bg: #1e6b35; --go-ink: #ffffff; --no-bg: #b3261e; --no-ink: #ffffff;
   }
@@ -110,14 +110,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792751978"></script>
+    <script src="config.js?v=1792752086"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792751978';
+      window.PAL_BUILD = '1792752086';
       (function () {
         function check(launch) {
           try {
