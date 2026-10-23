@@ -180,14 +180,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792754880"></script>
+    <script src="config.js?v=1792754973"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792754880';
+      window.PAL_BUILD = '1792754973';
       (function () {
         function check(launch) {
           try {
@@ -7047,6 +7047,14 @@
     const t = IDX.ytd.get(S.me) || { Leave: 0, Pass: 0 };
     const mine = IDX.live.filter(r => r.userId === S.me);
     const F = S.mf, q = (S.mine.q || '').trim().toLowerCase();
+    // Tour, My Requests step: example passes in the background (a leave, a pass, a medical pass) — just to look at.
+    if (S.tourDemo) {
+      const me = S.me, d = n => D.add(S.today, n);
+      const ex = [{ id: 'tour_l', userId: me, type: 'Leave', status: 'Approved', start: d(7), end: d(11), location: 'Home', note: '' },
+        { id: 'tour_p', userId: me, type: 'Pass', status: 'Pending', start: d(20), end: d(21), location: 'Chicago', note: '' },
+        medReq({ id: 'tour_m', userId: me, start: d(-3), end: d(10), note: '' })];
+      return '<section class="page list-page"><div class="tbl-page" id="mineBody">' + mineWallet(ex) + '</div>' + reqBar() + '</section>';
+    }
     const shown = mine.filter(r => F.status.includes(r.status) && F.type.includes(r.type) &&
       (!q || (r.type + ' ' + r.status + ' ' + r.note + ' ' + (r.location || '')).toLowerCase().indexOf(q) >= 0))
       .concat(!F.status.includes('Approved') ? [] : medEvents().filter(m => m.userId === S.me).map(medReq).filter(r => !q || ('medical ' + r.note).toLowerCase().indexOf(q) >= 0)); // my Medical passes
@@ -8381,7 +8389,8 @@
     const steps = tourSteps(), st = steps[i];
     if (!st) return tourEnd();
     S.tourStep = i; closeModal(); closeProfileMenu();
-    if (st.view && S.view !== st.view) { S.view = st.view; render(); }
+    const demo = st.view === 'mine'; // example passes behind the My Requests step
+    if ((st.view && S.view !== st.view) || demo !== !!S.tourDemo) { S.tourDemo = demo; if (st.view) S.view = st.view; render(); }
     if (st.menu) { const b = $('.nav [data-v="profile"]'); if (b && !$('#pmenu')) b.click(); }
     let ov = document.getElementById('tour');
     if (!ov) { ov = document.createElement('div'); ov.id = 'tour'; ov.className = 'tour'; document.body.appendChild(ov); }
@@ -8410,9 +8419,9 @@
     const ov = document.getElementById('tour'); if (ov) ov.remove();
     closeModal(); closeProfileMenu();
     if (!S.tourOn) return;
-    S.tourOn = false; S.tour = false;
+    S.tourOn = false; S.tour = false; S.tourDemo = false;
     call('apiTourDone', S.token).catch(() => {}); // once per account: the server remembers
-    if (S.view !== 'calendar') { S.view = 'calendar'; render(); }
+    S.view = 'calendar'; render();
   }
   function closeProfileMenu() {
     const m = document.getElementById('pmenu');
