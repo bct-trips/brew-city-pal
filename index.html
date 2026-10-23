@@ -41,10 +41,10 @@
   }
   /* ---- Day states: Open (under the daily max) · Full (at the max) · Overbooked (over it). ONE set, the same in light and
      dark, used everywhere: the calendar's day tints and dots, the form's picked days and key, the pass's days, the over-max
-     markers. Amber is a true yellow (dark text) so it can't be mistaken for red. White on green 5.6:1, ink on amber 10:1,
-     white on red 6.5:1. */
+     markers. Amber is a true yellow (dark text) so it can't be mistaken for red. White on green 5.1:1, ink on amber 8.2:1,
+     white on red 5.8:1. */
   :root {
-    --day-open: #1e7a3a; --day-open-ink: #ffffff; --day-full: #f5b301; --day-full-ink: #1b1e23; --day-over: #b42318; --day-over-ink: #ffffff;
+    --day-open: #3d7a50; --day-open-ink: #ffffff; --day-full: #dcb04a; --day-full-ink: #1b1e23; --day-over: #a8463d; --day-over-ink: #ffffff; /* muted a touch */
     /* calendar day tints (a soft wash of the same three) and their dots */
     --av-open: color-mix(in srgb, var(--day-open) 30%, var(--card)); --av-over: color-mix(in srgb, var(--day-full) 42%, var(--card)); --av-full: color-mix(in srgb, var(--day-over) 32%, var(--card));
     --av-open-dot: var(--day-open); --av-over-dot: var(--day-full); --av-full-dot: var(--day-over);
@@ -63,7 +63,11 @@
      the fill, so an amber bar on an amber day (or red on red) still reads as a bar. */
   .rm-bar { height: 6px; border-radius: 3px; background: var(--card); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent); }
   .rm-bar i { border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35); }
-  :root[data-theme="dark"] .rm-bar i { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6); } /* a light edge: a red bar on a dark-red day still stands out */
+  /* Dark mode: the bar sits in a near-black capsule with a 2px gap, so a red / amber / green fill never sits on a dark wash of
+     its own color. */
+  :root[data-theme="dark"] .rm-bar { height: 10px; padding: 2px; border-radius: 5px; background: #0b0c10; box-shadow: none; }
+  :root[data-theme="dark"] .rm-bar i { border-radius: 3px; box-shadow: none; }
+  :root[data-theme="dark"] .quad .qm .rm-bar { height: 7px; padding: 1.5px; border-radius: 4px; } /* Qtr's small days: a slimmer capsule */
   .rm.full .rm-bar i { background: var(--day-full); } .rm.over .rm-bar i { background: var(--day-over); }
   .rm.over .rm-c { color: var(--day-over); } :root[data-theme="dark"] .rm.over .rm-c { color: #ff8a80; }
   :root[data-theme="dark"] {
@@ -284,14 +288,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792767474"></script>
+    <script src="config.js?v=1792767779"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792767474';
+      window.PAL_BUILD = '1792767779';
       (function () {
         function check(launch) {
           try {
