@@ -166,7 +166,7 @@
     .mw-list.mw-deck .mpass { align-self: start; isolation: isolate; } /* each card its own layer: the next one fully covers it */
     .mw-list.mw-deck .mpass.mp-denied { opacity: 1; background: color-mix(in srgb, var(--wp-bg) 70%, var(--bg)); } /* faded but solid */
     .mw-list.mw-deck .mpass.mp-denied > :not(.mp-logo) { opacity: .7; }
-    .mw-list.mw-deck .mpass.mp-denied > .mp-logo { opacity: calc(.13 * .7); } /* the watermark as faint as on the page */
+    .mw-list.mw-deck .mpass.mp-denied > .mp-logo { opacity: calc(.14 * .7); } /* the watermark as faint as on the page */
     .mw-list.mw-fanned .mpass + .mpass { box-shadow: 0 -6px 14px rgba(0, 0, 0, .35); }
   }
   .tour.tour-wait .tour-rings, .tour.tour-wait .tour-card { visibility: hidden; } /* until the control stops moving */
@@ -255,14 +255,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792766233"></script>
+    <script src="config.js?v=1792766336"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792766233';
+      window.PAL_BUILD = '1792766336';
       (function () {
         function check(launch) {
           try {
@@ -3547,7 +3547,7 @@
   .mpass:active { transform: scale(.985); }
   .mpass:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
   .mpass > * { position: relative; z-index: 1; }
-  .mpass .mp-logo { position: absolute; z-index: 0; right: -40px; top: -30px; width: 190px; height: 186px; opacity: .13; background-size: contain; background-repeat: no-repeat; pointer-events: none; }
+  .mpass .mp-logo { position: absolute; z-index: 0; left: -90px; top: -70px; width: 360px; height: 352px; opacity: .14; background-size: contain; background-repeat: no-repeat; pointer-events: none; } /* the full pass's watermark: big, from the top-left */
   .mp-top { display: flex; align-items: center; gap: 8px; min-height: 26px; }
   .mp-type { font-size: 20px; line-height: 24px; font-weight: 900; letter-spacing: .04em; -webkit-text-stroke: .4px currentColor; margin-right: auto; }
   .mpass .wp-st { height: 26px; padding: 0 10px; font-size: 12px; }
