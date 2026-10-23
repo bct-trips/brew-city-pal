@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792739676"></script>
+    <script src="config.js?v=1792739899"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792739676';
+      window.PAL_BUILD = '1792739899';
       (function () {
         function check(launch) {
           try {
@@ -3598,6 +3598,9 @@
   .dayv-panel .ds-w { font-size: 12.5px; }
   .dayv-panel .ds-n { font-size: 20px; font-weight: 700; }
   .dayv-panel .ds-dots { height: 6px; } .dayv-panel .ds-dots i { width: 6px; height: 6px; }
+  /* My Requests view switch as icons (Cards · Table · Calendar), compact like the calendar's view switch. */
+  .filters > .mine-mode.mine-ico .seg button { padding: 0 12px; display: inline-grid; place-items: center; min-width: 44px; }
+  .mine-ico .seg button .ic { display: block; }
 </style>
 
   </head>
@@ -3626,6 +3629,8 @@
     left: '<path d="m15 18-6-6 6-6"/>',
     share: '<path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>',
     columns: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/>',
+    wallet: '<rect width="18" height="11" x="3" y="10" rx="2.5"/><path d="M5 10V7.5A1.5 1.5 0 0 1 6.5 6h11A1.5 1.5 0 0 1 19 7.5V10"/><path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3h7A1.5 1.5 0 0 1 17 4.5V6"/>',
+    table: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 9v12"/>',
     grid4: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 12h18"/><path d="M12 3v18"/>',
     plusSquare: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/>',
     more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
@@ -6704,8 +6709,12 @@
   function mineSwitch() {
     const cur = S.mineMode === 'cal' ? 'cal' : mineView();
     // Hide user schedules: no calendar here (it would just repeat the Calendar tab), so only Cards | Table.
-    const opts = [['cards', 'Cards'], ['table', 'Table']].concat(S.priv ? [] : [['cal', '<span class="wide">Calendar</span><span class="narrow">Cal</span>']]);
-    return '<div class="mine-mode">' + seg(opts, cur, 'mineMode').replace('role="group"', 'role="group" aria-label="My Requests view"') + '</div>';
+    // Icons, like the calendar's view switch: Cards (a stack of passes) · Table · Calendar; the name is the tooltip / label.
+    const names = { cards: 'Cards', table: 'Table', cal: 'Calendar' };
+    const opts = [['cards', icon('wallet', 18) + '<span class="sr">Cards</span>'], ['table', icon('table', 18) + '<span class="sr">Table</span>']]
+      .concat(S.priv ? [] : [['cal', icon('calendar', 18) + '<span class="sr">Calendar</span>']]);
+    return '<div class="mine-mode mine-ico">' + seg(opts, cur, 'mineMode').replace('role="group"', 'role="group" aria-label="My Requests view"')
+      .replace(/data-v="(cards|table|cal)"/g, (m, v) => m + ' title="' + names[v] + '"') + '</div>';
   }
   function renderMine() {
     if (S.mineMode === 'cal') return renderCalendar();
