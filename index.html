@@ -185,14 +185,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792755403"></script>
+    <script src="config.js?v=1792755519"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792755403';
+      window.PAL_BUILD = '1792755519';
       (function () {
         function check(launch) {
           try {
@@ -8375,7 +8375,7 @@
     { view: 'calendar', sel: '.calbar .cb-views > .seg', title: 'Calendar', text: 'Switch between Week, Month and Quarter views.' },
     S.priv ? null : { view: 'all', sel: '.nav [data-v="all"]', title: 'List', text: 'Everyone’s leave and passes in one list you can search and filter.' },
     { view: 'mine', sel: '.nav [data-v="mine"]', title: 'My Requests', text: 'Your own leave, passes and drafts.' },
-    { view: 'mine', sel: '#mineBody', title: 'Approved, Pending or Denied', text: 'Each card shows its status in the top corner: green Approved, orange Pending, red Denied. Tap a card to see the whole pass.' },
+    { view: 'mine', sel: '#mineBody', title: 'Active, Approved, Pending or Denied', text: 'The top corner of each card shows where it stands: a green Active pill while you’re on it, then Approved, Pending (orange) or Denied (red). Tap a card to see the whole pass.' },
     { menu: true, sel: '#pmenu [data-act="openSettings"]', title: 'Settings', text: 'Open your profile, then Settings, to change your email and notification preferences.' }
   ].filter(Boolean);
   function startTour() {
@@ -8419,8 +8419,8 @@
     const r = t.getBoundingClientRect(), pad = 6;
     spot.style.cssText = 'display:block;left:' + (r.left - pad) + 'px;top:' + (r.top - pad) + 'px;width:' + (r.width + pad * 2) + 'px;height:' + (r.height + pad * 2) + 'px';
     const cw = Math.min(340, innerWidth - 32), x = Math.max(16, Math.min(innerWidth - cw - 16, r.left + r.width / 2 - cw / 2));
-    const room = 220, below = innerHeight - r.bottom, above = r.top; // a tall spotlight (a list of cards): the card sits over the bottom edge
-    card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;' + (below < room && above < room ? 'bottom:16px'
+    const room = 220, below = innerHeight - r.bottom, above = r.top; // a tall spotlight (a list of cards): the card sits over the middle of it
+    card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;' + (below < room && above < room ? 'top:50%;transform:translateY(-50%)'
       : r.top + r.height / 2 < innerHeight / 2 && below >= room ? 'top:' + (r.bottom + pad + 12) + 'px' : 'bottom:' + (innerHeight - r.top + pad + 12) + 'px');
   }
   window.addEventListener('resize', () => { if (document.getElementById('tour')) placeTour(); });
