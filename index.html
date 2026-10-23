@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792744189"></script>
+    <script src="config.js?v=1792744312"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792744189';
+      window.PAL_BUILD = '1792744312';
       (function () {
         function check(launch) {
           try {
@@ -3642,6 +3642,9 @@
   tr.tr-draft td { background: repeating-linear-gradient(135deg, transparent 0 14px, color-mix(in srgb, var(--on-surface) 4%, transparent) 14px 28px); }
   .st-ic-draft { color: var(--ink); }
   .mpass.mp-draft .wp-tape.wp-tape-warn > span { color: #b42318; letter-spacing: .04em; font-size: 11.5px; }
+  /* Success snackbar (a confirmed submit): solid green, white text, a check. */
+  #toast > .success-t { background: #15803d !important; color: #ffffff !important; }
+  #toast > .success-t .ic { color: #ffffff; }
 </style>
 
   </head>
@@ -4468,8 +4471,9 @@
   function toast(msg, kind, ms) {
     const el = $('#toast');
     // 'unl' / 'lck': Admin Mode switches, in the slider's colors (red = unlocked, green = locked) so they stand out.
-    const cls = kind === 'error' ? 'error' : kind === 'hint' ? 'hint-t' : kind === 'unl' ? 'adm-t adm-unl' : kind === 'lck' ? 'adm-t adm-lck' : '';
-    const ic = kind === 'unl' ? icon('shield', 18) : kind === 'lck' ? icon('user', 18) : kind === 'busy' ? '<span class="spin"></span>' : kind === 'error' ? icon('alert', 16) : kind === 'hint' ? icon('calendar', 16) : kind === 'info' ? icon('info', 16) : icon('check', 16);
+    // 'success': a confirmed save (e.g. a request the server has) — solid green with a check.
+    const cls = kind === 'error' ? 'error' : kind === 'success' ? 'success-t' : kind === 'hint' ? 'hint-t' : kind === 'unl' ? 'adm-t adm-unl' : kind === 'lck' ? 'adm-t adm-lck' : '';
+    const ic = kind === 'success' ? icon('check', 18) : kind === 'unl' ? icon('shield', 18) : kind === 'lck' ? icon('user', 18) : kind === 'busy' ? '<span class="spin"></span>' : kind === 'error' ? icon('alert', 16) : kind === 'hint' ? icon('calendar', 16) : kind === 'info' ? icon('info', 16) : icon('check', 16);
     el.innerHTML = '<div class="' + cls + '">' + ic + '<span>' + esc(msg) + '</span></div>';
     el.classList.add('show');
     clearTimeout(toastTimer);
@@ -10413,12 +10417,14 @@
           const now = nowIso(), tmp = ids.map((id, i) => Object.assign({ id: 'tmp_' + Date.now() + '_' + i, userId: id, status: payload.status || 'Pending', submittedAt: now, submittedBy: S.me }, payload));
           const sent = many ? save(() => { S.requests = S.requests.concat(tmp); }, 'apiCreateRequests', S.token, payload, ids)
             : save(() => { S.requests = S.requests.concat(tmp); }, 'apiCreateRequest', S.token, payload);
-          sent.then(data => { if (data) dropDraft(); });
+          const how0 = payload.status === 'Approved' ? 'approved' : payload.status === 'Denied' ? 'denied' : 'pending approval';
+          const what = many ? many + ' ' + payload.type.toLowerCase() + ' requests' : payload.type;
+          // Saving… now; the green success message only once the server has it (a failure shows NOT SAVED instead).
+          sent.then(data => { if (data) { dropDraft(); toast(what + ' submitted — ' + how0, 'success', 3200); } else hideToast(); });
           closeModal();
           if (isCalView()) S.cursor = w.start;
           render();
-          const how0 = payload.status === 'Approved' ? 'approved' : payload.status === 'Denied' ? 'denied' : 'pending approval';
-          toast(many ? many + ' requests submitted — ' + how0 : 'Request submitted — ' + how0, 'ok', 2200);
+          toast('Submitting…', 'busy', 0);
           return;
         }
         showBlocker('Submitting…');
@@ -10446,7 +10452,7 @@
       if (!w.editId && isCalView()) S.cursor = w.start;
       render();
       const how = payload.status === 'Approved' ? 'approved' : payload.status === 'Denied' ? 'denied' : 'pending approval';
-      toast(many ? many + ' requests submitted — ' + how : 'Request submitted — ' + how, 'ok', 2200);
+      toast(many ? many + ' requests submitted — ' + how : payload.type + ' submitted — ' + how, 'success', 3200);
       if (S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; openConflict(cd, S.cfRole); } // edited from the conflict screen
     }
   };
