@@ -124,12 +124,12 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
-  /* Offline: Add Request / Add Event goes gray — outlined, muted label, a ban mark instead of the plus, and a muted
-     "Offline" tag at its right end — so it clearly can't be used, and clearly why. (Not green, not a feature chip.) */
-  .btn.req-btn:disabled, .req-bar .req-btn:disabled { position: relative; opacity: 1; background: var(--gap-c); border: var(--ctl-line); color: var(--muted); box-shadow: none; }
-  .calbar .req-btn:disabled, .lbar .req-btn:disabled { padding-right: 116px; } /* room for the tag on the compact button */
-  .off-chip { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 12px;
-    border: 1px solid var(--outline); color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+  /* Disabled Add Request / Add Event (offline): the standard disabled button — Material 3's 12% container and 38% label,
+     same shape and place, nothing added to it. The Viewing Offline bar says why. */
+  .btn.req-btn:disabled, .req-bar .req-btn:disabled { opacity: 1; background: color-mix(in srgb, var(--ink) 12%, transparent); border-color: transparent; color: color-mix(in srgb, var(--ink) 38%, transparent); box-shadow: none; }
+  .offline-bar > span { min-width: 0; } .offline-bar .ob-why { font-weight: 600; }
+  .offline-bar .ob-why-s { display: none; }
+  @media (max-width: 480px) { .offline-bar .ob-why { display: none; } .offline-bar .ob-why-s { display: inline; } } /* phones: the short form */
   /* Multi-select dropdowns (Additional Users, person and badge filters): Cancel · Done at the foot, right-aligned (Material). */
   .who-f { flex: none; display: flex; justify-content: flex-end; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--line); background: inherit; }
   .who-f .btn.sm { height: 36px; padding: 0 14px; }
@@ -338,14 +338,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792776261"></script>
+    <script src="config.js?v=1792776440"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792776261';
+      window.PAL_BUILD = '1792776440';
       (function () {
         function check(launch) {
           try {
@@ -4586,15 +4586,9 @@
   function markOffline() {
     $$('[data-act]').forEach(b => { if (!OFFLINE_ACTS.has(b.dataset.act) || !('disabled' in b)) return;
       if (S.offline) { if (!b.disabled) { b.disabled = true; b.dataset.offOff = '1'; } } else if (b.dataset.offOff) { b.disabled = false; delete b.dataset.offOff; } });
-    // Add Request / Add Event: says why it's off — "Offline" with the alert mark — instead of just looking faded.
-    $$('.req-btn').forEach(b => {
-      const chip = b.querySelector('.off-chip');
-      const plus = b.querySelector('.ic');
-      if (S.offline) { if (!chip) { if (plus) plus.outerHTML = icon('ban', 18); b.insertAdjacentHTML('beforeend', '<span class="off-chip" aria-hidden="true">Offline</span>'); b.title = 'No connection — requests can be added once the server is reachable'; } }
-      else if (chip) { chip.remove(); if (plus) plus.outerHTML = icon('plus', 18); b.removeAttribute('title'); }
-    });
   }
-  const offlineBar = () => S.offline ? '<div class="offline-bar" id="offlineBar" role="status">' + icon('alert', 16) + 'Viewing Offline</div>' : '';
+  // The bar says what offline means (the paused buttons just look disabled — the standard way: no badges on them).
+  const offlineBar = () => S.offline ? '<div class="offline-bar" id="offlineBar" role="status">' + icon('alert', 16) + '<span>Viewing Offline<span class="ob-why"> · Adding or changing requests is paused</span><span class="ob-why-s"> · Changes paused</span></span></div>' : '';
   const offlineNote = () => toast('Viewing Offline', 'info', 2400);
   const TIMED_OUT = 'The server didn’t answer in time. Check your connection and try again.';
   /* ---------- Button spinners ----------
