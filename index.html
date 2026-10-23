@@ -174,6 +174,8 @@
   .mp-active { display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border-radius: 11px; background: #15803d; color: #ffffff;
     font-size: 11.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
 
+  a.btn { text-decoration: none; } /* a link drawn as a button (Open the Web App) looks like every other button */
+
   /* ---- Variants (same shape, their own color) ---- */
   /* A picked person: the yellow person pill (calendar person filter, Filters button, its ✕). */
   .fp:not(.fp-conf):has(.fp-clear) .fperson, .fdrop-btn.fall.fp-active, .filters > .fall.fp-active + .fall-clear,
@@ -196,14 +198,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792757458"></script>
+    <script src="config.js?v=1792757682"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792757458';
+      window.PAL_BUILD = '1792757682';
       (function () {
         function check(launch) {
           try {
@@ -8246,7 +8248,8 @@
      Android Chrome / Edge hand us an install prompt (beforeinstallprompt): the button shows the real install dialog.
      iPhone Safari has no install API, so the button opens short steps (Share → Add to Home Screen). */
   let installEvt = null;
-  window.addEventListener('beforeinstallprompt', ev => { ev.preventDefault(); installEvt = ev; renderInstallFab(); });
+  const PAGES_URL = 'https://bct-trips.github.io/brew-city-pal/'; // the installable web app (push works there)
+  window.addEventListener('beforeinstallprompt', ev => { ev.preventDefault(); installEvt = ev; renderInstallFab(); redrawNotes(); }); // the push panel offers Install App
   window.addEventListener('appinstalled', () => { installEvt = null; renderInstallFab(); refreshPushState(); });
   const isAndroid = () => /Android/i.test(navigator.userAgent);
   // Phones and tablets only: desktop browsers never get the Add to Homescreen button, even when they could install.
@@ -8614,7 +8617,7 @@
   function notesPanelHtml() {
     const pst = S.pushState || 'unsupported';
     const pushMsg = {
-      google: 'To get push notifications, add PAL to your Home Screen and open it from there.',
+      google: 'To get push notifications, install the PAL web app.',
       unsupported: 'This browser can’t receive push notifications. Everything still shows up under Profile → Notifications.',
       denied: 'Notifications are blocked for PAL on this device. Allow them in your phone’s Settings → Notifications → PAL (or the browser’s site settings), then come back.',
       install: 'Add PAL to your Homescreen to turn on notifications. Then open it from the Homescreen and come back here.'
@@ -8626,9 +8629,13 @@
           (pst === 'on' ? '<button type="button" class="btn sm n-test" data-act="pushTest">' + icon('bell', 16) + 'Send Test</button>' : '') +
           sw(pst !== 'off', 'pushToggle', 'Push notifications', pst === 'busy' ? ' disabled aria-busy="true"' : '') + '</div>'
       : pushMsg ? '<div class="n-note"><p>' + esc(pushMsg) + '</p>' +
-          (pst === 'install' ? '<button class="btn btn-next" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Homescreen</button>' : '') + '</div>' : '';
+          (pst === 'install' ? '<button class="btn btn-next" data-act="installApp">' + icon('plusSquare', 18) + 'Add to Homescreen</button>' : '') +
+          // This page (Google's) can't push or install: open the web app, where Chrome installs it and push works.
+          (pst === 'google' ? '<a class="btn btn-next" href="' + PAGES_URL + '" target="_blank" rel="noopener">' + icon('plusSquare', 18) + 'Open the Web App</a>' : '') + '</div>' : '';
+    // The web app in a browser that can install it (desktop Chrome, Android): offer Install App next to the push switch.
+    const installRow = canSwitch && installEvt && !isStandalone() ? '<div class="n-install"><button type="button" class="btn btn-next" data-act="installApp">' + icon('plusSquare', 18) + 'Install App</button></div>' : '';
     // "Notify Me When…" only picks which pushes come (the inbox keeps everything), so it shows only while push is on.
-    return '<h3>' + icon('bell', 16) + ' Notifications</h3>' + pushRow + (pst !== 'on' ? '' :
+    return '<h3>' + icon('bell', 16) + ' Notifications</h3>' + pushRow + installRow + (pst !== 'on' ? '' :
       '<div class="n-sect"><div class="lbl">Notify Me When My Request Is</div><div class="push-btns">' +
         [['approved', 'Approved'], ['denied', 'Denied'], ['edited', 'Changed']].map(k => {
           const on = S.notePrefs[k[0]] !== false;
