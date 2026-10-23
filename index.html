@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792748749"></script>
+    <script src="config.js?v=1792749811"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792748749';
+      window.PAL_BUILD = '1792749811';
       (function () {
         function check(launch) {
           try {
@@ -3882,13 +3882,15 @@
   /* ================================================================ */
   /* State                                                              */
   /* ================================================================ */
+  /** Settings → Start-Up "Open To": a page, or 'last' (the default — whatever was showing last time). */
+  const startPref = () => store.get('startView', 'last');
   const S = {
     token: store.get('token', null),
     me: null, isAdmin: false, users: [], requests: [], sheetUrl: '',
     settings: { leaveMaxDays: 10, leaveMode: 'warn', passMaxDays: 4, passMode: 'limit' },
     today: localToday(),
     // Settings → Start-up: a fixed page / calendar view to open to, or 'last' (whatever was showing last time).
-    view: store.get('startView', 'last') !== 'last' ? store.get('startView') : store.get('view', 'calendar'),
+    view: startPref() !== 'last' ? startPref() : store.get('view', 'calendar'),
     cal: store.get('startCal', 'last') !== 'last' ? store.get('startCal') : store.get('cal', 'month'),
     cursor: localToday(),
     // Calendar filters: any combination of each group (at least one stays selected).
@@ -4450,6 +4452,8 @@
     // Signed out (or signing out): a reply that was already on its way must never sign this device back in.
     if (!data || !S.token) return;
     saveSnap(data);
+    // First data after opening: Open To Roster / Admin (admin-only pages) applies once the server has said this is an admin.
+    if (!S.startSet) { S.startSet = true; const p = startPref(); if (!S.me && (p === 'people' || p === 'admin') && data.isAdmin) S.view = p; }
     S.me = data.me; S.isAdmin = !!data.isAdmin; S.adminScope = data.isAdmin ? (data.adminScope || null) : null; S.isOrg = S.isAdmin && !S.adminScope;
     // A mode switch still on its way (switchAdmin): an older reply arriving first can't flip the mode back.
     if (S.modeFlip) { S.isAdmin = S.modeFlip.on; S.adminScope = S.modeFlip.scope; S.isOrg = S.isAdmin && !S.adminScope; }
@@ -5090,13 +5094,15 @@
     if (S.notes == null) { if (S.token) setTimeout(loadNotes, 0); return 0; }
     return visibleNotes().length + (S.updateLater && S.update ? 1 : 0);
   }
+  /** The nav bar's pages [view, name, icon, short name]. Admin mode swaps My Requests for Roster and Admin; Profile is always
+   *  last. Settings → Start-Up "Open To" lists these same pages, so the names always match. */
+  const navItems = () => [['calendar', 'Calendar', 'calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'List', 'list', 'List']], S.isAdmin
+    ? [['people', 'Roster', 'users', 'Roster']].concat(S.isOrg ? [['admin', 'Admin', 'shield', 'Admin']] : [])
+    : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
   function renderNav() {
     const pending = IDX.live.filter(r => r.status === 'Pending' && (!S.isAdmin || managesReq(r))).length;
     const myChanged = IDX.live.filter(r => r.userId === S.me && isChanged(r)).length;
-    // Admin mode swaps My Requests for Roster and Admin; Profile is always the last item.
-    const items = [['calendar', 'Calendar', 'calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'List', 'list', 'List']], S.isAdmin
-      ? [['people', 'Roster', 'users', 'Roster']].concat(S.isOrg ? [['admin', 'Admin', 'shield', 'Admin']] : [])
-      : [['mine', 'My Requests', 'clipboard', 'Mine']], [['profile', 'Profile', 'user', 'Profile']]);
+    const items = navItems();
     return '<span id="syncStatus" class="sr" role="status" aria-live="polite">' + (S.pending ? 'Saving changes…' : '') + '</span>' +
       // The active tab's pill slides between tabs (same as segmented buttons: placeSeg, remembered as "nav").
       '<nav class="nav seg-slide' + (S.isAdmin ? ' nav-admin' : '') + '" data-sk="nav"' + segPre('nav').attr + ' aria-label="Primary' + (S.isAdmin ? ' (admin mode)' : '') + '"><span class="seg-thumb nav-thumb" aria-hidden="true"' + segPre('nav').style + '></span>' + items.map(i =>
@@ -8405,8 +8411,8 @@
   function startupPanel() {
     // Two of the app's dropdowns side by side; the choice saves as soon as it's picked.
     const pick = (k, label, cur, opts) => dropField('su-' + k, 'startPick', label, opts, cur, k === 'startView' ? 'home' : 'calendar', 'su-f', ' data-k="' + k + '"');
-    const pages = [['last', 'Last Used'], ['calendar', 'Calendar']].concat(S.priv ? [] : [['all', 'List']], [['mine', 'My Requests']]);
-    let pv = store.get('startView', 'last'); if (!pages.some(o => o[0] === pv)) pv = 'last';
+    const pages = [['last', 'Last Used']].concat(navItems().map(it => [it[0], it[1]]));
+    let pv = startPref(); if (!pages.some(o => o[0] === pv)) pv = 'last';
     return '<div class="panel"><h3>' + icon('home', 16) + ' Start-Up</h3>' +
       '<div class="su-grid">' + pick('startView', 'Open To', pv, pages) +
         pick('startCal', 'Calendar View', store.get('startCal', 'last'), [['last', 'Last Used'], ['week', 'Week'], ['month', 'Month'], ['quad', 'Quarter (4 Months)']]) + '</div>' +
