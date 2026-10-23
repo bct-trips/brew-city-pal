@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792739899"></script>
+    <script src="config.js?v=1792740418"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792739899';
+      window.PAL_BUILD = '1792740418';
       (function () {
         function check(launch) {
           try {
@@ -3601,6 +3601,21 @@
   /* My Requests view switch as icons (Cards · Table · Calendar), compact like the calendar's view switch. */
   .filters > .mine-mode.mine-ico .seg button { padding: 0 12px; display: inline-grid; place-items: center; min-width: 44px; }
   .mine-ico .seg button .ic { display: block; }
+  /* Pass dialogs on wider screens: a normal dialog (title bar, footer) at pass width. */
+  #modal .modal.pass-dlg { max-width: 420px; }
+  .pass-dlg .wpass { margin: 0 0 12px; }
+  .pass-dlg .btn.wp-add { margin-bottom: 0; }
+  /* Phones: with Cancel Leave / Pass in the footer row, Edit turns into an icon circle (its name is the tooltip) so
+     Cancel keeps its words and everything fits. */
+  @media (max-width: 600px) {
+    .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit, .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit:has(> .ic:first-child) { flex: none; width: 48px; min-width: 48px; padding: 0; justify-content: center; border-radius: 50%; }
+    .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit .bl { display: none; }
+    .modal-f .mf-row .btn.act.act-lbl.act-cxl { flex: 1.4 1 0; white-space: nowrap; }
+  }
+  /* The desktop pass dialog is pass-width too: same fit rule (Edit as an icon circle next to Cancel Leave / Pass). */
+  .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit, .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit:has(> .ic:first-child) { flex: none; width: 44px; min-width: 44px; padding: 0; justify-content: center; border-radius: 50%; }
+  .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit .bl { display: none; }
+  .pass-dlg .modal-f .mf-row .btn.act.act-lbl.act-cxl { flex: 1.4 1 0; white-space: nowrap; }
 </style>
 
   </head>
@@ -3629,6 +3644,7 @@
     left: '<path d="m15 18-6-6 6-6"/>',
     share: '<path d="M12 2v13"/><path d="m16 6-4-4-4 4"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>',
     columns: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/>',
+    calX: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m14 14-4 4"/><path d="m10 14 4 4"/>',
     wallet: '<rect width="18" height="11" x="3" y="10" rx="2.5"/><path d="M5 10V7.5A1.5 1.5 0 0 1 6.5 6h11A1.5 1.5 0 0 1 19 7.5V10"/><path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3h7A1.5 1.5 0 0 1 17 4.5V6"/>',
     table: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 9v12"/>',
     grid4: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 12h18"/><path d="M12 3v18"/>',
@@ -6466,7 +6482,7 @@
       else if (managesReq(r)) {
         acts += statusSlider(r, 'setStatus');
       }
-      if (canCancel(r)) acts += '<button class="btn sm del act ico" data-act="cancelTrip" data-id="' + esc(r.id) + '" aria-label="Cancel ' + esc(r.type.toLowerCase()) + ' for ' + esc(u.name) + '" title="Cancel ' + esc(r.type) + '">' + icon('x', 13) + '<span class="bl">Cancel</span></button>';
+      if (canCancel(r)) acts += '<button class="btn sm del act ico" data-act="cancelTrip" data-id="' + esc(r.id) + '" aria-label="Cancel ' + esc(r.type.toLowerCase()) + ' for ' + esc(u.name) + '" title="Cancel ' + esc(r.type) + '">' + icon('calX', 13) + '<span class="bl">Cancel</span></button>';
       if (canEdit(r)) acts += '<button class="btn sm act" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit request for ' + esc(u.name) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button>';
       if (canDelete(r)) acts += '<button class="btn sm del act ico" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete request for ' + esc(u.name) + '" title="Delete">' + icon('trash', 13) + '<span class="bl">Delete</span></button>';
       return '<tr class="t-' + tcls(r.type) + ' st-' + st2 + (isCanc(r) ? ' st-canceled' : '') + (r.userId === S.me ? ' mine' : '') + (isNow(r) ? ' now' : '') + '" data-act="openReq" data-id="' + esc(r.id) + '" tabindex="0" aria-label="' + esc(describe(r)) + '">' +
@@ -8282,8 +8298,11 @@
     openModal('medPass', modalHead('Medical Details', 'medical') + '<div class="modal-b req-view">' +
       walletPass({ type: 'Medical', med: true, noEnd: !m.end, start: m.start, end, note: m.note, cut: (m.cut || []).filter(t => quota(u.role, t)), who: calName(u), whoSub: memberSub(u), status: 'Approved' }) +
       '</div><div class="modal-f modal-f-rows">' + foot + '</div>');
-    $('#modal .modal').classList.add('pass-sheet');
+    passFrame();
   }
+  /** Pass dialogs: on phones the pass floats frameless (pass-sheet); on wider screens it sits in a normal dialog with its
+   *  title bar and footer (pass-dlg), at pass width. */
+  const passFrame = () => $('#modal .modal').classList.add(window.matchMedia('(max-width: 600px)').matches ? 'pass-sheet' : 'pass-dlg');
   function openRequest(id) {
     const m = medEvents().find(x => x.id === id);
     if (m) { openMedicalPass(m); return; }
@@ -8296,7 +8315,8 @@
     const decide = managesReq(r) && r.status !== 'Cancelled' && !isCanc(r) ? statusSlider(r, 'setStatus', '', false) : ''; // on the pass
     const edit = canEdit(r) ? '<button class="btn act act-lbl act-edit" data-act="editReq" data-id="' + esc(r.id) + '" aria-label="Edit" title="Edit">' + icon('pencil', 15) + '<span class="bl">Edit</span></button>' : '';
     const del = canDelete(r) ? '<button class="btn del act" data-act="cancelReq" data-id="' + esc(r.id) + '" aria-label="Delete" title="Delete">' + icon('trash', 15) + '<span class="bl">Delete</span></button>' : '';
-    const cxl = canCancel(r) ? '<button class="btn del act act-lbl" data-act="cancelTrip" data-id="' + esc(r.id) + '" aria-label="Cancel ' + esc(r.type) + '" title="Cancel ' + esc(r.type) + '">' + icon('x', 15) + '<span class="bl">Cancel ' + esc(r.type) + '</span></button>' : '';
+    // Cancel: labeled on wider screens; on phones an icon circle (calendar with an ✕) so the footer row fits.
+    const cxl = canCancel(r) ? '<button class="btn del act act-lbl act-cxl" data-act="cancelTrip" data-id="' + esc(r.id) + '" aria-label="Cancel ' + esc(r.type) + '" title="Cancel ' + esc(r.type) + '">' + icon('calX', 15) + '<span class="bl">Cancel ' + esc(r.type) + '</span></button>' : '';
     // Always a Close at the bottom (Delete · Edit · Close, or on its own when there is nothing to do).
     // Delete · Edit · Close (Close last, on the right).
     const main = '<div class="mf-row">' + del + cxl + edit + '<button class="btn act act-lbl' + (del || edit ? '' : ' mf-close') + '" data-act="closeModal" aria-label="Close" title="Close">' + icon('x', 15) + '<span class="bl">Close</span></button></div>';
@@ -8320,7 +8340,7 @@
       (dupsOf(r).length ? '<div class="msg e">' + icon('alert', 15) + '<span>Overlap: this member also has ' + esc(dupText(r)) + '. A member can’t be on leave and a pass (or two requests) at the same time.</span></div>' : '') +
       '</div>' + (foot ? '<div class="modal-f modal-f-rows">' + foot + '</div>' : '');
     openModal('req', html);
-    $('#modal .modal').classList.add('pass-sheet'); // no dialog frame: the pass floats on the dimmed screen, buttons under it
+    passFrame(); // phones: no dialog frame (the pass floats, buttons under it); wider screens: a normal dialog
     calAddWire(r);
   }
   /* ---------- Add to Calendar (request details header, next to the days pill) ----------
@@ -8798,7 +8818,7 @@
     }
     openModal('wizard', head + '<div class="modal-b">' + body + '</div><div class="modal-f">' + foot + '</div>', true);
     $('#modal .modal').classList.add('wiz-sheet'); // compact layout: the whole form fits a phone screen without scrolling
-    if (w.step === 3 && !isBo) $('#modal .modal').classList.add('pass-sheet'); // Review: the pass alone, no dialog frame
+    if (w.step === 3 && !isBo) passFrame(); // Review: the pass (frameless on phones, in the dialog on wider screens)
   }
   /* Step 2: pick dates on the calendar (or type them in the fields below it). Only blocking problems show here;
      the summary, warnings and trip notes are on the Review step. */
