@@ -163,7 +163,9 @@
   /* Profile step: an example notification sliding into the menu. */
   .pm-n.pm-new { animation: pmNew .45s cubic-bezier(.2, .8, .2, 1); }
   @keyframes pmNew { from { transform: translateY(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) { .pm-n.pm-new { animation: none; } }
+  .pm-n.pm-gone { animation: pmGone .35s ease-in forwards; }
+  @keyframes pmGone { to { transform: translateY(-8px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .pm-n.pm-new, .pm-n.pm-gone { animation: none; } }
   .tour-card { position: fixed; padding: 20px; border: 1px solid var(--outline); border-radius: 20px; background: var(--card); color: var(--ink);
     box-shadow: 0 24px 60px rgba(0, 0, 0, .55); } /* a thin gray edge so it stands out; gold is only for the ring on what you tap */
   /* An alarm step (Wait for It to Save): a red band across the top like the Not Saved alert, and a big copy of the Profile
@@ -238,14 +240,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792760170"></script>
+    <script src="config.js?v=1792760441"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792760170';
+      window.PAL_BUILD = '1792760441';
       (function () {
         function check(launch) {
           try {
@@ -8568,29 +8570,26 @@
     };
     play(); S.tourAnim = setInterval(play, 3400);
   }
-  /** Profile step: example notifications pop into the menu's Notifications one by one (yours come back afterwards). */
+  /** Profile step: one example notification pops into the menu's Notifications, then out again, on a loop (yours come back
+   *  afterwards). The list keeps one notification's height the whole time, so the menu, ring and card never move. */
   function tourAnimNotes(i) {
-    if (S.tourStep !== i || !$('#pmNotes')) return;
+    const box0 = $('#pmNotes'); if (S.tourStep !== i || !box0) return;
     if (!S.tourRealNotes) S.tourRealNotes = { notes: S.notes };
-    const now = Date.now(), ex = [
-      { id: 'tn1', kind: 'approved', title: 'Leave Approved', body: 'Oct 30 → Nov 3 · Disneyland Paris', ts: now - 60000 },
-      { id: 'tn2', kind: 'created', title: 'Pass Added for You', body: 'Bennett added you to Nov 12 → Nov 13 (pending).', ts: now - 30000 },
-      { id: 'tn3', kind: 'denied', title: 'Leave Denied', body: 'Nov 27 → Nov 29', ts: now }];
-    let k = 0;
-    const step = () => {
-      const box = $('#pmNotes'); if (S.tourStep !== i || !box) return tourAnimStop();
-      if (k > ex.length) k = 0; // shown them all: start over
-      S.notes = ex.slice(0, k).reverse().map(n => Object.assign({ read: false }, n));
-      box.innerHTML = pmNotesHtml();
-      if (k) { const top = box.querySelector('.pm-n'); if (top) top.classList.add('pm-new'); } // the newest slides in at the top
-      k++;
-    };
-    step(); S.tourAnim = setInterval(step, 1100);
+    const ex = { id: 'tn1', kind: 'approved', title: 'Leave Approved', body: 'Oct 30 → Nov 3 · Disneyland Paris', ts: Date.now() - 60000, read: false };
+    S.notes = [ex]; box0.innerHTML = pmNotesHtml();
+    box0.style.boxSizing = 'border-box'; box0.style.height = box0.offsetHeight + 'px'; // fixed: same height with or without it
+    const show = on => { const box = $('#pmNotes'); if (S.tourStep !== i || !box) return tourAnimStop();
+      if (on) { S.notes = [ex]; box.innerHTML = pmNotesHtml(); const n = box.querySelector('.pm-n'); if (n) n.classList.add('pm-new'); }
+      else { const n = box.querySelector('.pm-n'); if (n) n.classList.add('pm-gone');
+        S.tourT1 = setTimeout(() => { if (S.tourStep !== i || !$('#pmNotes')) return; S.notes = []; $('#pmNotes').innerHTML = pmNotesHtml(); }, 350); } };
+    S.notes = []; box0.innerHTML = pmNotesHtml();
+    S.tourT2 = setTimeout(() => show(true), 400);
+    S.tourAnim = setInterval(() => { show(false); S.tourT2 = setTimeout(() => show(true), 900); }, 3200);
   }
   /** Stop it and put the example's dates (and your real notifications) back. */
   function tourAnimStop() {
     clearInterval(S.tourAnim); clearTimeout(S.tourT1); clearTimeout(S.tourT2); S.tourAnim = 0;
-    if (S.tourRealNotes) { S.notes = S.tourRealNotes.notes; S.tourRealNotes = null; const b = $('#pmNotes'); if (b) b.innerHTML = pmNotesHtml(); }
+    if (S.tourRealNotes) { S.notes = S.tourRealNotes.notes; S.tourRealNotes = null; const b = $('#pmNotes'); if (b) { b.style.height = ''; b.style.boxSizing = ''; b.innerHTML = pmNotesHtml(); } }
     if (S.tourDates && S.wiz && S.wiz.tourDemo) { S.wiz.start = S.tourDates[0]; S.wiz.end = S.tourDates[1]; if ($('#wizMini')) refreshWizDates(); }
   }
   /** Dim the page except the step's control(s) — one rounded hole and gold ring each (several for a "multi" step, e.g.
