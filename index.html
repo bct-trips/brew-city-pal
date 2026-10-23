@@ -123,6 +123,18 @@
      grids, the Add Members minus). Its name is the tooltip and aria-label. */
   :is(.rtable .row-acts, .rg-acts, .wa-row) .btn.act.ico { width: 34px; min-width: 34px; height: 34px; padding: 0; justify-content: center; border: var(--ctl-line); border-radius: 50%; }
 
+  /* ---- Destructive button: solid red with white text (6.6:1) in light and dark — never the pale dark-mode pink. ---- */
+  .btn.bad { background: #b42318; border-color: #b42318; color: #ffffff; }
+  .btn.bad:hover { background: #912018; border-color: #912018; color: #ffffff; }
+
+  /* ---- Delete confirm: the big red alert, like Not Saved (red band · trash · DELETE · the question · Cancel | Delete). ---- */
+  .cdlg.cdlg-del { padding: 0; background: var(--card); color: var(--ink); border-radius: 24px; overflow: hidden; }
+  .cdlg-del .ns-top h2 { margin: 0; font-size: 28px; line-height: 34px; font-weight: 900; text-transform: uppercase; color: #ffffff; }
+  .cdlg-del p.ns-what { margin: 20px 24px; font-size: 16px; line-height: 24px; font-weight: 700; text-align: center; color: var(--ink); }
+  .cdlg-del .ack, .cdlg-del .cdlg-pin { margin: 0 24px 16px; width: auto; }
+  .cdlg-del .cdlg-f { padding: 0 24px 24px; flex-wrap: nowrap; }
+  .cdlg-del .cdlg-f .btn { flex: 1 1 0; height: 48px; border-radius: 24px; }
+
   /* ---- Variants (same shape, their own color) ---- */
   /* A picked person: the yellow person pill (calendar person filter, Filters button, its ✕). */
   .fp:not(.fp-conf):has(.fp-clear) .fperson, .fdrop-btn.fall.fp-active, .filters > .fall.fp-active + .fall-clear,
@@ -145,14 +157,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792754137"></script>
+    <script src="config.js?v=1792754310"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792754137';
+      window.PAL_BUILD = '1792754310';
       (function () {
         function check(launch) {
           try {
@@ -7950,8 +7962,18 @@
       const prev = document.activeElement;
       const wrap = document.createElement('div');
       wrap.className = 'cdlg-wrap';
-      wrap.innerHTML = '<div class="cdlg" role="alertdialog" aria-modal="true" aria-labelledby="cdlgT" aria-describedby="cdlgM">' +
-        '<h2 id="cdlgT">' + esc(title) + '</h2>' + (body ? (opts.list ? '<div id="cdlgM">' + body + '</div>' : '<p id="cdlgM">' + body + '</p>') : '') +
+      // Deleting something from the system: the big red alert, like Not Saved — red band, trash icon, DELETE, the question under it.
+      const del = /^delete$/i.test(ok);
+      wrap.innerHTML = del
+        ? '<div class="cdlg cdlg-del ns-card" role="alertdialog" aria-modal="true" aria-labelledby="cdlgT" aria-describedby="cdlgM">' +
+          '<div class="ns-top">' + icon('trash', 40) + '<h2 id="cdlgT">Delete</h2></div>' +
+          '<p class="ns-what" id="cdlgM">' + esc(m ? m[1] : title) + (body ? ' ' + body : '') + '</p>' +
+          (opts.ack ? ackBox('cdlgAck', opts.ack) : '') +
+          (opts.pin ? '<div class="field cdlg-pin"><label for="cdlgPin">' + esc(opts.pin) + '</label><input id="cdlgPin" ' + NEW_PIN + '></div>' : '') +
+          '<div class="cdlg-f"><button type="button" class="btn" data-c="0">' + esc(opts.cancel || 'Cancel') + '</button>' +
+          '<button type="button" class="btn bad" data-c="1"' + (opts.ack || opts.pin ? ' disabled' : '') + '>' + esc(ok) + '</button></div></div>'
+        : '<div class="cdlg" role="alertdialog" aria-modal="true" aria-labelledby="cdlgT" aria-describedby="cdlgM">' +
+        '<h2 id="cdlgT">' + esc(title) + '</h2>' + (body ? '<p id="cdlgM">' + body + '</p>' : '') +
         (opts.ack ? ackBox('cdlgAck', opts.ack) : '') +
         // pin: a PIN box (its label); the action stays off until 4+ digits are typed, and the dialog resolves to the PIN.
         (opts.pin ? '<div class="field cdlg-pin"><label for="cdlgPin">' + esc(opts.pin) + '</label><input id="cdlgPin" ' + NEW_PIN + '></div>' : '') +
