@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792741920"></script>
+    <script src="config.js?v=1792742357"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792741920';
+      window.PAL_BUILD = '1792742357';
       (function () {
         function check(launch) {
           try {
@@ -3624,6 +3624,21 @@
     box-shadow: 0 0 0 2px #111111; font-size: 13px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
   .wpass .wp-tape .ic { display: block; }
   .wpass.wp-draft > :not(.wp-tape):not(.wp-logo) { position: relative; z-index: 1; }
+  /* Drafts in My Requests: the pass shape with the caution tape across its top. */
+  .mpass.mp-draft { padding-top: 0; }
+  .mpass.mp-draft .wp-tape { display: grid; place-items: center; height: 30px; margin: 0 -16px 4px; border-bottom: 2px solid #111111;
+    background: repeating-linear-gradient(135deg, #111111 0 10px, #ffffff 10px 20px); position: relative; z-index: 2; }
+  .mpass.mp-draft .wp-tape > span { display: inline-flex; align-items: center; gap: 5px; padding: 2px 12px; border-radius: 999px; background: #ffffff; color: #111111;
+    box-shadow: 0 0 0 2px #111111; font-size: 12px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+  .mpass.mp-draft .wp-tape .ic { display: block; }
+  .mw-drafts { margin-bottom: 16px; }
+  .mw-drafts-top { padding: 12px 16px 0; }
+  /* Review footer: "Draft Only — Not Yet Submitted" warning strip on its own line above Edit / Submit. */
+  .modal-f:has(> .draft-warn) { flex-wrap: wrap; }
+  .modal-f > .draft-warn { flex: 0 0 100%; order: -1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 6px 12px;
+    border-radius: 12px; background: #fff3d6; color: #7a4a00; border: 1.5px solid #f0b429; font-size: 14px; font-weight: 800; box-sizing: border-box; }
+  :root[data-theme="dark"] .modal-f > .draft-warn { background: rgba(240, 180, 41, .16); color: #ffd58a; border-color: rgba(240, 180, 41, .55); }
+  .modal-f > .draft-warn .ic { flex: none; }
 </style>
 
   </head>
@@ -4392,7 +4407,7 @@
     S.vapid = data.vapidPublicKey || S.vapid || ''; S.adminAlerts = !!data.adminAlerts;
     // Hide user schedules (members only): the server sent just my requests, day availability for my position, and my
     // conflicts as counts. Everyone else's names and requests aren't on this device at all.
-    S.medCuts = data.medCuts || []; S.medical = data.medical || []; S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
+    S.medCuts = data.medCuts || []; S.medical = data.medical || []; S.drafts = data.drafts || []; S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
     S.notePrefs = data.notePrefs || S.notePrefs || { approved: true, denied: true, edited: true };
     if (data.emailPrefs) S.emailPrefs = data.emailPrefs;
     S.nameNeed = data.nameNeed || '';
@@ -6588,7 +6603,9 @@
     const arr = sortRows(filteredList(), S.list);
     // No count line (the red banner says when the list is filtered); only the "Default Order" link when a column sort is on.
     const parts = sortNote(S.list, 'list');
-    return (parts ? '<div class="tbl-count">' + parts.replace(/^ · /, '') + '</div>' : '') + reqTable(arr, 'list');
+    // Your drafts (unfinished requests you started — e.g. for others, in Admin Mode) sit above the table.
+    return (liveDrafts().length ? '<div class="mwallet mw-drafts-top">' + draftsHtml() + '</div>' : '') +
+      (parts ? '<div class="tbl-count">' + parts.replace(/^ · /, '') + '</div>' : '') + reqTable(arr, 'list');
   }
   /* List page bar — same controls and order as the calendar bar:
      phone: search / filters (Add Request is the bar under the table); desktop: search · filters · Add Request. */
@@ -6760,7 +6777,7 @@
         changedMine.map(r => '<button class="linkbtn" data-act="openReq" data-id="' + esc(r.id) + '">' + r.type + ' ' + D.short(r.start) + ' → ' + D.short(r.end) + '</button>').join(' · ') +
         '<div class="meta" style="white-space:normal">Open each one to see what changed, then tap “Got it”.</div></div></div>' : '') +
       // My leave and passes as a wallet of compact passes (tap one for the full pass).
-      '<div class="tbl-page" id="mineBody">' + (mineView() === 'table' ? reqTable(sortRows(shown, S.mine), 'mine') : mineWallet(shown)) + '</div>' + reqBar() + '</section>';
+      '<div class="tbl-page" id="mineBody">' + (mineView() === 'table' ? (liveDrafts().length ? '<div class="mwallet mw-drafts-top">' + draftsHtml() + '</div>' : '') + reqTable(sortRows(shown, S.mine), 'mine') : mineWallet(shown)) + '</div>' + reqBar() + '</section>';
   }
   /* ---------- My Requests: the wallet ----------
      Every request as a compact pass in the ticket's language (Leave navy / Pass gold, the patch as a faint watermark,
@@ -6791,8 +6808,8 @@
     // Main list: going on now first, then coming up by departure, then the ones that just ended (still here for 2 days).
     const up = list.filter(r => r.end >= cut).sort((a, b) => (isExpired(a) - isExpired(b)) || (onNow(b) - onNow(a)) || byStart(a, b));
     const old = list.filter(r => r.end < cut).sort((a, b) => byStart(b, a));
-    return '<div class="scroll mwallet">' +
-      '<h3 class="mw-h">Upcoming <span class="mw-ct">' + up.length + '</span></h3>' +
+    return '<div class="scroll mwallet">' + draftsHtml() +
+      '<h3 class="mw-h' + (liveDrafts().length ? ' mw-h2' : '') + '">Upcoming <span class="mw-ct">' + up.length + '</span></h3>' +
       (up.length ? '<div class="mw-list">' + up.map(miniPass).join('') + '</div>' : '<p class="mw-empty">Nothing coming up. Tap ' + (S.isAdmin ? 'Add Event' : 'Add Request') + ' to plan your next one.</p>') +
       // Filters → Show Expired: everything that ended more than 2 days ago, newest first.
       (S.mineExpired ? '<h3 class="mw-h mw-h2">Expired <span class="mw-ct">' + old.length + '</span></h3>' +
@@ -7721,6 +7738,46 @@
       } else { const first = wrap.querySelector(opts.ack ? '.ack' : '[data-c="1"]'); if (first) first.focus(); }
     });
   }
+  /* ---------- Drafts ----------
+     Closing the form on a NEW Leave / Pass (or added type) that has anything in it — dates, location or notes — keeps it as
+     a draft for you (saved to your account). Drafts sit at the top of My Requests with the DRAFT tape; tap one to carry on.
+     Submitting removes it; once its dates have passed it's deleted (never moved to Expired). */
+  const draftLast = d => d.end || d.start;
+  const liveDrafts = () => (S.drafts || []).filter(d => !draftLast(d) || draftLast(d) >= S.today);
+  function keepDraft() {
+    const w = S.wiz;
+    if (!w || w.submitted || w.editId || w.editBoId || w.editMedId || w.creating || w.type === 'Blackout' || w.type === 'Medical') return;
+    const nb = $('#wzN'), lb = $('#wzL'); if (nb) w.note = nb.value; if (lb) w.location = lb.value;
+    const start = D.valid(w.start) ? w.start : '', end = D.valid(w.end) && w.end >= start ? w.end : '';
+    if (!start && !String(w.location || '').trim() && !String(w.note || '').trim()) return; // nothing worth keeping
+    const d = { id: w.draftId || '', type: w.type, start, end, note: String(w.note || ''), location: String(w.location || ''), assignees: wizIds() };
+    save(() => { S.drafts = (S.drafts || []).filter(x => x.id !== d.id).concat([Object.assign({}, d, { id: d.id || 'tmp_' + Date.now() })]); }, 'apiSaveDraft', S.token, d);
+    toast('Saved as a draft', 'ok', 1600);
+  }
+  /** Carry on with a draft: the form, filled in as it was left. */
+  function openDraft(id) {
+    const d = (S.drafts || []).find(x => x.id === id); if (!d) return;
+    openWizard(d.start, d.end);
+    const ids = S.isAdmin ? (d.assignees || []) : [S.me];
+    Object.assign(S.wiz, { type: d.type, note: d.note || '', location: d.location || '', assignees: ids, assigneeId: ids[0] || '', draftId: d.id, picking: !!d.start && !d.end });
+    renderWizard();
+  }
+  /** A draft in the wallet: the pass shape with the DRAFT tape; no status. */
+  function miniDraft(d) {
+    const big = x => esc(D.f(x, { month: 'short', day: 'numeric' }).toUpperCase()), wk = x => esc(D.f(x, { weekday: 'short' }));
+    const n = d.start && d.end ? D.days(d.start, d.end) : 0;
+    return '<button type="button" class="mpass mp-draft wp-' + tcls(d.type) + '" data-act="openDraft" data-id="' + esc(d.id) + '" aria-label="' + esc('Draft ' + d.type + (d.start ? ', ' + D.short(d.start) : '')) + '">' +
+      '<span class="wp-tape"><span>' + icon('pencil', 13) + 'Draft</span></span>' +
+      '<span class="brand-logo mp-logo" aria-hidden="true"></span>' +
+      '<span class="mp-top"><span class="mp-type">' + esc(d.type.toUpperCase()) + '</span></span>' +
+      '<span class="mp-dates">' + (d.start ? '<span class="mp-d"><b>' + big(d.start) + '</b><i>' + wk(d.start) + '</i></span><span class="mp-arrow">' + icon('arrow', 22) + '</span>' +
+        (d.end ? '<span class="mp-d"><b>' + big(d.end) + '</b><i>' + wk(d.end) + '</i></span><span class="mp-n"><b>' + n + '</b>' + (n === 1 ? 'day' : 'days') + '</span>' : '<span class="mp-d"><b>—</b><i>&nbsp;</i></span>')
+        : '<span class="mp-d"><b>NO DATES</b><i>&nbsp;</i></span>') + '</span>' +
+      '<span class="mp-cut" aria-hidden="true"></span>' +
+      '<span class="mp-info">' + icon('pin', 14) + '<span class="mp-loc">' + (d.location ? esc(d.location) : 'No location') + '</span>' + (d.note ? '<span class="mp-note">' + esc(d.note) + '</span>' : '') + '</span>' +
+    '</button>';
+  }
+  const draftsHtml = () => { const ds = liveDrafts(); return ds.length ? '<h3 class="mw-h">Drafts <span class="mw-ct">' + ds.length + '</span></h3><div class="mw-list mw-drafts">' + ds.map(miniDraft).join('') + '</div>' : ''; };
   function closeModal() {
     // Closing the person picker returns to whatever opened it (the request form or the Filters sheet).
     if (S.modal === 'person' && S.ppMode === 'assign' && S.wiz) { ppAssignDone(); return; }
@@ -7730,6 +7787,7 @@
     if (S.modal === 'person' && S.ppFromSheet) { S.ppFromSheet = false; openFilterSheet(S.ppScope); return; }
     if (S.modal === 'wizard' && S.boReturn) { const b = S.boReturn; S.boReturn = null; S.wiz = null; openBoResolve(b); return; } // edited from the blackout resolver
     if (S.modal === 'wizard' && S.cfReturn) { const cd = S.cfReturn; S.cfReturn = null; S.wiz = null; openConflict(cd, S.cfRole); return; }
+    if (S.modal === 'wizard') keepDraft(); // an unfinished new request is kept as a draft
     hideTip(); S.modal = null; S.wiz = null; $('#modal').innerHTML = '';
     if (modalOpener && document.contains(modalOpener) && modalOpener.focus) modalOpener.focus({ preventScroll: true });
     modalOpener = null;
@@ -8799,6 +8857,7 @@
         '<div class="field pf"><label for="wzN">' + (isBo ? 'Reason &amp; Notes' : isMed ? 'Notes' : 'Trip Reason &amp; Notes') + ' <span class="pf-opt">Optional</span></label><textarea id="wzN" class="pf-box" maxlength="' + (isBo ? 80 : 500) + '" data-model="wiz.note" placeholder="' + (isBo ? 'e.g. ORE week, UTA' : isMed ? '' : 'Destination, reason, contact info…') + '">' + esc(w.note) + '</textarea></div>' +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div>';
       foot = (w.editMedId ? '<button class="btn del" data-act="delMedical">' + icon('trash', 16) + 'Delete</button>' : '') +
+        (w.draftId ? '<button class="btn del" data-act="delDraft">' + icon('trash', 16) + 'Delete Draft</button>' : '') +
         '<button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="wizReview">Review ' + icon('right', 18) + '</button>';
     } else {
       const c = wizCheck();
@@ -8828,7 +8887,9 @@
         (c.warns.length ? '<div class="msgs">' + c.warns.map(m => '<div class="msg w">' + icon('alert', 15) + '<span>' + esc(m) + '</span></div>').join('') + '</div>' : '') +
         '<div class="err" id="wizErr">' + esc(w.error) + '</div></div>';
       }
-      foot = '<button class="btn" data-act="wizEdit">' + icon('pencil', 18) + 'Edit</button>' +
+      // Review: an amber warning strip above the buttons — it isn't in until it's submitted.
+      foot = '<div class="draft-warn" role="status">' + icon('alert', 16) + '<span>Draft Only — Not Yet Submitted</span></div>' +
+        '<button class="btn" data-act="wizEdit">' + icon('pencil', 18) + 'Edit</button>' +
         '<button class="btn ok" data-act="wizSubmit">' + icon('check', 18) + (w.editId || w.editBoId || w.editMedId ? 'Save' : isBo ? 'Add Blackout' : isMed ? 'Add Medical' : 'Submit') + '</button>';
     }
     openModal('wizard', head + '<div class="modal-b">' + body + '</div><div class="modal-f">' + foot + '</div>', true);
@@ -9491,6 +9552,14 @@
     newReqOn(el) { openWizard(el.dataset.date); refreshData(); },
     newReq() { openWizard('', ''); refreshData(); },
     editMedical(el) { openMedicalWizard(el.dataset.id); },
+    openDraft(el) { openDraft(el.dataset.id); },
+    async delDraft() {
+      const w = S.wiz, id = w && w.draftId; if (!id) return;
+      if (!await askConfirm('Delete this draft?')) return;
+      w.submitted = true; // closing now must not save it again
+      save(() => { S.drafts = (S.drafts || []).filter(x => x.id !== id); }, 'apiDeleteDraft', S.token, id);
+      closeModal(); render(); toast('Draft deleted', 'ok', 1500);
+    },
     /** Member card → Add Event: the event form with this member already picked. */
     memberAddEvent(el) { const id = el.dataset.id; closeModal(); openWizard('', ''); S.wiz.assignees = [id]; S.wiz.assigneeId = id; renderWizard(); },
     openReq(el) { openRequest(el.dataset.id); },
@@ -10250,6 +10319,8 @@
     async wizSubmit() {
       const w = S.wiz, c = wizCheck();
       if (c.errs.length) { $('#wizErr').textContent = c.errs[0]; return; }
+      w.submitted = true; // closing after this isn't "unfinished" (no draft)
+      if (w.draftId) { const id = w.draftId; save(() => { S.drafts = (S.drafts || []).filter(x => x.id !== id); }, 'apiDeleteDraft', S.token, id); }
       if (w.type === 'Medical') {
         const ids = wizIds(), types = typeNames(), cut = (w.medCut || []).filter(t => types.includes(t));
         const m = { id: w.editMedId || '', userIds: ids, start: w.start, end: w.end, cut, note: w.note.trim().slice(0, 500) };
@@ -10320,7 +10391,7 @@
         // The save's own alert says why; offline (nothing was sent) gets the same big alert here.
         if (Date.now() - nsAt > 3000) notSaved('', 'The server was busy. Try again.');
         S.nsWhat = null; S.nsPlain = false;
-        if (S.wiz) $('#wizErr') && ($('#wizErr').textContent = 'Not saved — try again.');
+        if (S.wiz) { S.wiz.submitted = false; $('#wizErr') && ($('#wizErr').textContent = 'Not saved — try again.'); }
         return;
       }
       S.nsWhat = null; S.nsPlain = false;
