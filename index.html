@@ -124,6 +124,10 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
+  /* Offline: Add Request / Add Event turns into a plain outlined "Offline" button (full strength, so it reads as a state, not a
+     faded button); the alert mark is the Viewing Offline bar's. */
+  .btn.req-btn:disabled, .req-bar .req-btn:disabled { opacity: 1; background: var(--gap-c); border: var(--ctl-line); color: var(--muted); box-shadow: none; }
+  .btn.req-btn:disabled .ic { color: #b45309; } :root[data-theme="dark"] .btn.req-btn:disabled .ic { color: #fbbf24; }
   .pd-forgot { display: block; margin: 12px 0 4px; } /* PIN dialog: Forgot the PIN? → the two-admin reset */
   .btn.busy { opacity: .6; pointer-events: none; } /* a button waiting on the server (Add to Calendar on iPhone) */
   /* Conflicts | Pending | All: the Conflicts count is red (white on the red selected pill, so it still shows). */
@@ -329,14 +333,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792774866"></script>
+    <script src="config.js?v=1792775783"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792774866';
+      window.PAL_BUILD = '1792775783';
       (function () {
         function check(launch) {
           try {
@@ -4577,6 +4581,11 @@
   function markOffline() {
     $$('[data-act]').forEach(b => { if (!OFFLINE_ACTS.has(b.dataset.act) || !('disabled' in b)) return;
       if (S.offline) { if (!b.disabled) { b.disabled = true; b.dataset.offOff = '1'; } } else if (b.dataset.offOff) { b.disabled = false; delete b.dataset.offOff; } });
+    // Add Request / Add Event: says why it's off — "Offline" with the alert mark — instead of just looking faded.
+    $$('.req-btn').forEach(b => {
+      if (S.offline) { if (!b.dataset.offHtml) { b.dataset.offHtml = b.innerHTML; b.innerHTML = icon('alert', 18) + 'Offline'; b.title = 'No connection — requests can be added once the server is reachable'; } }
+      else if (b.dataset.offHtml) { b.innerHTML = b.dataset.offHtml; delete b.dataset.offHtml; b.removeAttribute('title'); }
+    });
   }
   const offlineBar = () => S.offline ? '<div class="offline-bar" id="offlineBar" role="status">' + icon('alert', 16) + 'Viewing Offline</div>' : '';
   const offlineNote = () => toast('Viewing Offline', 'info', 2400);
