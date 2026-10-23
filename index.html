@@ -124,12 +124,6 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
-  /* Phones, List: the status filter as three icon-only toggles beside Filters (border · space · button, like the type toggle). */
-  .lbar .filters > .seg.fstat { display: flex; flex: none; height: 40px; }
-  .seg.fstat > button { width: 44px; min-width: 0; padding: 0; justify-content: center; }
-  /* On: the state's deep color on the pale selected fill (light in both modes, so the light-mode text colors); off: muted. */
-  .seg.fstat > button.on.fst-approved .ic { color: #1a6b33; } .seg.fstat > button.on.fst-pending .ic { color: #7a5300; } .seg.fstat > button.on.fst-denied .ic { color: #a1261d; }
-  .seg.fstat > button:not(.on) .ic { color: var(--muted); }
   /* Profile tab selected (its gold pill): the saving ring turns brick so it shows against the gold. */
   .nav button[data-v="profile"]:is(.on, [aria-expanded="true"]) .nav-ic:is(.syncing, .tour-sync)::before { border-top-color: #a3402c; border-right-color: #a3402c; }
   .wpass { --gap-c: #ffffff; }
@@ -324,14 +318,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792770953"></script>
+    <script src="config.js?v=1792771133"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792770953';
+      window.PAL_BUILD = '1792771133';
       (function () {
         function check(launch) {
           try {
@@ -3378,8 +3372,8 @@
   .stsl.vw-sl .vw-ct { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #b45309; color: #fff; font-size: 12px; font-weight: 800; }
   .stsl.vw-sl.st-open .stsl-o.on .vw-ct { background: var(--navy); color: var(--gold); }
   .lbar .filters > .vw-sl { order: 9; }
-  /* Phones: not in the bar — it's in the Filters sheet, full width in three equal parts, same icons-and-word behavior. */
-  @media (max-width: 700px) { .lbar .filters > .vw-sl { display: none; } }
+  /* In the Filters sheet (if ever shown there): full width in three equal parts, same icons-and-word behavior. */
+  @media (max-width: 700px) { .lbar .filters { min-width: 0; max-width: 100%; } .lbar .filters > .vw-sl { display: grid; flex: none; } .lbar .filters > .fall { min-width: 0; } } /* phones: beside Filters (word on the selected one, icons on the others) */
   .fs-sect .stsl.vw-sl { display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .fs-sect .stsl.vw-sl .stsl-o { width: 100%; }
 
@@ -5710,13 +5704,13 @@
   function filterSummary(sc) {
     const st = fState(sc), parts = [];
     const pick = (g, opts) => { const sel = st[g]; if (sel && sel.length !== opts.length) parts.push(sel.length ? opts.filter(o => sel.includes(o[0])).map(o => o[1]).join(', ') : 'No ' + g); };
-    if (st.conf || (st === S.mf && S.mineConf && S.mineMode === 'cal')) parts.push('Conflicts');
-    if (sc === 'list' && admView() && S.openOnly) parts.push('Pending');
+    // List (admins): Conflicts / Pending show on the switch beside Filters, so the Filters label leaves them out.
+    if ((st.conf && !(sc === 'list' && admView())) || (st === S.mf && S.mineConf && S.mineMode === 'cal')) parts.push('Conflicts');
     if (sc !== 'mine' && medFilterOn() && st.med && st.med !== 'all') parts.push(st.med === 'only' ? 'Injured' : 'Not Injured');
     if (sc === 'mine' && S.mineExpired && S.mineMode !== 'cal') parts.push('Expired');
     if (st.person) parts.push(personLabel(st));
     else if (st.role && !S.priv) pick('role', FILTERS[1].opts);
-    if (!phoneStatus(sc)) pick('status', FILTERS[0].opts); // phones, List: status has its own buttons in the bar
+    pick('status', FILTERS[0].opts);
     if (!wideFilters(sc)) pick('type', FILTERS[2].opts);
     if (!wideFilters(sc) && sc !== 'mine' && admView() && (st.hide || []).length) parts.push('No ' + st.hide.join(', '));
     return parts;
@@ -5763,13 +5757,6 @@
     return same(st.status, FILTERS[0].opts.map(o => o[0])) && typeNames().every(t => st.type.includes(t)) &&
       (!st.role || S.priv || same(st.role, defaultRoles())) && !st.person && !st.conf && !(st.hide || []).length && (!st.med || st.med === 'all' || !medFilterOn()) && !(st === S.mf && S.mineConf && S.mineMode === 'cal') && !(st === S.mf && S.mineExpired && S.mineMode !== 'cal');
   }
-  /** Phones, List page: Approved / Pending / Denied are their own icon-only toggles beside Filters (not in the sheet). */
-  const phoneStatus = sc => sc === 'list' && !wideFilters(sc);
-  function statusIconsFilter(sc) {
-    const sel = fState(sc).status;
-    return '<div class="seg fstat" role="group" aria-label="Status filter">' + [['Approved', 'check'], ['Pending', 'clock'], ['Denied', 'ban']].map(([v, ic]) =>
-      '<button type="button" class="fst-' + v.toLowerCase() + (sel.includes(v) ? ' on' : '') + '" aria-pressed="' + sel.includes(v) + '" data-act="fToggle" data-g="status" data-v="' + v + '"' + scAttr(sc) + ' title="' + v + '" aria-label="' + v + '">' + icon(ic, 18) + '</button>').join('') + '</div>';
-  }
   function filterButton(sc) {
     const parts = filterSummary(sc);
     // A person filter hides everyone else, so the button turns Brewers yellow (same as the person pill on desktop).
@@ -5790,9 +5777,7 @@
       '<button type="button" class="' + (st[F.g].includes(o[0]) ? 'on' : '') + '" aria-pressed="' + st[F.g].includes(o[0]) + '" data-act="fToggle" data-g="' + F.g + '" data-v="' + o[0] + '"' + scAttr(sc) + '>' + o[1] + '</button>').join('') + '</div>';
     const html = modalHead('Filters', 'sliders') + '<div class="modal-b fs-body">' +
       (wideFilters(sc) ? '' : sect('Show', typeToggle(sc))) +
-      // Phones, All Requests (admins): the Conflicts | Pending | All switch lives here (the bar has no room for it).
-      (sc === 'list' && admView() && !wideFilters(sc) ? sect('Requests', openBtn()) : '') +
-      (phoneStatus(sc) ? '' : sect('Status', chips(groups[0]))) +
+      sect('Status', chips(groups[0])) +
       (groups.some(f => f.g === 'role') ? sect('Position', badgeDrop('role', sc)) + sect('Person', personSelect('in-sheet', sc)) : '') +
       // Admins: Medical — everyone, only injured members, or only members who aren't injured.
       (sc !== 'mine' && medFilterOn() ? sect('Medical', medSeg(st.med, 'medF', scAttr(sc))) : '') +
@@ -7027,7 +7012,7 @@
     return '<div class="lbar">' +
       '<button class="btn req-btn" data-act="newReq">' + icon('plus', 18) + (S.isAdmin ? 'Add Event' : 'Add Request') + '</button>' +
       '<div class="lsearch">' + icon('search', 16) + search + '</div>' +
-      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (phoneStatus(sc) ? statusIconsFilter(sc) : '') + (sc === 'list' && admView() ? openBtn() : '') + (sc === 'mine' ? mineSwitch() : '') + '</div></div>';
+      '<div class="filters">' + filters.map(F => filterGroup(F, sc)).join('') + filterButton(sc) + (sc === 'list' && admView() ? openBtn() : '') + (sc === 'mine' ? mineSwitch() : '') + '</div></div>';
   }
   /** Admin status control: a three-way slider Approved | Pending | Denied. The current status has a solid red / amber /
    *  green fill and shows its word; the other two show only their icon. Used in the request tables, request details and the conflict screen. */
