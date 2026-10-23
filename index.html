@@ -329,14 +329,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792773762"></script>
+    <script src="config.js?v=1792774866"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792773762';
+      window.PAL_BUILD = '1792774866';
       (function () {
         function check(launch) {
           try {
@@ -6771,8 +6771,9 @@
   const viewCount = keep => { const F = Object.assign({}, S.f, { conf: false }); return IDX.live.filter(r => keep(r) && r.end >= S.today && managesReq(r) &&
     F.role.includes(userOf(r.userId).role) && F.type.includes(r.type) && personConfOk(r, F)).length; };
   const openCount = () => viewCount(isOpenReq);
-  /** Requests over the daily max (not ended, yours to manage, in the filters): the Conflicts option's count. */
-  const confCount = () => viewCount(r => r.status !== 'Denied' && inConflict(r));
+  /** The Conflicts option's count: pending requests over the daily max (not ended, yours to manage, in the filters).
+   *  An approved one is decided — it no longer counts, though the Conflicts view still lists it. */
+  const confCount = () => viewCount(r => r.status === 'Pending' && inConflict(r));
   /** All Requests: the Medical events the filters show (position, person, Injured filter, search), as rows. */
   function listMedical() {
     const F = S.f, q = S.list.q.trim().toLowerCase();
