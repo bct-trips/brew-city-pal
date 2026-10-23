@@ -241,14 +241,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792761106"></script>
+    <script src="config.js?v=1792761331"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792761106';
+      window.PAL_BUILD = '1792761331';
       (function () {
         function check(launch) {
           try {
@@ -8501,7 +8501,8 @@
     tourAnimStop(); S.tourDates = null; closeModal(); if (S.wiz && S.wiz.tourDemo) S.wiz = null;
     S.tourSec = r.sec; tourShow(r.i); return true;
   }
-  function tourSide(k) { S.tourRet = { sec: S.tourSec, i: S.tourStep }; S.tourSec = k; tourShow(0); }
+  // The detour skips its own first step (the Add Request button, just shown) and goes straight on to the form.
+  function tourSide(k) { S.tourRet = { sec: S.tourSec, i: S.tourStep, start: 1 }; S.tourSec = k; tourShow(1); }
   /** Left a section before its end (Skip, or Back off its first screen): "Skipped" on the start screen, unless it was already done. */
   function tourSecSkip(k) { S.tourSeen = S.tourSeen || {}; k = k || S.tourSec; if (S.tourSeen[k] !== true) S.tourSeen[k] = 'skipped'; if (tourReturn()) return; tourMenu(); }
   // The dialog's ✕ goes back one level: an item → the notifications list → the tour's start screen → out of the tour.
@@ -10054,7 +10055,7 @@
     openNotes() { openNotesDrawer(); },
     tourHub() { tourHub(); },
     tourItem(el) { tourItem(el.dataset.v); },
-    tourBack(el) { const i = Number(el.dataset.v); if (i < 0) tourSecSkip(); else tourShow(i); },
+    tourBack(el) { const i = Number(el.dataset.v); if (S.tourRet && i < S.tourRet.start) tourReturn(); else if (i < 0) tourSecSkip(); else tourShow(i); },
     tourSecSkip(el) { tourSecSkip(el && el.dataset.v); },
     tourSide(el) { tourSide(el.dataset.v); },
     tourMenu() { tourMenu(); },
