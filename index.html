@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792740418"></script>
+    <script src="config.js?v=1792740702"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792740418';
+      window.PAL_BUILD = '1792740702';
       (function () {
         function check(launch) {
           try {
@@ -3958,7 +3958,11 @@
   /** Admin mode and this member is on my team (org admins: everyone). */
   const manages = u => !!S.isAdmin && inScope(S.adminScope, u);
   /** Admin powers over this request (approve / deny, edit, delete, notes). */
-  const managesReq = r => !!S.isAdmin && String(r.userId).split(',').every(id => inScope(S.adminScope, userOf(id)));
+  /** Admin powers over a request: in Admin Mode by its scope; in User Mode by your admin status (org: everyone; team: your
+   *  team) — the server allows the same, so admins can decide, cancel, edit and delete from either mode. */
+  const statusScope = () => S.myAdmin && S.myAdmin.level === 'team' ? S.myAdmin.scope : null;
+  const managesReq = r => S.isAdmin ? String(r.userId).split(',').every(id => inScope(S.adminScope, userOf(id)))
+    : !!(S.myAdmin && S.myAdmin.level) && String(r.userId).split(',').every(id => inScope(statusScope(), userOf(id)));
   const boApplies = (b, u) => !b.scope || inScope(b.scope, u);
   /** Does `outer` cover everyone `inner` covers? (Team admins act only within their own scope.) */
   const scopeWithin = (inner, outer) => { if (!outer) return true; if (!inner) return false; const o = scopeCells(outer); return scopeCells(inner).every(c => o.includes(c)); };
@@ -6349,7 +6353,8 @@
   /* ================================================================ */
   // Members edit their own requests until approved; after that only admins can.
   const isTmp = r => String(r.id).indexOf('tmp_') === 0; // shown before the server has saved it
-  const canEdit = r => !isTmp(r) && r.status !== 'Cancelled' && (managesReq(r) || (r.userId === S.me && r.status !== 'Approved'));
+  // Members edit their own any time it isn't over: notes / location keep the status; new dates go back to Pending.
+  const canEdit = r => !isTmp(r) && r.status !== 'Cancelled' && (managesReq(r) || (r.userId === S.me && (r.end >= S.today || r.status !== 'Approved')));
 
   /** Needs an admin decision: pending, or in a conflict that isn't resolved yet. */
   const isOpenReq = r => r.status === 'Pending' || openConflictOf(r);
@@ -8757,8 +8762,8 @@
         body += '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request For</div><div style="font-weight:700">' + esc(fullName(userOf(w.assigneeId))) + '</div>' +
           (S.isAdmin ? '<div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who wiz-add" data-act="whoDrop" aria-haspopup="listbox" aria-expanded="false" aria-label="Add members to this request">' + whoBtnInner() + '</button>' +
             '<div class="who-pop" id="whoPop" hidden></div></div>' : '') +
-          (w.editStatus === 'Approved' ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>This request is already approved. Admin edits keep it approved.</span></div>' : '') +
-          (w.editStatus === 'Denied' && !S.isAdmin ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>Saving changes resubmits this denied request as Pending.</span></div>' : '') + '</div>';
+          (w.editStatus === 'Approved' && managesReq({ userId: w.assigneeId }) ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>This request is already approved. Admin edits keep it approved.</span></div>' : '') +
+          (w.editStatus !== 'Pending' && !managesReq({ userId: w.assigneeId }) ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>New dates go back to Pending for approval. Notes and location don’t.</span></div>' : '') + '</div>';
       } else if (S.isAdmin) {
         body += '<div class="sect"><div class="lbl">' + icon('users', 14) + (isMed ? ' Medical For' : ' Request For') + '</div>' +
           (w.creating
@@ -10272,8 +10277,10 @@
         const id = w.editId;
         save(() => {
           const r = findReq(id); if (!r) return;
+          const moved = payload.type !== r.type || payload.start !== r.start || payload.end !== r.end;
           Object.assign(r, payload);
-          if (!S.isAdmin && r.status === 'Denied') r.status = 'Pending'; // a member's edit resubmits a denied request
+          // A member's own edit: new dates need approval again (back to Pending); notes / location keep the status.
+          if (!managesReq(r) && moved && r.status !== 'Pending') Object.assign(r, { status: 'Pending', canceled: '', decidedBy: '', decidedAt: '' });
         }, 'apiUpdateRequest', S.token, id, payload);
         // Members an admin added while editing get their own copy of the (edited) request (they appear once saved).
         if (S.isAdmin && (w.extra || []).length) { added = w.extra.length; save(null, 'apiCreateRequests', S.token, payload, w.extra.slice()); }
