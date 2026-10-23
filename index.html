@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792741639"></script>
+    <script src="config.js?v=1792741920"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792741639';
+      window.PAL_BUILD = '1792741920';
       (function () {
         function check(launch) {
           try {
@@ -9051,7 +9051,7 @@
       drag = false;
     }
   })();
-  /* Phones: pull a bottom-sheet dialog down to close it — but only when the swipe STARTS with its content already
+  /* Phones: pull a bottom-sheet dialog down to close it (a draft on Review goes back to Edit instead) — but only when the swipe STARTS with its content already
      scrolled to the top (a swipe that's scrolling the content up never closes it). */
   (function () {
     let sy = 0, sx = 0, on = false, pulling = false, sheet = null;
@@ -9079,8 +9079,10 @@
       if (!pulling) return;
       pulling = false;
       if (dy > 90) {
+        // A draft on Review: pulling it down goes back to the form to keep editing (it isn't thrown away).
+        const draft = S.modal === 'wizard' && S.wiz && S.wiz.step === 3;
         m.style.transition = 'transform .18s ease-in'; m.style.transform = 'translateY(100%)';
-        setTimeout(() => { m.style.transform = ''; m.style.transition = ''; closeModal(); }, 180);
+        setTimeout(() => { m.style.transform = ''; m.style.transition = ''; if (draft && S.wiz) A.wizEdit(); else closeModal(); }, 180);
       } else { m.style.transition = 'transform .2s ease-out'; m.style.transform = ''; }
     }, { passive: true });
   })();
