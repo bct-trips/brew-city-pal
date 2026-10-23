@@ -153,7 +153,7 @@
      which left a gray pill behind an unselected tab. */
   @media (hover: none) {
     .nav button:not(.on):not([aria-expanded="true"]):hover .nav-ic { background: transparent; }
-    .nav button:not(.on):not([aria-expanded="true"]):hover { color: inherit; }
+    .nav button:not(.on):not([aria-expanded="true"]):hover { color: #c9d3e8; } /* the tab's usual label color — never the nav's dark text token */
   }
   /* Profile tab selected (its gold pill): the saving ring turns brick so it shows against the gold. */
   .nav button[data-v="profile"]:is(.on, [aria-expanded="true"]) .nav-ic:is(.syncing, .tour-sync)::before { border-top-color: #a3402c; border-right-color: #a3402c; }
@@ -229,14 +229,19 @@
 
   /* ---- Pass calendar range ends at a week / month break: a rounded > point where the range runs on, and a rounded >
      notch where it picks up again — the calendar bars' chevrons, with soft corners to match the rounded-square end caps.
-     Fixed-size SVG masks (14 × 28: a ~9px-deep point, like the bars, on the day tile's height) so the rounding never stretches. */
+     Fixed-size SVG masks (14 × 28: a shallow ~7px point with a round tip, matching the 8px day corners) so the rounding never stretches. */
   .wp-in.wp-full { background: var(--day-full-soft); color: var(--day-soft-ink); } /* Full (at the daily max): pastel yellow */
+  /* A Pass is a gold card: the pastels disappear on it, so its days use the same three states in their deep tones with
+     white numerals (green #1a6b33, amber #7a5300, red #a1261d — all ≥ 4.5:1 with white). */
+  .wpass.wp-pass .wp-in.wp-ok { background: #1a6b33; color: #ffffff; }
+  .wpass.wp-pass .wp-in.wp-full { background: #7a5300; color: #ffffff; }
+  .wpass.wp-pass .wp-in.wp-bad { background: #a1261d; color: #ffffff; }
   .wp-in.wp-tip { border-top-right-radius: 0; border-bottom-right-radius: 0;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H2.6Q4%200%204.6%201.2L13.3%2012.6Q14%2014%2013.3%2015.4L4.6%2026.8Q4%2028%202.6%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 14px) 100% no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H2.6Q4%200%204.6%201.2L13.3%2012.6Q14%2014%2013.3%2015.4L4.6%2026.8Q4%2028%202.6%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 14px) 100% no-repeat; }
+    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H5Q7.2%200%208.2%202L11.6%2010.5Q12.8%2014%2011.6%2017.5L8.2%2026Q7.2%2028%205%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 14px) 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H5Q7.2%200%208.2%202L11.6%2010.5Q12.8%2014%2011.6%2017.5L8.2%2026Q7.2%2028%205%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 14px) 100% no-repeat; }
   .wp-in.wp-notch { border-top-left-radius: 0; border-bottom-left-radius: 0;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M1.4%200H14V28H1.4Q0%2028%20.7%2026.8L8.6%2015.4Q9.3%2014%208.6%2012.6L.7%201.2Q0%200%201.4%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000, #000) right / calc(100% - 14px) 100% no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M1.4%200H14V28H1.4Q0%2028%20.7%2026.8L8.6%2015.4Q9.3%2014%208.6%2012.6L.7%201.2Q0%200%201.4%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000, #000) right / calc(100% - 14px) 100% no-repeat; }
+    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M2%200H14V28H2Q0%2028%20.8%2026L4.2%2017.5Q5.4%2014%204.2%2010.5L.8%202Q0%200%202%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000, #000) right / calc(100% - 14px) 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M2%200H14V28H2Q0%2028%20.8%2026L4.2%2017.5Q5.4%2014%204.2%2010.5L.8%202Q0%200%202%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000, #000) right / calc(100% - 14px) 100% no-repeat; }
 
   /* ---- Welcome tour: a dimmed page with a spotlight on the control (gold ring) and a card beside it. ---- */
   .tour { position: fixed; inset: 0; z-index: 500; }
@@ -349,14 +354,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792776955"></script>
+    <script src="config.js?v=1792787267"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792776955';
+      window.PAL_BUILD = '1792787267';
       (function () {
         function check(launch) {
           try {
