@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792742662"></script>
+    <script src="config.js?v=1792742946"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792742662';
+      window.PAL_BUILD = '1792742946';
       (function () {
         function check(launch) {
           try {
@@ -3608,12 +3608,12 @@
   /* Phones: with Cancel Leave / Pass in the footer row, Edit turns into an icon circle (its name is the tooltip) so
      Cancel keeps its words and everything fits. */
   @media (max-width: 600px) {
-    .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit, .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit:has(> .ic:first-child) { flex: none; width: 48px; min-width: 48px; padding: 0; justify-content: center; border-radius: 50%; }
+    .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit, .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit:has(> .ic:first-child) { flex: none; width: 40px; min-width: 40px; height: 40px; aspect-ratio: 1; padding: 0; justify-content: center; border-radius: 50%; } /* a circle, the Delete circle's size */
     .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit .bl { display: none; }
     .modal-f .mf-row .btn.act.act-lbl.act-cxl { flex: 1.4 1 0; white-space: nowrap; }
   }
   /* The desktop pass dialog is pass-width too: same fit rule (Edit as an icon circle next to Cancel Leave / Pass). */
-  .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit, .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit:has(> .ic:first-child) { flex: none; width: 44px; min-width: 44px; padding: 0; justify-content: center; border-radius: 50%; }
+  .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit, .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit:has(> .ic:first-child) { flex: none; width: 40px; min-width: 40px; height: 40px; aspect-ratio: 1; padding: 0; justify-content: center; border-radius: 50%; }
   .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit .bl { display: none; }
   .pass-dlg .modal-f .mf-row .btn.act.act-lbl.act-cxl { flex: 1.4 1 0; white-space: nowrap; }
   /* Review: caution tape across the top of the pass (black / white stripes, a white label) — clear on every pass color,
