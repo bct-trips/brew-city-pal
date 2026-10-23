@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792741595"></script>
+    <script src="config.js?v=1792741639"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792741595';
+      window.PAL_BUILD = '1792741639';
       (function () {
         function check(launch) {
           try {
@@ -8287,8 +8287,8 @@
     }).join('');
     const cut = '<div class="wp-cut" aria-hidden="true"></div>';
     return '<article class="wpass wp-' + tcls(o.type) + (o.status === 'Canceled' ? ' wp-canceled' : '') + (o.draft ? ' wp-draft' : '') + '" aria-label="' + (o.draft ? 'Draft, not submitted yet: ' : '') + esc(o.type + ', ' + D.short(o.start) + ' to ' + D.short(o.end)) + '">' +
-      // Review (not yet submitted): caution tape across the top of the pass with "DRAFT · NOT SUBMITTED" on it.
-      (o.draft ? '<div class="wp-tape"><span>' + icon('pencil', 14) + 'Draft · Not Submitted</span></div>' : '') +
+      // Review (not yet submitted): caution tape across the top of the pass with "DRAFT" on it.
+      (o.draft ? '<div class="wp-tape"><span>' + icon('pencil', 14) + 'Draft</span></div>' : '') +
       // The squadron patch (126 EARS, gold / navy) as a big faint watermark from the top-left, behind the text.
       '<div class="wp-sec wp-top"><div class="wp-brand"><span class="brand-logo wp-logo" aria-hidden="true"></span><div><div class="wp-app">BREW CITY PAL</div><div class="wp-type">' + (o.med ? medType() : esc(o.type.toUpperCase())) + (o.end < S.today ? '<span class="wp-exp">Expired</span>' : '') + '</div></div></div>' +
         (o.med ? '<div class="wp-r wp-medx">' + medX(30) + '</div>' : '<div class="wp-r"><div class="wp-lab">Days</div><div class="wp-n">' + n + '</div></div>') + '</div>' +
