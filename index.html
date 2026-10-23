@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792750745"></script>
+    <script src="config.js?v=1792751252"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792750745';
+      window.PAL_BUILD = '1792751252';
       (function () {
         function check(launch) {
           try {
@@ -3694,29 +3694,24 @@
   .wa-row > .idb { flex: none; }
   .wa-acts { display: flex; align-items: center; gap: 8px; flex: none; }
   .wa-row .wa-del.btn.act.ico { width: 34px; min-width: 34px; height: 34px; padding: 0; justify-content: center; border: 1px solid var(--outline); border-radius: 50%; } /* like the table's round Delete */
-  /* ---------- One look for toggle groups and tonal buttons (final) ----------
-     No outlines: every toggle track (view switch, Events | Stats, Leave | Pass, status slider, all segmented groups) and
-     every tonal button (Filters, Today, dropdowns, on/off chips) is a filled pill. Off / track = --tone; selected = the
-     blue-gray --sel-bg with bold navy text. --tone is a step darker than a white bar and a step lighter than the tinted
-     bottom dock, so the shape always shows. Outlined buttons (Cancel, Edit, Delete…) and the date picker stay outlined. */
-  :root { --tone: #eaecf3; }
-  :root[data-theme="dark"] { --tone: #2c2d35; }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tone: #2c2d35; } }
-  .seg:not(.nav), .stsl { border: 0 !important; background: var(--tone); }
+  /* ---------- One look for toggles, Today and menus (final): border · space · button ----------
+     Every toggle group, Today and every dropdown / menu button: a thin outline, a 2px gap in the page color, then the
+     blue-gray button. Toggle groups: the track is the page color inside the outline and the selected option is the
+     blue-gray pill. Today and dropdowns (Filters, Settings and Roster dropdowns, Add Members): always the blue-gray
+     button inside the gap. On/off chips: the page color when off, the blue-gray button inside the gap when on.
+     Add Request and the outlined action buttons (Cancel, Edit, Delete…) are their own kinds and don't change. */
+  :root { --gap-c: var(--surface); }
+  .seg:not(.nav), .stsl { border: 1px solid var(--outline) !important; background: var(--gap-c); padding: 2px; }
   .seg:not(.nav) > button + button { border-left: 0; }
-  .fsel, .fdrop-btn, .btn.chip-tog, .btn.today-btn { border-color: transparent; background-color: var(--tone); }
-  .fsel:not(.on):hover, .fdrop-btn:not(.on):hover, .btn.chip-tog:not(.on):hover, .btn.today-btn:not(.on):hover { background-color: color-mix(in srgb, var(--ink) 8%, var(--tone)); }
-  .btn.today-btn:not(.on) { color: var(--sel-ink); font-weight: 800; }
-  :root[data-theme="dark"] .btn.today-btn:not(.on) { color: var(--ink); }
-  .fsel.on, .fdrop-btn.on, .btn.chip-tog.on, .btn.today-btn.on { border-color: transparent; }
-  @media (max-width: 700px) {
-    .page > .lbar, .cal > .calbar, .page > .req-bar, .cal > .req-bar { --tone: #fbfbfd; }
-    :root[data-theme="dark"] .page > .lbar, :root[data-theme="dark"] .cal > .calbar { --tone: #1b1c22; }
-  }
-  @media (min-width: 701px) {
-    .cal.cal-phone > .calbar, .cal.cal-phone > .req-bar { --tone: #fbfbfd; }
-    :root[data-theme="dark"] .cal.cal-phone > .calbar { --tone: #1b1c22; }
-  }
+  .fsel, .fdrop-btn, .btn.today-btn, .btn.chip-tog.on { border: 1px solid var(--outline); background-color: var(--sel-bg); color: var(--sel-ink); font-weight: 800;
+    box-shadow: inset 0 0 0 2px var(--gap-c); }
+  .fsel:hover, .fdrop-btn:hover, .btn.today-btn:hover, .btn.chip-tog.on:hover { background-color: color-mix(in srgb, var(--sel-ink) 10%, var(--sel-bg)); color: var(--sel-ink); }
+  .fsel.on, .fdrop-btn.on, .btn.today-btn.on { border-color: var(--outline); background-color: var(--sel-bg); color: var(--sel-ink); box-shadow: inset 0 0 0 2px var(--gap-c); }
+  .btn.chip-tog:not(.on) { border: 1px solid var(--outline); background-color: var(--gap-c); color: var(--muted); box-shadow: none; }
+  .btn.chip-tog:not(.on):hover { background-color: color-mix(in srgb, var(--ink) 6%, var(--gap-c)); color: var(--ink); }
+  .filters > .fall + .fall-clear, .filters > .fall.on + .fall-clear { border: 1px solid var(--outline); border-left: 0; background-color: var(--sel-bg); color: var(--sel-ink); box-shadow: inset 0 2px 0 var(--gap-c), inset -2px 0 0 var(--gap-c), inset 0 -2px 0 var(--gap-c); }
+  /* A picked person keeps the yellow person pill (inside the same gap). */
+  .fdrop-btn.fp-active, .fdrop-btn.fp-active:hover { background-color: var(--gold); color: var(--navy); }
 </style>
 
   </head>
