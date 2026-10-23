@@ -147,13 +147,18 @@
 
   /* ---- Welcome tour: a dimmed page with a spotlight on the control (gold ring) and a card beside it. ---- */
   .tour { position: fixed; inset: 0; z-index: 500; }
-  .tour-spot { position: fixed; border-radius: 24px; box-shadow: 0 0 0 9999px rgba(4, 12, 28, .62); outline: 3px solid var(--gold); outline-offset: 0; pointer-events: none; } /* snaps from item to item (no glide) */
+  .tour-dim { position: fixed; inset: 0; width: 100%; height: 100%; fill: rgba(4, 12, 28, .62); } /* the page dimmed, with a hole per highlighted control */
+  .tour-spot { position: fixed; border-radius: 24px; outline: 3px solid var(--gold); outline-offset: 0; pointer-events: none; } /* its gold ring; snaps from item to item (no glide) */
   .tour-card { position: fixed; padding: 20px; border: 2px solid var(--gold); border-radius: 20px; background: var(--card); color: var(--ink);
     box-shadow: 0 0 0 1px rgba(0, 0, 0, .25), 0 24px 60px rgba(0, 0, 0, .55); } /* gold edge like the spotlight ring: it stands out from the page */
   .tour-n { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
   .tour-card h3 { margin: 4px 0 8px; font-size: 20px; line-height: 26px; }
   .tour-card p { margin: 0 0 16px; font-size: 15px; line-height: 22px; color: var(--on-surface-variant); }
-  .tour-f { display: flex; justify-content: flex-end; gap: 8px; }
+  /* Back on the left, Skip centered, Next / Done on the right. */
+  .tour-f { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+  .tour-f > [data-act="tourBack"] { grid-column: 1; justify-self: start; }
+  .tour-f > [data-act="tourSecSkip"] { grid-column: 2; }
+  .tour-f > [data-act="tourNext"] { grid-column: 3; justify-self: end; }
   .tour-q { margin: 8px 0; font-size: 17px; line-height: 24px; font-weight: 700; }
   .tour-set .panel { margin: 0 0 12px; }
   .modal-f .spacer { flex: 1 1 auto; }
@@ -199,14 +204,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792757964"></script>
+    <script src="config.js?v=1792758491"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792757964';
+      window.PAL_BUILD = '1792758491';
       (function () {
         function check(launch) {
           try {
@@ -8397,11 +8402,13 @@
     { view: 'mine', form: 'edit', sel: '#modal [data-act="wizReview"]', title: 'Review', text: 'When it looks right, tap Review.' },
     { view: 'mine', form: 'review', sel: '#modal [data-act="wizSubmit"]', title: 'Submit', text: 'Review shows your request as a pass, with any conflict days in red. Tap Submit to send it, or Edit to change it.' }
   ] : [
-    { view: 'calendar', sel: '.calbar .cb-views > .seg', title: 'Calendar', text: 'Switch between Week, Month and Quarter views.' },
+    { view: 'calendar', sel: '.nav [data-v="calendar"]', title: 'Calendar', text: 'Tap Calendar to see everyone’s leave and passes by day.' },
+    { view: 'calendar', sel: '.calbar .cb-views > .seg', title: 'Week, Month or Quarter', text: 'Switch between Week, Month and Quarter views here.' },
     S.priv ? null : { view: 'all', sel: '.nav [data-v="all"]', title: 'List', text: 'Everyone’s leave and passes in one list you can search and filter.' },
     { view: 'mine', sel: '.nav [data-v="mine"]', title: 'My Requests', text: 'Your own leave, passes and drafts.' },
-    { view: 'mine', sel: '#mineBody', title: 'Active, Approved, Pending or Denied', text: 'The top corner of each card shows where it stands: a green Active pill while you’re on it, then Approved, Pending (orange) or Denied (red). Tap a card to see the whole pass.' },
-    { menu: true, sel: '#pmenu [data-act="openSettings"]', title: 'Settings', text: 'Open your profile, then Settings, to change your email and notification preferences.' }
+    { view: 'mine', sel: '#mineBody .mp-active, #mineBody .wp-st', multi: true, title: 'Active, Approved, Pending or Denied', text: 'The top corner of each card shows where it stands: a green Active pill while you’re on it, then Approved, Pending (orange) or Denied (red). Tap a card to see the whole pass.' },
+    { sel: '.nav [data-v="profile"]', title: 'Your Profile', text: 'Tap your profile for notifications, appearance and Settings.' },
+    { menu: true, sel: '#pmenu [data-act="openSettings"]', avoid: '#pmenu', title: 'Settings', text: 'Then tap Settings to change your email and notification preferences.' }
   ]).filter(Boolean);
   /** Guided notifications setup: each item opens its own settings; Done comes back here, checked once it's really on. */
   const setupItems = () => [
@@ -8475,9 +8482,9 @@
     let ov = document.getElementById('tour');
     if (!ov) { ov = document.createElement('div'); ov.id = 'tour'; ov.className = 'tour'; document.body.appendChild(ov); }
     const last = i === steps.length - 1;
-    ov.innerHTML = '<div class="tour-spot"></div><div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tourT">' +
+    ov.innerHTML = '<svg class="tour-dim" aria-hidden="true"><path fill-rule="evenodd"></path></svg><div class="tour-rings"></div><div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tourT">' +
       '<div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div><h3 id="tourT">' + esc(st.title) + '</h3><p>' + esc(st.text) + '</p>' +
-      '<div class="tour-f"><button class="btn" data-act="tourBack" data-v="' + (i - 1) + '">' + icon('left', 18) + 'Back</button><span class="spacer"></span>' + (last ? '' : '<button class="btn" data-act="tourSecSkip">Skip</button>') +
+      '<div class="tour-f"><button class="btn" data-act="tourBack" data-v="' + (i - 1) + '">' + icon('left', 18) + 'Back</button>' + (last ? '' : '<button class="btn" data-act="tourSecSkip">Skip</button>') +
         '<button class="btn btn-next" data-act="tourNext" data-v="' + (i + 1) + '">' + (last ? 'Done' : 'Next ' + icon('right', 18)) + '</button></div></div>';
     // Bring the control into view (inside a scrolling form too), then follow it while things slide in.
     setTimeout(() => { const t = st.sel && [...document.querySelectorAll(st.sel)].find(e => e.offsetWidth); if (t && t.scrollIntoView) t.scrollIntoView({ block: 'center', inline: 'nearest' }); }, 30);
@@ -8486,20 +8493,34 @@
     const n = ov.querySelector('[data-act="tourNext"]'); if (n) n.focus();
   }
   /** Spotlight the step's control and put the card beside it (below it when it's in the top half, above otherwise). */
+  /** Dim the page except the step's control(s) — one rounded hole and gold ring each (several for a "multi" step, e.g.
+   *  every status badge) — and put the card beside them (below in the top half, above otherwise, over a tall list's lower part). */
   function placeTour() {
     const ov = document.getElementById('tour'); if (!ov) return;
-    const st = tourSteps()[S.tourStep] || {}, t = st.sel && [...document.querySelectorAll(st.sel)].find(e => e.offsetWidth);
-    const spot = ov.querySelector('.tour-spot'), card = ov.querySelector('.tour-card');
-    ov.style.background = t ? '' : 'rgba(4, 12, 28, .62)';
-    if (!t) { spot.style.display = 'none'; card.style.cssText = 'left:50%;top:50%;transform:translate(-50%,-50%)'; return; }
-    const r = t.getBoundingClientRect(), pad = 6, m = 4; // the ring stays inside the screen (4px from every edge)
-    const L = Math.max(m, r.left - pad), T = Math.max(m, r.top - pad), Rt = Math.min(innerWidth - m, r.right + pad), B = Math.min(innerHeight - m, r.bottom + pad);
-    spot.style.cssText = 'display:block;left:' + L + 'px;top:' + T + 'px;width:' + Math.max(0, Rt - L) + 'px;height:' + Math.max(0, B - T) + 'px';
-    const cw = Math.min(340, innerWidth - 32), x = Math.max(16, Math.min(innerWidth - cw - 16, r.left + r.width / 2 - cw / 2));
-    const room = 220, below = innerHeight - r.bottom, above = r.top; // a tall spotlight (a list of cards): the card sits over its lower part
-    const ch = card.offsetHeight || 240, low = Math.round(Math.min(r.top + r.height * .6, innerHeight - ch - 16));
+    const st = tourSteps()[S.tourStep] || {}, card = ov.querySelector('.tour-card'), svg = ov.querySelector('.tour-dim'), rings = ov.querySelector('.tour-rings');
+    const all = st.sel ? [...document.querySelectorAll(st.sel)].filter(e => e.offsetWidth) : [], targets = st.multi ? all : all.slice(0, 1);
+    const W = innerWidth, H = innerHeight, pad = st.multi ? 4 : 6, m = 4; // rings stay 4px inside every screen edge
+    const boxes = targets.map(t => { const r = t.getBoundingClientRect();
+      return { L: Math.max(m, r.left - pad), T: Math.max(m, r.top - pad), R: Math.min(W - m, r.right + pad), B: Math.min(H - m, r.bottom + pad), rad: st.multi ? r.height / 2 + pad : 24 }; })
+      .filter(b => b.R > b.L && b.B > b.T);
+    const hole = b => { const r = Math.min(b.rad, (b.R - b.L) / 2, (b.B - b.T) / 2);
+      return 'M' + (b.L + r) + ' ' + b.T + 'H' + (b.R - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + b.R + ' ' + (b.T + r) + 'V' + (b.B - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (b.R - r) + ' ' + b.B +
+        'H' + (b.L + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + b.L + ' ' + (b.B - r) + 'V' + (b.T + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (b.L + r) + ' ' + b.T + 'Z'; };
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.firstChild.setAttribute('d', 'M0 0H' + W + 'V' + H + 'H0Z' + boxes.map(hole).join(''));
+    rings.innerHTML = boxes.map(b => '<div class="tour-spot" style="left:' + b.L + 'px;top:' + b.T + 'px;width:' + (b.R - b.L) + 'px;height:' + (b.B - b.T) + 'px;border-radius:' + Math.min(b.rad, (b.B - b.T) / 2) + 'px"></div>').join('');
+    const cw = Math.min(340, W - 32);
+    if (!boxes.length) { card.style.cssText = 'width:' + cw + 'px;left:50%;top:50%;transform:translate(-50%,-50%)'; return; }
+    // avoid: keep the card off that whole thing too (the open profile menu), so you can see what you're tapping.
+    const av = st.avoid && document.querySelector(st.avoid), ar = av && av.getBoundingClientRect();
+    const all2 = ar ? boxes.concat([{ L: ar.left, T: ar.top, R: ar.right, B: ar.bottom }]) : boxes;
+    const u = { L: Math.min(...all2.map(b => b.L)), T: Math.min(...all2.map(b => b.T)), R: Math.max(...all2.map(b => b.R)), B: Math.max(...all2.map(b => b.B)) };
+    const x = Math.max(16, Math.min(W - cw - 16, (u.L + u.R) / 2 - cw / 2));
+    const room = 220, below = H - u.B, above = u.T, ch = card.offsetHeight || 240; // a tall area (a list): the card sits over its lower part
+    const low = Math.round(Math.min(u.T + (u.B - u.T) * .6, H - ch - 16));
+    if (ar && above >= ch + 24) { card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;bottom:' + (H - u.T + 12) + 'px'; return; } // above the menu
     card.style.cssText = 'width:' + cw + 'px;left:' + x + 'px;' + (below < room && above < room ? 'top:' + low + 'px'
-      : r.top + r.height / 2 < innerHeight / 2 && below >= room ? 'top:' + (r.bottom + pad + 12) + 'px' : 'bottom:' + (innerHeight - r.top + pad + 12) + 'px');
+      : (u.T + u.B) / 2 < H / 2 && below >= room ? 'top:' + (u.B + 12) + 'px' : 'bottom:' + (H - u.T + 12) + 'px');
   }
   window.addEventListener('resize', () => { if (document.getElementById('tour')) placeTour(); });
   function tourEnd() {
