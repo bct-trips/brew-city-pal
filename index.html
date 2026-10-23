@@ -62,6 +62,7 @@
   /* Pass cards (Review / draft and the final pass): the days are in the pass's own accent — gold on a Leave, navy on a Pass,
      green on a Medical card — with no Open / Full / Overbooked colors (they belong to the date picker and the tour, where
      every card color works; on a gold card a yellow day can never show). */
+  .wpass:not(.wp-pass):not(.wp-ty-medical) { --wp-acc: #ffffff; --wp-acc-ink: #0A2351; } /* Leave (navy): white days, like the card's text — not gold */
   .wp-in.wp-ok, .wp-in.wp-full, .wp-in.wp-bad { background: var(--wp-acc); color: var(--wp-acc-ink); }
   .wpass.wp-ty-medical .wp-in { background: var(--day-open-soft); color: var(--day-soft-ink); }
   .qd.over::after { border-color: transparent var(--day-over) transparent transparent; }
@@ -350,14 +351,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792787812"></script>
+    <script src="config.js?v=1792788086"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792787812';
+      window.PAL_BUILD = '1792788086';
       (function () {
         function check(launch) {
           try {
