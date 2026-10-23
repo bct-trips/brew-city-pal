@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792747570"></script>
+    <script src="config.js?v=1792747805"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792747570';
+      window.PAL_BUILD = '1792747805';
       (function () {
         function check(launch) {
           try {
@@ -2113,39 +2113,48 @@
   .cal-peek { padding-top: 6px; box-sizing: border-box; }
   :root[data-theme="dark"] .nav.nav-admin { border-top-color: #f04438; } /* admin red line, brighter on dark */
   /* ---------- Calendar bar (final layout) ----------
-     Wide (one row fits, ≥ 1180px): [Add Request · views · Today]   [ ‹ date › ] centered   [filters] right-aligned.
-     Not enough room for one row (iPad / iPad Pro, 701–1179px): like a phone — the date centered on its own top row, then
-     [Add Request · views · Today] on the left and [filters] on the right.
-     Phones (≤ 700px) keep their own stacked layout. */
+     Wide (one row really fits — fitCalbar() measures it): [Add Request · views · Today]   [ ‹ date › ] centered   [filters].
+     Anything narrower (iPads, bigger text, more filters) gets .cal-phone: exactly the phone layout — the date header on
+     top, the controls docked at the bottom (views + Today, then Filters + Events | Stats), Add Request under them,
+     Leave | Pass in the Filters sheet. No in-between arrangements. Phones (≤ 700px) get the same by media query. */
   .cb-start, .cb-views { display: contents; }
-  @media (min-width: 1180px) {
-    .calbar:not(.cb-two) { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); align-items: center; column-gap: 12px; }
-    .calbar:not(.cb-two) .cb-left { grid-column: 1; grid-row: 1; justify-self: start; flex-wrap: nowrap; }
-    .calbar:not(.cb-two) .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
-    .calbar:not(.cb-two) .cb-right { grid-column: 3; grid-row: 1; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; }
-  }
-  /* fitCalbar() measures the bar: when one row doesn't actually fit (big iPads, larger text, more filters) it adds
-     .cb-two (the tablet layout below); if the filters still don't fit it adds .cb-wrap, which gives them a full-width row
-     that wraps. Nothing in the bar is ever cut off. */
   @media (min-width: 701px) {
-    .calbar.cb-two { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 8px; }
-    .calbar.cb-two .cb-left { display: contents; }
-    .calbar.cb-two .cb-views { display: flex; align-items: center; gap: 8px; grid-column: 1; grid-row: 1; justify-self: start; }
-    .calbar.cb-two .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
-    .calbar.cb-two .req-btn { grid-column: 1; grid-row: 2; justify-self: start; }
-    .calbar.cb-two .cb-right { grid-column: 1 / -1; grid-row: 2; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; min-width: 0; max-width: calc(100% - var(--req-w, 0px)); } /* the whole row beside Add Request */
-    .calbar.cb-two.cb-wrap .cb-right { grid-column: 1 / -1; grid-row: 3; justify-self: stretch; flex-wrap: wrap; row-gap: 8px; max-width: 100%; }
-    .calbar.cb-two.cb-wrap .req-btn { grid-column: 1 / -1; }
+    .cal:not(.cal-phone) > .calbar { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); align-items: center; column-gap: 12px; }
+    .cal:not(.cal-phone) > .calbar .cb-left { grid-column: 1; grid-row: 1; justify-self: start; flex-wrap: nowrap; }
+    .cal:not(.cal-phone) > .calbar .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
+    .cal:not(.cal-phone) > .calbar .cb-right { grid-column: 3; grid-row: 1; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; }
   }
-  /* Tablets (iPad portrait, small laptops): two rows. Top: [views · Today] [‹ date ›]; bottom: [Add Request] [filters].
-     The view switch and Today sit with the date they change, so the filters row has room and nothing overlaps. */
-  @media (min-width: 701px) and (max-width: 1179px) {
-    .calbar { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 8px; }
-    .calbar .cb-left { display: contents; }
-    .calbar .cb-views { display: flex; align-items: center; gap: 8px; grid-column: 1; grid-row: 1; justify-self: start; }
-    .calbar .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
-    .calbar .req-btn { grid-column: 1; grid-row: 2; justify-self: start; }
-    .calbar .cb-right { grid-column: 2 / -1; grid-row: 2; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; min-width: 0; max-width: 100%; }
+  /* .cal-phone: the phone rules, copied for wider screens. */
+  @media (min-width: 701px) {
+    .cal.cal-phone > .calbar { display: flex; flex-wrap: wrap; align-items: center; }
+    .cal.cal-phone .datenav { height: 38px; flex: 1 1 auto; min-width: 0; } .cal.cal-phone .datenav .dn-arrow { width: 38px; }
+    .cal.cal-phone .datenav .lbl-date { padding: 0 10px !important; font-size: 15.5px; }
+    .cal.cal-phone .calbar .req-btn { display: none; }
+    .cal.cal-phone > .req-bar { display: flex; gap: 8px; }
+    .cal.cal-phone > .req-bar .req-btn { flex: 1; width: auto; }
+    .cal.cal-phone > .req-bar .back-btn { flex: none; }
+    .cal.cal-phone .calbar .back-month { display: none; }
+    .cal.cal-phone .cb-left, .cal.cal-phone .cb-right, .cal.cal-phone .cb-center { display: contents; }
+    .cal.cal-phone .calbar .cb-views > .seg { order: 3; flex: 1 1 auto; min-width: 0; }
+    .cal.cal-phone .calbar .cb-views > .seg button { flex: 1; min-width: 0; padding: 0 6px; }
+    .cal.cal-phone .calbar .today-btn { order: 4; flex: none; }
+    .cal.cal-phone .calbar .cb-right.filters { display: flex; order: 5; flex: 1 1 100%; flex-wrap: nowrap; gap: 6px; min-width: 0; }
+    .cal.cal-phone .calbar .filters > * { order: 0; }
+    .cal.cal-phone .calbar .filters > .fall { flex: 1 1 0; max-width: none; }
+    .cal.cal-phone .calbar .filters > .tgroup.tgroup, .cal.cal-phone .calbar .filters > .conf-only { display: none !important; }
+    .cal.cal-phone .calbar .filters > .mmode { display: flex; flex: none; }
+    .cal.cal-phone .calbar .filters > .mmode .seg { display: flex; }
+    .cal.cal-phone .calbar .filters > .mmode .seg button { padding: 0 14px; }
+    .cal.cal-phone > .cal-split { order: 1; }
+    .cal.cal-phone > .cal-top { display: flex; flex: none; order: 0; padding: 6px 8px; background: var(--card); border-bottom: 1px solid var(--line); }
+    .cal.cal-phone > .cal-top .datenav { flex: 1 1 100%; }
+    .cal.cal-phone > .cal-top .lbl-date { flex: 1; justify-content: center; }
+    .cal.cal-phone > .calbar .datenav { display: none; }
+    .cal.cal-phone > .calbar { order: 2; position: relative; z-index: 2; background: var(--surface-high); border: 0;
+      border-radius: 18px 18px 0 0; box-shadow: 0 -6px 16px -4px rgba(0, 0, 0, .22); padding: 12px 8px 0; row-gap: 8px; column-gap: 8px; }
+    .cal.cal-phone > .req-bar { order: 3; position: relative; z-index: 2; background: var(--surface-high); border-top: 0; padding: 8px; }
+    :root[data-theme="dark"] .cal.cal-phone > .calbar { box-shadow: 0 -6px 16px -4px rgba(0, 0, 0, .7); }
+    .cal.cal-phone > .calbar .fdrop-pop, .cal.cal-phone > .calbar .pdrop-pop { top: auto; bottom: calc(100% + 4px); }
   }
   /* Admin → Positions: square swatches show the position letter in each color; white gets an outline. */
   .rsw .ub { display: inline-grid; place-items: center; border-radius: 6px; font-size: 13px; font-weight: 900; }
@@ -2155,13 +2164,6 @@
   .role-nm { align-self: center; font-size: 16px; }
   .role-row .ub-prev .idb, .bb-prev .idb { margin-right: 0; height: 30px; }
   .role-row .ub-prev .idb-r, .bb-prev .idb-r { width: 30px; font-size: 15px; }
-  /* Tablet Day view: like phones, [‹ Back] [+ Add Request] sit in the bottom bar, so the top bar fits on one row. */
-  @media (min-width: 701px) and (max-width: 1179px) {
-    .cal.cal-day .calbar .req-btn, .cal.cal-day .calbar .back-month { display: none; }
-    .cal.cal-day .req-bar { display: flex; gap: 8px; }
-    .cal.cal-day .req-bar .req-btn { flex: 1; width: auto; }
-    .cal.cal-day .req-bar .back-btn { flex: none; }
-  }
   /* Request tables: Leave / Pass band headers count today's active ones; part-open bands end with "Show N more". */
   .grp-now { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
   .grp-more td { padding: 6px 14px; }
@@ -5002,18 +5004,16 @@
     });
   }
   const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); fitNav(); fitCalbar(); markScrolled(); markOpenDay(); fitTables(); }); };
-  /** The calendar bar never cuts anything off: try one row (wide screens), else two rows, else let the filters wrap
-   *  onto their own row. Measured, not guessed from the screen width, so big text or extra filters can't overflow. */
+  /** The calendar bar never cuts anything off: one row when it really fits (measured, not guessed from the screen
+   *  width), otherwise the phone layout (.cal-phone). Flipping redraws so the Filters button / sheet pick up Leave | Pass. */
   function fitCalbar() {
-    const cb = $('.calbar'); if (!cb) return;
-    cb.classList.remove('cb-two', 'cb-wrap');
-    if (innerWidth <= 700) return; // phones have their own stacked layout
-    const over = () => cb.scrollWidth > cb.clientWidth + 1 || [...cb.querySelectorAll('.cb-left, .cb-center, .cb-right')].some(e => e.scrollWidth > e.clientWidth + 1 || e.offsetHeight > 52) // wider than its space, or wrapped onto 2 lines
-      || $$('.cb-right *', cb).some(x => x.clientWidth && x.scrollWidth > x.clientWidth + 1); // or a filter squeezed so its label is cut
-    if (innerWidth >= 1180 && !over()) return;
-    const rq = $('.req-btn', cb); cb.style.setProperty('--req-w', rq && rq.offsetWidth ? rq.offsetWidth + 10 + 'px' : '0px');
-    cb.classList.add('cb-two'); if (!over()) return;
-    cb.classList.add('cb-wrap');
+    const cal = $('.cal'), cb = cal && $('.cal > .calbar'); if (!cb) return;
+    cal.classList.remove('cal-phone');
+    const over = innerWidth > 700 && (cb.scrollWidth > cb.clientWidth + 1
+      || $$('.cb-left, .cb-center, .cb-right', cb).some(e => e.scrollWidth > e.clientWidth + 1 || e.offsetHeight > 52) // too wide, or wrapped
+      || $$('.cb-right *', cb).some(x => x.clientWidth && x.scrollWidth > x.clientWidth + 1)); // or a filter squeezed so its label is cut
+    cal.classList.toggle('cal-phone', over);
+    if (over !== !!S.calPhone) { S.calPhone = over; render(); }
   }
   /** Outline the day that's open in the desktop day panel, in whichever calendar view is showing. */
   /** Request tables: band headers stick just under the column titles. */
@@ -5119,7 +5119,7 @@
       '<button class="dn-arrow" data-act="calPrev" aria-label="Previous">' + icon('left', 18) + '</button>' +
       '<button class="lbl-date" data-act="pickMonth" aria-haspopup="dialog" title="Jump to a month">' + esc(calLabel()) + icon('down', 15) + '</button>' +
       '<button class="dn-arrow" data-act="calNext" aria-label="Next">' + icon('right', 18) + '</button></div>';
-    return '<section class="cal' + (confOn ? ' conf-mode' : '') + (S.cal === 'day' ? ' cal-day' : '') + '">' +
+    return '<section class="cal' + (confOn ? ' conf-mode' : '') + (S.cal === 'day' ? ' cal-day' : '') + (S.calPhone ? ' cal-phone' : '') + '">' +
       '<div class="cal-top">' + dateNav + '</div>' +
       '<div class="calbar">' +
         // Left: Add Request first (same spot as on List and My Requests), then the view switch and Today; the filters on
@@ -5380,7 +5380,7 @@
 
   /* Phones: one "Filters" button replaces the status / position / Leave|Pass controls and opens a sheet with all of them. */
   /** Wide screens (> 700px) show Leave | Pass in the bar next to the Filters button; phones put it in the sheet. */
-  const wideFilters = () => window.matchMedia('(min-width: 701px)').matches;
+  const wideFilters = sc => window.matchMedia('(min-width: 701px)').matches && !(S.calPhone && (!sc || sc === 'cal')); // the calendar in phone layout counts as a phone
   function filterSummary(sc) {
     const st = fState(sc), parts = [];
     const pick = (g, opts) => { const sel = st[g]; if (sel && sel.length !== opts.length) parts.push(sel.length ? opts.filter(o => sel.includes(o[0])).map(o => o[1]).join(', ') : 'No ' + g); };
@@ -5391,8 +5391,8 @@
     if (st.person) parts.push(personLabel(st));
     else if (st.role && !S.priv) pick('role', FILTERS[1].opts);
     pick('status', FILTERS[0].opts);
-    if (!wideFilters()) pick('type', FILTERS[2].opts);
-    if (!wideFilters() && sc !== 'mine' && admView() && (st.hide || []).length) parts.push('No ' + st.hide.join(', '));
+    if (!wideFilters(sc)) pick('type', FILTERS[2].opts);
+    if (!wideFilters(sc) && sc !== 'mine' && admView() && (st.hide || []).length) parts.push('No ' + st.hide.join(', '));
     return parts;
   }
     icon('alert', 18) + '<span class="bl">Conflicts</span></button>';
@@ -5451,14 +5451,14 @@
   function openFilterSheet(sc, inPlace) {
     S.openDrop = null; S.fsScope = sc || 'cal';
     // Wide screens keep the Leave | Pass toggle in the bar, so the sheet leaves it out there.
-    const st = fState(sc), groups = FILTERS.filter(f => !((sc === 'mine' || S.priv) && f.g === 'role') && !(f.g === 'type' && wideFilters()));
+    const st = fState(sc), groups = FILTERS.filter(f => !((sc === 'mine' || S.priv) && f.g === 'role') && !(f.g === 'type' && wideFilters(sc)));
     const sect = (title, inner) => '<div class="fs-sect"><div class="fs-h">' + title + '</div>' + inner + '</div>';
     const chips = F => '<div class="seg full" role="group" aria-label="' + F.name + '">' + F.opts.map(o =>
       '<button type="button" class="' + (st[F.g].includes(o[0]) ? 'on' : '') + '" aria-pressed="' + st[F.g].includes(o[0]) + '" data-act="fToggle" data-g="' + F.g + '" data-v="' + o[0] + '"' + scAttr(sc) + '>' + o[1] + '</button>').join('') + '</div>';
     const html = modalHead('Filters', 'sliders') + '<div class="modal-b fs-body">' +
-      (wideFilters() ? '' : sect('Show', typeToggle(sc))) +
+      (wideFilters(sc) ? '' : sect('Show', typeToggle(sc))) +
       // Phones, All Requests (admins): the Conflicts | Pending | All switch lives here (the bar has no room for it).
-      (sc === 'list' && admView() && !wideFilters() ? sect('Requests', openBtn()) : '') +
+      (sc === 'list' && admView() && !wideFilters(sc) ? sect('Requests', openBtn()) : '') +
       sect('Status', chips(groups[0])) +
       (groups.some(f => f.g === 'role') ? sect('Position', badgeDrop('role', sc)) + sect('Person', personSelect('in-sheet', sc)) : '') +
       // Admins: Medical — everyone, only injured members, or only members who aren't injured.
@@ -6733,7 +6733,7 @@
       }
       if (!b.clientWidth) return; // hidden: check when it's shown
       if (b.textContent !== full) b.textContent = full;
-      if (b.closest('.tgroup') && (wideFilters() || b.closest('.fs-body'))) return; // type chips size to their words (bar on wide screens, the Filters sheet)
+      if (b.closest('.tgroup') && (wideFilters('bar') || b.closest('.fs-body'))) return; // type chips size to their words (bar on wide screens, the Filters sheet)
       const r = document.createRange(); r.selectNodeContents(b);
       const cs = getComputedStyle(b), room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
       if (r.getBoundingClientRect().width > room - 8) b.textContent = shortWord(full);
@@ -6824,7 +6824,7 @@
    *  Phones show "Cal". Show conflicts lives in the filter sheet. */
   /** My Requests list: Cards (the wallet) or Table (the classic banded table). Your pick is remembered; until then
    *  wide screens start on the table and phones on the cards. */
-  const mineView = () => { const v = S.mineView || store.get('mineView', ''); return v === 'cards' || v === 'table' ? v : wideFilters() ? 'table' : 'cards'; };
+  const mineView = () => { const v = S.mineView || store.get('mineView', ''); return v === 'cards' || v === 'table' ? v : wideFilters('mine') ? 'table' : 'cards'; };
   function mineSwitch() {
     const cur = S.mineMode === 'cal' ? 'cal' : mineView();
     // Hide user schedules: no calendar here (it would just repeat the Calendar tab), so only Cards | Table.
