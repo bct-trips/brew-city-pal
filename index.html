@@ -2,6 +2,101 @@
 <html lang="en">
   <head>
         <meta charset="utf-8">
+    <style>
+/* =====================================================================
+   Theme — the design system store for Brew City PAL.
+   One place for the look: color tokens, control tokens and the base recipe of every shared control. Pages (Styles.html)
+   only lay things out; they sit in the lower "legacy" cascade layer, so what's defined here wins everywhere without
+   specificity fights or !important. To change how a kind of control looks, change it here once.
+   Order of layers: legacy (page styles) < ds (this store).
+   ===================================================================== */
+@layer legacy, ds;
+@layer ds {
+  /* =====================================================================
+     Design system (Material 3 principles, Brewers palette)
+     - Color roles: primary = Brewers navy, secondary container = Brewers gold,
+       surfaces = white / near-white; dark mode uses the tonal equivalents
+       (primary tone 80, containers tone 30) so contrast holds.
+     - Buttons: one height (40px; 32px dense in tables), fully rounded, 15px/600 label,
+       18px leading icon, 8% hover / 10% focus+press state layer.
+       Variants: filled (primary), filled success (Add Request), tonal (secondary),
+       tonal success / error (Approve / Deny), outlined (default), text (ghost / destructive text).
+     - Selection (segmented buttons, filter chips, nav): secondary container + check.
+     ===================================================================== */
+  :root {
+    --primary: #0A2351; --on-primary: #ffffff; --primary-container: #dbe2f9; --on-primary-container: #0A2351;
+    --secondary: #7a5a00; --secondary-container: #FDB827; --on-secondary-container: #261a00;
+    --success: #1e6b35; --on-success: #ffffff; --success-container: #c9eed1; --on-success-container: #00210c;
+    --error: #b3261e; --on-error: #ffffff; --error-container: #f9dedc; --on-error-container: #410e0b;
+    --surface: #ffffff; --surface-low: #f6f7fb; --surface-mid: #eef0f6; --surface-high: #e6e8f0;
+    --on-surface: #1a1b20; --on-surface-variant: #464851; --outline: #767883; --outline-variant: #c6c7d0;
+    --bg: var(--surface-mid); --card: var(--surface); --card-2: var(--surface-low); --ink: var(--on-surface); --muted: var(--on-surface-variant);
+    --line: var(--outline-variant); --line-strong: var(--outline); --accent: var(--primary); --on-accent: var(--on-primary);
+    --nav-bg: var(--surface-low); --nav-line: var(--outline-variant); --nav-ink: var(--on-surface-variant);
+    --focus: #1b4fd1;
+    /* Selected state: a pale Brewers-navy tonal fill (a solid navy fill means Leave). Selected (open) day ring = Brewers yellow. */
+    --sel-bg: #d3dcec; --sel-ink: #12284B; --sel-ring: #FFC52F;
+    /* Filled go / stop (Add Request, Approve, Deny, conflict). All text pairs ≥ 4.5:1. */
+    --go-bg: #1e6b35; --go-ink: #ffffff; --no-bg: #b3261e; --no-ink: #ffffff;
+  }
+  :root[data-theme="dark"] {
+    --primary: #b4c5ff; --on-primary: #0f2a63; --primary-container: #2a3f70; --on-primary-container: #dbe2ff;
+    --secondary: #FDB827; --secondary-container: #4f3b00; --on-secondary-container: #ffdf9e;
+    --success: #86d99a; --on-success: #00391a; --success-container: #0f5227; --on-success-container: #a3f5b4;
+    --error: #ffb4ab; --on-error: #690005; --error-container: #93000a; --on-error-container: #ffdad6;
+    --surface: #17181d; --surface-low: #1d1e24; --surface-mid: #111216; --surface-high: #292a31;
+    --on-surface: #e4e3ea; --on-surface-variant: #c5c6d0; --outline: #8f909a; --outline-variant: #44464f;
+    --nav-bg: #1d1e24; --focus: #ffd37a;
+    --sel-bg: #d3dcef; --sel-ink: #12284B; --sel-ring: #FFC52F;
+    --go-bg: #86d99a; --go-ink: #17181d; --no-bg: #ffb4ab; --no-ink: #17181d;
+  }
+
+
+  /* ---- Control tokens ---- */
+  :root {
+    --ctl-h: 40px;                          /* every control is 40px tall (34px inside tables and passes) */
+    --ctl-radius: 999px;                    /* fully round */
+    --ctl-line: 1px solid var(--outline);   /* the thin outline */
+    --ctl-gap: 2px;                         /* the space between the outline and the button */
+    --gap-c: var(--surface);                /* the space's color: the page color (set per surface below) */
+    --ctl-fill: var(--sel-bg);              /* the button: blue-gray */
+    --ctl-ink: var(--sel-ink);              /* its text: navy */
+    --ctl-off-ink: var(--muted);            /* unselected options / off chips */
+  }
+  /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
+  .pm-pop { --gap-c: var(--pm-bg); }
+  .wpass { --gap-c: #ffffff; }
+
+  /* ---- Toggle group: border · space · selected button ----
+     View switch, Events | Stats, Leave | Pass, Appearance, Mode, the status slider and every segmented group. The track
+     is the space color inside the outline; the selected option is the button (its pill / colors come from the group). */
+  .seg:not(.nav), .stsl { border: var(--ctl-line); background: var(--gap-c); padding: var(--ctl-gap); border-radius: var(--ctl-radius); }
+  .wpass .stsl { border-color: rgba(10, 35, 81, .25); }
+
+  /* ---- Menu button: border · space · button ----
+     Today, Filters, every dropdown (Settings, Roster period, Request For / Add Members, person picker) and an on chip. */
+  .fsel, .fdrop-btn, .btn.today-btn, .btn.chip-tog.on, .filters > .fall-clear {
+    border: var(--ctl-line); background-color: var(--ctl-fill); color: var(--ctl-ink); font-weight: 800;
+    box-shadow: inset 0 0 0 var(--ctl-gap) var(--gap-c); }
+  .fsel:hover, .fdrop-btn:hover, .btn.today-btn:hover, .btn.chip-tog.on:hover, .filters > .fall-clear:hover {
+    background-color: color-mix(in srgb, var(--ctl-ink) 10%, var(--ctl-fill)); color: var(--ctl-ink); }
+  /* Filters + its joined ✕: one shape, so no space where they meet. */
+  .filters > .fall:has(+ .fall-clear) { box-shadow: inset var(--ctl-gap) 0 0 var(--gap-c), inset 0 var(--ctl-gap) 0 var(--gap-c), inset 0 calc(-1 * var(--ctl-gap)) 0 var(--gap-c); }
+  .filters > .fall + .fall-clear { border-left: 0; box-shadow: inset calc(-1 * var(--ctl-gap)) 0 0 var(--gap-c), inset 0 var(--ctl-gap) 0 var(--gap-c), inset 0 calc(-1 * var(--ctl-gap)) 0 var(--gap-c); }
+
+  /* ---- Chip (on / off) ---- off: the space color inside the outline; on: the menu button above. */
+  .btn.chip-tog:not(.on) { border: var(--ctl-line); background-color: var(--gap-c); color: var(--ctl-off-ink); font-weight: 700; box-shadow: none; }
+  .btn.chip-tog:not(.on):hover { background-color: color-mix(in srgb, var(--ink) 6%, var(--gap-c)); color: var(--ink); }
+
+  /* ---- Variants (same shape, their own color) ---- */
+  /* A picked person: the yellow person pill (calendar person filter, Filters button, its ✕). */
+  .fp:not(.fp-conf):has(.fp-clear) .fperson, .fdrop-btn.fall.fp-active, .filters > .fall.fp-active + .fall-clear,
+  .fp:not(.fp-conf):has(.fp-clear) .fperson:hover, .fdrop-btn.fall.fp-active:hover, .filters > .fall.fp-active + .fall-clear:hover { background-color: var(--gold); color: var(--navy); }
+  /* Conflict mode person pill, and List's Pending switch when on: red. */
+  .fp-conf .fperson.on, .btn.chip-tog.open-btn.on, .btn.chip-tog.open-btn.on:hover { background-color: var(--no-bg); color: var(--no-ink); }
+}
+</style>
+
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#12284B">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,14 +110,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792751252"></script>
+    <script src="config.js?v=1792751579"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792751252';
+      window.PAL_BUILD = '1792751579';
       (function () {
         function check(launch) {
           try {
@@ -42,6 +137,9 @@
       })();
     </script>
     <style>
+/* Page styles. They sit in the "legacy" cascade layer, so the design system in Theme.html (layer "ds") always wins
+   for what it owns: the shared look of controls (and the color tokens). Change a control's look there, not here. */
+@layer legacy {
   :root {
     /* Brewers brand (teamcolorcodes.com): Leave = navy #12284B, Pass = yellow #FFC52F. */
     --navy: #12284B; --navy-2: #1b3d7a; --gold: #FFC52F; --gold-2: #e8ab12;
@@ -747,45 +845,6 @@
   @media (max-width: 640px) {
     .evs, .wpuck, .mo { --tag: 15px; --pill-fs: 10px; }
     .qc-day { height: 16px; padding: 0 3px; font-size: 10.5px; }
-  }
-
-  /* =====================================================================
-     Design system (Material 3 principles, Brewers palette)
-     - Color roles: primary = Brewers navy, secondary container = Brewers gold,
-       surfaces = white / near-white; dark mode uses the tonal equivalents
-       (primary tone 80, containers tone 30) so contrast holds.
-     - Buttons: one height (40px; 32px dense in tables), fully rounded, 15px/600 label,
-       18px leading icon, 8% hover / 10% focus+press state layer.
-       Variants: filled (primary), filled success (Add Request), tonal (secondary),
-       tonal success / error (Approve / Deny), outlined (default), text (ghost / destructive text).
-     - Selection (segmented buttons, filter chips, nav): secondary container + check.
-     ===================================================================== */
-  :root {
-    --primary: #0A2351; --on-primary: #ffffff; --primary-container: #dbe2f9; --on-primary-container: #0A2351;
-    --secondary: #7a5a00; --secondary-container: #FDB827; --on-secondary-container: #261a00;
-    --success: #1e6b35; --on-success: #ffffff; --success-container: #c9eed1; --on-success-container: #00210c;
-    --error: #b3261e; --on-error: #ffffff; --error-container: #f9dedc; --on-error-container: #410e0b;
-    --surface: #ffffff; --surface-low: #f6f7fb; --surface-mid: #eef0f6; --surface-high: #e6e8f0;
-    --on-surface: #1a1b20; --on-surface-variant: #464851; --outline: #767883; --outline-variant: #c6c7d0;
-    --bg: var(--surface-mid); --card: var(--surface); --card-2: var(--surface-low); --ink: var(--on-surface); --muted: var(--on-surface-variant);
-    --line: var(--outline-variant); --line-strong: var(--outline); --accent: var(--primary); --on-accent: var(--on-primary);
-    --nav-bg: var(--surface-low); --nav-line: var(--outline-variant); --nav-ink: var(--on-surface-variant);
-    --focus: #1b4fd1;
-    /* Selected state: a pale Brewers-navy tonal fill (a solid navy fill means Leave). Selected (open) day ring = Brewers yellow. */
-    --sel-bg: #d3dcec; --sel-ink: #12284B; --sel-ring: #FFC52F;
-    /* Filled go / stop (Add Request, Approve, Deny, conflict). All text pairs ≥ 4.5:1. */
-    --go-bg: #1e6b35; --go-ink: #ffffff; --no-bg: #b3261e; --no-ink: #ffffff;
-  }
-  :root[data-theme="dark"] {
-    --primary: #b4c5ff; --on-primary: #0f2a63; --primary-container: #2a3f70; --on-primary-container: #dbe2ff;
-    --secondary: #FDB827; --secondary-container: #4f3b00; --on-secondary-container: #ffdf9e;
-    --success: #86d99a; --on-success: #00391a; --success-container: #0f5227; --on-success-container: #a3f5b4;
-    --error: #ffb4ab; --on-error: #690005; --error-container: #93000a; --on-error-container: #ffdad6;
-    --surface: #17181d; --surface-low: #1d1e24; --surface-mid: #111216; --surface-high: #292a31;
-    --on-surface: #e4e3ea; --on-surface-variant: #c5c6d0; --outline: #8f909a; --outline-variant: #44464f;
-    --nav-bg: #1d1e24; --focus: #ffd37a;
-    --sel-bg: #d3dcef; --sel-ink: #12284B; --sel-ring: #FFC52F;
-    --go-bg: #86d99a; --go-ink: #17181d; --no-bg: #ffb4ab; --no-ink: #17181d;
   }
 
   /* ---- Buttons ---- */
@@ -3694,24 +3753,7 @@
   .wa-row > .idb { flex: none; }
   .wa-acts { display: flex; align-items: center; gap: 8px; flex: none; }
   .wa-row .wa-del.btn.act.ico { width: 34px; min-width: 34px; height: 34px; padding: 0; justify-content: center; border: 1px solid var(--outline); border-radius: 50%; } /* like the table's round Delete */
-  /* ---------- One look for toggles, Today and menus (final): border · space · button ----------
-     Every toggle group, Today and every dropdown / menu button: a thin outline, a 2px gap in the page color, then the
-     blue-gray button. Toggle groups: the track is the page color inside the outline and the selected option is the
-     blue-gray pill. Today and dropdowns (Filters, Settings and Roster dropdowns, Add Members): always the blue-gray
-     button inside the gap. On/off chips: the page color when off, the blue-gray button inside the gap when on.
-     Add Request and the outlined action buttons (Cancel, Edit, Delete…) are their own kinds and don't change. */
-  :root { --gap-c: var(--surface); }
-  .seg:not(.nav), .stsl { border: 1px solid var(--outline) !important; background: var(--gap-c); padding: 2px; }
-  .seg:not(.nav) > button + button { border-left: 0; }
-  .fsel, .fdrop-btn, .btn.today-btn, .btn.chip-tog.on { border: 1px solid var(--outline); background-color: var(--sel-bg); color: var(--sel-ink); font-weight: 800;
-    box-shadow: inset 0 0 0 2px var(--gap-c); }
-  .fsel:hover, .fdrop-btn:hover, .btn.today-btn:hover, .btn.chip-tog.on:hover { background-color: color-mix(in srgb, var(--sel-ink) 10%, var(--sel-bg)); color: var(--sel-ink); }
-  .fsel.on, .fdrop-btn.on, .btn.today-btn.on { border-color: var(--outline); background-color: var(--sel-bg); color: var(--sel-ink); box-shadow: inset 0 0 0 2px var(--gap-c); }
-  .btn.chip-tog:not(.on) { border: 1px solid var(--outline); background-color: var(--gap-c); color: var(--muted); box-shadow: none; }
-  .btn.chip-tog:not(.on):hover { background-color: color-mix(in srgb, var(--ink) 6%, var(--gap-c)); color: var(--ink); }
-  .filters > .fall + .fall-clear, .filters > .fall.on + .fall-clear { border: 1px solid var(--outline); border-left: 0; background-color: var(--sel-bg); color: var(--sel-ink); box-shadow: inset 0 2px 0 var(--gap-c), inset -2px 0 0 var(--gap-c), inset 0 -2px 0 var(--gap-c); }
-  /* A picked person keeps the yellow person pill (inside the same gap). */
-  .fdrop-btn.fp-active, .fdrop-btn.fp-active:hover { background-color: var(--gold); color: var(--navy); }
+}
 </style>
 
   </head>
@@ -3874,6 +3916,7 @@
         : txt.replace(/var\(--leave-2\)/g, hex2).replace(/var\(--leave-ink\)/g, ink).replace(/var\(--leave\)/g, hex);
       const walk = (rules, wrap) => [...rules].forEach(r => {
         if (r.media && r.cssRules) return walk(r.cssRules, '@media ' + r.media.mediaText);
+        if (r.cssRules && !r.selectorText) return walk(r.cssRules, wrap); // inside a cascade layer (Styles.html is @layer legacy)
         if (!r.selectorText || !re.test(r.selectorText)) return;
         re.lastIndex = 0;
         const sel = r.selectorText.split(',').filter(x => { re.lastIndex = 0; return re.test(x); }).map(x => { re.lastIndex = 0; return x.replace(re, '$1' + slug); }).join(',');
@@ -3882,7 +3925,7 @@
       });
       sheets.forEach(sh => walk(sh.cssRules, ''));
     });
-    el.textContent = out.join('\n');
+    el.textContent = '@layer legacy {\n' + out.join('\n') + '\n}'; // same layer as the rules they copy, under the Theme store
   }
   function setTypes(list) {
     if (!Array.isArray(list) || !list.length) return;
@@ -4547,7 +4590,13 @@
     const meta = document.querySelector('meta[name="theme-color"]');
     // Sign-in / loading screens: the status-bar strip matches their navy backdrop, not the card color.
     const auth = !!document.querySelector('#app > .login, #app > .splash');
-    if (meta) meta.setAttribute('content', auth ? '#1d3d6e' : getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#ffffff');
+    const want = auth ? '#1d3d6e' : getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#ffffff';
+    // iOS home-screen apps ignore a changed content on the existing tag (the strip behind the clock kept the old color
+    // until the app was reopened); a brand-new tag makes it repaint at once.
+    if (meta && meta.getAttribute('content') !== want) {
+      const m = document.createElement('meta'); m.name = 'theme-color'; m.content = want;
+      meta.replaceWith(m);
+    }
   }
   if (mql) {
     const onScheme = () => { if (S.theme === 'system') applyTheme(); };
