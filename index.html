@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792742357"></script>
+    <script src="config.js?v=1792742480"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792742357';
+      window.PAL_BUILD = '1792742480';
       (function () {
         function check(launch) {
           try {
@@ -3639,6 +3639,13 @@
     border-radius: 12px; background: #fff3d6; color: #7a4a00; border: 1.5px solid #f0b429; font-size: 14px; font-weight: 800; box-sizing: border-box; }
   :root[data-theme="dark"] .modal-f > .draft-warn { background: rgba(240, 180, 41, .16); color: #ffd58a; border-color: rgba(240, 180, 41, .55); }
   .modal-f > .draft-warn .ic { flex: none; }
+  /* My Requests → Calendar: drafts as caution-tape chips in a slim scrolling row above the calendar. */
+  .draft-strip { display: flex; gap: 8px; padding: 8px 12px; overflow-x: auto; flex: none; border-bottom: 1px solid var(--line); background: var(--surface); scrollbar-width: none; }
+  .draft-chip { flex: none; display: inline-flex; padding: 3px; border: 0; border-radius: 999px; cursor: pointer; font: inherit;
+    background: repeating-linear-gradient(135deg, #111111 0 8px, #ffffff 8px 16px); box-shadow: 0 0 0 1.5px #111111; }
+  .draft-chip > span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: #ffffff; color: #111111; font-size: 13px; white-space: nowrap; }
+  .draft-chip b { font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+  .draft-chip .tk { color: #111111; } .draft-chip .ic { display: block; }
 </style>
 
   </head>
@@ -5087,7 +5094,7 @@
         // Center: date navigator [ ‹ | label ⌄ | › ]
         '<div class="cb-center">' + dateNav + '</div>' +
       '</div>' +
-      (confOn ? confBanner(calRequests().length) : '') + mineConfBanner() +
+      (confOn ? confBanner(calRequests().length) : '') + mineConfBanner() + (S.view === 'mine' ? draftStrip() : '') +
       '<div class="cal-split"><div class="cal-body" id="calBody">' + body + '</div>' + (showPanel
         ? '<aside class="dpanel' + (panelAnim ? ' dp-anim' : '') + '" aria-label="Day details">' + renderDay(S.dayPanel, true) + '</aside>' : '') + '</div>' +
       // Phones: a full-width Add Request bar under the calendar (the calendar shrinks to make room).
@@ -7777,6 +7784,10 @@
       '<span class="mp-info">' + icon('pin', 14) + '<span class="mp-loc">' + (d.location ? esc(d.location) : 'No location') + '</span>' + (d.note ? '<span class="mp-note">' + esc(d.note) + '</span>' : '') + '</span>' +
     '</button>';
   }
+  /** My Requests → Calendar: drafts as a slim row of caution-tape chips above the calendar (tap one to carry on). */
+  const draftStrip = () => { const ds = liveDrafts(); return ds.length ? '<div class="draft-strip" role="list" aria-label="Drafts">' + ds.map(d =>
+    '<button type="button" class="draft-chip" role="listitem" data-act="openDraft" data-id="' + esc(d.id) + '"><span>' + icon('pencil', 13) + '<b>Draft</b> · ' + esc(d.type) +
+      (d.start ? ' · ' + tkDay(d.start) + (d.end && d.end !== d.start ? tkArrow + tkDay(d.end) : '') : '') + '</span></button>').join('') + '</div>' : ''; };
   const draftsHtml = () => { const ds = liveDrafts(); return ds.length ? '<h3 class="mw-h">Drafts <span class="mw-ct">' + ds.length + '</span></h3><div class="mw-list mw-drafts">' + ds.map(miniDraft).join('') + '</div>' : ''; };
   function closeModal() {
     // Closing the person picker returns to whatever opened it (the request form or the Filters sheet).
