@@ -124,6 +124,7 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
+  .pd-forgot { display: block; margin: 12px 0 4px; } /* PIN dialog: Forgot the PIN? → the two-admin reset */
   .btn.busy { opacity: .6; pointer-events: none; } /* a button waiting on the server (Add to Calendar on iPhone) */
   /* Conflicts | Pending | All: the Conflicts count is red (white on the red selected pill, so it still shows). */
   .stsl.vw-sl .vw-ct.vw-ct-conf { background: #b42318; color: #ffffff; }
@@ -328,14 +329,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792773261"></script>
+    <script src="config.js?v=1792773762"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792773261';
+      window.PAL_BUILD = '1792773762';
       (function () {
         function check(launch) {
           try {
@@ -4741,7 +4742,7 @@
     if (S.modeFlip) { S.isAdmin = S.modeFlip.on; S.adminScope = S.modeFlip.scope; S.isOrg = S.isAdmin && !S.adminScope; }
     S.teamPinSet = !!data.teamPinSet; S.admins = data.admins || {}; S.alertScope = data.alertScope || null; S.report = data.report || null;
     if (data.tour && !S.tourOn && !S.tourDone) { S.tourDone = true; S.tourFirst = true; setTimeout(startTour, 600); } // new account: the welcome tour
-    S.myAdmin = data.myAdmin || null; // my admin status: alerts and daily report are mine to set in Settings, admin mode or not
+    S.myAdmin = data.myAdmin || null; S.pinReset = data.pinReset || null; // my admin status: alerts and daily report are mine to set in Settings, admin mode or not
     S.users = (data.users || []).map(cleanUser); S.requests = (data.requests || []).map(cleanReq);
     S.settings = Object.assign(S.settings, data.settings || {}); S.sheetUrl = data.sheetUrl || '';
     setRoles(S.settings.roles); setTypes(S.settings.types);
@@ -8011,14 +8012,36 @@
   const PIN_KINDS = {
     me: { title: 'Change My PIN', label: 'New PIN', api: 'apiChangePin', done: 'PIN updated' },
     def: { title: 'Default PIN', label: 'New Default PIN', api: 'apiSetDefaultPin', done: 'Default PIN updated' },
-    team: { title: 'Team Admin PIN', label: 'New Team Admin PIN', api: 'apiSetTeamPin', done: 'Team Admin PIN saved', apply: true },
-    org: { title: 'Org Admin PIN', label: 'New Org Admin PIN', api: 'apiChangePasskey', done: 'Org Admin PIN updated' }
+    team: { title: 'Team Admin PIN', label: 'New Team Admin PIN', api: 'apiSetTeamPin', done: 'Team Admin PIN saved', apply: true, cur: true },
+    org: { title: 'Org Admin PIN', label: 'New Org Admin PIN', api: 'apiChangePasskey', done: 'Org Admin PIN updated', cur: true }
   };
+  const CUR_PIN = 'type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" data-lpignore="true" data-1p-ignore data-bwignore';
+  /** Forgot the admin PIN: propose a new one; another admin approves it by entering the same PIN (notification). */
+  function pinForgotDialog(kind) {
+    const who = kind === 'org' ? 'org' : 'team', mine = S.pinReset && S.pinReset[kind] === S.me;
+    openModal('pin', modalHead('Reset ' + (kind === 'org' ? 'Org' : 'Team') + ' Admin PIN', 'key') + '<div class="modal-b">' +
+      (mine ? '<p class="msg w">' + icon('clock', 15) + '<span>Waiting for another admin to approve the PIN you sent.</span></p>' : '') + PIN_HINT +
+      '<div class="field"><label for="pdA">New ' + (kind === 'org' ? 'Org' : 'Team') + ' Admin PIN</label><input id="pdA" ' + NEW_PIN + '></div>' +
+      '<div class="field"><label for="pdB">Confirm</label><input id="pdB" ' + NEW_PIN + '></div><div class="err" id="pdErr"></div></div>' +
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn btn-next" id="pdGo" data-act="pinForgotSend" data-k="' + who + '">' + icon('share', 18) + 'Send to Admins</button></div>');
+    $('#modal .modal').classList.add('modal-center');
+  }
+  /** Another admin asked for a new admin PIN: enter the PIN they chose to approve it. */
+  function pinApproveDialog(kind, body) {
+    openModal('pin', modalHead('Approve ' + (kind === 'org' ? 'Org' : 'Team') + ' Admin PIN', 'key') + '<div class="modal-b"><p class="msg i">' + icon('key', 15) + '<span>' + esc(body) + '</span></p>' +
+      '<div class="field"><label for="pdA">The PIN They Chose</label><input id="pdA" ' + CUR_PIN + '></div><div class="err" id="pdErr"></div></div>' +
+      '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" id="pdGo" data-act="pinApprove" data-k="' + kind + '">' + icon('check', 18) + 'Approve</button></div>');
+    $('#modal .modal').classList.add('modal-center');
+    $('#pdA').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); A.pinApprove($('#pdGo')); } });
+  }
   function pinDialog(kind) {
     const k = PIN_KINDS[kind];
-    openModal('pin', modalHead(k.title, 'key') + '<div class="modal-b">' + PIN_HINT +
+    openModal('pin', modalHead(k.title, 'key') + '<div class="modal-b">' +
+      // The admin PINs: the current org admin PIN first (forgotten? another admin can approve a new one).
+      (k.cur ? '<div class="field"><label for="pdC">Current Org Admin PIN</label><input id="pdC" ' + CUR_PIN + '></div>' : '') + PIN_HINT +
       '<div class="field"><label for="pdA">' + k.label + '</label><input id="pdA" ' + NEW_PIN + '></div>' +
-      '<div class="field"><label for="pdB">Confirm</label><input id="pdB" ' + NEW_PIN + '></div><div class="err" id="pdErr"></div></div>' +
+      '<div class="field"><label for="pdB">Confirm</label><input id="pdB" ' + NEW_PIN + '></div><div class="err" id="pdErr"></div>' +
+      (k.cur ? '<button type="button" class="linkbtn pd-forgot" data-act="pinForgot" data-k="' + kind + '">Forgot the PIN?</button>' : '') + '</div>' +
       '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" id="pdGo" data-act="pinSave" data-k="' + kind + '">' + icon('check', 18) + 'Save PIN</button></div>');
     $('#modal .modal').classList.add('modal-center');
     $('#pdB').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); A.pinSave($('#pdGo')); } });
@@ -8874,7 +8897,7 @@
     openModal('notes', html);
     $('#modal .modal').classList.add('notes-sheet');
   }
-  const NOTE_IC = { approved: ['check', 'ok'], denied: ['ban', 'no'], edited: ['pencil', 'warn'], deleted: ['trash', 'no'], new: ['plus', 'info'], created: ['plus', 'info'], signup: ['userPlus', 'info'], account: ['check', 'ok'] };
+  const NOTE_IC = { 'pinreset-org': ['key', 'warn'], 'pinreset-team': ['key', 'warn'], 'pinreset-ok': ['key', 'ok'], approved: ['check', 'ok'], denied: ['ban', 'no'], edited: ['pencil', 'warn'], deleted: ['trash', 'no'], new: ['plus', 'info'], created: ['plus', 'info'], signup: ['userPlus', 'info'], account: ['check', 'ok'] };
   function ago(ts) {
     const s = (Date.now() - new Date(ts).getTime()) / 1000;
     if (!(s >= 0)) return '';
@@ -9318,8 +9341,8 @@
       // Access: one line each — what it is and where it stands on the left, its actions on the right (M3 list items).
       '<section class="mc-sec"><h4>Access</h4><div class="mc-list">' +
         '<div class="mc-li"><span class="mc-li-ic">' + icon('key', 20) + '</span><div class="mc-li-t"><b>PIN</b><span>' + (u.mustChange ? 'Default — sets their own at next sign-in' : 'Their own') + '</span></div>' +
-          '<div class="mc-li-a"><button class="btn sm" data-act="resetPin" data-id="' + esc(uid) + '">' + icon('key', 15) + 'Reset</button>' +
-          '<button class="btn sm" data-act="mcPinShow">' + icon('pencil', 15) + 'Set PIN</button></div></div>' +
+          (S.isAdmin ? '<div class="mc-li-a"><button class="btn sm" data-act="resetPin" data-id="' + esc(uid) + '">' + icon('key', 15) + 'Reset</button>' +
+          '<button class="btn sm" data-act="mcPinShow">' + icon('pencil', 15) + 'Set PIN</button></div>' : '') + '</div>' +
         '<div id="mcPinRow" hidden>' + PIN_HINT + '<div class="mc-pin"><input id="mcPin1" ' + NEW_PIN + ' placeholder="PIN" aria-label="PIN">' +
           '<input id="mcPin2" ' + NEW_PIN + ' placeholder="Again" aria-label="PIN again">' +
           '<button class="btn primary sm" data-act="setUserPin" data-id="' + esc(uid) + '">Save</button></div></div><div class="err" id="mcPinErr"></div>' +
@@ -9339,7 +9362,7 @@
       '</div>' +
       // Actions (M3 dialog): destructive on the left, Save & Close on the right; the ✕ at the top closes without saving.
       '<div class="modal-f mc-foot">' + (uid === S.me ? '' : '<button class="btn ' + (u.active ? 'del' : '') + '" data-act="toggleUser" data-id="' + esc(uid) + '">' + (u.active ? icon('ban', 16) + 'Deactivate' : icon('check', 16) + 'Reactivate') + '</button>' +
-        '<button class="btn del" data-act="deleteUser" data-id="' + esc(uid) + '">' + icon('trash', 16) + 'Delete</button>') +
+        (S.isAdmin ? '<button class="btn del" data-act="deleteUser" data-id="' + esc(uid) + '">' + icon('trash', 16) + 'Delete</button>' : '')) +
         '<button class="btn primary mc-save" data-act="saveUser" data-id="' + esc(uid) + '">' + icon('check', 16) + 'Save &amp; Close</button></div>';
     openModal('member', html, true);
   }
@@ -10177,6 +10200,7 @@
       // Open what it's about (its request — approval, denial, change or conflict — or, for a sign-up, the new member);
       // closing that returns to the drawer.
       const back = S.modal === 'notes';
+      if (n && /^pinreset-(org|team)$/.test(n.kind)) { pinApproveDialog(n.kind.slice(9), n.body); return; }
       if (req) {
         if (S.requests.some(r => r.id === req && r.status !== 'Cancelled')) { S.backToNotes = back; openRequest(req); }
         else toast('That request was deleted');
@@ -10664,12 +10688,34 @@
       const kind = el.dataset.k, k = PIN_KINDS[kind], a = $('#pdA').value.trim(), b = $('#pdB').value.trim(), err = $('#pdErr');
       if (pinProblem(a)) { err.textContent = pinProblem(a); return; }
       if (a !== b) { err.textContent = 'The two PIN entries do not match.'; $('#pdB').value = ''; focusPin($('#pdB')); return; }
+      const cur = k.cur ? $('#pdC').value.trim() : '';
+      if (k.cur && !cur) { err.textContent = 'Enter the current org admin PIN.'; return; }
       err.textContent = '';
-      const d = await run(el, k.api, S.token, a, b);
+      const d = await run(el, k.api, S.token, a, b, cur);
       if (!d) return;
       closeModal();
       if (k.apply) { apply(d); render(); }
       toast(k.done);
+    },
+    pinForgot(el) { pinForgotDialog(el.dataset.k); },
+    async pinForgotSend(el) {
+      const kind = el.dataset.k, a = $('#pdA').value.trim(), b = $('#pdB').value.trim(), err = $('#pdErr');
+      if (pinProblem(a)) { err.textContent = pinProblem(a); return; }
+      if (a !== b) { err.textContent = 'The two PIN entries do not match.'; $('#pdB').value = ''; focusPin($('#pdB')); return; }
+      err.textContent = '';
+      const d = await run(el, 'apiAdminPinResetRequest', S.token, kind, a, b);
+      if (!d) return;
+      apply(d); closeModal(); render();
+      toast('Sent to the other admins — one of them enters this PIN to approve it', 'ok', 4200);
+    },
+    async pinApprove(el) {
+      const kind = el.dataset.k, pin = $('#pdA').value.trim(), err = $('#pdErr');
+      if (!pin) { err.textContent = 'Enter the PIN they chose.'; return; }
+      err.textContent = '';
+      const d = await run(el, 'apiAdminPinResetApprove', S.token, kind, pin);
+      if (!d) return;
+      apply(d); closeModal(); render();
+      toast((kind === 'org' ? 'Org' : 'Team') + ' admin PIN updated', 'ok', 2500);
     },
     // Admin mode is separate from sign-in: you always sign in as yourself, then unlock with the admin PIN here.
     // Your own PIN and the admin PIN never interfere, even if they're the same digits.
@@ -10776,7 +10822,7 @@
     },
     async resetPin(el) {
       const u = S.users.find(x => x.id === el.dataset.id);
-      if (!u || !await askConfirm('Reset ' + u.name + '’s PIN?', {})) return;
+      if (!u || !S.isAdmin || !await askConfirm('Reset ' + u.name + '’s PIN?', {})) return;
       save(() => { u.mustChange = true; }, 'apiResetPin', S.token, u.id);
       render(); if (S.modal === 'member') openMemberCard(u.id);
       toast(u.name + '’s PIN reset to the default', 'ok', 2000);
@@ -11028,9 +11074,8 @@
     // the server has checked the PIN.
     async batchResetPin(el) {
       const ids = batchIds(), n = ids.length; if (!n) return;
-      const pin = await askConfirm('Reset ' + plural(n, 'PIN') + '?', { pin: S.adminScope ? 'Team Admin PIN' : 'Org Admin PIN' });
-      if (!pin) return;
-      const d = await run(el, 'apiBatchUsers', S.token, ids, 'resetPin', pin);
+      if (!await askConfirm('Reset ' + plural(n, 'PIN') + '?', {})) return;
+      const d = await run(el, 'apiBatchUsers', S.token, ids, 'resetPin', null);
       if (!d) return;
       apply(d); S.rosterSel = new Set(); closeModal(); render();
       toast(plural(n, 'PIN') + ' reset to the default', 'ok', 2200);
