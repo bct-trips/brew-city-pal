@@ -166,6 +166,13 @@
   @media (prefers-reduced-motion: reduce) { .pm-n.pm-new { animation: none; } }
   .tour-card { position: fixed; padding: 20px; border: 1px solid var(--outline); border-radius: 20px; background: var(--card); color: var(--ink);
     box-shadow: 0 24px 60px rgba(0, 0, 0, .55); } /* a thin gray edge so it stands out; gold is only for the ring on what you tap */
+  /* An alarm step (Wait for It to Save): a red band across the top like the Not Saved alert, and a big copy of the Profile
+     icon with its saving ring (a picture-in-picture of what to watch for). */
+  .tour-card.tour-alarm { padding: 0 20px 20px; overflow: hidden; }
+  .tour-alarm .tour-band { display: flex; align-items: center; gap: 10px; margin: 0 -20px 14px; padding: 16px 20px; background: #b3261e; color: #ffffff; }
+  .tour-alarm .tour-band h3 { margin: 0; color: #ffffff; font-size: 20px; line-height: 26px; font-weight: 900; text-transform: uppercase; letter-spacing: .02em; }
+  .tour-pip { display: grid; place-items: center; height: 92px; margin: 8px 0 12px; border-radius: 16px; background: var(--navy); }
+  .tour-pip .nav-ic { position: relative; transform: scale(2); }
   /* A step's important note (Submit: wait until it finishes saving): red-edged, stands out from the step's text. */
   .tour-card p.tour-warn { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 16px; padding: 10px 12px; border-left: 4px solid #b42318; border-radius: 10px;
     background: color-mix(in srgb, #b42318 14%, var(--card)); color: var(--ink); font-size: 15px; line-height: 21px; }
@@ -231,14 +238,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792760058"></script>
+    <script src="config.js?v=1792760170"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792760058';
+      window.PAL_BUILD = '1792760170';
       (function () {
         function check(launch) {
           try {
@@ -3870,10 +3877,10 @@
   #toast > .success-t { background: #15803d !important; color: #ffffff !important; }
   #toast > .success-t .ic { color: #ffffff; }
   /* Syncing: a gold ring spins around the Profile icon while anything talks to the server in the background. */
-  .nav-ic.syncing::before { content: ""; position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  .nav-ic.syncing::before, .nav-ic.tour-sync::before { content: ""; position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
     border: 2.5px solid transparent; border-top-color: #FCC22B; border-right-color: #FCC22B; box-sizing: border-box; animation: navSync .8s linear infinite; pointer-events: none; }
   @keyframes navSync { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .nav-ic.syncing::before { animation-duration: 2.4s; } }
+  @media (prefers-reduced-motion: reduce) { .nav-ic.syncing::before, .nav-ic.tour-sync::before { animation-duration: 2.4s; } }
   /* Edit Request → Add Members: each added member is a row like the day list (puck left; status slider and a minus button
      right). The minus takes them off again. */
   .wiz-added { margin-top: 8px; border-top: 1px solid var(--line); }
@@ -8433,7 +8440,9 @@
     { view: 'mine', form: 'edit', sel: '#modal .field.pf:has(#wzN)', title: 'Notes', text: 'Anything your admin should know. Optional.' },
     { view: 'mine', form: 'edit', sel: '#modal [data-act="wizReview"]', title: 'Review', text: 'When it looks right, tap Review.' },
     { view: 'mine', form: 'review', sel: '#modal [data-act="wizSubmit"]', title: 'Submit', text: 'Review shows your request as a pass, with any conflict days in red. Tap Submit to send it, or Edit to change it.',
-      warn: 'Important: wait until it finishes saving before closing the app.' }
+    },
+    { view: 'mine', sel: '.nav [data-v="profile"]', sync: true, alarm: true, title: 'Wait for It to Save',
+      text: 'After you tap Submit, this gold ring spins around your profile while it saves. Keep the app open until it stops.' }
   ] : [
     { view: 'calendar', sel: '.nav [data-v="calendar"]', title: 'Calendar', text: 'Tap Calendar to see everyone’s leave and passes by day.' },
     { view: 'calendar', sel: '.calbar .cb-views > .seg', title: 'Week, Month or Quarter', text: 'Switch between Week, Month and Quarter views here.' },
@@ -8458,7 +8467,7 @@
   }
   /** Leave whatever section is showing (spotlight, example form, menu) and come back to the tour's start. */
   function tourClear() {
-    tourAnimStop(); S.tourDates = null;
+    tourAnimStop(); S.tourDates = null; $$('.nav-ic.tour-sync').forEach(e => e.classList.remove('tour-sync'));
     const ov = document.getElementById('tour'); if (ov) ov.remove(); clearInterval(S.tourTick);
     closeProfileMenu(); if (S.modal) closeModal(); if (S.wiz && S.wiz.tourDemo) S.wiz = null;
     if (S.tourDemo) { S.tourDemo = false; render(); }
@@ -8520,8 +8529,14 @@
     let ov = document.getElementById('tour');
     if (!ov) { ov = document.createElement('div'); ov.id = 'tour'; ov.className = 'tour'; document.body.appendChild(ov); }
     const last = i === steps.length - 1;
-    ov.innerHTML = '<svg class="tour-dim" aria-hidden="true"><path fill-rule="evenodd"></path></svg><div class="tour-rings"></div><div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tourT">' +
-      '<div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div><h3 id="tourT">' + esc(st.title) + '</h3><p>' + esc(st.text) + '</p>' + (st.warn ? '<p class="tour-warn" role="alert">' + icon('alert', 16) + '<b>' + esc(st.warn) + '</b></p>' : '') +
+    // sync: the Profile icon shows the saving ring (the real one in the nav, and a big copy in the card).
+    $$('.nav-ic.tour-sync').forEach(e => e.classList.remove('tour-sync'));
+    const pic = $('.nav [data-v="profile"] .nav-ic');
+    if (st.sync && pic) pic.classList.add('tour-sync');
+    const pip = st.sync && pic ? '<div class="tour-pip" aria-hidden="true">' + pic.outerHTML.replace('class="nav-ic', 'class="nav-ic tour-sync') + '</div>' : '';
+    ov.innerHTML = '<svg class="tour-dim" aria-hidden="true"><path fill-rule="evenodd"></path></svg><div class="tour-rings"></div><div class="tour-card' + (st.alarm ? ' tour-alarm' : '') + '" role="dialog" aria-modal="true" aria-labelledby="tourT">' +
+      (st.alarm ? '<div class="tour-band">' + icon('alert', 28) + '<h3 id="tourT">' + esc(st.title) + '</h3></div><div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div>' + pip + '<p>' + esc(st.text) + '</p>'
+        : '<div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div><h3 id="tourT">' + esc(st.title) + '</h3><p>' + esc(st.text) + '</p>') + (st.warn ? '<p class="tour-warn" role="alert">' + icon('alert', 16) + '<b>' + esc(st.warn) + '</b></p>' : '') +
       '<div class="tour-f"><button class="btn" data-act="tourBack" data-v="' + (i - 1) + '">' + icon('left', 18) + 'Back</button>' + (last ? '' : '<button class="btn" data-act="tourSecSkip">Skip</button>') +
         '<button class="btn btn-next" data-act="tourNext" data-v="' + (i + 1) + '">' + (last ? 'Done' : 'Next ' + icon('right', 18)) + '</button></div></div>';
     if (st.anim === 'dates') tourAnimDates(i);
@@ -8616,7 +8631,7 @@
   }
   window.addEventListener('resize', () => { if (document.getElementById('tour')) placeTour(); });
   function tourEnd() {
-    tourAnimStop(); S.tourDates = null;
+    tourAnimStop(); S.tourDates = null; $$('.nav-ic.tour-sync').forEach(e => e.classList.remove('tour-sync'));
     const ov = document.getElementById('tour'); if (ov) ov.remove(); clearInterval(S.tourTick);
     closeModal(); closeProfileMenu(); if (S.wiz && S.wiz.tourDemo) S.wiz = null;
     if (!S.tourOn) return;
