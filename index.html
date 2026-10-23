@@ -196,14 +196,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792756576"></script>
+    <script src="config.js?v=1792756682"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792756576';
+      window.PAL_BUILD = '1792756682';
       (function () {
         function check(launch) {
           try {
@@ -8586,7 +8586,7 @@
   function notesPanelHtml() {
     const pst = S.pushState || 'unsupported';
     const pushMsg = {
-      google: 'Push notifications work in the GitHub Pages version of the app (add it to your Home Screen). Everything still shows up under Profile → Notifications.',
+      google: 'Push notifications work in the web app version of PAL.',
       unsupported: 'This browser can’t receive push notifications. Everything still shows up under Profile → Notifications.',
       denied: 'Notifications are blocked for PAL on this device. Allow them in your phone’s Settings → Notifications → PAL (or the browser’s site settings), then come back.',
       install: 'Add PAL to your Homescreen to turn on notifications. Then open it from the Homescreen and come back here.'
