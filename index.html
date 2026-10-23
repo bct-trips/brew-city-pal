@@ -328,14 +328,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792772598"></script>
+    <script src="config.js?v=1792772694"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792772598';
+      window.PAL_BUILD = '1792772694';
       (function () {
         function check(launch) {
           try {
@@ -4756,7 +4756,7 @@
     S.vapid = data.vapidPublicKey || S.vapid || ''; S.adminAlerts = !!data.adminAlerts;
     // Hide user schedules (members only): the server sent just my requests, day availability for my position, and my
     // conflicts as counts. Everyone else's names and requests aren't on this device at all.
-    S.medCuts = data.medCuts || []; S.medical = data.medical || []; S.drafts = mergeDrafts(data.drafts || []); S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
+    S.ics = data.ics || {}; S.medCuts = data.medCuts || []; S.medical = data.medical || []; S.drafts = mergeDrafts(data.drafts || []); S.priv = !!data.private; S.avail = data.avail || null; S.myConf = data.myConf || {};
     S.notePrefs = data.notePrefs || S.notePrefs || { approved: true, denied: true, edited: true };
     if (data.emailPrefs) S.emailPrefs = data.emailPrefs;
     S.nameNeed = data.nameNeed || '';
@@ -9217,9 +9217,10 @@
     const a = $('#calAdd'), k = calKind(); if (!a || k === 'google') return;
     const fileUrl = () => URL.createObjectURL(new Blob([calEvent(r).ics], { type: 'text/calendar' }));
     if (k === 'apple-file') { a.href = fileUrl(); return; }
-    // iPhone / iPad: the signed link comes from the server — asked for only when the button is tapped (opening a pass
-    // sends nothing), then opened. A second tap uses the link straight away.
+    // iPhone / iPad: my own requests have their signed link already (sent with the data: S.ics), so the tap is instant.
+    // Others' (ones I manage): the link is asked for only when the button is tapped (opening a pass sends nothing), then opened.
     a.setAttribute('aria-disabled', 'false');
+    if (S.ics && S.ics[r.id]) { a.dataset.url = a.href = S.ics[r.id]; return; }
     a.addEventListener('click', ev => {
       if (a.dataset.url) return; // fetched already: the link opens as a normal tap
       ev.preventDefault();
