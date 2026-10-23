@@ -127,6 +127,11 @@
   /* Disabled Add Request / Add Event (offline): the standard disabled button — Material 3's 12% container and 38% label,
      same shape and place, nothing added to it. The Viewing Offline bar says why. */
   .btn.req-btn:disabled, .req-bar .req-btn:disabled { opacity: 1; background: color-mix(in srgb, var(--ink) 12%, transparent); border-color: transparent; color: color-mix(in srgb, var(--ink) 38%, transparent); box-shadow: none; }
+  /* Offline status sliders: the chosen status keeps its place but in the disabled gray (12% pill, 38% word); the other two
+     look as they always do when unselected. Nothing moves. */
+  .stsl.off .stsl-thumb, .stsl.off .stsl-o.on { background: color-mix(in srgb, var(--ink) 12%, transparent) !important; }
+  .stsl.off .stsl-o.on { color: color-mix(in srgb, var(--ink) 38%, transparent) !important; }
+  .stsl.off .stsl-o:disabled { opacity: 1; cursor: not-allowed; }
   .offline-bar > span { min-width: 0; } .offline-bar .ob-why { font-weight: 600; }
   .offline-bar .ob-why-s { display: none; }
   @media (max-width: 480px) { .offline-bar .ob-why { display: none; } .offline-bar .ob-why-s { display: inline; } } /* phones: the short form */
@@ -338,14 +343,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792776440"></script>
+    <script src="config.js?v=1792776587"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792776440';
+      window.PAL_BUILD = '1792776587';
       (function () {
         function check(launch) {
           try {
@@ -4571,7 +4576,7 @@
   const isNetErr = e => !!e && (e.message === TIMED_OUT || /No connection to the server|server had a hiccup|could not be reached|Failed to fetch|NetworkError|Load failed|HTTP 0|network/i.test(e.message));
   /* Offline: the server can't be reached, so the app shows the data saved on this device under a yellow "Viewing Cached
      Data" bar, and nothing that adds or changes requests runs until a call gets through again (then the bar goes). */
-  const OFFLINE_ACTS = new Set(['newReq', 'newReqOn', 'editReq', 'setStatus', 'cancelReq', 'cfEdit', 'cfApproveAll', 'ackChange', 'wizSubmit', 'wizEdit',
+  const OFFLINE_ACTS = new Set(['newReq', 'newReqOn', 'editReq', 'setStatus', 'cfSet', 'cancelReq', 'cfEdit', 'cfApproveAll', 'ackChange', 'wizSubmit', 'wizEdit',
     'newBlackout', 'addBlackout', 'editBlackout', 'delBlackout', 'boAllow', 'boDeny', 'boEdit', 'boResolveOpen', 'allowBlackout']);
   function setOffline(on) {
     if (!!S.offline === !!on) return;
@@ -4586,6 +4591,8 @@
   function markOffline() {
     $$('[data-act]').forEach(b => { if (!OFFLINE_ACTS.has(b.dataset.act) || !('disabled' in b)) return;
       if (S.offline) { if (!b.disabled) { b.disabled = true; b.dataset.offOff = '1'; } } else if (b.dataset.offOff) { b.disabled = false; delete b.dataset.offOff; } });
+    // Status sliders (Approved | Pending | Denied): the chosen one in the disabled gray, the others as usual — the status can be seen, not changed.
+    $$('.stsl').forEach(sl => sl.classList.toggle('off', !!S.offline && !!sl.querySelector('.stsl-o:disabled')));
   }
   // The bar says what offline means (the paused buttons just look disabled — the standard way: no badges on them).
   const offlineBar = () => S.offline ? '<div class="offline-bar" id="offlineBar" role="status">' + icon('alert', 16) + '<span>Viewing Offline<span class="ob-why"> · Adding or changing requests is paused</span><span class="ob-why-s"> · Changes paused</span></span></div>' : '';
@@ -8535,8 +8542,8 @@
     const m = $('#pmNotes'); if (m) m.innerHTML = pmNotesHtml();
   }
   /* ---------- Profile menu: a drop-up that opens out of the Profile tab (not a dialog) ----------
-     Who you are, then Notifications · Appearance (Light / Dark / System) · Settings · Sign out. Tapping outside, Esc or
-     any item (except Appearance) closes it. */
+     Who you are, then Notifications · Theme (Light / Dark / System) · Settings · Sign out. Tapping outside, Esc or
+     any item (except Theme) closes it. */
   /* ---------- Welcome tour: once per account (server flag "tour"), at the first sign-in of a new account ----------
      1. Notifications — set up now? (the same panels as Settings: push — or Add to Homescreen when it isn't installed —,
         email, and for anyone with admin status Admin Alerts and the Daily Email Report).
@@ -8823,9 +8830,9 @@
     // Header: one big [P|MKE|Name] badge filling the top of the menu (same colors as the small badges).
     el.innerHTML = bigBadge(me) +
       '<div class="pm-notes" id="pmNotes">' + pmNotesHtml() + '</div>' +
-      // Appearance: a row like Mode — the label on the left, the switch on the right; like Mode and the status slider,
+      // Theme: a row like Mode — the label on the left, the switch on the right; like Mode and the status slider,
       // unselected options are just their icon and the selected one is its word.
-      '<div class="pm-row pm-theme-row" role="none">' + icon('sun', 20) + '<span class="pm-l">Appearance</span><div class="seg seg-slide pm-thsl" role="group" aria-label="Appearance" data-sk="theme"><span class="seg-thumb" aria-hidden="true"></span>' +
+      '<div class="pm-row pm-theme-row" role="none">' + icon('sun', 20) + '<span class="pm-l">Theme</span><div class="seg seg-slide pm-thsl" role="group" aria-label="Appearance" data-sk="theme"><span class="seg-thumb" aria-hidden="true"></span>' +
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
           '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '" title="' + t[1] + '" aria-label="' + t[1] + '">' + icon(t[2], 15) + '<span class="seg-t">' + t[1] + '</span></button>').join('') + '</div></div>' +
       // Admin Mode: label on the left, the Locked | Unlocked slider on the right.
@@ -10248,7 +10255,7 @@
     async notesClear() { if (await askConfirm('Delete all notifications?', {})) dropNotes('all'); },
     nav(el) {
       const v = el.dataset.v;
-      if (v === 'profile') { toggleProfileMenu(el); return; } // Profile is a drop-up menu: Notifications · Appearance · Settings · Sign out
+      if (v === 'profile') { toggleProfileMenu(el); return; } // Profile is a drop-up menu: Notifications · Theme · Settings · Sign out
       // The Calendar tab returns to your default calendar view (Settings → Start-up), or Month.
       if (v === 'calendar') { const dc = store.get('startCal', 'last'); S.cal = dc !== 'last' ? dc : 'month'; }
       if (v === 'mine') S.mineMode = 'list'; // My Requests always opens on its list; Cal is one tap away
