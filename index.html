@@ -103,6 +103,11 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
+  /* Profile tab selected: a brick pill instead of gold, so the gold saving ring around the logo shows (white on brick 6.6:1). */
+  .nav.seg-slide:has(button[data-v="profile"].on) > .seg-thumb.nav-thumb,
+  .nav button[data-v="profile"][aria-expanded="true"] .nav-ic, .nav.seg-slide:not([data-placed]) > button[data-v="profile"].on .nav-ic { background-color: #a3402c; }
+  /* Take the Tour: as wide as the Settings cards above it, not the whole page. */
+  .profile-page .tour-again { max-width: 720px; margin-left: auto; margin-right: auto; }
   .wpass { --gap-c: #ffffff; }
 
   /* ---- Toggle group: border · space · selected button ----
@@ -295,14 +300,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792768278"></script>
+    <script src="config.js?v=1792769815"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792768278';
+      window.PAL_BUILD = '1792769815';
       (function () {
         function check(launch) {
           try {
@@ -8704,8 +8709,8 @@
       }
     }
     const all = st.sel ? [...document.querySelectorAll(st.sel)].filter(e => e.offsetWidth) : [], targets = st.multi ? all : all.slice(0, 1);
-    const boxes = targets.map(t => { const r = t.getBoundingClientRect();
-      return { L: Math.max(m, r.left - pad), T: Math.max(m, r.top - pad), R: Math.min(W - m, r.right + pad), B: Math.min(H - m, r.bottom + pad), rad: st.multi ? Math.min(r.height / 2 + pad, 20) : 24 }; })
+    const boxes = targets.map(t => { const r = t.getBoundingClientRect(), tail = t.id === 'pmenu' ? 8 : 0; // the menu's pointer hangs 7px below it: it sits inside the hole, over the button's ring
+      return { L: Math.max(m, r.left - pad), T: Math.max(m, r.top - pad), R: Math.min(W - m, r.right + pad), B: Math.min(H - m, r.bottom + tail + pad), rad: st.multi ? Math.min(r.height / 2 + pad, 20) : 24 }; })
       .filter(b => b.R > b.L && b.B > b.T);
     // Still settling? Keep everything hidden until two measurements in a row match (or the wait runs out).
     if (ov.classList.contains('tour-wait')) {
