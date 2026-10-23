@@ -124,10 +124,17 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
-  /* Offline: Add Request / Add Event turns into a plain outlined "Offline" button (full strength, so it reads as a state, not a
-     faded button); the alert mark is the Viewing Offline bar's. */
-  .btn.req-btn:disabled, .req-bar .req-btn:disabled { opacity: 1; background: var(--gap-c); border: var(--ctl-line); color: var(--muted); box-shadow: none; }
-  .btn.req-btn:disabled .ic { color: #b45309; } :root[data-theme="dark"] .btn.req-btn:disabled .ic { color: #fbbf24; }
+  /* Offline: Add Request / Add Event stays itself (label faded) with a gold "⚠ Offline" chip laid over its right end,
+     so it's clearly the Add button, and clearly why it can't be used. */
+  .btn.req-btn:disabled, .req-bar .req-btn:disabled { position: relative; opacity: 1; background: color-mix(in srgb, var(--go-bg) 55%, var(--gap-c)); border-color: transparent; box-shadow: none; }
+  .btn.req-btn:disabled > :not(.off-chip) { opacity: .55; }
+  .calbar .req-btn:disabled, .lbar .req-btn:disabled { padding-right: 100px; } /* room for the chip on the compact button */
+  .off-chip { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px 0 8px; border-radius: 12px;
+    background: var(--gold); color: var(--navy); font-size: 12px; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
+  .off-chip .ic { width: 14px; height: 14px; }
+  /* Multi-select dropdowns (Additional Users, person and badge filters): Cancel · Done at the foot, right-aligned (Material). */
+  .who-f { flex: none; display: flex; justify-content: flex-end; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--line); background: inherit; }
+  .who-f .btn.sm { height: 36px; padding: 0 14px; }
   .pd-forgot { display: block; margin: 12px 0 4px; } /* PIN dialog: Forgot the PIN? → the two-admin reset */
   .btn.busy { opacity: .6; pointer-events: none; } /* a button waiting on the server (Add to Calendar on iPhone) */
   /* Conflicts | Pending | All: the Conflicts count is red (white on the red selected pill, so it still shows). */
@@ -333,14 +340,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792775783"></script>
+    <script src="config.js?v=1792776062"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792775783';
+      window.PAL_BUILD = '1792776062';
       (function () {
         function check(launch) {
           try {
@@ -4583,8 +4590,9 @@
       if (S.offline) { if (!b.disabled) { b.disabled = true; b.dataset.offOff = '1'; } } else if (b.dataset.offOff) { b.disabled = false; delete b.dataset.offOff; } });
     // Add Request / Add Event: says why it's off — "Offline" with the alert mark — instead of just looking faded.
     $$('.req-btn').forEach(b => {
-      if (S.offline) { if (!b.dataset.offHtml) { b.dataset.offHtml = b.innerHTML; b.innerHTML = icon('alert', 18) + 'Offline'; b.title = 'No connection — requests can be added once the server is reachable'; } }
-      else if (b.dataset.offHtml) { b.innerHTML = b.dataset.offHtml; delete b.dataset.offHtml; b.removeAttribute('title'); }
+      const chip = b.querySelector('.off-chip');
+      if (S.offline) { if (!chip) { b.insertAdjacentHTML('beforeend', '<span class="off-chip" aria-hidden="true">' + icon('alert', 14) + 'Offline</span>'); b.title = 'No connection — requests can be added once the server is reachable'; } }
+      else if (chip) { chip.remove(); b.removeAttribute('title'); }
     });
   }
   const offlineBar = () => S.offline ? '<div class="offline-bar" id="offlineBar" role="status">' + icon('alert', 16) + 'Viewing Offline</div>' : '';
@@ -5561,7 +5569,7 @@
     return '<div class="who-search">' + icon('search', 15) + '<input type="search" class="fp-q" placeholder="Type a name…" autocomplete="off" aria-label="Search people" data-model="whoq" data-live="whoFilter"></div>' +
       '<div class="who-list" role="listbox" aria-multiselectable="true"><button type="button" class="who-row who-all" data-act="fpEveryone"' + scAttr(sc) + '>' +
         allBadge() + '<span class="pp-n"><b>' + (conf ? 'All Conflicts' : 'Everyone') + '</b></span></button>' +
-      groups + '<div class="who-none" hidden>No one matches.</div></div>';
+      groups + '<div class="who-none" hidden>No one matches.</div></div>' + popFoot('fpCancel', 'fpDone', scAttr(sc));
   }
   /* ---------- Dropdowns float above their form ----------
      Every inline dropdown (Person, Position / Unit / Period, Time Zone, Start-Up, Request For, Managers, the desktop
@@ -5651,7 +5659,8 @@
         ck(all) + m.allBadge() + '<span class="pp-n"><b>' + esc(m.all) + '</b></span></button>' +
       items.map(v => { const on = cur.includes(v);
         return '<button type="button" class="who-row' + (on ? ' on' : '') + '" role="option" aria-selected="' + on + '" data-act="mdPick" data-md="' + kind + '" data-v="' + esc(v) + '"' + scAttr(sc) + '>' +
-          ck(on) + m.badge(v) + '<span class="pp-n"><b>' + esc(m.name(v)) + '</b></span></button>'; }).join('') + '</div>';
+          ck(on) + m.badge(v) + '<span class="pp-n"><b>' + esc(m.name(v)) + '</b></span></button>'; }).join('') + '</div>' +
+      popFoot('mdCancel', 'mdDone', ' data-md="' + kind + '"' + scAttr(sc));
   }
   /** Person picker: a sheet (bottom sheet on phones) with search, "Everyone", then members grouped by position. */
   function openPersonPicker(sc, mode) {
@@ -9578,6 +9587,10 @@
   }
   /** The member chooser list (search box, then Me and each position's members as name pucks): Request For and
    *  Managers → Add Manager. act: the action a tap runs (data-id = member); top: rows shown above the groups. */
+  /** Multi-select dropdowns end with Cancel · Done (Material menus with check boxes): Done closes, Cancel puts the
+   *  choice back as it was when the dropdown opened. Tapping outside still closes (keeping the choice). */
+  const popFoot = (cancel, done, attrs) => '<div class="who-f"><button type="button" class="btn sm" data-act="' + cancel + '"' + (attrs || '') + '>Cancel</button>' +
+    '<button type="button" class="btn sm btn-next" data-act="' + done + '"' + (attrs || '') + '>' + icon('check', 16) + 'Done</button></div>';
   function whoListHtml(people, picked, act, top) {
     const row = u => '<button type="button" class="who-row' + (picked.has(u.id) ? ' on' : '') + '" role="option" aria-selected="' + picked.has(u.id) + '" data-act="' + act + '" data-id="' + esc(u.id) + '"' +
       ' data-q="' + esc((lastName(u) + ' ' + firstName(u) + ' ' + u.rank + ' ' + u.unit + (u.id === S.me ? ' me' : '')).toLowerCase()) + '">' +
@@ -9589,7 +9602,7 @@
     }).join('');
     return '<div class="who-search">' + icon('search', 15) + '<input type="search" id="whoQ" placeholder="Type a name…" autocomplete="off" aria-label="Search members" data-model="whoq" data-live="whoFilter"></div>' +
       '<div class="who-list" role="listbox"' + (act === 'whoPick' ? ' aria-multiselectable="true"' : '') + '>' + (top || '') +
-      groups + '<div class="who-none" hidden>No one matches.</div></div>';
+      groups + '<div class="who-none" hidden>No one matches.</div></div>' + (act === 'whoPick' ? popFoot('whoCancel', 'whoDone') : '');
   }
   function closeWhoDrop() {
     const p = $('#whoPop'); if (!p || p.hidden) return;
@@ -10331,6 +10344,7 @@
       if (!pop.hidden) { closeFpPop(); return; }
       closeFpPop();
       S.whoq = ''; S.fpOpenScope = el.dataset.scope || 'cal';
+      { const st = fState(el.dataset.scope); S.fpWas = { person: st.person, role: st.role ? st.role.slice() : null }; } // Cancel puts this back
       pop.innerHTML = fpPopHtml(el.dataset.scope); pop.hidden = false;
       // Keep it on screen: open toward the left when there's no room on the right.
       pop.style.left = ''; pop.style.right = '';
@@ -10349,12 +10363,17 @@
       S.fpDirty = true;
     },
     fpEveryone(el) { fState(el.dataset.scope).person = ''; S.fpDirty = true; closeFpPop(); },
+    fpDone() { closeFpPop(); },
+    fpCancel(el) { const st = fState(el.dataset.scope), was = S.fpWas || {}; st.person = was.person || ''; if (was.role) st.role = was.role.slice(); S.fpDirty = true; closeFpPop(); },
+    mdDone() { closeFpPop(); },
+    mdCancel(el) { if (S.mdWas) MD[el.dataset.md].set(el.dataset.scope, S.mdWas.slice()); S.fpDirty = true; closeFpPop(); },
     // Badge dropdowns (Position / Unit): open, tick one, or All. Picks apply when the dropdown closes.
     mdOpen(el) {
       const pop = el.closest('.fp').querySelector('.fp-pop');
       if (!pop.hidden) { closeFpPop(); return; }
       closeFpPop();
       S.fpOpenScope = el.dataset.scope || 'cal';
+      if (MD[el.dataset.md]) S.mdWas = MD[el.dataset.md].get(el.dataset.scope).slice(); // Cancel puts this back
       pop.innerHTML = el.dataset.md === 'rfPeriod' ? periodPopHtml() : badgePopHtml(el.dataset.md, el.dataset.scope); pop.hidden = false;
       pop.style.left = ''; pop.style.right = '';
       const r = pop.getBoundingClientRect(); if (r.right > window.innerWidth - 8) { pop.style.left = 'auto'; pop.style.right = '0'; }
@@ -10520,7 +10539,7 @@
       const p = $('#whoPop'); if (!p) return;
       if (!p.hidden) { closeWhoDrop(); return; }
       // Opened with nobody picked yet: the first name you choose closes it. Opened again: it stays open for more names.
-      S.whoFirst = !wizPickList().length;
+      S.whoFirst = !wizPickList().length; S.whoWas = wizPickList().slice(); // Cancel puts this back
       S.whoq = ''; p.innerHTML = whoPopHtml(); p.hidden = false; el.setAttribute('aria-expanded', 'true');
       const q = $('#whoQ'); if (q) q.focus();
     },
@@ -10542,6 +10561,13 @@
       const b = $('#modal [data-act="whoDrop"]'); if (b) b.innerHTML = whoBtnInner();
       const mc = $('#wizMedCut'); if (mc) mc.innerHTML = medCutRows(); // Medical: the Lowers … Max switches follow the members' positions
       if (S.whoFirst && on) { S.whoFirst = false; closeWhoDrop(); }
+    },
+    whoDone() { closeWhoDrop(); },
+    whoCancel() {
+      const w = S.wiz, was = (S.whoWas || []).slice();
+      if (w.editId) w.extra = was; else w.assignees = was;
+      redrawAdded(); const mc = $('#wizMedCut'); if (mc) mc.innerHTML = medCutRows();
+      closeWhoDrop();
     },
     whoFilter(el) {
       const pop = el.closest('.who-pop'); if (!pop) return;
