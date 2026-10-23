@@ -110,14 +110,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792751579"></script>
+    <script src="config.js?v=1792751739"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792751579';
+      window.PAL_BUILD = '1792751739';
       (function () {
         function check(launch) {
           try {
@@ -3028,6 +3028,13 @@
   .lksl .stsl-o.on, .lksl { cursor: pointer; } /* any tap flips it (twoWay) */
   .lksl { flex: none; grid-template-columns: none; }
   .pm-row.pm-adm { cursor: default; }
+  /* Appearance switch: same size and behavior as the Mode slider — unselected = icon, selected = its word on the blue-gray pill. */
+  .pm-row.pm-theme-row { cursor: default; }
+  .pm-thsl { flex: none; height: 34px; }
+  .pm-thsl > button { flex: 0 0 auto; padding: 0 10px; font-size: 13.5px; }
+  .pm-thsl > button:not(.on) .seg-t { display: none; }
+  .pm-thsl > button.on .ic { display: none; }
+  .pm-thsl > button.on { padding: 0 14px; }
   .pm-row.pm-adm .pm-l { flex: 1 1 auto; }
   /* Who Sees Whose Schedules grid: row headers are the viewers (badge + name), column headers the positions they can
      see (badge over a small name); check boxes like every other settings grid. The first column stays put while the
@@ -8271,9 +8278,11 @@
     // Header: one big [P|MKE|Name] badge filling the top of the menu (same colors as the small badges).
     el.innerHTML = bigBadge(me) +
       '<div class="pm-notes" id="pmNotes">' + pmNotesHtml() + '</div>' +
-      '<div class="pm-theme"><span class="pm-tl">' + icon('sun', 20) + 'Appearance</span><div class="seg full seg-slide" role="group" aria-label="Appearance" data-sk="theme"><span class="seg-thumb" aria-hidden="true"></span>' +
+      // Appearance: a row like Mode — the label on the left, the switch on the right; like Mode and the status slider,
+      // unselected options are just their icon and the selected one is its word.
+      '<div class="pm-row pm-theme-row" role="none">' + icon('sun', 20) + '<span class="pm-l">Appearance</span><div class="seg seg-slide pm-thsl" role="group" aria-label="Appearance" data-sk="theme"><span class="seg-thumb" aria-hidden="true"></span>' +
         [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system', 'System', 'monitor']].map(t =>
-          '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '">' + icon(t[2], 15) + t[1] + '</button>').join('') + '</div></div>' +
+          '<button type="button" class="' + (S.theme === t[0] ? 'on' : '') + '" data-act="theme" data-v="' + t[0] + '" title="' + t[1] + '" aria-label="' + t[1] + '">' + icon(t[2], 15) + '<span class="seg-t">' + t[1] + '</span></button>').join('') + '</div></div>' +
       // Admin Mode: label on the left, the Locked | Unlocked slider on the right.
       '<div class="pm-row pm-adm" role="none">' + icon('shield', 20) + '<span class="pm-l">Mode</span>' + adminSlider() + '</div>' +
       row('openSettings', 'sliders', 'Settings') +
@@ -9077,8 +9086,7 @@
         body += '<div class="sect"><div class="lbl">' + icon('user', 14) + ' Request For</div><div style="font-weight:700">' + esc(fullName(userOf(w.assigneeId))) + '</div>' +
           (managesReq({ userId: w.assigneeId }) ? '<div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who wiz-add" data-act="whoDrop" aria-haspopup="listbox" aria-expanded="false" aria-label="Add members to this request">' + whoBtnInner() + '</button>' +
             '<div class="who-pop" id="whoPop" hidden></div></div><div id="wizAdded">' + addedListHtml() + '</div>' : '') +
-          (w.editStatus === 'Approved' && managesReq({ userId: w.assigneeId }) ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>This request is already approved. Admin edits keep it approved.</span></div>' : '') +
-          (w.editStatus !== 'Pending' && !managesReq({ userId: w.assigneeId }) ? '<div class="msg w" style="margin-top:8px">' + icon('alert', 15) + '<span>New dates go back to Pending for approval. Notes and location don’t.</span></div>' : '') + '</div>';
+          '</div>';
       } else if (S.isAdmin) {
         body += '<div class="sect"><div class="lbl">' + icon('users', 14) + (isMed ? ' Medical For' : ' Request For') + '</div>' +
           (w.creating
@@ -10121,6 +10129,8 @@
     theme(el) {
       S.theme = el.dataset.v; store.set('theme', S.theme); applyTheme();
       $$('[data-act="theme"]').forEach(b => b.classList.toggle('on', b.dataset.v === S.theme));
+      // The options change width (the picked one shows its word), so move the pill to the new spot.
+      $$('.seg-slide').forEach(sg => { if (sg.querySelector('[data-act="theme"]')) { if (sg.dataset.sk) delete segLast[sg.dataset.sk]; placeSeg(sg, true); } });
       if (isCalView() && S.cal === 'month') fitMonth();
     },
     async signOut() {
