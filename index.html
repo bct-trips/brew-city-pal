@@ -124,6 +124,7 @@
   }
   /* Surfaces that aren't the page color set the space's color, so the white gap always matches what's behind it. */
   .pm-pop { --gap-c: var(--pm-bg); }
+  .btn.busy { opacity: .6; pointer-events: none; } /* a button waiting on the server (Add to Calendar on iPhone) */
   /* Conflicts | Pending | All: the Conflicts count is red (white on the red selected pill, so it still shows). */
   .stsl.vw-sl .vw-ct.vw-ct-conf { background: #b42318; color: #ffffff; }
   .stsl.vw-sl.st-conf .stsl-o.on .vw-ct-conf { background: #ffffff; color: #b42318; }
@@ -327,14 +328,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792771935"></script>
+    <script src="config.js?v=1792772598"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792771935';
+      window.PAL_BUILD = '1792772598';
       (function () {
         function check(launch) {
           try {
@@ -9207,7 +9208,7 @@
     if (!calOk(r)) return '';
     const k = calKind(), label = 'Add to ' + (k === 'google' ? 'Google' : 'Apple') + ' Calendar';
     const attrs = k === 'google' ? 'href="' + esc(calEvent(r).google) + '" target="_blank" rel="noopener"'
-      : k === 'apple-file' ? 'href="#" download="' + esc(r.type.toLowerCase() + '-' + r.start) + '.ics"' : 'href="#" target="_blank" rel="noopener" aria-disabled="true"';
+      : k === 'apple-file' ? 'href="#" download="' + esc(r.type.toLowerCase() + '-' + r.start) + '.ics"' : 'href="#" rel="noopener"';
     // big: the wallet-style button under the pass ("Add to Apple Calendar" / "Add to Google Calendar").
     if (big) return '<a class="btn wp-add" id="calAdd" role="button" ' + attrs + '>' + icon('calPlus', 20) + '<span>' + label + '</span></a>';
     return '<a class="btn hd-cal" id="calAdd" role="button" ' + attrs + ' aria-label="' + label + '" title="' + label + '">' + icon('calPlus', 18) + '<span class="hd-cal-t">Add to Calendar</span><span class="hd-cal-s" aria-hidden="true">Add</span></a>';
@@ -9216,8 +9217,24 @@
     const a = $('#calAdd'), k = calKind(); if (!a || k === 'google') return;
     const fileUrl = () => URL.createObjectURL(new Blob([calEvent(r).ics], { type: 'text/calendar' }));
     if (k === 'apple-file') { a.href = fileUrl(); return; }
-    call('apiIcsLink', S.token, r.id).then(x => { const b = $('#calAdd'); if (b && x && x.url) { b.href = x.url; b.setAttribute('aria-disabled', 'false'); } })
-      .catch(() => { const b = $('#calAdd'); if (b) { b.href = fileUrl(); b.setAttribute('download', 'leave.ics'); b.removeAttribute('target'); b.setAttribute('aria-disabled', 'false'); } });
+    // iPhone / iPad: the signed link comes from the server — asked for only when the button is tapped (opening a pass
+    // sends nothing), then opened. A second tap uses the link straight away.
+    a.setAttribute('aria-disabled', 'false');
+    a.addEventListener('click', ev => {
+      if (a.dataset.url) return; // fetched already: the link opens as a normal tap
+      ev.preventDefault();
+      if (a.dataset.busy) return;
+      a.dataset.busy = '1'; a.classList.add('busy');
+      callServer('apiIcsLink', S.token, r.id).then(x => {
+        const b = $('#calAdd'); if (!b || !x || !x.url) return;
+        b.dataset.url = x.url; b.href = x.url; delete b.dataset.busy; b.classList.remove('busy');
+        window.location.href = x.url;
+      }).catch(() => {
+        const b = $('#calAdd'); if (!b) return;
+        delete b.dataset.busy; b.classList.remove('busy'); b.dataset.url = 'file';
+        b.href = fileUrl(); b.setAttribute('download', 'leave.ics'); b.removeAttribute('target'); b.click();
+      });
+    });
   }
 
   /* ---------- Roster: one member's year (6 months back, this month, 5 ahead) ---------- */
