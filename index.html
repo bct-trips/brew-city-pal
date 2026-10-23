@@ -204,14 +204,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792758945"></script>
+    <script src="config.js?v=1792758983"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792758945';
+      window.PAL_BUILD = '1792758983';
       (function () {
         function check(launch) {
           try {
@@ -8394,7 +8394,7 @@
      Skip Tour leaves at any step; finishing or skipping tells the server, so it never shows again on any device. */
   /** Tour sections: 'ui' = the interface, 'req' = how to add a request (the setup section is its own list, tourHub). */
   const tourSteps = (sec = S.tourSec) => (sec === 'req' ? [
-    { view: 'mine', sel: '.req-btn', title: S.isAdmin ? 'Add Event' : 'Add Request', text: 'Tap here to start a request. Next: how to fill it in.' },
+    { view: 'mine', sel: '.req-btn', title: S.isAdmin ? 'Add Event' : 'Add Request', text: 'Tap here to start a request — it’s on the Calendar, List and My Requests pages. Next: how to fill it in.' },
     { view: 'mine', form: 'edit', sel: '#modal .sect:has([data-act="whoDrop"])', title: S.isAdmin ? 'Request For' : 'Additional Users',
       text: S.isAdmin ? 'Pick one or more members here; each gets their own request.' : 'Going with someone? Add them here — each person gets their own request. You’re always on it; the minus takes someone off.' },
     { view: 'mine', form: 'edit', sel: '#wizMini', title: 'Dates', text: 'Tap your first day, then your last day. Or type them in Departure and Return below.' },
