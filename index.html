@@ -241,14 +241,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792762796"></script>
+    <script src="config.js?v=1792762873"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792762796';
+      window.PAL_BUILD = '1792762873';
       (function () {
         function check(launch) {
           try {
@@ -3746,6 +3746,7 @@
   /* The stripes sit inside the 2px edge (so the edge runs unbroken across the top), and the tear-off circles carry the edge too. */
   .wpass.wp-ty-medical::before, .mpass.wp-ty-medical::before { inset: 2px 2px auto 2px; border-radius: 18px 18px 0 0; }
   .wpass.wp-ty-medical .wp-cut::before, .wpass.wp-ty-medical .wp-cut::after { box-shadow: inset 0 0 0 2px var(--med-edge); }
+  .wpass.wp-ty-medical { box-shadow: inset 0 0 0 2px var(--med-edge) !important; } /* no drop shadow on the full pass: it can't follow the tear-off circles (Leave / Pass have none either) */
   .mpass.wp-ty-medical::before { border-radius: 16px 16px 0 0; }
   .wpass.wp-ty-medical > :not(.wp-logo):not(.mp-logo):not(.wp-tape), .mpass.wp-ty-medical > :not(.wp-logo):not(.mp-logo) { position: relative; z-index: 1; }
   /* Medical passes: the red-cross mark sits where Leave / Pass show the day count. */
