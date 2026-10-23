@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792750392"></script>
+    <script src="config.js?v=1792750745"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792750392';
+      window.PAL_BUILD = '1792750745';
       (function () {
         function check(launch) {
           try {
@@ -3637,8 +3637,9 @@
   .filters > .mine-mode.mine-ico .seg button { padding: 0 12px; display: inline-grid; place-items: center; min-width: 44px; }
   .mine-ico .seg button .ic { display: block; }
   /* Pass dialogs on wider screens: a normal dialog (title bar, footer) at pass width. */
-  #modal .modal.pass-dlg { max-width: 420px; }
-  .pass-dlg .wpass { margin: 0 0 12px; }
+  #modal .modal.pass-dlg { max-width: 448px; } /* room for Delete · Cancel Leave · Edit · Close on one row */
+  .pass-dlg .wpass { margin: 0 auto 12px; } /* centered (the pass is narrower than the dialog) */
+
   .pass-dlg .btn.wp-add { margin-bottom: 0; }
   /* Phones: with Cancel Leave / Pass in the footer row, Edit turns into an icon circle (its name is the tooltip) so
      Cancel keeps its words and everything fits. */
@@ -3650,7 +3651,8 @@
   /* The desktop pass dialog is pass-width too: same fit rule (Edit as an icon circle next to Cancel Leave / Pass). */
   .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit, .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit:has(> .ic:first-child) { flex: none; width: 40px; min-width: 40px; height: 40px; aspect-ratio: 1; padding: 0; justify-content: center; border-radius: 50%; }
   .pass-dlg .modal-f .mf-row:has(.act-cxl) .btn.act.act-lbl.act-edit .bl { display: none; }
-  .pass-dlg .modal-f .mf-row .btn.act.act-lbl.act-cxl { flex: 1.4 1 0; white-space: nowrap; }
+  .pass-dlg .modal-f .mf-row .btn.act.act-lbl.act-cxl, .pass-dlg .modal-f .mf-row > .btn { flex: 0 0 auto; white-space: nowrap; } /* each as wide as its words: never cut */
+  .pass-dlg .modal-f .mf-row:has(.act-cxl) { justify-content: space-between; }
   /* Review: caution tape across the top of the pass (black / white stripes, a white label) — clear on every pass color,
      light or dark. Gone once it's submitted. */
   .wpass .wp-tape { position: relative; z-index: 2; display: grid; place-items: center; height: 40px; border-bottom: 2px solid #111111;
@@ -3692,6 +3694,29 @@
   .wa-row > .idb { flex: none; }
   .wa-acts { display: flex; align-items: center; gap: 8px; flex: none; }
   .wa-row .wa-del.btn.act.ico { width: 34px; min-width: 34px; height: 34px; padding: 0; justify-content: center; border: 1px solid var(--outline); border-radius: 50%; } /* like the table's round Delete */
+  /* ---------- One look for toggle groups and tonal buttons (final) ----------
+     No outlines: every toggle track (view switch, Events | Stats, Leave | Pass, status slider, all segmented groups) and
+     every tonal button (Filters, Today, dropdowns, on/off chips) is a filled pill. Off / track = --tone; selected = the
+     blue-gray --sel-bg with bold navy text. --tone is a step darker than a white bar and a step lighter than the tinted
+     bottom dock, so the shape always shows. Outlined buttons (Cancel, Edit, Delete…) and the date picker stay outlined. */
+  :root { --tone: #eaecf3; }
+  :root[data-theme="dark"] { --tone: #2c2d35; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tone: #2c2d35; } }
+  .seg:not(.nav), .stsl { border: 0 !important; background: var(--tone); }
+  .seg:not(.nav) > button + button { border-left: 0; }
+  .fsel, .fdrop-btn, .btn.chip-tog, .btn.today-btn { border-color: transparent; background-color: var(--tone); }
+  .fsel:not(.on):hover, .fdrop-btn:not(.on):hover, .btn.chip-tog:not(.on):hover, .btn.today-btn:not(.on):hover { background-color: color-mix(in srgb, var(--ink) 8%, var(--tone)); }
+  .btn.today-btn:not(.on) { color: var(--sel-ink); font-weight: 800; }
+  :root[data-theme="dark"] .btn.today-btn:not(.on) { color: var(--ink); }
+  .fsel.on, .fdrop-btn.on, .btn.chip-tog.on, .btn.today-btn.on { border-color: transparent; }
+  @media (max-width: 700px) {
+    .page > .lbar, .cal > .calbar, .page > .req-bar, .cal > .req-bar { --tone: #fbfbfd; }
+    :root[data-theme="dark"] .page > .lbar, :root[data-theme="dark"] .cal > .calbar { --tone: #1b1c22; }
+  }
+  @media (min-width: 701px) {
+    .cal.cal-phone > .calbar, .cal.cal-phone > .req-bar { --tone: #fbfbfd; }
+    :root[data-theme="dark"] .cal.cal-phone > .calbar { --tone: #1b1c22; }
+  }
 </style>
 
   </head>
@@ -9536,7 +9561,7 @@
       if (req) {
         if (S.requests.some(r => r.id === req && r.status !== 'Cancelled')) { S.backToNotes = back; openRequest(req); }
         else toast('That request was deleted');
-      } else if (n && n.kind === 'signup' && S.isAdmin) {
+      } else if (n && n.kind === 'signup' && (S.isAdmin || (S.myAdmin && S.myAdmin.level))) { // admins in User Mode too
         const u = S.users.slice().sort((a, b) => b.name.length - a.name.length).find(x => x.name && n.body.indexOf(x.name) >= 0);
         if (u) { S.backToNotes = back; openMemberCard(u.id); } else { closeModal(); S.view = 'people'; render(); }
       }
