@@ -15,14 +15,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792746696"></script>
+    <script src="config.js?v=1792747570"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792746696';
+      window.PAL_BUILD = '1792747570';
       (function () {
         function check(launch) {
           try {
@@ -2119,10 +2119,23 @@
      Phones (≤ 700px) keep their own stacked layout. */
   .cb-start, .cb-views { display: contents; }
   @media (min-width: 1180px) {
-    .calbar { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); align-items: center; column-gap: 12px; }
-    .calbar .cb-left { grid-column: 1; grid-row: 1; justify-self: start; flex-wrap: nowrap; }
-    .calbar .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
-    .calbar .cb-right { grid-column: 3; grid-row: 1; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; }
+    .calbar:not(.cb-two) { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr); align-items: center; column-gap: 12px; }
+    .calbar:not(.cb-two) .cb-left { grid-column: 1; grid-row: 1; justify-self: start; flex-wrap: nowrap; }
+    .calbar:not(.cb-two) .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
+    .calbar:not(.cb-two) .cb-right { grid-column: 3; grid-row: 1; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; }
+  }
+  /* fitCalbar() measures the bar: when one row doesn't actually fit (big iPads, larger text, more filters) it adds
+     .cb-two (the tablet layout below); if the filters still don't fit it adds .cb-wrap, which gives them a full-width row
+     that wraps. Nothing in the bar is ever cut off. */
+  @media (min-width: 701px) {
+    .calbar.cb-two { display: grid; grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 8px; }
+    .calbar.cb-two .cb-left { display: contents; }
+    .calbar.cb-two .cb-views { display: flex; align-items: center; gap: 8px; grid-column: 1; grid-row: 1; justify-self: start; }
+    .calbar.cb-two .cb-center { grid-column: 2; grid-row: 1; justify-self: center; }
+    .calbar.cb-two .req-btn { grid-column: 1; grid-row: 2; justify-self: start; }
+    .calbar.cb-two .cb-right { grid-column: 1 / -1; grid-row: 2; justify-self: end; justify-content: flex-end; margin-left: 0; flex-wrap: nowrap; min-width: 0; max-width: calc(100% - var(--req-w, 0px)); } /* the whole row beside Add Request */
+    .calbar.cb-two.cb-wrap .cb-right { grid-column: 1 / -1; grid-row: 3; justify-self: stretch; flex-wrap: wrap; row-gap: 8px; max-width: 100%; }
+    .calbar.cb-two.cb-wrap .req-btn { grid-column: 1 / -1; }
   }
   /* Tablets (iPad portrait, small laptops): two rows. Top: [views · Today] [‹ date ›]; bottom: [Add Request] [filters].
      The view switch and Today sit with the date they change, so the filters row has room and nothing overlaps. */
@@ -4988,7 +5001,20 @@
       if (l.scrollWidth > room) l.textContent = l.dataset.short;
     });
   }
-  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); fitNav(); markScrolled(); markOpenDay(); fitTables(); }); };
+  const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitPucks(); fitNav(); fitCalbar(); markScrolled(); markOpenDay(); fitTables(); }); };
+  /** The calendar bar never cuts anything off: try one row (wide screens), else two rows, else let the filters wrap
+   *  onto their own row. Measured, not guessed from the screen width, so big text or extra filters can't overflow. */
+  function fitCalbar() {
+    const cb = $('.calbar'); if (!cb) return;
+    cb.classList.remove('cb-two', 'cb-wrap');
+    if (innerWidth <= 700) return; // phones have their own stacked layout
+    const over = () => cb.scrollWidth > cb.clientWidth + 1 || [...cb.querySelectorAll('.cb-left, .cb-center, .cb-right')].some(e => e.scrollWidth > e.clientWidth + 1 || e.offsetHeight > 52) // wider than its space, or wrapped onto 2 lines
+      || $$('.cb-right *', cb).some(x => x.clientWidth && x.scrollWidth > x.clientWidth + 1); // or a filter squeezed so its label is cut
+    if (innerWidth >= 1180 && !over()) return;
+    const rq = $('.req-btn', cb); cb.style.setProperty('--req-w', rq && rq.offsetWidth ? rq.offsetWidth + 10 + 'px' : '0px');
+    cb.classList.add('cb-two'); if (!over()) return;
+    cb.classList.add('cb-wrap');
+  }
   /** Outline the day that's open in the desktop day panel, in whichever calendar view is showing. */
   /** Request tables: band headers stick just under the column titles. */
   function fitTables() {
