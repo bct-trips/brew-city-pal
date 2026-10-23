@@ -175,6 +175,9 @@
   .tour-alarm .tour-band h3 { margin: 0; color: #ffffff; font-size: 20px; line-height: 26px; font-weight: 900; text-transform: uppercase; letter-spacing: .02em; }
   .tour-pip { display: grid; place-items: center; height: 92px; margin: 8px 0 12px; border-radius: 16px; background: var(--navy); }
   .tour-pip .nav-ic { position: relative; transform: scale(2); }
+  .tour-pip.tour-pages { display: flex; justify-content: center; gap: 4px; height: auto; margin: -4px 0 16px; padding: 10px 8px; } /* the pages that have Add Request: a little nav bar */
+  .tp-pg { flex: 0 1 96px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #ffffff; font-size: 13px; font-weight: 700; }
+  .tour-pip .tp-pg .nav-ic { transform: none; display: grid; place-items: center; width: 64px; height: 32px; border-radius: 16px; background: rgba(255, 255, 255, .14); }
   /* A step's important note (Submit: wait until it finishes saving): red-edged, stands out from the step's text. */
   .tour-card p.tour-warn { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 16px; padding: 10px 12px; border-left: 4px solid #b42318; border-radius: 10px;
     background: color-mix(in srgb, #b42318 14%, var(--card)); color: var(--ink); font-size: 15px; line-height: 21px; }
@@ -241,14 +244,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792763282"></script>
+    <script src="config.js?v=1792763923"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792763282';
+      window.PAL_BUILD = '1792763923';
       (function () {
         function check(launch) {
           try {
@@ -8441,11 +8444,11 @@
         email, and for anyone with admin status Admin Alerts and the Daily Email Report).
      2–5. A spotlight on the real controls: calendar views, List, My Requests, then Profile → Settings.
      Skip Tour leaves at any step; finishing or skipping tells the server, so it never shows again on any device. */
-  /** The Add Request step: rings the button and every page tab that has it (Calendar, List, My Requests), named in the text. */
-  const reqStep = () => { const pg = navItems().filter(i => ['calendar', 'all', 'mine'].includes(i[0])), btn = S.isAdmin ? 'Add Event' : 'Add Request';
-    const names = pg.map(i => i[1]), list = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0];
-    return { view: 'mine', sel: '.req-btn, ' + pg.map(i => '.nav [data-v="' + i[0] + '"]').join(', '), multi: true, avoid: '.req-btn',
-      title: btn, text: 'Tap ' + btn + ' to start one. It’s on the ' + list + ' pages.' }; };
+  /** The Add Request step: rings the button; the card shows the page tabs that have it (Calendar, List, My Requests) as a
+   *  small copy of the nav bar, in the same navy pip as the saving step. */
+  const reqStep = () => { const btn = S.isAdmin ? 'Add Event' : 'Add Request';
+    return { view: 'mine', sel: '.req-btn', title: btn, text: 'Tap ' + btn + ' to start one. It’s on these pages:',
+      pages: navItems().filter(i => ['calendar', 'all', 'mine'].includes(i[0])) }; };
   /** Tour sections: 'ui' = the interface, 'req' = how to add a request (the setup section is its own list, tourHub). */
   const tourSteps = (sec = S.tourSec) => (sec === 'req' ? [
     reqStep(),
@@ -8568,7 +8571,8 @@
     const pip = st.sync && pic ? '<div class="tour-pip" aria-hidden="true">' + pic.outerHTML.replace('class="nav-ic', 'class="nav-ic tour-sync') + '</div>' : '';
     ov.innerHTML = '<svg class="tour-dim" aria-hidden="true"><path fill-rule="evenodd"></path></svg><div class="tour-rings"></div><div class="tour-card' + (st.alarm ? ' tour-alarm' : '') + '" role="dialog" aria-modal="true" aria-labelledby="tourT">' +
       (st.alarm ? '<div class="tour-band">' + icon('alert', 28) + '<h3 id="tourT">' + esc(st.title) + '</h3></div><div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div>' + pip + '<p>' + esc(st.text) + '</p>'
-        : '<div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div><h3 id="tourT">' + esc(st.title) + '</h3><p>' + esc(st.text) + '</p>') + (st.warn ? '<p class="tour-warn" role="alert">' + icon('alert', 16) + '<b>' + esc(st.warn) + '</b></p>' : '') +
+        : '<div class="tour-n">' + (i + 1) + ' of ' + steps.length + '</div><h3 id="tourT">' + esc(st.title) + '</h3><p>' + esc(st.text) + '</p>') +
+        (st.pages ? '<div class="tour-pip tour-pages" aria-hidden="true">' + st.pages.map(g => '<span class="tp-pg"><span class="nav-ic">' + icon(g[2], 20) + '</span><span>' + esc(g[1]) + '</span></span>').join('') + '</div>' : '') + (st.warn ? '<p class="tour-warn" role="alert">' + icon('alert', 16) + '<b>' + esc(st.warn) + '</b></p>' : '') +
       // side: a detour into another section (Show Me How → How to Add a Request), which comes back here afterwards.
       (st.side ? '<button class="btn btn-next block tour-side" data-act="tourSide" data-v="' + st.side + '">' + icon('right', 18) + 'Show Me How</button>' : '') +
       '<div class="tour-f"><button class="btn" data-act="tourBack" data-v="' + (i - 1) + '">' + icon('left', 18) + 'Back</button>' + (last ? '' : '<button class="btn" data-act="tourSecSkip">Skip</button>') +
