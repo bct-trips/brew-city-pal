@@ -350,14 +350,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792833608"></script>
+    <script src="config.js?v=1792833875"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792833608';
+      window.PAL_BUILD = '1792833875';
       (function () {
         function check(launch) {
           try {
@@ -8622,8 +8622,8 @@
       '<div class="modal-b tour-b"><div class="tour-items">' + rows.map(r => { const st = S.tourSeen && S.tourSeen[r[0]]; // true = finished, 'skipped' = left early
         return '<button type="button" class="tour-item' + (st === true ? ' done' : '') + '" data-act="tourSec" data-v="' + r[0] + '">' + icon(r[1], 20) + '<span class="ti-t">' + r[2] + '</span>' +
           (st === true ? '<span class="ti-ok">' + icon('check', 16) + 'Done</span>' : st === 'skipped' ? '<span class="ti-skip">Skipped</span>' : '<span class="ti-go">Start' + icon('right', 16) + '</span>') + '</button>'; }).join('') + '</div></div>' +
-      // Every section done → Done; until then → Skip Tour.
-      '<div class="modal-f"><span class="spacer"></span>' + (rows.every(r => S.tourSeen && S.tourSeen[r[0]] === true)
+      // Any section finished → Done; none yet → Skip Tour.
+      '<div class="modal-f"><span class="spacer"></span>' + (rows.some(r => S.tourSeen && S.tourSeen[r[0]] === true)
         ? '<button class="btn btn-next" data-act="tourSkip">Done</button>' : '<button class="btn" data-act="tourSkip">Skip Tour</button>') + '</div>');
   }
   function tourSec(k) {
