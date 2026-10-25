@@ -332,6 +332,16 @@
   /* A picked person: the yellow person pill (calendar person filter, Filters button, its ✕). */
   .fp:not(.fp-conf):has(.fp-clear) .fperson, .fdrop-btn.fall.fp-active, .filters > .fall.fp-active + .fall-clear,
   .fp:not(.fp-conf):has(.fp-clear) .fperson:hover, .fdrop-btn.fall.fp-active:hover, .filters > .fall.fp-active + .fall-clear:hover { background-color: var(--gold); color: var(--navy); }
+  /* Settings page (Material settings pattern): a section title (uppercase, navy / powder blue) over one card per group;
+     the settings inside are flat rows split by dividers, each label 16px bold on the left. */
+  :root { --set-sect: #12284B; }
+  :root[data-theme="dark"] { --set-sect: #b4d3f0; }
+  .profile-page .set-sect { max-width: 720px; width: 100%; margin: 26px auto 8px; padding: 0 6px; box-sizing: border-box; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--set-sect); }
+  .profile-page .set-group { max-width: 720px; margin: 0 auto; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); }
+  .profile-page .set-group > .panel { max-width: none; margin: 0; padding: 16px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .profile-page .set-group > .panel + .panel { border-top: 1px solid var(--line); }
+  .profile-page .set-group h3 { font-size: 16px; font-weight: 700; color: var(--ink); }
+  .profile-page .set-group .cfg-row-tog h3, .profile-page .set-group .pin-t h3 { margin-bottom: 0; }
   /* Conflict mode person pill, and List's Pending switch when on: red. */
   .fp-conf .fperson.on, .btn.chip-tog.open-btn.on, .btn.chip-tog.open-btn.on:hover { background-color: var(--no-bg); color: var(--no-ink); }
 }
@@ -350,14 +360,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792833875"></script>
+    <script src="config.js?v=1792919775"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792833875';
+      window.PAL_BUILD = '1792919775';
       (function () {
         function check(launch) {
           try {
@@ -3324,7 +3334,7 @@
   .tz-drop { width: 100%; }
   .tz-drop .tz-btn { display: flex; width: 100%; max-width: none; justify-content: flex-start; gap: 8px; border-radius: 22px; font-size: 16px; color: var(--ink); font-weight: 700; }
   .tz-drop .tz-btn > span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
-  .tz-drop .tz-btn .ic:first-child { color: var(--muted); }
+  .tz-drop .tz-btn .ic:first-child { color: inherit; }
   .tz-pop { width: 100%; }
   /* Wide screens: the Month view's Events | Stats toggle sits in the calendar bar with the filters (as on phones). */
   @media (min-width: 701px) { .calbar .filters > .mmode { display: flex; flex: none; } .calbar .filters > .mmode .seg { display: flex; } .calbar .filters > .mmode .seg button { padding: 0 14px; } }
@@ -7783,7 +7793,7 @@
       S.report ? JSON.parse(JSON.stringify(S.report)) : {}));
     r.rules = (r.rules || []).map(gridRow);
     const zones = REPORT_TZ.some(z => z[0] === r.tz) ? REPORT_TZ : REPORT_TZ.concat([[r.tz, r.tz.replace(/_/g, ' ')]]);
-    return '<div class="panel" id="reportPanel"><div class="cfg-row-tog"><div><h3>' + icon('bell', 16) + ' Daily Email Report' + tip('Your own report, every morning: who is out today and the next 7 days (and any blackouts), for the groups and types you pick. Pending requests are marked.') + '</h3></div>' +
+    return '<div class="panel" id="reportPanel"><div class="cfg-row-tog"><div><h3>' + icon('clock', 16) + ' Daily Email Report' + tip('Your own report, every morning: who is out today and the next 7 days (and any blackouts), for the groups and types you pick. Pending requests are marked.') + '</h3></div>' +
         sw(r.on, 'rpOn', 'Daily Email Report') + '</div>' +
       (r.on ? '<div class="field"><label for="rpEmail">Email' + REQ + '</label><input id="rpEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="' + esc(r.email) + '" data-model="rpDraft.email" data-live="rpType" data-change="rpAuto"></div>' +
         '<div class="row rp-row">' + timeField('rpTime', 'rpTime', 'Time', r.hour, r.min) +
@@ -8950,7 +8960,7 @@
     // Push: label on the left; on the right Send Test (while on) then the switch (shows on while turning on).
     const canSwitch = pst === 'off' || pst === 'on' || pst === 'busy';
     const pushRow = canSwitch
-      ? '<div class="cfg-row-tog n-push"><div><b>Push Notifications</b>' + (pst === 'busy' ? '<p class="meta">Turning on…</p>' : '') + '</div>' +
+      ? '<div class="cfg-row-tog n-push"><div><h3>' + icon('bell', 16) + ' Push Notifications</h3>' + (pst === 'busy' ? '<p class="meta">Turning on…</p>' : '') + '</div>' +
           (pst === 'on' ? '<button type="button" class="btn sm n-test" data-act="pushTest">' + icon('bell', 16) + 'Send Test</button>' : '') +
           sw(pst !== 'off', 'pushToggle', 'Push notifications', pst === 'busy' ? ' disabled aria-busy="true"' : '') + '</div>'
       : pushMsg ? '<div class="n-note"><p>' + esc(pushMsg) + '</p>' +
@@ -8960,7 +8970,7 @@
     // The web app in a browser that can install it (desktop Chrome, Android): offer Install App next to the push switch.
     const installRow = canSwitch && installEvt && !isStandalone() ? '<div class="n-install"><button type="button" class="btn btn-next" data-act="installApp">' + icon('plusSquare', 18) + 'Install App</button></div>' : '';
     // "Notify Me When…" only picks which pushes come (the inbox keeps everything), so it shows only while push is on.
-    return '<h3>' + icon('bell', 16) + ' Notifications</h3>' + pushRow + installRow + (pst !== 'on' ? '' :
+    return (canSwitch ? '' : '<h3>' + icon('bell', 16) + ' Push Notifications</h3>') + pushRow + installRow + (pst !== 'on' ? '' :
       '<div class="n-sect"><div class="lbl">Notify Me When My Request Is</div><div class="push-btns">' +
         [['approved', 'Approved'], ['denied', 'Denied'], ['edited', 'Changed']].map(k => {
           const on = S.notePrefs[k[0]] !== false;
@@ -9052,24 +9062,16 @@
       // The top card IS the member's big [P|MKE|Name] badge (the Profile menu's header), no box or caption around it.
       bigBadge(me).replace('class="pm-bh"', 'class="pm-bh set-badge"') +
 
-      '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' +
-      (S.myAdmin ? '<div class="panel" id="alertsPanel">' + alertsPanelHtml() + '</div>' : '') +
-
-      // Everyone: emails about my own requests (each kind on / off), right under notifications.
-      emailPanel() +
-
-      // Admins (by status — admin mode doesn't need to be unlocked): my own daily email report, under notifications.
-      (S.myAdmin ? reportPanel() : '') +
-
-      (S.priv ? '' : viewRolesPanel()) +
-
-      startupPanel() +
-
-      pinPanel('me', 'key', 'My PIN', '', true, '') +
-
+      // Material settings: a section title over one card per group, a divider between its settings.
+      setSect('Notifications', '<div class="panel notes-panel" id="notesPanel">' + notesPanelHtml() + '</div>' + emailPanel() +
+        // Admins (by status — admin mode doesn't need to be unlocked): alerts and my own daily email report.
+        (S.myAdmin ? '<div class="panel" id="alertsPanel">' + alertsPanelHtml() + '</div>' + reportPanel() : '')) +
+      setSect('Calendar & Lists', (S.priv ? '' : viewRolesPanel()) + startupPanel()) +
+      setSect('Security', pinPanel('me', 'key', 'My PIN', '', true, '')) +
 
       '</div></section>';
   }
+  const setSect = (title, body) => '<h2 class="set-sect">' + esc(title) + '</h2><div class="set-group">' + body + '</div>';
   /** Settings → Start-up (this device): the page the app opens to and the calendar view it starts in. */
   function startupPanel() {
     // Two of the app's dropdowns side by side; the choice saves as soon as it's picked.
