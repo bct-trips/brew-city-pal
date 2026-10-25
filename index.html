@@ -342,9 +342,9 @@
   .profile-page .set-group > .panel + .panel { border-top: 1px solid var(--line); }
   .profile-page .set-group h3 { font-size: 16px; font-weight: 700; color: var(--ink); }
   .profile-page .set-group .cfg-row-tog h3, .profile-page .set-group .pin-t h3 { margin-bottom: 0; }
-  /* A switch's own settings (shown while it's on): an indented, tinted inset card (thin outline, rounded like the rest) under its switch row, so
+  /* A switch's own settings (shown while it's on): a tinted inset card (thin outline, rounded like the rest; full width, not indented) under its switch row, so
      they read as part of that switch, not as the next setting. Same look in Settings and the guided setup. */
-  .set-sub { margin: 12px 0 0 12px; padding: 12px 14px 14px; background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; }
+  .set-sub { margin: 12px 0 0; padding: 12px 14px 14px; background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; }
   .set-sub > :first-child { margin-top: 0; }
   .set-sub > :last-child { margin-bottom: 0; }
   .set-sub .lbl { color: var(--ink); }
@@ -367,14 +367,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792919978"></script>
+    <script src="config.js?v=1792920023"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792919978';
+      window.PAL_BUILD = '1792920023';
       (function () {
         function check(launch) {
           try {
