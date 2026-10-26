@@ -376,14 +376,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793040205"></script>
+    <script src="config.js?v=1793040912"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793040205';
+      window.PAL_BUILD = '1793040912';
       (function () {
         function check(launch) {
           try {
@@ -8122,24 +8122,30 @@
         '<td>' + (who.join('; ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts"><button class="btn sm act" data-act="tpEdit" data-id="' + esc(p.id) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button></div></td></tr>';
     }).join('');
-    return '<div class="panel pin-panel pin-y"><div class="cfg-h"><h3>' + icon('shield', 16) + ' Team Admin PINs' +
-        tip('Give a member a team admin PIN: when they unlock Admin Mode with it, they become a team admin for its positions and units. Each PIN is different from every other PIN.') + '</h3>' +
-        '<button class="btn primary" data-act="tpEdit">' + icon('plus', 18) + 'New PIN</button></div>' +
+    return '<div class="panel pin-panel pin-y"><div class="cfg-h"><h3>' + icon('shield', 16) + ' Team Admin Profiles' +
+        tip('Each profile has a PIN and grants units and positions. Add people here or on their member card, or give them the PIN: unlocking Admin Mode with it adds them. No two PINs match.') + '</h3>' +
+        '<button class="btn primary" data-act="tpEdit">' + icon('plus', 18) + 'New Profile</button></div>' +
       (pins.length ? '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Name</th><th scope="col">Grants</th>' +
         '<th scope="col">PIN</th><th scope="col">Admins</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<span class="pin-unset">Not Set</span>') + '</div>';
   }
   /** Add or edit a team admin PIN: Name, Positions, Units (none = All Units), its admins (✕ removes one), the PIN
    *  (required for a new one; blank keeps it) and the current org admin PIN. Delete on an existing one. */
+  const tpMembersHtml = () => { const d = S.tpDraft; return d.members.length ? '<div class="push-btns">' + d.members.map(m => { const u = userOf(m);
+    return '<button type="button" class="btn chip-tog on" data-act="tpDrop" data-v="' + esc(m) + '" aria-label="Remove ' + esc(nameText(u, true)) + '">' + esc(nameText(u, true)) + icon('x', 16) + '</button>'; }).join('') + '</div>' : '<p class="meta">None yet.</p>'; };
+  /** Who can be added to a team admin profile: active members who aren't org admins. */
+  const tpPool = () => S.users.filter(u => u.active && ((S.admins || {})[u.id] || {}).level !== 'org');
   function teamPinDialog(id) {
     const p = (S.teamPins || []).find(x => x.id === id) || null;
     const d = S.tpDraft = { id: p ? p.id : '', rows: p && p.rows.length ? p.rows.map(r => ({ units: r.units.slice(), roles: r.roles.slice() })) : [{ units: ['@own'], roles: [] }], members: p ? p.members.slice() : [] };
     S.rgEdit = null;
-    openModal('tpEdit', modalHead(p ? 'Edit ' + p.name + ' PIN' : 'New Team Admin PIN', 'shield') + '<div class="modal-b">' +
+    openModal('tpEdit', modalHead(p ? 'Edit ' + p.name : 'New Team Admin Profile', 'shield') + '<div class="modal-b">' +
       '<div class="field"><label for="tpName">Name' + REQ + '</label><input id="tpName" maxlength="30" autocomplete="off" placeholder="Ops" value="' + esc(p ? p.name : '') + '"></div>' +
       '<div class="sect"><div class="lbl">Grants' + REQ + '</div><div id="tpGrid">' + ruleGrid('tpin') + '</div></div>' +
-      (d.members.length ? '<div class="sect"><div class="lbl">Admins</div><div class="push-btns" id="tpMembers">' + d.members.map(m => { const u = userOf(m);
-        return '<button type="button" class="btn chip-tog on" data-act="tpDrop" data-v="' + esc(m) + '" aria-label="Remove ' + esc(nameText(u, true)) + '">' + esc(nameText(u, true)) + icon('x', 16) + '</button>'; }).join('') + '</div></div>' : '') +
+      // Admins: who's in it (✕ takes one out); Add Admins = the member chooser (search + name pucks), several at once.
+      '<div class="sect"><div class="lbl">Admins</div><div id="tpMembers">' + tpMembersHtml() + '</div>' +
+        '<div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who" data-act="tpWhoDrop" aria-haspopup="listbox" aria-expanded="false">' +
+        icon('userPlus', 16) + '<span>Add Admins</span>' + icon('down', 14) + '</button><div class="who-pop" id="whoPop" hidden></div></div></div>' +
       PIN_HINT +
       '<div class="field"><label for="pdA">' + (p ? 'New PIN' : 'PIN' + REQ) + '</label><input id="pdA" ' + NEW_PIN + '></div>' +
       '<div class="field"><label for="pdB">Confirm</label><input id="pdB" ' + NEW_PIN + '></div>' +
@@ -9141,7 +9147,7 @@
       '</div></section>';
   }
   /** Settings → Security (team admins): the team admin PINs inside their team — name, what it grants, PIN with the eye. */
-  const myTeamPinsPanel = () => '<div class="panel"><div class="cfg-h"><h3>' + icon('shield', 16) + ' Team Admin PINs</h3>' +
+  const myTeamPinsPanel = () => '<div class="panel"><div class="cfg-h"><h3>' + icon('shield', 16) + ' Team Admin Profiles</h3>' +
     '<button type="button" class="btn" data-act="tpAddDlg">' + icon('plus', 16) + 'Add a PIN</button></div>' + (!(S.teamPins || []).length ? '' : '<div class="tpin-list">' +
     S.teamPins.map(p => '<div class="tpin-row"><div><b>' + esc(p.name) + '</b><span class="meta">' + esc(tpinCovers(p)) + '</span></div>' + tpinCell(p) + '</div>').join('') + '</div>') + '</div>';
   const setSect = (title, body) => '<h2 class="set-sect">' + esc(title) + '</h2><div class="set-group">' + body + '</div>';
@@ -9461,9 +9467,13 @@
         (uid !== S.me ? (() => {
           const lvl = S.admDraft === uid ? 'team' : adm ? adm.level : '', cells = adm && adm.level === 'team' ? scopeCells(adm.scope) : [];
           const opts = (S.isOrg ? [['org', 'Org Admin']] : []).concat([['team', 'Team Admin'], ['', 'None']]);
-          return '<div class="mc-li mc-adm"><span class="mc-li-ic">' + icon('shield', 20) + '</span><div class="mc-li-t"><b>Admin</b><span>' + (lvl === 'org' ? 'Every team' : lvl === 'team' ? (cells.length ? esc(scopeText({ cells })) : 'Tick what they manage') + (adm && adm.pins && adm.pins.length ? ' · ' + esc(adm.pins.join(', ')) + ' PIN' : '') : 'Not an admin') + ((S.alertIds || []).includes(uid) ? ' · gets alerts' : '') + '</span></div>' +
+          return '<div class="mc-li mc-adm"><span class="mc-li-ic">' + icon('shield', 20) + '</span><div class="mc-li-t"><b>Admin</b><span>' + (lvl === 'org' ? 'Every team' : lvl === 'team' ? (cells.length ? esc(scopeText({ cells })) : 'Tick what they manage') + (adm && adm.pins && adm.pins.length ? ' · ' + esc(adm.pins.join(', ')) : '') : 'Not an admin') + ((S.alertIds || []).includes(uid) ? ' · gets alerts' : '') + '</span></div>' +
             (canSetAdm ? '<div class="mc-li-a">' + seg(opts, lvl, 'admLevel', ' data-id="' + esc(uid) + '"') + '</div>' : '') + '</div>' +
-            (lvl === 'team' && canSetAdm ? ruleGrid('adm:' + uid) : '');
+            (lvl === 'team' && canSetAdm ? ruleGrid('adm:' + uid) : '') +
+            // Org admins: which team admin profiles they're in (tap to add / take out; adding one makes them a team admin).
+            (S.isOrg && lvl !== 'org' && (S.teamPins || []).some(p => !p.legacy) ? '<div class="sect mc-tpins"><div class="lbl">Team Admin Profiles</div><div class="push-btns">' +
+              S.teamPins.filter(p => !p.legacy).map(p => { const on = p.members.includes(uid);
+                return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="mcPin" data-id="' + esc(uid) + '" data-v="' + esc(p.id) + '">' + (on ? icon('check', 18) : '') + esc(p.name) + '</button>'; }).join('') + '</div></div>' : '');
         })() : '') +
       '</div></section>' +
       // Details: Last · First · Middle, then Rank · Position · Unit (a tight grid; two columns on phones).
@@ -9692,13 +9702,13 @@
       return list.length ? '<div class="who-h">' + esc(roleGroup(role)) + '</div>' + list.map(row).join('') : '';
     }).join('');
     return '<div class="who-search">' + icon('search', 15) + '<input type="search" id="whoQ" placeholder="Type a name…" autocomplete="off" aria-label="Search members" data-model="whoq" data-live="whoFilter"></div>' +
-      '<div class="who-list" role="listbox"' + (act === 'whoPick' ? ' aria-multiselectable="true"' : '') + '>' + (top || '') +
-      groups + '<div class="who-none" hidden>No one matches.</div></div>' + (act === 'whoPick' ? popFoot('whoCancel', 'whoDone') : '');
+      '<div class="who-list" role="listbox"' + (act === 'whoPick' || act === 'tpWho' ? ' aria-multiselectable="true"' : '') + '>' + (top || '') +
+      groups + '<div class="who-none" hidden>No one matches.</div></div>' + (act === 'whoPick' ? popFoot('whoCancel', 'whoDone') : act === 'tpWho' ? popFoot('tpWhoCancel', 'tpWhoDone') : '');
   }
   function closeWhoDrop() {
     const p = $('#whoPop'); if (!p || p.hidden) return;
     p.hidden = true; p.innerHTML = '';
-    const m = $('#modal [data-act="mgrDrop"]'); if (m) { m.setAttribute('aria-expanded', 'false'); return; } // Managers → Add Manager
+    const m = $('#modal [data-act="mgrDrop"], #modal [data-act="tpWhoDrop"]'); if (m) { m.setAttribute('aria-expanded', 'false'); return; } // Managers → Add Manager; team admin profile → Add Admins
     const b = $('#modal [data-act="whoDrop"]'); if (b) { b.setAttribute('aria-expanded', 'false'); b.innerHTML = whoBtnInner(); }
     if (!S.wiz.editId) S.wiz.assigneeId = (S.wiz.assignees || [])[0] || '';
     refreshWizDates(); // slot colors depend on who it's for
@@ -10666,6 +10676,14 @@
       pop.querySelectorAll('.who-h').forEach(h => { let n = h.nextElementSibling, vis = false; while (n && !n.classList.contains('who-h')) { if (n.classList.contains('who-row') && !n.hidden) vis = true; n = n.nextElementSibling; } h.hidden = !vis; });
       const none = pop.querySelector('.who-none'); if (none) none.hidden = any;
     },
+    // Member card → Team Admin Profiles: add to / take out of one profile (saved at once; the card redraws from the server).
+    async mcPin(el) {
+      const uid = el.dataset.id, pid = el.dataset.v;
+      const ids = (S.teamPins || []).filter(p => !p.legacy && (p.id === pid ? !p.members.includes(uid) : p.members.includes(uid))).map(p => p.id);
+      const d = await run(el, 'apiSetUserPins', S.token, uid, ids);
+      if (!d) return;
+      apply(d); render(); openMemberCard(uid);
+    },
     mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; focusPin($('#mcPin1')); } },
     // Optimistic, like every Roster action: the card updates now and the server catches up in the background.
     async revokeAdmin(el) {
@@ -10851,7 +10869,22 @@
     },
     tpHide(el) { const o = Object.assign({}, S.tpShown); delete o[el.dataset.id]; S.tpShown = o; render(); },
     // Chips flip in place (no redraw), so typed PINs stay.
-    tpDrop(el) { S.tpDraft.members = S.tpDraft.members.filter(x => x !== el.dataset.v); el.remove(); },
+    tpDrop(el) { S.tpDraft.members = S.tpDraft.members.filter(x => x !== el.dataset.v); $('#tpMembers').innerHTML = tpMembersHtml(); },
+    tpWhoDrop(el) {
+      const p = $('#whoPop'); if (!p) return;
+      if (!p.hidden) { closeWhoDrop(); return; }
+      S.tpWas = S.tpDraft.members.slice(); // Cancel puts this back
+      S.whoq = ''; p.innerHTML = whoListHtml(tpPool(), new Set(S.tpDraft.members), 'tpWho'); p.hidden = false; el.setAttribute('aria-expanded', 'true');
+      const q = $('#whoQ'); if (q) q.focus();
+    },
+    tpWho(el) {
+      const d = S.tpDraft, id = el.dataset.id, on = !d.members.includes(id);
+      d.members = on ? d.members.concat([id]) : d.members.filter(x => x !== id);
+      el.classList.toggle('on', on); el.setAttribute('aria-selected', on); el.querySelector('.who-ck').innerHTML = on ? icon('check', 16) : '';
+      $('#tpMembers').innerHTML = tpMembersHtml();
+    },
+    tpWhoDone() { closeWhoDrop(); },
+    tpWhoCancel() { S.tpDraft.members = (S.tpWas || []).slice(); $('#tpMembers').innerHTML = tpMembersHtml(); closeWhoDrop(); },
     async tpSave(el) {
       const d = S.tpDraft, err = $('#pdErr'), a = $('#pdA').value.trim(), b = $('#pdB').value.trim(), cur = $('#pdC').value.trim(), name = $('#tpName').value.trim();
       if (!name) { err.textContent = 'Name the PIN (for example Ops).'; return; }
@@ -10867,7 +10900,7 @@
       if (!res) return;
       if (a && d.id) { const o = Object.assign({}, S.tpShown); delete o[d.id]; S.tpShown = o; }
       apply(res); closeModal(); render();
-      toast(name + ' PIN saved');
+      toast(name + ' saved');
     },
     async tpDelete(el) {
       const d = S.tpDraft, err = $('#pdErr'), cur = $('#pdC').value.trim();
@@ -10876,7 +10909,7 @@
       const res = await run(el, 'apiDeleteTeamPin', S.token, d.id, cur);
       if (!res) return;
       apply(res); closeModal(); render();
-      toast('Team admin PIN deleted');
+      toast('Profile deleted');
     },
     async pinForgotSend(el) {
       const kind = el.dataset.k, a = $('#pdA').value.trim(), b = $('#pdB').value.trim(), err = $('#pdErr');
