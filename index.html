@@ -374,14 +374,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793039154"></script>
+    <script src="config.js?v=1793039408"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793039154';
+      window.PAL_BUILD = '1793039408';
       (function () {
         function check(launch) {
           try {
@@ -4388,8 +4388,9 @@
      {rows(), set(rows), cols: [[key, label]], key, any, lim, blank()}. */
   const RG = {};
   /** Admin alert kinds: [key, label]. */
-  const ALERT_KINDS = [['new', 'New Requests'], ['edited', 'Changes'], ['deleted', 'Deletions'], ['signup', 'New Members']];
-  const ALL_KINDS = () => ALERT_KINDS.map(k => k[0]);
+  const ALERT_KINDS = [['new', 'New Requests'], ['edited', 'Changes'], ['deleted', 'Deletions'], ['signup', 'New Members'], ['adminup', 'New Admins']];
+  // A new alert row starts with every kind except New Admins (someone gained team admin rights with a PIN): off until ticked.
+  const ALL_KINDS = () => ALERT_KINDS.map(k => k[0]).filter(k => k !== 'adminup');
   /** A grid row from any saved shape: {units, roles} lists, or older {unit, role} ('' = any). */
   const gridRow = r => Object.assign({}, r, { units: Array.isArray(r.units) ? r.units.slice() : r.unit ? [r.unit] : [], roles: Array.isArray(r.roles) ? r.roles.slice() : r.role ? [r.role] : [] });
   /** Team admin rows → the unit + position pairs they grant (inside `lim`, a team admin's own team). */
