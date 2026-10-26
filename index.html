@@ -367,14 +367,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1792920023"></script>
+    <script src="config.js?v=1793037330"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1792920023';
+      window.PAL_BUILD = '1793037330';
       (function () {
         function check(launch) {
           try {
@@ -7795,8 +7795,7 @@
    *  units, positions and types this admin picks (team admins: within their team). Saved on the server per admin. */
   function reportPanel() {
     const devTz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } })();
-    const rTypes = typeNames().concat(['Blackout']); // every event type, plus blackouts
-    const r = S.rpDraft || (S.rpDraft = Object.assign({ on: false, email: '', hour: 6, tz: devTz, rules: [{ units: [], roles: [], types: rTypes.slice() }] },
+    const r = S.rpDraft || (S.rpDraft = Object.assign({ on: false, email: '', hour: 6, tz: devTz, rules: [{ units: [], roles: [], types: rpDefTypes() }] },
       S.report ? JSON.parse(JSON.stringify(S.report)) : {}));
     r.rules = (r.rules || []).map(gridRow);
     const zones = REPORT_TZ.some(z => z[0] === r.tz) ? REPORT_TZ : REPORT_TZ.concat([[r.tz, r.tz.replace(/_/g, ' ')]]);
@@ -7975,8 +7974,11 @@
   }
   const redrawEmail = () => { const p = $('#emailPanel'); if (p) p.outerHTML = emailPanel(); };
   // Report coverage grid: the draft's rows; saved with Save Report.
-  RG.report = { key: 'types', any: true, get lim() { return myScope(); }, get cols() { return typeNames().concat(['Blackout']).map(t => [t, t]); },
-    blank: () => ({ types: typeNames().concat(['Blackout']) }), rows: () => S.rpDraft.rules, set: rows => { S.rpDraft.rules = rows; redrawReport(); A.rpAuto(); }, redraw: redrawReport };
+  /** What the daily report can cover: Medical, Leave, Pass (and any other event types), then Blackout. New rows cover
+   *  every event; Blackout only when ticked. */
+  const rpTypes = () => ['Medical'].concat(typeNames(), ['Blackout']), rpDefTypes = () => rpTypes().filter(t => t !== 'Blackout');
+  RG.report = { key: 'types', any: true, get lim() { return myScope(); }, get cols() { return rpTypes().map(t => [t, t]); },
+    blank: () => ({ types: rpDefTypes() }), rows: () => S.rpDraft.rules, set: rows => { S.rpDraft.rules = rows; redrawReport(); A.rpAuto(); }, redraw: redrawReport };
   /** Mode slider (Profile menu row "Mode" and the top of the Admin page): User | Admin, built like the status slider.
    *  User = a green pill with a person, Admin = a red pill with a shield; the chosen side shows its word, the other just
    *  its icon. Known admins switch at once; anyone else is asked for the admin PIN first. */
@@ -10152,7 +10154,7 @@
       const r = S.rpDraft, e = $('#rpEmail'); if (e) r.email = e.value.trim();
       r.on = !r.on;
       // Nothing covered yet: start with one row — any unit, any position, every type and blackouts.
-      if (r.on && !(r.rules || []).some(x => (x.types || []).length)) r.rules = [{ units: [], roles: [], types: typeNames().concat(['Blackout']) }];
+      if (r.on && !(r.rules || []).some(x => (x.types || []).length)) r.rules = [{ units: [], roles: [], types: rpDefTypes() }];
       redrawReport();
       if (r.on || (S.report && S.report.on)) A.rpAuto();
     },
