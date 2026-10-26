@@ -336,6 +336,11 @@
   .tpin-c { display: flex; align-items: center; gap: 8px; }
   /* "Their Unit" in a team PIN's grid: a neutral badge in the unit badges' place (it means the member's own unit). */
   .badge.rg-own { background: var(--sel-bg); color: var(--sel-ink); border: 0; font-weight: 800; }
+  /* Member card permissions table: a Team's rows start with the Team's name (outlined chip with a shield); the add bar
+     holds Add Row and Add Team, and Add Team opens the Teams as chips under it. */
+  .badge.rg-team { display: inline-flex; align-items: center; gap: 4px; background: transparent; color: var(--ink); border: 1.5px solid var(--set-sect); font-weight: 800; }
+  .rg-addbar { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rg-teams { margin-top: 10px; }
   .tpin-list { display: grid; gap: 10px; }
   .tpin-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .tpin-row > div:first-child { display: grid; min-width: 0; }
@@ -376,14 +381,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793041437"></script>
+    <script src="config.js?v=1793042088"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793041437';
+      window.PAL_BUILD = '1793042088';
       (function () {
         function check(launch) {
           try {
@@ -4430,9 +4435,18 @@
           '<span class="sc-l">Units</span><div class="push-btns">' + (h.any ? chip('anyU', i, null, !x.units.length, 'Any') : '') + units(x).map(c => chip('unit', i, c, x.units.includes(c), c === '@own' ? 'Their Unit' : c)).join('') + '</div>' +
           '<span class="sc-l">Positions</span><div class="push-btns">' + (h.any ? chip('anyR', i, null, !x.roles.length, 'Any') : '') + roles(x).map(r => chip('role', i, r, x.roles.includes(r), rName(r))).join('') + '</div></div>' +
           '<div class="rg-done"><button type="button" class="btn sm primary"' + attrs('done', i) + '>' + icon('check', 14) + 'Done</button></div></div></td></tr>' : '')).join('');
-    const add = '<tr class="ag-add"><td colspan="' + span + '"><button type="button" class="btn sm"' + attrs('add', -1) + '>' + icon('plus', 14) + 'Add Row</button></td></tr>';
-    return '<div class="tbl-wrap ag-wrap rg"><table class="rtable ag"><thead>' + head + '</thead><tbody>' +
-      (rows.length ? body : '<tr><td colspan="' + span + '" class="muted rg-none">Nothing yet.</td></tr>') + add + '</tbody></table></div>';
+    // h.fixed: rows that come from a Team (member card): the Team's name, its units and positions for this member; the
+    // trash takes the Team off them. h.teams: Teams that can be added (Add Team opens them as chips).
+    const fixed = h.fixed ? h.fixed() : [], teams = h.teams ? h.teams() : [], picking = S.rgTeamPick === g;
+    const fixedHtml = fixed.map(f => '<tr class="rg-row rg-fixed"><td class="rg-u"><span class="rg-badges"><span class="badge rg-team">' + icon('shield', 12) + esc(f.name) + '</span>' +
+        (f.units.length ? f.units.map(uOut).join('') : '<span class="muted">Any</span>') + '</span></td>' +
+      '<td class="rg-r">' + (f.roles.length ? esc(f.roles.map(rName).join(', ')) : '<span class="muted">Any</span>') + '</td>' + cols.map(() => '<td></td>').join('') +
+      '<td class="ag-del"><div class="rg-acts"><button type="button" class="btn sm del act ico"' + attrs('delTeam', -1, f.id) + ' aria-label="Remove the ' + esc(f.name) + ' team" title="Remove team">' + icon('trash', 14) + '</button></div></td></tr>').join('');
+    const add = '<tr class="ag-add"><td colspan="' + span + '"><div class="rg-addbar"><button type="button" class="btn sm"' + attrs('add', -1) + '>' + icon('plus', 14) + 'Add Row</button>' +
+        (teams.length ? '<button type="button" class="btn sm' + (picking ? ' on' : '') + '"' + attrs('teamPick', -1) + ' aria-expanded="' + picking + '">' + icon('shield', 14) + 'Add Team</button>' : '') + '</div>' +
+        (picking && teams.length ? '<div class="push-btns rg-teams">' + teams.map(t => '<button type="button" class="btn sm chip-tog"' + attrs('addTeam', -1, t.id) + '>' + esc(t.name) + '</button>').join('') + '</div>' : '') + '</td></tr>';
+    return '<div class="tbl-wrap ag-wrap rg"><table class="rtable ag"><thead>' + head + '</thead><tbody>' + fixedHtml +
+      (rows.length ? body : fixed.length ? '' : '<tr><td colspan="' + span + '" class="muted rg-none">Nothing yet.</td></tr>') + add + '</tbody></table></div>';
   }
   /** "PIT · Maintenance", "Pilots · Booms", "PIT: Pilots, Booms · MKE: Booms", or "Everyone". */
   const scopeText = sc => {
@@ -7423,7 +7437,18 @@
         } else { S.admRows[id] = rows; S.admDraft = id; }
         render(); openMemberCard(id);
       },
-      redraw: () => openMemberCard(id) };
+      redraw: () => openMemberCard(id),
+      // Org admins: the Teams this member is in, as rows ('@own' shown as their own unit / position), and Add Team.
+      fixed: () => { const u = userOf(id); return !S.isOrg ? [] : (S.teamPins || []).filter(p => !p.legacy && p.members.includes(id))
+        .flatMap(p => p.rows.map(r => ({ id: p.id, name: p.name, units: r.units.map(x => x === '@own' ? u.unit : x), roles: r.roles.map(x => x === '@own' ? u.role : x) }))); },
+      teams: () => !S.isOrg ? [] : (S.teamPins || []).filter(p => !p.legacy && !p.members.includes(id)),
+      team: async (pid, on) => {
+        const ids = (S.teamPins || []).filter(p => !p.legacy && (p.id === pid ? on : p.members.includes(id))).map(p => p.id);
+        const d = await call('apiSetUserPins', S.token, id, ids).catch(e => { toast(e.message, 'error', 4500); return null; });
+        if (!d) return openMemberCard(id);
+        S.admDraft = null; if (S.admRows) delete S.admRows[id];
+        apply(d); render(); openMemberCard(id);
+      } };
   }
   /** Admin status picker — one member (uid) from their card, or the selected members (uid = null) from the batch bar.
    *  None · Org Admin (org admins only) · Team Admin with units / positions (team admins: within their own team). */
@@ -8128,10 +8153,10 @@
         '<td>' + (who.join('; ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts"><button class="btn sm act" data-act="tpEdit" data-id="' + esc(p.id) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button></div></td></tr>';
     }).join('');
-    return '<div class="panel pin-panel pin-y"><div class="cfg-h"><h3>' + icon('shield', 16) + ' Team Admin Profiles' +
-        tip('Each profile has a PIN and grants units and positions. Add people here or on their member card, or give them the PIN: unlocking Admin Mode with it adds them. No two PINs match.') + '</h3>' +
-        '<button class="btn primary" data-act="tpEdit">' + icon('plus', 18) + 'New Profile</button></div>' +
-      (pins.length ? '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Name</th><th scope="col">Grants</th>' +
+    return '<div class="panel pin-panel pin-y"><div class="cfg-h"><h3>' + icon('shield', 16) + ' Teams' +
+        tip('Each team has a PIN and the units and positions its team admins manage. Add people here or on their member card, or give them the PIN: unlocking Admin Mode with it adds them. No two PINs match.') + '</h3>' +
+        '<button class="btn primary" data-act="tpEdit">' + icon('plus', 18) + 'New Team</button></div>' +
+      (pins.length ? '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Name</th><th scope="col">Manages</th>' +
         '<th scope="col">PIN</th><th scope="col">Admins</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<span class="pin-unset">Not Set</span>') + '</div>';
   }
@@ -8145,9 +8170,9 @@
     const p = (S.teamPins || []).find(x => x.id === id) || null;
     const d = S.tpDraft = { id: p ? p.id : '', rows: p && p.rows.length ? p.rows.map(r => ({ units: r.units.slice(), roles: r.roles.slice() })) : [{ units: ['@own'], roles: [] }], members: p ? p.members.slice() : [] };
     S.rgEdit = null;
-    openModal('tpEdit', modalHead(p ? 'Edit ' + p.name : 'New Team Admin Profile', 'shield') + '<div class="modal-b">' +
+    openModal('tpEdit', modalHead(p ? 'Edit ' + p.name : 'New Team', 'shield') + '<div class="modal-b">' +
       '<div class="field"><label for="tpName">Name' + REQ + '</label><input id="tpName" maxlength="30" autocomplete="off" placeholder="Ops" value="' + esc(p ? p.name : '') + '"></div>' +
-      '<div class="sect"><div class="lbl">Grants' + REQ + '</div><div id="tpGrid">' + ruleGrid('tpin') + '</div></div>' +
+      '<div class="sect"><div class="lbl">Manages' + REQ + '</div><div id="tpGrid">' + ruleGrid('tpin') + '</div></div>' +
       // Admins: who's in it (✕ takes one out); Add Admins = the member chooser (search + name pucks), several at once.
       '<div class="sect"><div class="lbl">Admins</div><div id="tpMembers">' + tpMembersHtml() + '</div>' +
         '<div class="who-wrap"><button type="button" class="fsel fdrop-btn wiz-who" data-act="tpWhoDrop" aria-haspopup="listbox" aria-expanded="false">' +
@@ -8182,7 +8207,7 @@
 
 
       // Unit badges
-      '<div class="panel"><div class="cfg-h"><h3>' + icon('users', 16) + ' Teams' + tip('Each unit is a team: its badge, members and team admins. Team admins unlock with a team admin PIN and manage only what it covers (and anything ticked on their member card). Disabled teams aren’t offered to new members.') + '</h3>' +
+      '<div class="panel"><div class="cfg-h"><h3>' + icon('users', 16) + ' Units' + tip('Each unit: its badge, members and the team admins who manage it. Disabled units aren’t offered to new members.') + '</h3>' +
         '<button class="btn primary" data-act="newBadge">' + icon('plus', 18) + 'New Badge</button></div>' +
         adminUnits() + '</div>' +
 
@@ -9153,8 +9178,8 @@
       '</div></section>';
   }
   /** Settings → Security (team admins): the team admin PINs inside their team — name, what it grants, PIN with the eye. */
-  const myTeamPinsPanel = () => '<div class="panel"><div class="cfg-h"><h3>' + icon('shield', 16) + ' Team Admin Profiles</h3>' +
-    '<button type="button" class="btn" data-act="tpAddDlg">' + icon('plus', 16) + 'Add a PIN</button></div>' + (!(S.teamPins || []).length ? '' : '<div class="tpin-list">' +
+  const myTeamPinsPanel = () => '<div class="panel"><div class="cfg-h"><h3>' + icon('shield', 16) + ' Teams</h3>' +
+    '<button type="button" class="btn" data-act="tpAddDlg">' + icon('plus', 16) + 'Join a Team</button></div>' + (!(S.teamPins || []).length ? '' : '<div class="tpin-list">' +
     S.teamPins.map(p => '<div class="tpin-row"><div><b>' + esc(p.name) + '</b><span class="meta">' + esc(tpinCovers(p)) + '</span></div>' + tpinCell(p) + '</div>').join('') + '</div>') + '</div>';
   const setSect = (title, body) => '<h2 class="set-sect">' + esc(title) + '</h2><div class="set-group">' + body + '</div>';
   /** Settings → Start-up (this device): the page the app opens to and the calendar view it starts in. */
@@ -9473,14 +9498,10 @@
         (uid !== S.me ? (() => {
           const lvl = S.admDraft === uid ? 'team' : adm ? adm.level : '', cells = adm && adm.level === 'team' ? scopeCells(adm.scope) : [];
           const opts = (S.isOrg ? [['org', 'Org Admin']] : []).concat([['team', 'Team Admin'], ['', 'None']]);
-          return '<div class="mc-li mc-adm"><span class="mc-li-ic">' + icon('shield', 20) + '</span><div class="mc-li-t"><b>Admin</b><span>' + (lvl === 'org' ? 'Every team' : lvl === 'team' ? (cells.length ? esc(scopeText({ cells })) : S.isOrg && (S.teamPins || []).some(p => !p.legacy) ? 'Pick a profile or units and positions' : 'Tick what they manage') + (adm && adm.pins && adm.pins.length ? ' · ' + esc(adm.pins.join(', ')) : '') : 'Not an admin') + ((S.alertIds || []).includes(uid) ? ' · gets alerts' : '') + '</span></div>' +
+          return '<div class="mc-li mc-adm"><span class="mc-li-ic">' + icon('shield', 20) + '</span><div class="mc-li-t"><b>Admin</b><span>' + (lvl === 'org' ? 'Every team' : lvl === 'team' ? (cells.length ? esc(scopeText({ cells })) : S.isOrg && (S.teamPins || []).some(p => !p.legacy) ? 'Add a team or a row' : 'Tick what they manage') + (adm && adm.pins && adm.pins.length ? ' · ' + esc(adm.pins.join(', ')) : '') : 'Not an admin') + ((S.alertIds || []).includes(uid) ? ' · gets alerts' : '') + '</span></div>' +
             (canSetAdm ? '<div class="mc-li-a">' + seg(opts, lvl, 'admLevel', ' data-id="' + esc(uid) + '"') + '</div>' : '') + '</div>' +
-            // Org admins: which team admin profiles they're in (tap to add / take out; adding one makes them a team admin).
-            (S.isOrg && lvl !== 'org' && (S.teamPins || []).some(p => !p.legacy) ? '<div class="sect mc-tpins"><div class="lbl">Team Admin Profiles</div><div class="push-btns">' +
-              S.teamPins.filter(p => !p.legacy).map(p => { const on = p.members.includes(uid);
-                return '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="mcPin" data-id="' + esc(uid) + '" data-v="' + esc(p.id) + '">' + (on ? icon('check', 18) : '') + esc(p.name) + '</button>'; }).join('') + '</div></div>' : '') +
-            // Then this member's own units and positions (on top of their profiles; optional when they have one).
-            (lvl === 'team' && canSetAdm ? '<div class="sect mc-own"><div class="lbl">Units and Positions</div>' + ruleGrid('adm:' + uid) + '</div>' : '');
+            // One permissions table: rows from their Teams (Add Team) and their own rows (Add Row).
+            (lvl === 'team' && canSetAdm ? ruleGrid('adm:' + uid) : '');
         })() : '') +
       '</div></section>' +
       // Details: Last · First · Middle, then Rank · Position · Unit (a tight grid; two columns on phones).
@@ -10683,15 +10704,6 @@
       pop.querySelectorAll('.who-h').forEach(h => { let n = h.nextElementSibling, vis = false; while (n && !n.classList.contains('who-h')) { if (n.classList.contains('who-row') && !n.hidden) vis = true; n = n.nextElementSibling; } h.hidden = !vis; });
       const none = pop.querySelector('.who-none'); if (none) none.hidden = any;
     },
-    // Member card → Team Admin Profiles: add to / take out of one profile (saved at once; the card redraws from the server).
-    async mcPin(el) {
-      const uid = el.dataset.id, pid = el.dataset.v;
-      const ids = (S.teamPins || []).filter(p => !p.legacy && (p.id === pid ? !p.members.includes(uid) : p.members.includes(uid))).map(p => p.id);
-      const d = await run(el, 'apiSetUserPins', S.token, uid, ids);
-      if (!d) return;
-      S.admDraft = null; if (S.admRows) delete S.admRows[uid];
-      apply(d); render(); openMemberCard(uid);
-    },
     mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; focusPin($('#mcPin1')); } },
     // Optimistic, like every Roster action: the card updates now and the server catches up in the background.
     async revokeAdmin(el) {
@@ -10823,6 +10835,8 @@
       const rows = h.rows().map(r => Object.assign({}, r, { units: r.units.slice(), roles: r.roles.slice() })), x = rows[i];
       const same = S.rgEdit && S.rgEdit.g === g && S.rgEdit.i === i;
       if (op === 'edit' || op === 'done') { S.rgEdit = op === 'edit' && !same ? { g, i } : null; return h.redraw(); }
+      if (op === 'teamPick') { S.rgTeamPick = S.rgTeamPick === g ? null : g; return h.redraw(); }
+      if (op === 'addTeam' || op === 'delTeam') { S.rgTeamPick = null; return h.team(v, op === 'addTeam'); }
       if (op === 'add') { rows.push(Object.assign({ units: [], roles: [] }, h.blank ? h.blank() : {})); S.rgEdit = { g, i: rows.length - 1 }; }
       else if (op === 'del') { rows.splice(i, 1); if (S.rgEdit && S.rgEdit.g === g) S.rgEdit = null; }
       else if (!x) return;
@@ -10854,7 +10868,7 @@
     tpEdit(el) { teamPinDialog(el.dataset.id || ''); },
     // Team admins: enter another team admin PIN to add what it grants.
     tpAddDlg() {
-      openModal('pin', modalHead('Add a Team Admin PIN', 'shield') + '<div class="modal-b"><div class="field"><label for="pdA">Team Admin PIN</label><input id="pdA" ' + CUR_PIN + '></div><div class="err" id="pdErr"></div></div>' +
+      openModal('pin', modalHead('Join a Team', 'shield') + '<div class="modal-b"><div class="field"><label for="pdA">Team PIN</label><input id="pdA" ' + CUR_PIN + '></div><div class="err" id="pdErr"></div></div>' +
         '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" id="pdGo" data-act="tpAdd">' + icon('plus', 18) + 'Add</button></div>');
       $('#modal .modal').classList.add('modal-center');
       $('#pdA').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); A.tpAdd($('#pdGo')); } });
@@ -10862,13 +10876,13 @@
     },
     async tpAdd(el) {
       const pin = $('#pdA').value.trim(), err = $('#pdErr');
-      if (!pin) { err.textContent = 'Enter the team admin PIN.'; return; }
+      if (!pin) { err.textContent = 'Enter the team PIN.'; return; }
       err.textContent = '';
       const d = await run(el, 'apiAddTeamPin', S.token, pin);
       if (!d) return;
       apply(d); closeModal(); render();
       const pa = d.pinAdded || {};
-      toast(pa.added ? pa.name + ' PIN added' : 'You already have the ' + pa.name + ' PIN', pa.added ? 'ok' : 'info', 2600);
+      toast(pa.added ? 'Joined ' + pa.name : 'You’re already on ' + pa.name, pa.added ? 'ok' : 'info', 2600);
     },
     async tpReveal(el) {
       el.classList.add('busy');
@@ -10919,7 +10933,7 @@
       const res = await run(el, 'apiDeleteTeamPin', S.token, d.id, cur);
       if (!res) return;
       apply(res); closeModal(); render();
-      toast('Profile deleted');
+      toast('Team deleted');
     },
     async pinForgotSend(el) {
       const kind = el.dataset.k, a = $('#pdA').value.trim(), b = $('#pdB').value.trim(), err = $('#pdErr');
