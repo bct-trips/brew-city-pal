@@ -374,14 +374,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793038695"></script>
+    <script src="config.js?v=1793039154"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793038695';
+      window.PAL_BUILD = '1793039154';
       (function () {
         function check(launch) {
           try {
@@ -9004,7 +9004,7 @@
     openModal('notes', html);
     $('#modal .modal').classList.add('notes-sheet');
   }
-  const NOTE_IC = { 'pinreset-org': ['key', 'warn'], 'pinreset-team': ['key', 'warn'], 'pinreset-ok': ['key', 'ok'], approved: ['check', 'ok'], denied: ['ban', 'no'], edited: ['pencil', 'warn'], deleted: ['trash', 'no'], new: ['plus', 'info'], created: ['plus', 'info'], signup: ['userPlus', 'info'], account: ['check', 'ok'] };
+  const NOTE_IC = { 'pinreset-org': ['key', 'warn'], 'pinreset-team': ['key', 'warn'], 'pinreset-ok': ['key', 'ok'], approved: ['check', 'ok'], denied: ['ban', 'no'], edited: ['pencil', 'warn'], deleted: ['trash', 'no'], new: ['plus', 'info'], created: ['plus', 'info'], signup: ['userPlus', 'info'], adminup: ['shield', 'info'], account: ['check', 'ok'] };
   function ago(ts) {
     const s = (Date.now() - new Date(ts).getTime()) / 1000;
     if (!(s >= 0)) return '';
@@ -9130,13 +9130,14 @@
         // Admins (by status — admin mode doesn't need to be unlocked): alerts and my own daily email report.
         (S.myAdmin ? '<div class="panel" id="alertsPanel">' + alertsPanelHtml() + '</div>' + reportPanel() : '')) +
       setSect('Calendar & Lists', (S.priv ? '' : viewRolesPanel()) + startupPanel()) +
-      setSect('Security', pinPanel('me', 'key', 'My PIN', '', true, '') + (S.myAdmin && S.myAdmin.level === 'team' && (S.teamPins || []).length ? myTeamPinsPanel() : '')) +
+      setSect('Security', pinPanel('me', 'key', 'My PIN', '', true, '') + (S.myAdmin && S.myAdmin.level === 'team' ? myTeamPinsPanel() : '')) +
 
       '</div></section>';
   }
   /** Settings → Security (team admins): the team admin PINs inside their team — name, what it grants, PIN with the eye. */
-  const myTeamPinsPanel = () => '<div class="panel"><h3>' + icon('shield', 16) + ' Team Admin PINs</h3><div class="tpin-list">' +
-    S.teamPins.map(p => '<div class="tpin-row"><div><b>' + esc(p.name) + '</b><span class="meta">' + esc(tpinCovers(p)) + '</span></div>' + tpinCell(p) + '</div>').join('') + '</div></div>';
+  const myTeamPinsPanel = () => '<div class="panel"><div class="cfg-h"><h3>' + icon('shield', 16) + ' Team Admin PINs</h3>' +
+    '<button type="button" class="btn" data-act="tpAddDlg">' + icon('plus', 16) + 'Add a PIN</button></div>' + (!(S.teamPins || []).length ? '' : '<div class="tpin-list">' +
+    S.teamPins.map(p => '<div class="tpin-row"><div><b>' + esc(p.name) + '</b><span class="meta">' + esc(tpinCovers(p)) + '</span></div>' + tpinCell(p) + '</div>').join('') + '</div>') + '</div>';
   const setSect = (title, body) => '<h2 class="set-sect">' + esc(title) + '</h2><div class="set-group">' + body + '</div>';
   /** Settings → Start-up (this device): the page the app opens to and the calendar view it starts in. */
   function startupPanel() {
@@ -10311,7 +10312,7 @@
       if (req) {
         if (S.requests.some(r => r.id === req && r.status !== 'Cancelled')) { S.backToNotes = back; openRequest(req); }
         else toast('That request was deleted');
-      } else if (n && n.kind === 'signup' && (S.isAdmin || (S.myAdmin && S.myAdmin.level))) { // admins in User Mode too
+      } else if (n && (n.kind === 'signup' || n.kind === 'adminup') && (S.isAdmin || (S.myAdmin && S.myAdmin.level))) { // admins in User Mode too
         const u = S.users.slice().sort((a, b) => b.name.length - a.name.length).find(x => x.name && n.body.indexOf(x.name) >= 0);
         if (u) { S.backToNotes = back; openMemberCard(u.id); } else { closeModal(); S.view = 'people'; render(); }
       }
@@ -10817,6 +10818,24 @@
     },
     pinForgot(el) { pinForgotDialog(el.dataset.k); },
     tpEdit(el) { teamPinDialog(el.dataset.id || ''); },
+    // Team admins: enter another team admin PIN to add what it grants.
+    tpAddDlg() {
+      openModal('pin', modalHead('Add a Team Admin PIN', 'shield') + '<div class="modal-b"><div class="field"><label for="pdA">Team Admin PIN</label><input id="pdA" ' + CUR_PIN + '></div><div class="err" id="pdErr"></div></div>' +
+        '<div class="modal-f"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" id="pdGo" data-act="tpAdd">' + icon('plus', 18) + 'Add</button></div>');
+      $('#modal .modal').classList.add('modal-center');
+      $('#pdA').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); A.tpAdd($('#pdGo')); } });
+      setTimeout(() => $('#pdA') && $('#pdA').focus(), 50);
+    },
+    async tpAdd(el) {
+      const pin = $('#pdA').value.trim(), err = $('#pdErr');
+      if (!pin) { err.textContent = 'Enter the team admin PIN.'; return; }
+      err.textContent = '';
+      const d = await run(el, 'apiAddTeamPin', S.token, pin);
+      if (!d) return;
+      apply(d); closeModal(); render();
+      const pa = d.pinAdded || {};
+      toast(pa.added ? pa.name + ' PIN added' : 'You already have the ' + pa.name + ' PIN', pa.added ? 'ok' : 'info', 2600);
+    },
     async tpReveal(el) {
       el.classList.add('busy');
       const d = await callServer('apiTeamPinReveal', S.token, el.dataset.id).catch(e => { toast(e.message || String(e), 'err'); return null; });
