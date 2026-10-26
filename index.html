@@ -381,14 +381,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793042088"></script>
+    <script src="config.js?v=1793043169"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793042088';
+      window.PAL_BUILD = '1793043169';
       (function () {
         function check(launch) {
           try {
@@ -7411,6 +7411,17 @@
       b('batchReactivate', 'check', 'Reactivate') + b('batchDeactivate', 'ban', 'Deactivate', 'del') + b('batchDelete', 'trash', 'Delete', 'del') + '</span></div>';
   }
   const renderPeopleOnly = () => A.peopleRefresh();
+  /** Recompute a team admin's entry here (their Teams + their own rows), so changes show at once; the server's answer
+   *  replaces it when it arrives. own: their own rows' scope (undefined = keep). No Teams and no rows = not an admin. */
+  function localAdmin(id, own) {
+    const a = (S.admins || {})[id] || { level: 'team' }, u = userOf(id) || {};
+    const mine = own !== undefined ? own : ownScope(a);
+    const pins = (S.teamPins || []).filter(p => !p.legacy && p.members.includes(id));
+    const cells = new Set(mine && mine.cells ? mine.cells : mine ? scopeCells(mine) : []);
+    pins.forEach(p => p.rows.forEach(r => scopeCells({ units: r.units.map(x => x === '@own' ? u.unit : x), roles: r.roles.map(x => x === '@own' ? u.role : x) }).forEach(c => cells.add(c))));
+    if (!cells.size && !pins.length) { delete S.admins[id]; return; }
+    S.admins[id] = { level: 'team', scope: { cells: [...cells], rows: [] }, own: mine, pins: pins.map(p => p.name) };
+  }
   /** What's ticked on a team admin's member card — without what their team admin PINs add. */
   const ownScope = a => !a ? null : a.pins && a.pins.length ? a.own : a.scope;
   /** Member card → Admin → Team Admin grid for member `id`. Each change saves once the rows grant at least one unit +
@@ -7425,12 +7436,12 @@
           delete S.admRows[id]; S.admDraft = null;
           const sc = { cells, rows: rows.filter(r => r.units.length && r.roles.length) };
           // In a profile: their whole team comes from the server (profiles + these rows), so wait for it; otherwise optimistic.
-          if (a && a.pins && a.pins.length) call('apiSetAdminStatus', S.token, id, 'team', sc).then(d => { apply(d); render(); openMemberCard(id); }).catch(e => toast(e.message, 'error', 4500));
+          if (a && a.pins && a.pins.length) save(() => localAdmin(id, sc), 'apiSetAdminStatus', S.token, id, 'team', sc);
           else save(() => { S.admins[id] = { level: 'team', scope: sc }; }, 'apiSetAdminStatus', S.token, id, 'team', sc);
         } else if (!rows.length && a && a.pins && a.pins.length) {
           // Their profiles still make them a team admin: just clear their own units and positions.
           delete S.admRows[id]; S.admDraft = null;
-          call('apiSetAdminStatus', S.token, id, 'team', { cells: [], rows: [] }).then(d => { apply(d); render(); openMemberCard(id); }).catch(e => toast(e.message, 'error', 4500));
+          save(() => localAdmin(id, null), 'apiSetAdminStatus', S.token, id, 'team', { cells: [], rows: [] });
         } else if (!rows.length && a) {
           delete S.admRows[id]; S.admDraft = null;
           save(() => { delete S.admins[id]; S.alertIds = (S.alertIds || []).filter(x => x !== id); }, 'apiSetAdminStatus', S.token, id, '', null);
@@ -7442,12 +7453,15 @@
       fixed: () => { const u = userOf(id); return !S.isOrg ? [] : (S.teamPins || []).filter(p => !p.legacy && p.members.includes(id))
         .flatMap(p => p.rows.map(r => ({ id: p.id, name: p.name, units: r.units.map(x => x === '@own' ? u.unit : x), roles: r.roles.map(x => x === '@own' ? u.role : x) }))); },
       teams: () => !S.isOrg ? [] : (S.teamPins || []).filter(p => !p.legacy && !p.members.includes(id)),
-      team: async (pid, on) => {
+      // Optimistic, like every Roster action: the table changes now and the server catches up in the background.
+      team: (pid, on) => {
         const ids = (S.teamPins || []).filter(p => !p.legacy && (p.id === pid ? on : p.members.includes(id))).map(p => p.id);
-        const d = await call('apiSetUserPins', S.token, id, ids).catch(e => { toast(e.message, 'error', 4500); return null; });
-        if (!d) return openMemberCard(id);
-        S.admDraft = null; if (S.admRows) delete S.admRows[id];
-        apply(d); render(); openMemberCard(id);
+        save(() => {
+          S.teamPins = (S.teamPins || []).map(p => p.legacy ? p : Object.assign({}, p, { members: ids.includes(p.id) ? (p.members.includes(id) ? p.members : p.members.concat([id])) : p.members.filter(x => x !== id) }));
+          S.admDraft = null; if (S.admRows) delete S.admRows[id];
+          localAdmin(id);
+        }, 'apiSetUserPins', S.token, id, ids);
+        render(); openMemberCard(id);
       } };
   }
   /** Admin status picker — one member (uid) from their card, or the selected members (uid = null) from the batch bar.
