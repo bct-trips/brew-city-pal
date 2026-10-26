@@ -334,6 +334,8 @@
   .fp:not(.fp-conf):has(.fp-clear) .fperson:hover, .fdrop-btn.fall.fp-active:hover, .filters > .fall.fp-active + .fall-clear:hover { background-color: var(--gold); color: var(--navy); }
   /* Team admin PINs table: the PIN (dots, or the digits once shown) and its eye button side by side. */
   .tpin-c { display: flex; align-items: center; gap: 8px; }
+  /* "Their Unit" in a team PIN's grid: a neutral badge in the unit badges' place (it means the member's own unit). */
+  .badge.rg-own { background: var(--sel-bg); color: var(--sel-ink); border: 0; font-weight: 800; }
   .tpin-list { display: grid; gap: 10px; }
   .tpin-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .tpin-row > div:first-child { display: grid; min-width: 0; }
@@ -374,14 +376,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793039503"></script>
+    <script src="config.js?v=1793040205"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793039503';
+      window.PAL_BUILD = '1793040205';
       (function () {
         function check(launch) {
           try {
@@ -4412,19 +4414,21 @@
     const none = t => '<span class="muted">' + (h.any ? 'Any' : t) + '</span>';
     const attrs = (op, i, v) => ' data-act="rg" data-g="' + esc(g) + '" data-op="' + op + '" data-i="' + i + '"' + (v == null ? '' : ' data-v="' + esc(v) + '"');
     const chip = (op, i, v, on, label) => '<button type="button" class="btn sm chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '"' + attrs(op, i, v) + '>' + (on ? icon('check', 14) : '') + esc(label) + '</button>';
-    const units = x => scopeUnits(h.lim).concat(x.units.filter(c => !scopeUnits(h.lim).includes(c)));
-    const roles = x => scopeRoles(h.lim).concat(x.roles.filter(r => !scopeRoles(h.lim).includes(r)));
+    // h.own: the grid also offers Their Unit / Their Position ('@own': whoever it applies to — team admin PINs).
+    const units = x => (h.own ? ['@own'] : []).concat(scopeUnits(h.lim), x.units.filter(c => c !== '@own' && !scopeUnits(h.lim).includes(c)));
+    const roles = x => (h.own ? ['@own'] : []).concat(scopeRoles(h.lim), x.roles.filter(r => r !== '@own' && !scopeRoles(h.lim).includes(r)));
+    const uOut = c => c === '@own' ? '<span class="badge rg-own">Their Unit</span>' : unitBadge(c), rName = r => r === '@own' ? 'Their Position' : rolePl(r);
     const head = '<tr><th scope="col">Units</th><th scope="col">Positions</th>' + cols.map(c => '<th scope="col" class="ag-k">' + esc(c[1]) + '</th>').join('') + '<th scope="col"><span class="sr">Edit or delete</span></th></tr>';
     const body = rows.map((x, i) => '<tr class="rg-row' + (i === ed ? ' rg-on' : '') + '">' +
-        '<td class="rg-u">' + (x.units.length ? '<span class="rg-badges">' + x.units.map(unitBadge).join('') + '</span>' : none('Pick units')) + '</td>' +
-        '<td class="rg-r">' + (x.roles.length ? esc(x.roles.map(rolePl).join(', ')) : none('Pick positions')) + '</td>' +
+        '<td class="rg-u">' + (x.units.length ? '<span class="rg-badges">' + x.units.map(uOut).join('') + '</span>' : none('Pick units')) + '</td>' +
+        '<td class="rg-r">' + (x.roles.length ? esc(x.roles.map(rName).join(', ')) : none('Pick positions')) + '</td>' +
         cols.map(c => { const on = (x[h.key] || []).includes(c[0]);
           return '<td class="ag-k"><button type="button" class="rsel' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" aria-label="' + esc(c[1]) + '"' + attrs('col', i, c[0]) + '>' + (on ? icon('check', 14) : '') + '</button></td>'; }).join('') +
         '<td class="ag-del"><div class="rg-acts"><button type="button" class="btn sm act ico' + (i === ed ? ' on' : '') + '"' + attrs('edit', i) + ' aria-label="Edit this row" aria-expanded="' + (i === ed) + '" title="Edit">' + icon('pencil', 14) + '</button>' +
           '<button type="button" class="btn sm del act ico"' + attrs('del', i) + ' aria-label="Delete this row" title="Delete">' + icon('trash', 14) + '</button></div></td></tr>' +
       (i === ed ? '<tr class="rg-ed"><td colspan="' + span + '"><div class="rg-box"><div class="rg-pick">' +
-          '<span class="sc-l">Units</span><div class="push-btns">' + (h.any ? chip('anyU', i, null, !x.units.length, 'Any') : '') + units(x).map(c => chip('unit', i, c, x.units.includes(c), c)).join('') + '</div>' +
-          '<span class="sc-l">Positions</span><div class="push-btns">' + (h.any ? chip('anyR', i, null, !x.roles.length, 'Any') : '') + roles(x).map(r => chip('role', i, r, x.roles.includes(r), rolePl(r))).join('') + '</div></div>' +
+          '<span class="sc-l">Units</span><div class="push-btns">' + (h.any ? chip('anyU', i, null, !x.units.length, 'Any') : '') + units(x).map(c => chip('unit', i, c, x.units.includes(c), c === '@own' ? 'Their Unit' : c)).join('') + '</div>' +
+          '<span class="sc-l">Positions</span><div class="push-btns">' + (h.any ? chip('anyR', i, null, !x.roles.length, 'Any') : '') + roles(x).map(r => chip('role', i, r, x.roles.includes(r), rName(r))).join('') + '</div></div>' +
           '<div class="rg-done"><button type="button" class="btn sm primary"' + attrs('done', i) + '>' + icon('check', 14) + 'Done</button></div></div></td></tr>' : '')).join('');
     const add = '<tr class="ag-add"><td colspan="' + span + '"><button type="button" class="btn sm"' + attrs('add', -1) + '>' + icon('plus', 14) + 'Add Row</button></td></tr>';
     return '<div class="tbl-wrap ag-wrap rg"><table class="rtable ag"><thead>' + head + '</thead><tbody>' +
@@ -8097,21 +8101,23 @@
   /* ---------- Team admin PINs (Admin, org admins) ----------
      A yellow panel with a table: Name · Positions · Units · PIN (•••• with an eye that fetches the digits) · Admins ·
      Edit. Whoever unlocks Admin Mode with one becomes a team admin for what it covers. */
-  const tpChip = (b, on) => { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); const ic = b.querySelector('svg'); if (on && !ic) b.insertAdjacentHTML('afterbegin', icon('check', 18)); if (!on && ic) ic.remove(); };
   /** A team PIN's dots (or digits once shown) with the eye button that shows / hides them. */
   const tpinCell = p => { const shown = (S.tpShown || {})[p.id];
     return '<div class="tpin-c">' + (!p.viewable ? '<span class="muted">Hidden</span>' : shown ? '<span class="tpin-v">' + esc(shown) + '</span>' +
         '<button type="button" class="btn sm act ico" data-act="tpHide" data-id="' + esc(p.id) + '" title="Hide PIN" aria-label="Hide PIN">' + icon('eyeOff', 13) + '</button>'
       : '<span class="tpin-v">••••</span><button type="button" class="btn sm act ico" data-act="tpReveal" data-id="' + esc(p.id) + '" title="Show PIN" aria-label="Show ' + esc(p.name) + ' PIN">' + icon('eye', 13) + '</button>') + '</div>'; };
   /** What a team PIN covers, in words. */
-  const tpinCovers = p => (p.roles.length ? p.roles.map(rolePl).join(', ') : 'All Positions') + ' · ' + (p.units.length ? p.units.join(', ') : 'All Units');
+  const tpinCovers = p => (p.rows || []).map(r => (r.units.length ? r.units.map(c => c === '@own' ? 'Their Unit' : c).join(', ') : 'All Units') + ': ' +
+    (r.roles.length ? r.roles.map(x => x === '@own' ? 'Their Position' : rolePl(x)).join(', ') : 'All Positions')).join(' · ');
+  // Team admin PIN editor's grid: rows of units × positions (Any allowed) with Their Unit / Their Position.
+  RG.tpin = { any: true, own: true, lim: null, cols: [], rows: () => S.tpDraft.rows, blank: () => ({ units: ['@own'], roles: [] }),
+    set: rows => { S.tpDraft.rows = rows; RG.tpin.redraw(); }, redraw: () => { const g = $('#tpGrid'); if (g) g.innerHTML = ruleGrid('tpin'); } };
   function teamPinsPanel() {
     const pins = S.teamPins || [];
     const rows = pins.map(p => {
       const who = p.members.map(id => userOf(id)).filter(u => u && u.id).map(u => esc(nameText(u, true)));
       return '<tr data-act="tpEdit" data-id="' + esc(p.id) + '" tabindex="0"><td class="strong">' + esc(p.name) + '</td>' +
-        '<td>' + (p.legacy ? '<span class="muted">Their own team</span>' : p.roles.length ? esc(p.roles.map(rolePl).join(', ')) : 'All Positions') + '</td>' +
-        '<td>' + (p.legacy ? '' : p.units.length ? esc(p.units.join(', ')) : 'All Units') + '</td>' +
+        '<td>' + (p.legacy ? '<span class="muted">Their own team</span>' : esc(tpinCovers(p))) + '</td>' +
         '<td>' + tpinCell(p) + '</td>' +
         '<td>' + (who.join('; ') || '<span class="muted">None</span>') + '</td>' +
         '<td class="acts-cell"><div class="row-acts"><button class="btn sm act" data-act="tpEdit" data-id="' + esc(p.id) + '" title="Edit">' + icon('pencil', 13) + '<span class="bl">Edit</span></button></div></td></tr>';
@@ -8119,7 +8125,7 @@
     return '<div class="panel pin-panel pin-y"><div class="cfg-h"><h3>' + icon('shield', 16) + ' Team Admin PINs' +
         tip('Give a member a team admin PIN: when they unlock Admin Mode with it, they become a team admin for its positions and units. Each PIN is different from every other PIN.') + '</h3>' +
         '<button class="btn primary" data-act="tpEdit">' + icon('plus', 18) + 'New PIN</button></div>' +
-      (pins.length ? '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Name</th><th scope="col">Positions</th><th scope="col">Units</th>' +
+      (pins.length ? '<div class="tbl-wrap bo-tbl"><table class="rtable"><thead><tr><th scope="col">Name</th><th scope="col">Grants</th>' +
         '<th scope="col">PIN</th><th scope="col">Admins</th><th scope="col" class="th-acts">Actions</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<span class="pin-unset">Not Set</span>') + '</div>';
   }
@@ -8127,12 +8133,11 @@
    *  (required for a new one; blank keeps it) and the current org admin PIN. Delete on an existing one. */
   function teamPinDialog(id) {
     const p = (S.teamPins || []).find(x => x.id === id) || null;
-    const d = S.tpDraft = { id: p ? p.id : '', roles: p ? p.roles.slice() : [], units: p ? p.units.slice() : [], members: p ? p.members.slice() : [] };
-    const chip = (act, v, label, on) => '<button type="button" class="btn chip-tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-act="' + act + '" data-v="' + esc(v) + '">' + (on ? icon('check', 18) : '') + esc(label) + '</button>';
+    const d = S.tpDraft = { id: p ? p.id : '', rows: p && p.rows.length ? p.rows.map(r => ({ units: r.units.slice(), roles: r.roles.slice() })) : [{ units: ['@own'], roles: [] }], members: p ? p.members.slice() : [] };
+    S.rgEdit = null;
     openModal('tpEdit', modalHead(p ? 'Edit ' + p.name + ' PIN' : 'New Team Admin PIN', 'shield') + '<div class="modal-b">' +
       '<div class="field"><label for="tpName">Name' + REQ + '</label><input id="tpName" maxlength="30" autocomplete="off" placeholder="Ops" value="' + esc(p ? p.name : '') + '"></div>' +
-      '<div class="sect"><div class="lbl">Positions</div><div class="push-btns" id="tpRoles">' + chip('tpRole', '', 'All Positions', !d.roles.length) + ROLES.map(r => chip('tpRole', r, rolePl(r), d.roles.includes(r))).join('') + '</div></div>' +
-      '<div class="sect"><div class="lbl">Units</div><div class="push-btns" id="tpUnits">' + chip('tpUnit', '', 'All Units', !d.units.length) + unitsList().map(u => chip('tpUnit', u.code, u.code, d.units.includes(u.code))).join('') + '</div></div>' +
+      '<div class="sect"><div class="lbl">Grants' + REQ + '</div><div id="tpGrid">' + ruleGrid('tpin') + '</div></div>' +
       (d.members.length ? '<div class="sect"><div class="lbl">Admins</div><div class="push-btns" id="tpMembers">' + d.members.map(m => { const u = userOf(m);
         return '<button type="button" class="btn chip-tog on" data-act="tpDrop" data-v="' + esc(m) + '" aria-label="Remove ' + esc(nameText(u, true)) + '">' + esc(nameText(u, true)) + icon('x', 16) + '</button>'; }).join('') + '</div></div>' : '') +
       PIN_HINT +
@@ -10846,28 +10851,19 @@
     },
     tpHide(el) { const o = Object.assign({}, S.tpShown); delete o[el.dataset.id]; S.tpShown = o; render(); },
     // Chips flip in place (no redraw), so typed PINs stay.
-    tpRole(el) {
-      const d = S.tpDraft, v = el.dataset.v;
-      d.roles = !v ? [] : d.roles.includes(v) ? d.roles.filter(x => x !== v) : d.roles.concat([v]);
-      document.querySelectorAll('#tpRoles [data-act=tpRole]').forEach(b => tpChip(b, b.dataset.v ? d.roles.includes(b.dataset.v) : !d.roles.length));
-    },
-    tpUnit(el) {
-      const d = S.tpDraft, v = el.dataset.v;
-      d.units = !v ? [] : d.units.includes(v) ? d.units.filter(x => x !== v) : d.units.concat([v]);
-      document.querySelectorAll('#tpUnits [data-act=tpUnit]').forEach(b => tpChip(b, b.dataset.v ? d.units.includes(b.dataset.v) : !d.units.length));
-    },
     tpDrop(el) { S.tpDraft.members = S.tpDraft.members.filter(x => x !== el.dataset.v); el.remove(); },
     async tpSave(el) {
       const d = S.tpDraft, err = $('#pdErr'), a = $('#pdA').value.trim(), b = $('#pdB').value.trim(), cur = $('#pdC').value.trim(), name = $('#tpName').value.trim();
       if (!name) { err.textContent = 'Name the PIN (for example Ops).'; return; }
-      if (!d.roles.length && !d.units.length) { err.textContent = 'Pick at least one unit or position.'; return; }
+      if (!d.rows.length) { err.textContent = 'Add a row for what it grants.'; return; }
+      if (d.rows.some(r => !r.units.length && !r.roles.length)) { err.textContent = 'A row can’t be Any unit and Any position. Pick units or positions (or Their Unit).'; return; }
       if (a || !d.id) {
         if (pinProblem(a)) { err.textContent = pinProblem(a); return; }
         if (a !== b) { err.textContent = 'The two PIN entries do not match.'; $('#pdB').value = ''; focusPin($('#pdB')); return; }
       }
       if (!cur) { err.textContent = 'Enter the current org admin PIN.'; return; }
       err.textContent = '';
-      const res = await run(el, 'apiSaveTeamPin', S.token, { id: d.id, name, roles: d.roles, units: d.units, members: d.members, pin: a, confirm: b }, cur);
+      const res = await run(el, 'apiSaveTeamPin', S.token, { id: d.id, name, rows: d.rows, members: d.members, pin: a, confirm: b }, cur);
       if (!res) return;
       if (a && d.id) { const o = Object.assign({}, S.tpShown); delete o[d.id]; S.tpShown = o; }
       apply(res); closeModal(); render();
