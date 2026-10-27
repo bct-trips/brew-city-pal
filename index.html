@@ -341,6 +341,15 @@
   .badge.rg-team { display: inline-flex; align-items: center; gap: 4px; background: transparent; color: var(--ink); border: 1.5px solid var(--set-sect); font-weight: 800; }
   .rg-addbar { display: flex; flex-wrap: wrap; gap: 8px; }
   .rg-teams { margin-top: 10px; }
+  /* Member card → Admin (team admin), like an OS permissions dialog: Teams · Manages · Custom, stacked. */
+  .mc-acl { display: grid; gap: 14px; min-width: 0; }
+  .acl-sec .lbl { margin-bottom: 6px; }
+  .acl-pick { margin-top: 8px; }
+  .acl-list { display: grid; gap: 6px; }
+  .acl-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 10px; }
+  .acl-row > :first-child { justify-self: start; }
+  .acl-row > span:last-child { font-weight: 600; overflow-wrap: anywhere; }
+  .badge.acl-t { background: var(--sel-bg); color: var(--sel-ink); border: 0; font-weight: 800; }
   .tpin-list { display: grid; gap: 10px; }
   .tpin-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .tpin-row > div:first-child { display: grid; min-width: 0; }
@@ -381,14 +390,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793043169"></script>
+    <script src="config.js?v=1793090114"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793043169';
+      window.PAL_BUILD = '1793090114';
       (function () {
         function check(launch) {
           try {
@@ -7422,6 +7431,27 @@
     if (!cells.size && !pins.length) { delete S.admins[id]; return; }
     S.admins[id] = { level: 'team', scope: { cells: [...cells], rows: [] }, own: mine, pins: pins.map(p => p.name) };
   }
+  /** Member card → Admin for a team admin, laid out like an OS permissions dialog:
+   *  Teams — the presets they're in (✕ removes; Add Team shows the others as chips; org admins);
+   *  Manages — what they can manage in the end, one line per unit: badge · positions (All Positions when every one);
+   *  Custom — their own unit × position rows (the grid), on top of their Teams. */
+  function aclHtml(uid, can) {
+    const a = (S.admins || {})[uid] || {}, org = S.isOrg;
+    const mine = org ? (S.teamPins || []).filter(p => !p.legacy && p.members.includes(uid)) : (a.pins || []).map(n => ({ id: '', name: n }));
+    const avail = org ? (S.teamPins || []).filter(p => !p.legacy && !p.members.includes(uid)) : [], picking = S.aclPick === uid;
+    const teams = '<div class="acl-sec"><div class="lbl">Teams</div><div class="push-btns">' +
+      mine.map(p => org ? '<button type="button" class="btn sm chip-tog on" data-act="aclDel" data-id="' + esc(uid) + '" data-v="' + esc(p.id) + '" aria-label="Remove ' + esc(p.name) + '">' + esc(p.name) + icon('x', 14) + '</button>'
+        : '<span class="badge acl-t">' + esc(p.name) + '</span>').join('') +
+      (!mine.length && !avail.length ? '<span class="muted">None</span>' : '') +
+      (avail.length ? '<button type="button" class="btn sm' + (picking ? ' on' : '') + '" data-act="aclPick" data-id="' + esc(uid) + '" aria-expanded="' + picking + '">' + icon('plus', 14) + 'Add Team</button>' : '') + '</div>' +
+      (picking ? '<div class="push-btns acl-pick">' + avail.map(p => '<button type="button" class="btn sm chip-tog" data-act="aclAdd" data-id="' + esc(uid) + '" data-v="' + esc(p.id) + '">' + esc(p.name) + '</button>').join('') + '</div>' : '') + '</div>';
+    const by = {}; ((a.scope && a.scope.cells) || []).forEach(c => { const [u, r] = c.split('|'); (by[u] = by[u] || []).push(r); });
+    const units = unitsList().map(x => x.code).filter(c => by[c]);
+    const manages = '<div class="acl-sec"><div class="lbl">Manages</div>' + (units.length ? '<div class="acl-list">' + units.map(c =>
+      '<div class="acl-row">' + unitBadge(c) + '<span>' + esc(by[c].length >= ROLES.length ? 'All Positions' : ROLES.filter(r => by[c].includes(r)).map(rolePl).join(', ')) + '</span></div>').join('') + '</div>'
+      : '<p class="meta">Nothing yet.</p>') + '</div>';
+    return '<div class="mc-acl">' + teams + manages + (can ? '<div class="acl-sec"><div class="lbl">Custom</div>' + ruleGrid('adm:' + uid) + '</div>' : '') + '</div>';
+  }
   /** What's ticked on a team admin's member card — without what their team admin PINs add. */
   const ownScope = a => !a ? null : a.pins && a.pins.length ? a.own : a.scope;
   /** Member card → Admin → Team Admin grid for member `id`. Each change saves once the rows grant at least one unit +
@@ -7449,10 +7479,6 @@
         render(); openMemberCard(id);
       },
       redraw: () => openMemberCard(id),
-      // Org admins: the Teams this member is in, as rows ('@own' shown as their own unit / position), and Add Team.
-      fixed: () => { const u = userOf(id); return !S.isOrg ? [] : (S.teamPins || []).filter(p => !p.legacy && p.members.includes(id))
-        .flatMap(p => p.rows.map(r => ({ id: p.id, name: p.name, units: r.units.map(x => x === '@own' ? u.unit : x), roles: r.roles.map(x => x === '@own' ? u.role : x) }))); },
-      teams: () => !S.isOrg ? [] : (S.teamPins || []).filter(p => !p.legacy && !p.members.includes(id)),
       // Optimistic, like every Roster action: the table changes now and the server catches up in the background.
       team: (pid, on) => {
         const ids = (S.teamPins || []).filter(p => !p.legacy && (p.id === pid ? on : p.members.includes(id))).map(p => p.id);
@@ -9512,10 +9538,10 @@
         (uid !== S.me ? (() => {
           const lvl = S.admDraft === uid ? 'team' : adm ? adm.level : '', cells = adm && adm.level === 'team' ? scopeCells(adm.scope) : [];
           const opts = (S.isOrg ? [['org', 'Org Admin']] : []).concat([['team', 'Team Admin'], ['', 'None']]);
-          return '<div class="mc-li mc-adm"><span class="mc-li-ic">' + icon('shield', 20) + '</span><div class="mc-li-t"><b>Admin</b><span>' + (lvl === 'org' ? 'Every team' : lvl === 'team' ? (cells.length ? esc(scopeText({ cells })) : S.isOrg && (S.teamPins || []).some(p => !p.legacy) ? 'Add a team or a row' : 'Tick what they manage') + (adm && adm.pins && adm.pins.length ? ' · ' + esc(adm.pins.join(', ')) : '') : 'Not an admin') + ((S.alertIds || []).includes(uid) ? ' · gets alerts' : '') + '</span></div>' +
+          return '<div class="mc-li mc-adm"><span class="mc-li-ic">' + icon('shield', 20) + '</span><div class="mc-li-t"><b>Admin</b><span>' + (lvl === 'org' ? 'Every team' : lvl === 'team' ? (cells.length ? 'Team admin' : S.isOrg && (S.teamPins || []).some(p => !p.legacy) ? 'Add a team or a custom row' : 'Tick what they manage') + (adm && adm.pins && adm.pins.length ? ' · ' + esc(adm.pins.join(', ')) : '') : 'Not an admin') + ((S.alertIds || []).includes(uid) ? ' · gets alerts' : '') + '</span></div>' +
             (canSetAdm ? '<div class="mc-li-a">' + seg(opts, lvl, 'admLevel', ' data-id="' + esc(uid) + '"') + '</div>' : '') + '</div>' +
-            // One permissions table: rows from their Teams (Add Team) and their own rows (Add Row).
-            (lvl === 'team' && canSetAdm ? ruleGrid('adm:' + uid) : '');
+            // Like an OS permissions dialog: Teams (presets) · Manages (the effective result) · Custom (their own rows).
+            (lvl === 'team' ? aclHtml(uid, canSetAdm) : '');
         })() : '') +
       '</div></section>' +
       // Details: Last · First · Middle, then Rank · Position · Unit (a tight grid; two columns on phones).
@@ -10718,6 +10744,9 @@
       pop.querySelectorAll('.who-h').forEach(h => { let n = h.nextElementSibling, vis = false; while (n && !n.classList.contains('who-h')) { if (n.classList.contains('who-row') && !n.hidden) vis = true; n = n.nextElementSibling; } h.hidden = !vis; });
       const none = pop.querySelector('.who-none'); if (none) none.hidden = any;
     },
+    aclPick(el) { const id = el.dataset.id; S.aclPick = S.aclPick === id ? null : id; openMemberCard(id); },
+    aclAdd(el) { S.aclPick = null; admGrid(el.dataset.id).team(el.dataset.v, true); },
+    aclDel(el) { admGrid(el.dataset.id).team(el.dataset.v, false); },
     mcPinShow() { const r = $('#mcPinRow'); if (r) { r.hidden = false; focusPin($('#mcPin1')); } },
     // Optimistic, like every Roster action: the card updates now and the server catches up in the background.
     async revokeAdmin(el) {
