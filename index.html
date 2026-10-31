@@ -32,7 +32,7 @@
     --on-surface: #1a1b20; --on-surface-variant: #464851; --outline: #767883; --outline-variant: #c6c7d0;
     --bg: var(--surface-mid); --card: var(--surface); --card-2: var(--surface-low); --ink: var(--on-surface); --muted: var(--on-surface-variant);
     --line: var(--outline-variant); --line-strong: var(--outline); --accent: var(--primary); --on-accent: var(--on-primary);
-    --nav-bg: var(--surface-low); --nav-line: var(--outline-variant); --nav-ink: var(--on-surface-variant);
+    --nav-bg: var(--surface-low);
     --focus: #1b4fd1;
     /* Selected state: a pale Brewers-navy tonal fill (a solid navy fill means Leave). Selected (open) day ring = Brewers yellow. */
     --sel-bg: #a9cbee; --sel-ink: #12284B; --sel-ring: #FFC52F;
@@ -368,6 +368,22 @@
   .set-sub > :last-child { margin-bottom: 0; }
   .set-sub .lbl { color: var(--ink); }
   .set-sub > .alert-rules { margin: 0; padding: 0; border: 0; }
+  /* List band headers (Leave / Pass / …): a 46px bar tinted with the type's color, that color down its left edge, a round
+     chevron, the type badge and "N active"; pinned to the right an Active | All switch (the app's segmented control) with
+     each side's count. Show N more is an outlined pill, pinned left. */
+  .rtable tbody.grp .grp-h th { height: 46px; background: color-mix(in srgb, var(--rm, var(--outline)) 10%, var(--surface-high)); border-top: 1px solid var(--outline-variant); border-bottom: 1px solid var(--outline-variant); box-shadow: inset 6px 0 0 var(--rm, var(--outline)); }
+  .rtable tbody.grp:first-of-type .grp-h th { border-top: 0; }
+  .grp-h:hover th { background: color-mix(in srgb, var(--rm, var(--outline)) 18%, var(--surface-high)); }
+  .grp-in { height: 46px; padding: 0 12px 0 16px; gap: 10px; font-size: 14px; }
+  .grp-chev { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--surface); color: var(--on-surface); box-shadow: inset 0 0 0 1px var(--outline-variant); }
+  .grp-in .badge { height: 26px; padding: 0 12px; font-size: 13.5px; }
+  .grp-side { height: 46px; padding: 0 10px; }
+  .grp-side .seg { height: 32px; }
+  .grp-side .seg > button { padding: 0 12px; font-size: 13px; white-space: nowrap; }
+  .grp-side .seg b { font-weight: 900; font-variant-numeric: tabular-nums; margin-left: 4px; }
+  .grp-more td { padding: 8px 14px; }
+  .grp-more-in { position: sticky; left: 14px; }
+  @media (max-width: 700px) { .grp-more-in { width: calc(100vw - 28px); max-width: 420px; justify-content: center; } }
   /* Conflict mode person pill, and List's Pending switch when on: red. */
   .fp-conf .fperson.on, .btn.chip-tog.open-btn.on, .btn.chip-tog.open-btn.on:hover { background-color: var(--no-bg); color: var(--no-ink); }
 }
@@ -386,14 +402,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793095936"></script>
+    <script src="config.js?v=1793442905"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793095936';
+      window.PAL_BUILD = '1793442905';
       (function () {
         function check(launch) {
           try {
@@ -430,8 +446,7 @@
     --thumb: #ffffff; --gold-mark: #ca8a04; --dot-ok: #15803d; --dot-pend: #b45309; --dot-bad: #dc2626;
     /* Brewers interface accents: navy outlines in light mode, gold in dark; Add Request is a gold tonal button. */
     --go: var(--navy); --go-tint: rgba(10, 35, 81, .08); --req-bg: rgba(253, 184, 39, .38); --req-bg-h: rgba(253, 184, 39, .55); --req-ink: var(--navy);
-    --nav-bg: #ebebef; --nav-line: #d4d4d8; --nav-ink: #52525b; --nav-hover: #dcdce2;
-    --nav-tone: rgba(10, 35, 81, .12); --nav-on: #0A2351;
+    --nav-bg: #ebebef;
     --nav-h: 68px; --bar-h: 23px; --head-h: 30px; --tag: 22px; --pill-h: 22px; --pill-fs: 12.5px;
     --shadow: 0 1px 2px rgba(0, 0, 0, .06), 0 8px 24px rgba(0, 0, 0, .08);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, .08);
@@ -450,8 +465,7 @@
     --line-strong: #46464e;
     --thumb: #34343b; --gold-mark: #FDB827; --dot-ok: #4ade80; --dot-pend: #fbbf24; --dot-bad: #f87171;
     --go: var(--gold); --go-tint: rgba(253, 184, 39, .12); --req-bg: rgba(253, 184, 39, .18); --req-bg-h: rgba(253, 184, 39, .28); --req-ink: var(--gold);
-    --nav-bg: #26262b; --nav-line: #36363d; --nav-ink: #b4b4be; --nav-hover: #313137;
-    --nav-tone: rgba(253, 184, 39, .16); --nav-on: #fcd34d;
+    --nav-bg: #26262b;
     --leave-tint: #23314d; --leave-tint-ink: #dde6f7; --leave-pend: #3a4d70; --leave-pend-ink: #ffffff;
     color-scheme: dark;
   }
@@ -503,16 +517,18 @@
   /* Navigation bar in the style of Skeleton UI: an elevated surface one step off the
      calendar, rounded tiles, and a tonal highlight on the active tile
      (navy tone in light mode, gold tone in dark mode). */
-  .nav { flex: none; display: flex; gap: 4px; height: calc(var(--nav-h) + env(safe-area-inset-bottom)); padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-    background: var(--nav-bg); border-top: 1px solid var(--nav-line); z-index: 5; }
-  .nav button { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    border: 0; border-radius: 12px; background: none; color: var(--nav-ink); font-size: 14px; font-weight: 600; letter-spacing: .01em;
-    cursor: pointer; position: relative; padding: 0 2px; transition: background-color .15s ease, color .15s ease; }
-  .nav .nav-ic { display: grid; place-items: center; }
-  .nav button:hover { background: var(--nav-hover); color: var(--ink); }
+  /* Nav bar: Brewers navy (dark gray in dark mode), light labels; the open tab is a Brewers-yellow pill around its icon that
+     slides between tabs (.nav.seg-slide rules, further down). Admin mode adds a red line along the top edge. --nav-bg is set
+     on the bar itself so the badge rings and the home-indicator strip match it. */
+  .nav { --nav-bg: var(--navy); flex: none; display: flex; justify-content: center; gap: 4px; height: calc(var(--nav-h) + env(safe-area-inset-bottom)); padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: var(--nav-bg); border-top: 1px solid var(--nav-bg); z-index: 5; }
+  .nav button { flex: 1; min-width: 0; max-width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    border: 0; border-radius: 0; background: none !important; color: #c9d3e8; font-size: 14px; font-weight: 600; letter-spacing: .01em;
+    cursor: pointer; position: relative; padding: 0 2px; transition: color .15s ease; }
+  .nav .nav-ic { display: grid; place-items: center; width: 64px; height: 32px; border-radius: 16px; transition: background-color .18s ease; }
   .nav button span:not(.nav-ic) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-  .nav button.on { background: var(--nav-tone); color: var(--nav-on); font-weight: 800; }
-  .nav button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+  .nav button.on { font-weight: 800; }
+  .nav button:focus-visible { outline: none; } .nav button:focus-visible .nav-ic { outline: 3px solid var(--focus); outline-offset: 1px; }
   .nav .dot { position: absolute; top: 2px; left: calc(50% + 6px); box-shadow: 0 0 0 2px var(--nav-bg); min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px;
     background: #b42318; color: #fff; font-size: 12px; line-height: 16px; font-weight: 800; }
 
@@ -1176,13 +1192,6 @@
   .fchk input { accent-color: var(--primary); }
 
   /* ---- Navigation bar: surface container, gold secondary-container indicator pill ---- */
-  .nav { background: var(--nav-bg); border-top: 1px solid var(--outline-variant); }
-  .nav button { color: var(--on-surface-variant); background: none !important; border-radius: 0; font-weight: 600; }
-  .nav button .nav-ic { width: 64px; height: 32px; border-radius: 16px; transition: background-color .2s ease; }
-  .nav button:hover .nav-ic { background: color-mix(in srgb, var(--on-surface) 8%, transparent); }
-  .nav button.on { color: var(--on-surface); font-weight: 800; }
-  .nav button.on .nav-ic { background: var(--sel-bg); color: var(--sel-ink); }
-  .nav button:focus-visible { outline: none; } .nav button:focus-visible .nav-ic { outline: 3px solid var(--focus); outline-offset: 1px; }
 
   /* ---- Today: the ring + date pill is the "Day marker" block at the end of this file. Small date grids only get an outline. ---- */
   .mini-g button.today { box-shadow: inset 0 0 0 1px var(--primary); }
@@ -1917,23 +1926,15 @@
   .y-ap-pass { background: var(--gold); color: var(--navy); }
   .y-pend { background: var(--rg-over); color: var(--rg-over-ink); }
   .y-den { background: var(--no-bg); color: var(--no-ink); }
-  /* Nav bar: Brewers navy for everyone (dark in dark mode), Brewers metallic gold (#85714D) in admin mode. Light labels, yellow selection pill.
-     --nav-bg is set on the bar itself so the badge rings and the home-indicator strip match its color. */
   :root { --brick: #7C2529; }
-  .nav { --nav-bg: var(--navy); background: var(--nav-bg); border-top: 1px solid var(--nav-bg); }
   /* Admin mode: the same bar as everyone else, with a solid red line along its top edge (works in light and dark). */
   .nav.nav-admin { border-top: 3px solid #d92d20; }
   :root[data-theme="dark"] .nav { border-top-color: rgba(255, 255, 255, .14); }
   /* Dark mode: the regular nav bar is dark (not navy); admin mode stays metallic gold so it's still obvious. */
   :root[data-theme="dark"] .nav { --nav-bg: #1d1e24; }
   :root[data-theme="dark"] .nav button:not(.on):not([aria-expanded="true"]) { color: #c5c6d0; }
-  .nav button { color: #c9d3e8; }
-  .nav button.on { color: var(--navy); }
-  .nav button:hover .nav-ic, .nav button.on .nav-ic, :root[data-theme="dark"] .nav button.on .nav-ic { background: transparent; color: inherit; }
   .nav .dot { background: var(--gold); color: var(--navy); }
   .nav .dot.warn { background: #ffffff; color: #c2410c; }
-  /* Admin mode (metallic gold bar): the open page's pill is Brewers navy with a white icon, so it contrasts with the bar. */
-  .nav.nav-admin button.on .nav-ic, :root[data-theme="dark"] .nav.nav-admin button.on .nav-ic { background: transparent; color: inherit; }
   .modal.modal-wide:has(.y-grid) { max-width: 1100px; }
   @media (min-width: 900px) { .y-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   /* My Requests: List | Calendar ("Cal" on phones) in the filter row, at every width. */
@@ -2187,15 +2188,7 @@
   .evs.leave .gsl, .cs-bar.leave .gsl, .wpuck.leave .gsl { color: #ffffff; }
   .evs.pass .gsl, .cs-bar.pass .gsl, .wpuck.pass .gsl { color: var(--navy); }
 
-  /* Nav bar selection (Material 3 style, adapted): the active indicator is one rounded pill that holds BOTH the icon and
-     its label, drawn as a layer behind the item (::before) so the item's own background rules don't fight it.
-     Brewers yellow with navy text; navy with white text on the metallic admin bar. Hover / press is a faint light layer.
-     The Profile tab also lights up while its drop-up menu is open. */
-  .nav button::before { content: ""; position: absolute; inset: 0 1px; border-radius: 16px; background: transparent; transition: background-color .18s ease; }
   .nav button > * { position: relative; }
-  .nav button:hover::before { background: rgba(255, 255, 255, .10); }
-  .nav button.on::before, .nav button[aria-expanded="true"]::before { background: var(--gold); }
-  .nav button[aria-expanded="true"] { color: var(--navy); }
   /* Profile tab: a small caret after the label says it opens a menu upward; it flips while the menu is open. */
   .nav-caret { display: inline-flex; vertical-align: -1px; margin-left: 2px; transition: transform .18s ease; }
   .nav-caret .ic { transform: rotate(180deg); }
@@ -2218,8 +2211,6 @@
   .nav button[aria-expanded="true"] .nav-caret { transform: none; }
   .nav button[aria-expanded="true"] .nav-caret .ic { transform: rotate(0deg); }
   /* While the Profile drop-up is open, the page you're on keeps a muted pill (so Profile is the strong one). */
-  .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"])::before { background: rgba(255, 255, 255, .16); }
-  .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]) { color: #ffffff; }
   /* Profile drop-up: a clearly raised surface — a visible outline, a stronger shadow, and in dark mode a lighter
      surface than the page so it doesn't melt into it. The notch matches. */
   .pm-pop { --pm-bg: var(--card); --pm-edge: var(--outline); background: var(--pm-bg); border: 1.5px solid var(--pm-edge);
@@ -2230,10 +2221,6 @@
   /* Names inside a shared badge: a clear gap around the "·" separator. */
   .gbb .rp-dot { margin: 0 8px; }
   /* Hovering the selected item keeps its text color; the pill just deepens a little. */
-  .nav button.on:hover, .nav button[aria-expanded="true"]:hover { color: var(--navy); }
-  .nav button.on:hover::before, .nav button[aria-expanded="true"]:hover::before { background: var(--gold-2); }
-  .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover { color: #ffffff; }
-  .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]):hover::before { background: rgba(255, 255, 255, .22); }
   #modal #passkey::placeholder { letter-spacing: normal; font-size: 16px; }
   .splash .splash-t { font-size: 24px; font-weight: 800; letter-spacing: .02em; color: #ffffff; } /* big and bold so it's obvious the app is loading */
   /* Requests table: status mark and name sit close together (no wide padding between them or after the marks). */
@@ -2618,27 +2605,32 @@
     .page:not(:has(> .req-bar)) > .lbar, .cal:not(:has(> .req-bar)) > .calbar { padding-bottom: 8px; } /* no Add Request below (Roster) */
     .page > .req-bar, .cal > .req-bar { padding: 8px; }
   }
-  /* Status slider (admin): Approved | Pending | Denied. A solid thumb (red / amber / green, white text ≥ 4.5:1) sits under
-     the current status and slides to the one you pick. */
-  .stsl { position: relative; display: inline-grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex: none; height: 34px; padding: 2px;
-    border: 1px solid var(--outline); border-radius: 17px; background: var(--card-2); isolation: isolate; }
-  .stsl-thumb { position: absolute; z-index: 0; top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / 3); border-radius: 15px;
-    transition: transform .2s cubic-bezier(.2, .8, .2, 1), background-color .2s; }
-  .stsl.st-denied .stsl-thumb { transform: translateX(200%); background: #b42318; }
-  .stsl.st-pending .stsl-thumb { transform: translateX(100%); background: #b45309; }
-  .stsl.st-approved .stsl-thumb { transform: translateX(0); background: #15803d; }
+  /* Status slider (admin): Approved | Pending | Denied. One colored pill (green / amber / red, white text ≥ 4.5:1) glides
+     behind the selected option (left + width, set by placeThumb). The selected option shows its word and is as wide as
+     "Approved"; the other two show only their icon in a fixed 36px slot, so the slider keeps one size whatever is picked.
+     .lg (request details, Review): full width, the selected side wider. */
+  .stsl { position: relative; display: inline-flex; gap: 2px; flex: none; height: 34px; padding: 2px; border: 1px solid var(--outline); border-radius: 17px; background: var(--card-2); isolation: isolate; }
+  .stsl .stsl-thumb { position: absolute; z-index: 0; top: 2px; bottom: 2px; left: 0; width: 0; opacity: 0; border-radius: 15px;
+    transition: left .28s cubic-bezier(.3, .8, .25, 1), width .28s cubic-bezier(.3, .8, .25, 1), background-color .28s; }
+  .stsl.st-approved .stsl-thumb { background: #15803d; }
+  .stsl.st-pending .stsl-thumb { background: #b45309; }
+  .stsl.st-denied .stsl-thumb { background: #b42318; }
   .stsl.st-cancelled .stsl-thumb { display: none; }
-  .stsl-o { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; padding: 0 10px;
-    border: 0; border-radius: 15px; background: none; color: var(--muted); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .stsl-o { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: 0 0 auto; min-width: 0; padding: 0 10px;
+    border: 0; border-radius: 15px; background: none; color: var(--muted); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: color .2s; }
   .stsl-o:hover:not(.on) { color: var(--ink); }
   .stsl-o.on { color: #ffffff; cursor: default; }
+  .stsl-o:not(.on) .stsl-t { display: none; }
+  .stsl-o.on .ic { display: none; }
+  .stsl:not(.lg) .stsl-o.on { width: 6.9em; padding: 0; }
+  .stsl:not(.lg) .stsl-o:not(.on) { width: 36px; padding: 0; }
   .stsl-o:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
-  .stsl.lg { display: grid; width: 100%; height: 44px; border-radius: 22px; }
-  .stsl.lg .stsl-thumb { border-radius: 20px; } .stsl.lg .stsl-o { border-radius: 20px; font-size: 15px; }
+  .stsl.lg { display: flex; width: 100%; height: 44px; border-radius: 22px; }
+  .stsl.lg .stsl-thumb { border-radius: 20px; }
+  .stsl.lg .stsl-o { flex: 1 1 0; border-radius: 20px; font-size: 15px; }
+  .stsl.lg .stsl-o.on { flex-grow: 2.4; }
   .mf-decide .stsl.lg { flex: 1; }
-  /* Phones: table rows show just the icons. */
-  @media (max-width: 700px) { .rtable .stsl-o .stsl-t { display: none; } .rtable .stsl-o { padding: 0 9px; } }
-  @media (prefers-reduced-motion: reduce) { .stsl-thumb { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .stsl .stsl-thumb, .stsl-o { transition: none; } }
   /* Blackout resolver: the status slider on its own row, then Delete · Edit dates. */
   .bor-dec { padding: 8px 10px; border-top: 1px solid var(--line); }
   .bor-acts.bor-acts2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2647,35 +2639,10 @@
   body.cal-grabbing, body.cal-grabbing * { cursor: grabbing !important; user-select: none !important; }
   .cal-split { overflow: hidden; }
   .cal-split > .dpanel { position: relative; z-index: 2; background: var(--card); }
-  /* Status slider, final: the selected option shows its word ("Approved" / "Pending" / "Denied") on its color; the other
-     two show only their icon (✓ / clock / ⊘). The selected one is wider; the change animates. */
-  .stsl { display: inline-flex; grid-template-columns: none; gap: 2px; }
-  .stsl .stsl-thumb { display: none; }
-  .stsl-o { flex: 0 0 auto; padding: 0 10px; transition: background-color .2s, color .2s, flex-grow .2s; }
-  .stsl-o:not(.on) .stsl-t { display: none; }
-  .stsl-o.on .ic { display: none; }
-  .stsl-o.on { padding: 0 14px; }
-  .stsl.st-approved .stsl-o.on { background: #15803d; }
-  .stsl.st-pending .stsl-o.on { background: #b45309; }
-  .stsl.st-denied .stsl-o.on { background: #b42318; }
-  .stsl.lg { display: flex; }
-  .stsl.lg .stsl-o { flex: 1 1 0; } .stsl.lg .stsl-o.on { flex-grow: 2.4; }
-  @media (max-width: 700px) { .rtable .stsl-o.on .stsl-t { display: inline; } }
-  @media (prefers-reduced-motion: reduce) { .stsl-o { transition: none; } }
-  /* Status slider motion: one colored pill behind the selected option glides (left + width) to the option you pick. */
-  .stsl .stsl-thumb { display: block; left: 0; width: 0; transform: none !important; opacity: 0;
-    transition: left .28s cubic-bezier(.3, .8, .25, 1), width .28s cubic-bezier(.3, .8, .25, 1), background-color .28s; }
-  .stsl.st-approved .stsl-o.on, .stsl.st-pending .stsl-o.on, .stsl.st-denied .stsl-o.on { background: transparent; }
-  .stsl-o { transition: color .2s; }
-  @media (prefers-reduced-motion: reduce) { .stsl .stsl-thumb { transition: none; } }
   /* Week strip: the name badge slides inside its bar to stay visible while scrolling (JS sets the transform). */
   .wpuck .n > * { will-change: transform; }
   .wpuck .n { overflow: visible; }
   .wpuck { overflow: hidden; }
-  /* Status slider keeps one size whatever is selected: the word slot is always as wide as "Approved", icon slots are fixed. */
-  .stsl:not(.lg) .stsl-o { justify-content: center; }
-  .stsl:not(.lg) .stsl-o.on { width: 6.9em; padding: 0; }
-  .stsl:not(.lg) .stsl-o:not(.on) { width: 36px; padding: 0; }
   /* Badges on bars: the dark border is drawn just inside the badge edge, so a tight bar can never clip it (shared badges too). */
   :is(.evs, .wpuck, .cs-bar, .qbar) .idb.pb { outline: 1.5px solid #0b1730; outline-offset: -1.5px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .7); }
   .mn-more { font-weight: 700; color: #3f3f46; white-space: nowrap; cursor: default; }
@@ -2777,7 +2744,6 @@
   @media (max-width: 700px) { .stats-bar .rf-btn { flex: 1 1 0; max-width: none; } }
   /* Band header: which view is showing (tap the header to cycle Active → All → Closed), pinned to the right edge. */
   .grp-side { float: right; position: sticky; right: 0; height: 36px; display: flex; align-items: center; padding: 0 14px; }
-  .grp-mode { display: inline-flex; align-items: center; margin: 0; height: 22px; padding: 0 9px; border-radius: 11px; background: var(--sel-bg); color: var(--sel-ink); font-size: 12px; font-weight: 700; letter-spacing: 0; text-transform: none; }
   /* Roster period: a radio list — title plus the dates it covers. */
   .rf-radio { align-items: center; padding-top: 8px; padding-bottom: 8px; }
   .rf-radio .pp-n { display: flex; flex-direction: column; gap: 1px; }
@@ -3086,8 +3052,6 @@
   @media (prefers-reduced-motion: reduce) { .seg-slide > .seg-thumb { transition: none; } }
   /* Bottom nav: the active tab's gold pill slides between tabs (placeSeg); once placed, the tab's own pill is off. */
   .nav.seg-slide > .seg-thumb.nav-thumb { position: absolute; bottom: auto; background: var(--gold); border-radius: 16px; border: solid transparent; border-width: 0 1px; background-clip: padding-box; box-sizing: border-box; }
-  .nav.seg-slide[data-placed] > button.on::before { background: transparent; }
-  .nav.seg-slide[data-placed] > button.on:hover::before { background: transparent; }
   .nav.seg-slide > button { z-index: 1; }
   .nav.seg-slide { position: relative; } /* the pill's frame of reference */
   /* While the Profile drop-up is open, the sliding pill under the page you're on fades to the muted pill (Profile is the
@@ -3100,10 +3064,7 @@
      the label sits below it, bold white. Hover tints just the icon's pill area. Before the pill is placed (first paint),
      the selected icon's own background shows the same pill. */
   .nav.seg-slide > .seg-thumb.nav-thumb { border: 0; border-radius: 16px; }
-  .nav button::before, .nav button:hover::before, .nav button.on::before, .nav button[aria-expanded="true"]::before,
-  .nav button.on:hover::before, .nav button[aria-expanded="true"]:hover::before { background: transparent !important; }
   .nav button.on, .nav button.on:hover, .nav button[aria-expanded="true"], .nav button[aria-expanded="true"]:hover { color: #ffffff; }
-  .nav button .nav-ic { width: 64px; height: 32px; border-radius: 16px; transition: background-color .18s ease; }
   /* Navy icon on the yellow pill (9.3:1). !important: older theme rules set the icon to inherit the white label. */
   .nav button.on .nav-ic, .nav button[aria-expanded="true"] .nav-ic { color: var(--navy) !important; }
   .nav.seg-slide:not([data-placed]) > button.on .nav-ic, .nav button[aria-expanded="true"] .nav-ic { background: var(--gold); }
@@ -3111,8 +3072,6 @@
   /* Profile drop-up open: the page's pill fades to muted white, its icon and label stay white. */
   .nav:has(button[aria-expanded="true"]) button.on:not([aria-expanded="true"]) .nav-ic { color: #ffffff !important; }
   /* Wide screens: items keep a sensible width (max 140px) and the group sits centered, instead of spreading to the edges. */
-  .nav { justify-content: center; }
-  .nav > button { max-width: 140px; }
   /* Button groups, final: every segmented group looks and moves like the status slider. A tinted track with a 2px inset,
      no dividers; the selected option is a rounded pill (tonal fill, bold); unselected options are muted. Single-choice
      groups glide the pill (left + width) to the option you pick; multi-select groups (filters) fill each chosen pill. */
@@ -4252,7 +4211,7 @@
   if (!S.list.userSorted && S.list.sorts.length === 1 && S.list.sorts[0].k === 'submitted') S.list.sorts = [{ k: 'start', dir: 'asc' }];
   if (S.view === 'admin' || S.view === 'people' || S.view === 'roster') S.view = 'calendar';
 
-  let IDX = { users: new Map(), live: [], counts: new Map(), appr: new Map(), ytd: new Map(), disp: new Map() };
+  let IDX = { users: new Map(), live: [], counts: new Map(), appr: new Map(), ytd: new Map(), disp: new Map(), cw: new Map() };
   function reindex() {
     const users = new Map(S.users.map(u => [u.id, u]));
     const live = S.requests.filter(r => r.status !== 'Cancelled' && users.has(r.userId) && D.valid(r.start) && D.valid(r.end));
@@ -4300,7 +4259,7 @@
       const sameF = same.filter(x => parts(x).f === p.f);
       disp.set(u.id, p.l + ', ' + p.f + (sameF.length && p.m ? p.m : ''));
     });
-    IDX = { users, live, counts, appr, ytd, dups, disp };
+    IDX = { users, live, counts, appr, ytd, dups, disp, cw: new Map() }; // cw: who-conflicts-with-whom, cached until the data changes
   }
   const userOf = id => IDX.users.get(id) || { id, rank: '', name: 'Unknown', role: 'Other', unit: '—' };
   const lastName = u => u.name.trim().split(/\s+/).pop();
@@ -4407,10 +4366,12 @@
   const ALL_KINDS = () => ALERT_KINDS.map(k => k[0]).filter(k => k !== 'adminup');
   /** A grid row from any saved shape: {units, roles} lists, or older {unit, role} ('' = any). */
   const gridRow = r => Object.assign({}, r, { units: Array.isArray(r.units) ? r.units.slice() : r.unit ? [r.unit] : [], roles: Array.isArray(r.roles) ? r.roles.slice() : r.role ? [r.role] : [] });
-  /** Team admin rows → the unit + position pairs they grant (inside `lim`, a team admin's own team). */
-  const rowsCells = (rows, lim) => { const out = [];
-    rows.forEach(r => r.units.forEach(u => r.roles.forEach(ro => { const c = u + '|' + ro; if (!out.includes(c) && (!lim || inScope(lim, { unit: u, role: ro }))) out.push(c); })));
+  /** Team admin rows → the unit + position pairs they grant (inside `lim`, a team admin's own team). A row with units only
+   *  grants every position in those units; positions only, those positions in every unit; a blank row grants nothing. */
+  const rowsCells = (rows, lim) => { const out = [], allU = scopeUnits(lim), allR = scopeRoles(lim);
+    rows.forEach(r => { if (!r.units.length && !r.roles.length) return; (r.units.length ? r.units : allU).forEach(u => (r.roles.length ? r.roles : allR).forEach(ro => { const c = u + '|' + ro; if (!out.includes(c) && (!lim || inScope(lim, { unit: u, role: ro }))) out.push(c); })); });
     return out; };
+  const rowGrants = r => r.units.length || r.roles.length;
   /** A team admin scope as grid rows: the rows saved with it, else its pairs grouped (units that share positions). */
   const scopeRows = sc => {
     if (!sc) return [];
@@ -4567,8 +4528,8 @@
     if (!F.conf) return !ids.length || ids.includes(r.userId);
     if (!ids.length) return inConflict(r);
     if (ids.length > 1) return ids.includes(r.userId) && inConflict(r);
-    if (!(F._cw && F._cwFor === ids[0] && F._cwIdx === IDX)) { F._cwFor = ids[0]; F._cwIdx = IDX; F._cw = conflictsWith(ids[0]); } // cached until data changes
-    return F._cw.has(r.id);
+    if (!IDX.cw.has(ids[0])) IDX.cw.set(ids[0], conflictsWith(ids[0]));
+    return IDX.cw.get(ids[0]).has(r.id);
   }
   function calRequests() {
     if (S.view === 'mine') return mineCalRequests();
@@ -4851,7 +4812,8 @@
     setTimeout(askPush, 0); // signed in now: offer notifications if they're off (Home Screen app)
     S.adminIds = data.adminIds || []; S.alertIds = data.alertIds || []; // shares a last name: must add a first / middle initial before using the app
     if (S.priv) { S.f.role = ROLES.slice(); S.f.person = ''; S.f.conf = false; S.mineMode = 'list'; if (S.view === 'all') S.view = 'mine'; }
-    S.today = localToday();
+    // "Today" is the server's (home-station) date, so a deployed phone 8 hours ahead doesn't flip to tomorrow early.
+    S.serverToday = data.today || localToday(); S.today = S.serverToday;
     if (!S.isAdmin && (S.view === 'admin' || S.view === 'people' || S.view === 'roster')) S.view = 'calendar';
     if (S.view === 'admin' && !S.isOrg) S.view = 'calendar'; // the Admin page is org settings only
     if (S.isAdmin && S.view === 'mine') S.view = 'all'; // My Requests isn't in the admin nav
@@ -5337,7 +5299,15 @@
     $$('.scroll, .dayv, .tbl-wrap').forEach(el => { if (el.id) keep[el.id] = [el.scrollTop, el.scrollLeft]; });
     // Admin settings auto-save on change, which redraws the page: keep focus on the field the user moved to.
     const ae = document.activeElement, focusId = ae && ae.id && ae.closest && ae.closest('#adminScroll') ? ae.id : '';
-    $('#app').innerHTML = offlineBar() + '<main class="main" id="main">' + renderView() + '</main>' + renderNav();
+    // The page inside <main> is redrawn; the nav bar (and its sliding pill) and the offline bar stay mounted. The first
+    // render after sign-in builds the whole shell.
+    const mainEl = $('#main');
+    if (mainEl && $('.nav')) {
+      const ob = $('#offlineBar');
+      if (S.offline && !ob) $('#app').insertAdjacentHTML('afterbegin', offlineBar()); else if (!S.offline && ob) ob.remove();
+      mainEl.innerHTML = renderView();
+      renderNavOnly();
+    } else $('#app').innerHTML = offlineBar() + '<main class="main" id="main">' + renderView() + '</main>' + renderNav();
     if (document.querySelector('meta[name="theme-color"][content="#1d3d6e"]')) applyTheme(); // left the sign-in screen: normal status-bar color
     Object.keys(keep).forEach(id => { const el = document.getElementById(id); if (el) { el.scrollTop = keep[id][0]; el.scrollLeft = keep[id][1]; } });
     if (focusId) { const f = document.getElementById(focusId); if (f) try { f.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
@@ -6345,6 +6315,8 @@
   const isNow = r => r.status === 'Approved' && r.start <= S.today && r.end >= S.today;
   /** Canceled leave / passes: kept, crossed out, shown as Canceled (stored as Denied + canceled, so they never take a slot). */
   const isCanc = r => !!r && r.canceled === 'true';
+  /** Active on the List: covers today, whatever its status (Approved, Pending or Denied) — only canceled ones are left out. */
+  const isLiveToday = r => !isCanc(r) && r.start <= S.today && r.end >= S.today;
   const stOf = r => isCanc(r) ? 'Canceled' : r.status;
   const stBadge = r => '<span class="badge s-' + stOf(r).toLowerCase() + '">' + stOf(r) + '</span>';
   /** Cancel: the member's own or an admin over them; approved or pending, not over yet. */
@@ -7038,8 +7010,8 @@
         : S.openOnly ? (col[type] === 'closed' || col[type] === true ? 'closed' : 'open')
         : type === 'Past' ? (col.Past === false ? 'open' : col.Past === true ? 'closed' : S.f.conf ? 'open' : 'closed')
         : band ? (col[type] || (S.f.conf ? 'open' : 'partial')) : (col[type] ? 'closed' : 'open');
-      // Active = approved and in progress today; pending and denied ones sort with the rest.
-      const act = band ? list.filter(isNow) : [], rest = band ? list.filter(r => !isNow(r)) : list, nAct = act.length;
+      // Active = happening today (approved, pending or denied; not canceled); the rest sort by departure date.
+      const act = band ? list.filter(isLiveToday) : [], rest = band ? list.filter(r => !isLiveToday(r)) : list, nAct = act.length;
       // Default order (until a column is clicked): out today = position, last, first; the rest = departure date first.
       const byStart = (a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || byPosName(a, b);
       if (mine) { if (!st.userSorted) list = list.slice().sort(byStart); }
@@ -7047,22 +7019,25 @@
         if (band && !st.userSorted) { act.sort(byPosName); rest.sort(byStart); }
         if (band) list = act.concat(rest);
       }
+      const sw2 = band && !mine && !(S.openOnly || S.f.conf) ? '<span class="grp-side">' + seg([['partial', 'Active <b>' + nAct + '</b>'], ['open', 'All <b>' + list.length + '</b>']], state, 'grpMode',
+        ' data-table="' + key + '" data-t="' + esc(type) + '" data-id="' + esc(key + ':' + type) + '"') + '</span>' : '';
+      // The switch carries the active count; without it (My Requests, conflict / pending views) the header says "N active".
       const label = type === 'Past' ? '<span class="badge t-past">Past</span>' : type === 'Medical' ? '<span class="badge t-' + tcls(type) + ' t-med">' + MED_LBL + '</span>' : '<span class="badge t-' + tcls(type) + '">' + esc(type) + '</span>' +
-        (nAct ? '<span class="grp-now"><i class="now-dot" aria-hidden="true"></i>' + nAct + ' active</span>' : '');
+        (nAct && !sw2 ? '<span class="grp-now"><i class="now-dot" aria-hidden="true"></i>' + nAct + ' active</span>' : '');
       const empty = '<tr class="grp-empty"><td colspan="' + n + '"><span class="grp-empty-in">' + (type === 'Past' ? 'Nothing past to show.' : 'No ' + esc(type.toLowerCase()) + ' to show.') + '</span></td></tr>';
-      const more = '<tr class="grp-more"><td colspan="' + n + '"><button type="button" class="linkbtn grp-more-in" data-act="grpMore" data-table="' + key + '" data-v="' + type + '">' +
-        (act.length ? '' : 'No one on ' + type.toLowerCase() + ' today · ') + 'Show ' + rest.length + ' more' + icon('down', 14) + '</button></td></tr>';
-      const moreAll = '<tr class="grp-more"><td colspan="' + n + '"><button type="button" class="linkbtn grp-more-in" data-act="grpMore" data-table="' + key + '" data-v="' + type + '">' +
-        'Show ' + list.length + ' more' + icon('down', 14) + '</button></td></tr>';
+      // "Show N more": an outlined pill (a real button, not a link), pinned left so it's in view when the table scrolls sideways.
+      const moreBtn = t => '<tr class="grp-more"><td colspan="' + n + '"><button type="button" class="btn sm grp-more-in" data-act="grpMore" data-table="' + key + '" data-v="' + type + '">' + t + icon('down', 15) + '</button></td></tr>';
+      const more = moreBtn((act.length ? '' : 'No one on ' + esc(type.toLowerCase()) + ' today · ') + 'Show ' + rest.length + ' upcoming');
+      const moreAll = moreBtn('Show ' + list.length + ' ' + esc(type.toLowerCase()));
       const rowsHtml = state === 'closed' ? (band && !mine && list.length ? moreAll : '') : !list.length ? empty
         : state === 'partial' ? act.map(r => rowHtml(r, false)).join('') + (rest.length ? more : '')
         : list.map(r => rowHtml(r, type === 'Past')).join('');
+      // Type bands (not Past, not My Requests): an Active | All switch (the app's segmented control) pinned to the header's
+      // right edge, each side with its count; tapping the header itself folds the band up or opens it again. Conflict mode
+      // and Pending-only show everything, so the switch stays away then.
       return '<tbody class="grp grp-' + (type === 'Past' ? 'past' : tcls(type)) + (state === 'closed' ? ' closed' : '') + '"><tr class="grp-h" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '"><th colspan="' + n + '" scope="rowgroup">' +
-        // Type bands (not Past, not My Requests): which of the three views is showing, as a chip pinned to the header's right
-        // edge (it stays in view when the table scrolls sideways; tapping anywhere on the header cycles the view).
-        (band && !mine ? '<span class="grp-side"><span class="grp-mode">' + ({ open: 'All', partial: 'Active', closed: 'Closed' })[state] + '</span></span>' : '') +
-        '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + (state === 'open') + '">' +
-        icon(state === 'closed' ? 'right' : 'down', 16) + label + '<span class="ct">' + list.length + '</span></button>' +
+        sw2 + '<button type="button" class="grp-in" data-act="grpToggle" data-table="' + key + '" data-v="' + type + '" aria-expanded="' + (state !== 'closed') + '">' +
+        '<span class="grp-chev">' + icon(state === 'closed' ? 'right' : 'down', 16) + '</span>' + label + (sw2 ? '' : '<span class="ct">' + list.length + '</span>') + '</button>' +
         '</th></tr>' + rowsHtml + '</tbody>';
     };
     const ownMed = rows.filter(r => r.med); rows = rows.filter(r => !r.med); // My Requests table: my own Medical in its band
@@ -7452,13 +7427,13 @@
    *  position pair (until then it's a draft on this device); deleting every row removes their admin status. */
   function admGrid(id) {
     const lim = S.isOrg ? null : S.adminScope;
-    return { lim, rows: () => (S.admRows && S.admRows[id]) || scopeRows(ownScope((S.admins || {})[id])),
+    return { any: true, lim, rows: () => (S.admRows && S.admRows[id]) || scopeRows(ownScope((S.admins || {})[id])),
       set: rows => {
         const cells = rowsCells(rows, lim), a = (S.admins || {})[id];
         S.admRows = Object.assign({}, S.admRows);
         if (cells.length) {
           delete S.admRows[id]; S.admDraft = null;
-          const sc = { cells, rows: rows.filter(r => r.units.length && r.roles.length) };
+          const sc = { cells, rows: rows.filter(rowGrants) };
           // In a profile: their whole team comes from the server (profiles + these rows), so wait for it; otherwise optimistic.
           if (a && a.pins && a.pins.length) save(() => localAdmin(id, sc), 'apiSetAdminStatus', S.token, id, 'team', sc);
           else save(() => { S.admins[id] = { level: 'team', scope: sc }; }, 'apiSetAdminStatus', S.token, id, 'team', sc);
@@ -7512,7 +7487,7 @@
       '<div class="err" id="apErr"></div></div>' +
       '<div class="modal-f"><button class="btn" data-act="apCancel">Cancel</button><button class="btn primary" data-act="apSave">' + icon('check', 18) + 'Save</button></div>');
   }
-  RG.ap = { get lim() { return S.isOrg ? null : S.adminScope; }, rows: () => S.apDraft.rows, set: rows => { S.apDraft.rows = rows; renderAdminPicker(); }, redraw: () => renderAdminPicker() };
+  RG.ap = { any: true, get lim() { return S.isOrg ? null : S.adminScope; }, rows: () => S.apDraft.rows, set: rows => { S.apDraft.rows = rows; renderAdminPicker(); }, redraw: () => renderAdminPicker() };
   /** Selected members that are still listed (and on my team). */
   const batchIds = () => { const sel = S.rosterSel || new Set(); return peopleStats().rows.map(m => m.u.id).filter(id => sel.has(id)); };
   /** Optimistic batch: change the local roster now, sync in the background (a failure re-syncs and says so). */
@@ -10434,7 +10409,7 @@
     dayShift(el) {
       if (S.dayPanel && $('.dpanel')) { S.dayPanel = D.add(S.dayPanel, Number(el.dataset.v)); syncCalTo(S.dayPanel); return render(); } S.cursor = D.add(S.cursor, Number(el.dataset.v)); S.sel = null; render(); },
     calNext() { moveCursor(1); },
-    calToday() { S.today = localToday(); S.cursor = S.today; S.weekLeft = null; render(); },
+    calToday() { S.today = S.serverToday || localToday(); S.cursor = S.today; S.weekLeft = null; render(); },
     dayList(el) { A.pickDay(el); },
     // Day view's Back returns to the view the day was opened from.
     dayBack() { S.cal = S.prevCal || 'month'; S.sel = null; hideToast(); render(); },
@@ -10479,8 +10454,14 @@
       const k = el.dataset.table, t = el.dataset.v, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
       if (k === 'mine') c[t] = t === 'Past' ? (c.Past === 'open' ? 'closed' : 'open') : c[t] === 'closed' ? 'open' : 'closed'; // My Requests: bands open, Past collapsed
       else if (t === 'Past') { const open = c.Past === false || (c.Past === undefined && S.f.conf && k === 'list'); c.Past = open; } // flip: open → closed (true), closed → open (false)
-      else if (t !== 'Blackouts') { const cur = c[t] || (S.f.conf && k === 'list' ? 'open' : 'partial'); c[t] = ({ partial: 'open', open: 'closed', closed: 'partial' })[cur]; } // Active → All → Closed → Active
+      // Type bands: the header folds the band up, or opens it back to the view it had (Active unless All was picked).
+      else if (t !== 'Blackouts') { const cur = c[t] || (S.f.conf && k === 'list' ? 'open' : 'partial'); c[t] = cur === 'closed' ? (c['_' + t] || 'partial') : ((c['_' + t] = cur), 'closed'); }
       else c[t] = !c[t]; (S.grpInit = S.grpInit || {})[k] = true; render();
+    },
+    /** Band header switch: Active (today's) | All (every current and upcoming one). */
+    grpMode(el) {
+      const k = el.dataset.table, t = el.dataset.t, c = (S.grpCol = S.grpCol || {})[k] = S.grpCol[k] || {};
+      c[t] = c['_' + t] = el.dataset.v; (S.grpInit = S.grpInit || {})[k] = true; render();
     },
     updateYes() { const f = S.update; if (!f) { hideUpdateBar(); return; } hideUpdateBar(); showBlocker('Updating…', ''); f(); },
     updateNo() { hideUpdateBar(); S.updateLater = true; renderNavOnly(); redrawNotes(); },
@@ -11332,8 +11313,8 @@
     apCancel() { const b = S.apDraft && S.apDraft.back; S.rgEdit = null; if (b) openManagers(b); else closeModal(); },
     apSave() {
       const d = S.apDraft, err = $('#apErr'), cells = rowsCells(d.rows, RG.ap.lim);
-      if (d.level === 'team' && !cells.length) { err.textContent = 'Pick at least one unit and position.'; return; }
-      const st = d.level ? { level: d.level, scope: d.level === 'team' ? { cells, rows: d.rows.filter(r => r.units.length && r.roles.length) } : null } : null;
+      if (d.level === 'team' && !cells.length) { err.textContent = 'Pick at least one unit or position.'; return; }
+      const st = d.level ? { level: d.level, scope: d.level === 'team' ? { cells, rows: d.rows.filter(rowGrants) } : null } : null;
       S.rgEdit = null;
       const set = id => { if (id === S.me) return; if (st) S.admins[id] = { level: st.level, scope: st.scope }; else delete S.admins[id]; };
       if (d.uid) {
@@ -11405,7 +11386,8 @@
     mgrPick(el) { openAdminPicker(el.dataset.id, S.mgrFor.unit ? { units: [S.mgrFor.unit] } : { roles: [S.mgrFor.role] }, S.mgrFor); },
     async mgrRemove(el) {
       const id = el.dataset.id, w = S.mgrFor, a = S.admins[id];
-      const rows = scopeRows(a.scope).map(r => w.unit ? Object.assign({}, r, { units: r.units.filter(c => c !== w.unit) }) : Object.assign({}, r, { roles: r.roles.filter(x => x !== w.role) })).filter(r => r.units.length && r.roles.length);
+      const rows = scopeRows(a.scope).map(r => w.unit ? Object.assign({}, r, { units: r.units.filter(c => c !== w.unit), hadU: !!r.units.length }) : Object.assign({}, r, { roles: r.roles.filter(x => x !== w.role), hadR: !!r.roles.length }))
+        .filter(r => rowGrants(r) && !(r.hadU && !r.units.length) && !(r.hadR && !r.roles.length)).map(r => ({ units: r.units, roles: r.roles }));
       const cells = scopeCells(a.scope).filter(c => { const [u, r] = c.split('|'); return w.unit ? u !== w.unit : r !== w.role; });
       if (!cells.length && !await askConfirm('Remove ' + nameText(userOf(id)) + '’s last team?', { ok: 'Remove', danger: true })) return;
       const sc = { cells, rows };
