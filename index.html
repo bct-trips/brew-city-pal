@@ -402,14 +402,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793442905"></script>
+    <script src="config.js?v=1793443361"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793442905';
+      window.PAL_BUILD = '1793443361';
       (function () {
         function check(launch) {
           try {
@@ -9002,6 +9002,25 @@
     const keepOpen = item && ['theme', 'noteDel', 'notesClear', 'adminModeTo'].includes(item.dataset.act);
     if (!m.contains(ev.target) || (item && !keepOpen)) closeProfileMenu();
   }, true);
+  // A tap anywhere outside closes it as the finger lands (pointerdown, so a drag or a tap the page swallows still counts).
+  document.addEventListener('pointerdown', ev => {
+    const m = document.getElementById('pmenu');
+    if (!m || m.contains(ev.target) || ev.target.closest('.nav button[data-v="profile"]')) return;
+    closeProfileMenu();
+  }, true);
+  // Swiping down on the menu (56px, mostly vertical) closes it — unless the finger is in a part of it that's scrolled.
+  let pmSwipe = null;
+  document.addEventListener('touchstart', ev => {
+    const m = document.getElementById('pmenu'), t = ev.touches[0];
+    if (!m || !m.contains(ev.target)) { pmSwipe = null; return; }
+    let ok = true; for (let el = ev.target; el && el !== m.parentElement; el = el.parentElement) if (el.scrollTop > 0) ok = false;
+    pmSwipe = ok ? { x: t.clientX, y: t.clientY } : null;
+  }, { passive: true });
+  document.addEventListener('touchmove', ev => {
+    if (!pmSwipe || !document.getElementById('pmenu')) return;
+    const t = ev.touches[0], dy = t.clientY - pmSwipe.y, dx = Math.abs(t.clientX - pmSwipe.x);
+    if (dy > 56 && dy > dx * 1.5) { pmSwipe = null; closeProfileMenu(); }
+  }, { passive: true });
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && document.getElementById('pmenu')) closeProfileMenu(); });
   /** Admin Mode (from the Profile menu): ask for the admin PIN. The box ignores password-manager autofill (it's
    *  read-only until tapped) so your sign-in PIN never lands in it. */
