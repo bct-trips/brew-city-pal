@@ -402,14 +402,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793443813"></script>
+    <script src="config.js?v=1793532899"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793443813';
+      window.PAL_BUILD = '1793532899';
       (function () {
         function check(launch) {
           try {
@@ -2731,7 +2731,6 @@
   @keyframes blockerIn { from { background-color: rgba(4, 12, 28, 0); } to { background-color: rgba(4, 12, 28, .58); } }
   @media (prefers-reduced-motion: reduce) { .blocker { animation: none; } }
   /* Home-screen app PIN boxes: plain text inputs shown as dots (see App.html — avoids iOS "Use Strong Password"). */
-  input.pin-mask { -webkit-text-security: disc; text-security: disc; font-family: inherit; letter-spacing: .12em; }
   /* Sign-in: room for the on-screen keyboard (--kb, set while typing) so the whole card can scroll above it. */
   .login { padding-bottom: calc(16px + var(--kb, 0px)); scroll-padding-bottom: var(--kb, 0px); }
   /* Roster filter sheet: position / unit checklists like the multi-name picker (full-width rows, names never cut off). */
@@ -8524,16 +8523,21 @@
   const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   /* Home-screen app (iOS standalone): iOS gives these apps no access to saved passwords, so on ANY password-type field its
-     only offer is "Use Strong Password" — even on sign-in. So in the home-screen app no field is a password field: PIN
-     boxes become plain number boxes masked as dots (same look, number keypad), and iOS has nothing to offer. In Safari
-     (and on desktop) they stay real password fields, so saved-password AutoFill keeps working there. */
+     only offer is "Use Strong Password" — even on sign-in. And a text box masked with -webkit-text-security counts as a
+     password field too. So in the home-screen app no field is a password field at all: every PIN box becomes a plain
+     number box that draws its own dots (dotPin, like the new-PIN boxes — same look, number keypad), with nothing that
+     could read as a password (no name, pattern or length), and iOS has nothing to offer. In Safari (and on desktop) they
+     stay real password fields, so saved-password AutoFill keeps working there. */
   (function () {
     if (!isStandalone()) return;
     const mask = root => (root.querySelectorAll ? root.querySelectorAll('input[type="password"]') : []).forEach(i => {
-      i.type = 'text'; i.classList.add('pin-mask');
+      i.type = 'text'; i.classList.add('pin-dots');
+      ['name', 'pattern', 'maxlength'].forEach(x => i.removeAttribute(x));
       i.setAttribute('autocomplete', 'off'); i.setAttribute('autocorrect', 'off'); i.setAttribute('autocapitalize', 'off'); i.spellcheck = false;
-      if (!i.getAttribute('inputmode')) i.setAttribute('inputmode', 'numeric');
-      i.setAttribute('data-1p-ignore', ''); i.setAttribute('data-lpignore', 'true');
+      i.setAttribute('inputmode', 'numeric'); i.setAttribute('data-form-type', 'other');
+      i.setAttribute('data-1p-ignore', ''); i.setAttribute('data-lpignore', 'true'); i.setAttribute('data-bwignore', '');
+      // Starts read-only and unlocks on the first tap / focus (armPasskey), which also starts the dots.
+      i.setAttribute('readonly', ''); i.setAttribute('data-arm', '');
     });
     mask(document);
     new MutationObserver(list => list.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) { if (n.matches && n.matches('input[type="password"]')) mask(n.parentNode); else mask(n); } })))
