@@ -231,13 +231,14 @@
 
   /* ---- Pass calendar range ends at a week / month break: a rounded > point where the range runs on, and a rounded >
      notch where it picks up again — the calendar bars' chevrons, with soft corners to match the rounded-square end caps.
-     Fixed-size SVG masks (14 × 28: a shallow ~7px point with a round tip, matching the 8px day corners) so the rounding never stretches. */
+     Fixed-size SVG masks (14 × 28: a shallow ~7px point with a round tip, matching the 8px day corners) so the rounding never stretches.
+     The plain part of the mask overlaps the chevron part by 1px: butted edge to edge they left a hairline seam between the square and the point. */
   .wp-in.wp-tip { border-top-right-radius: 0; border-bottom-right-radius: 0;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H5Q7.2%200%208.2%202L11.6%2010.5Q12.8%2014%2011.6%2017.5L8.2%2026Q7.2%2028%205%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 14px) 100% no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H5Q7.2%200%208.2%202L11.6%2010.5Q12.8%2014%2011.6%2017.5L8.2%2026Q7.2%2028%205%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 14px) 100% no-repeat; }
+    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H5Q7.2%200%208.2%202L11.6%2010.5Q12.8%2014%2011.6%2017.5L8.2%2026Q7.2%2028%205%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 13px) 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M0%200H5Q7.2%200%208.2%202L11.6%2010.5Q12.8%2014%2011.6%2017.5L8.2%2026Q7.2%2028%205%2028H0Z%22/%3E%3C/svg%3E") right / 14px 100% no-repeat, linear-gradient(#000, #000) left / calc(100% - 13px) 100% no-repeat; }
   .wp-in.wp-notch { border-top-left-radius: 0; border-bottom-left-radius: 0;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M2%200H14V28H2Q0%2028%20.8%2026L4.2%2017.5Q5.4%2014%204.2%2010.5L.8%202Q0%200%202%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000, #000) right / calc(100% - 14px) 100% no-repeat;
-    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M2%200H14V28H2Q0%2028%20.8%2026L4.2%2017.5Q5.4%2014%204.2%2010.5L.8%202Q0%200%202%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000, #000) right / calc(100% - 14px) 100% no-repeat; }
+    -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M2%200H14V28H2Q0%2028%20.8%2026L4.2%2017.5Q5.4%2014%204.2%2010.5L.8%202Q0%200%202%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000, #000) right / calc(100% - 13px) 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2014%2028%22%3E%3Cpath%20d%3D%22M2%200H14V28H2Q0%2028%20.8%2026L4.2%2017.5Q5.4%2014%204.2%2010.5L.8%202Q0%200%202%200Z%22/%3E%3C/svg%3E") left / 14px 100% no-repeat, linear-gradient(#000, #000) right / calc(100% - 13px) 100% no-repeat; }
 
   /* ---- Welcome tour: a dimmed page with a spotlight on the control (gold ring) and a card beside it. ---- */
   .tour { position: fixed; inset: 0; z-index: 500; }
@@ -473,14 +474,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793711085"></script>
+    <script src="config.js?v=1793711636"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793711085';
+      window.PAL_BUILD = '1793711636';
       (function () {
         function check(launch) {
           try {
