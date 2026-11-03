@@ -407,6 +407,54 @@
   .grp-side { height: 40px; }
   .grp-side .seg { height: 30px; }
   .grp-chev { width: 24px; height: 24px; }
+  /* Dark mode name boxes: no white surfaces (a white box on a dark page is glare — Material's dark theme keeps every
+     surface dark and lifts it with lighter tones). The name part of a [P|MKE|Name] badge is an elevated dark surface
+     (#2a2d36) with light text (#e8e9ef, 11:1) and a light ring, so the badge still reads on bars, rows and the page; the
+     position square and unit box keep their colors. The big badges (Profile menu, Settings, member card) match. */
+  :root[data-theme="dark"] .idb-n { background: #2a2d36; color: #e8e9ef; border-left-color: rgba(255, 255, 255, .35); }
+  :root[data-theme="dark"] .idb.pb.st-denied .idb-n { background: #202229; color: #a9abb5; }
+  :root[data-theme="dark"] :is(td, .dl-who, .rrow, .keypop) .idb { box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .45); }
+  :root[data-theme="dark"] :is(.evs, .wpuck, .cs-bar, .qbar) .idb.pb { outline-color: rgba(255, 255, 255, .55); }
+  :root[data-theme="dark"] .idb-n .now-dot { box-shadow: 0 0 0 1.5px #2a2d36; }
+  :root[data-theme="dark"] .idb-n .med-dot .msym { color: #ff7a72; }
+  :root[data-theme="dark"] .pm-bh .bh-n { background: #2a2d36; color: #e8e9ef; border-color: rgba(255, 255, 255, .35); }
+  :root[data-theme="dark"] .pm-bh.set-badge, :root[data-theme="dark"] .pm-bh.mc-tb { border-color: rgba(255, 255, 255, .3); }
+  /* Pass details on phones (.pass-sheet — the frameless pass): the whole pass and Add to Calendar fit an iPhone 16 Pro
+     screen for a one-month request without scrolling, in the home-screen app and in Safari: the sheet starts near the
+     top, and the pass is set tighter — smaller title and dates, 24px calendar days, Submitted and Location side by side.
+     Shorter screens (Safari's toolbar, smaller phones) go one step tighter. Desktop keeps the full-size pass. */
+  @media (max-width: 700px) {
+    #modal .modal.pass-sheet { max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px)); }
+    .pass-sheet .wpass { margin-bottom: 8px; }
+    .pass-sheet .wp-sec { padding: 10px 16px; }
+    .pass-sheet .wp-type { font-size: 32px; line-height: 36px; }
+    .pass-sheet .wp-n { font-size: 24px; line-height: 28px; }
+    .pass-sheet .wp-d { height: 24px; line-height: 24px; font-size: 12.5px; }
+    .pass-sheet .wp-cal { gap: 1px; }
+    .pass-sheet .wp-mon + .wp-mon { margin-top: 8px; }
+    .pass-sheet .wp-dates { padding-top: 10px !important; }
+    .pass-sheet .wp-big { font-size: 28px; line-height: 32px; }
+    .pass-sheet .wp-arrow { margin-bottom: 20px; }
+    .pass-sheet .wp-loc { font-size: 16px; line-height: 22px; }
+    .pass-sheet .wp-note { font-size: 14px; line-height: 18px; }
+  }
+  @media (max-width: 700px) and (max-height: 780px) {
+    .pass-sheet .wp-sec { padding: 8px 16px; }
+    .pass-sheet .wp-type { font-size: 28px; line-height: 32px; }
+    .pass-sheet .wp-n { font-size: 22px; line-height: 26px; }
+    .pass-sheet .wp-d { height: 22px; line-height: 22px; font-size: 12px; }
+    .pass-sheet .wp-big { font-size: 26px; line-height: 30px; }
+    .pass-sheet .wp-arrow { margin-bottom: 18px; }
+    .pass-sheet .wp-dates { padding-top: 8px !important; }
+  }
+  .wp-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+  .wp-2col > div { min-width: 0; }
+  /* The perforation's half-moon cutouts on the frameless pass are real holes (a mask on the pass; passCuts sets --cut-y
+     to the perforation's height), so the dimmed screen shows through them — the dialog version paints them in the
+     dialog's color instead. */
+  .pass-sheet .wpass { --cut-y: -100px;
+    -webkit-mask-image: radial-gradient(circle 10px at 0 var(--cut-y), transparent 9.5px, #000 10.5px), radial-gradient(circle 10px at 100% var(--cut-y), transparent 9.5px, #000 10.5px);
+    -webkit-mask-composite: source-in; mask-image: radial-gradient(circle 10px at 0 var(--cut-y), transparent 9.5px, #000 10.5px), radial-gradient(circle 10px at 100% var(--cut-y), transparent 9.5px, #000 10.5px); mask-composite: intersect; }
   /* Conflict mode person pill, and List's Pending switch when on: red. */
   .fp-conf .fperson.on, .btn.chip-tog.open-btn.on, .btn.chip-tog.open-btn.on:hover { background-color: var(--no-bg); color: var(--no-ink); }
 }
@@ -425,14 +473,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793710009"></script>
+    <script src="config.js?v=1793710529"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793710009';
+      window.PAL_BUILD = '1793710529';
       (function () {
         function check(launch) {
           try {
@@ -9367,9 +9415,12 @@
         '<div class="wp-r"><div class="wp-lab">' + (o.med ? 'End' : 'Return') + '</div><div class="wp-big">' + (o.noEnd ? 'NO END' : big(o.end)) + '</div><div class="wp-wk">' + (o.noEnd ? '&nbsp;' : wk(o.end)) + '</div></div></div>' +
       (o.med ? '<div class="wp-sec wp-info"><div class="wp-lab">Notes</div><div class="wp-note">' + (o.note ? esc(o.note) : '<span class="wp-dim">None</span>') + '</div>' +
         ((o.cut || []).length ? '<div class="wp-lab wp-lab2">Lowers</div><div class="wp-cuts">' + o.cut.map(t => '<span class="wp-cutchip">' + esc(t) + ' Max</span>').join('') + '</div>' : '') + '</div>' : '') +
-      (o.submitted ? '<div class="wp-sec wp-info"><div class="wp-lab">Submitted</div><div class="wp-note">' + esc(subWhen(o.submitted)) + '</div></div>' : '') +
-      (o.priv && !o.med ? '<div class="wp-sec wp-info"><div class="wp-lab">Location</div><div class="wp-loc">' + icon('pin', 16) + (o.location ? esc(o.location) : '<span class="wp-dim">Not given</span>') + '</div>' +
-        '<div class="wp-lab wp-lab2">Notes</div><div class="wp-note">' + (o.note ? esc(o.note) : '<span class="wp-dim">None</span>') + '</div></div>' : '') +
+      // Submitted and Location side by side (one row), then Notes; without Location (someone else's pass) just Submitted.
+      (o.priv && !o.med ? '<div class="wp-sec wp-info"><div class="wp-2col">' +
+          (o.submitted ? '<div><div class="wp-lab">Submitted</div><div class="wp-note">' + esc(subWhen(o.submitted)) + '</div></div>' : '') +
+          '<div><div class="wp-lab">Location</div><div class="wp-loc">' + icon('pin', 16) + (o.location ? esc(o.location) : '<span class="wp-dim">Not given</span>') + '</div></div></div>' +
+        '<div class="wp-lab wp-lab2">Notes</div><div class="wp-note">' + (o.note ? esc(o.note) : '<span class="wp-dim">None</span>') + '</div></div>'
+        : o.submitted ? '<div class="wp-sec wp-info"><div class="wp-lab">Submitted</div><div class="wp-note">' + esc(subWhen(o.submitted)) + '</div></div>' : '') +
     '</article>';
   }
 
@@ -9385,7 +9436,10 @@
   }
   /** Pass dialogs: on phones the pass floats frameless (pass-sheet); on wider screens it sits in a normal dialog with its
    *  title bar and footer (pass-dlg), at pass width. */
-  const passFrame = () => $('#modal .modal').classList.add(window.matchMedia('(max-width: 600px)').matches ? 'pass-sheet' : 'pass-dlg');
+  const passFrame = () => { $('#modal .modal').classList.add(window.matchMedia('(max-width: 600px)').matches ? 'pass-sheet' : 'pass-dlg'); passCuts(); requestAnimationFrame(passCuts); };
+  /** Frameless pass: tell the CSS mask where the perforation is, so its half-moon cutouts are real holes. */
+  function passCuts() { $$('#modal .wpass').forEach(p => { const c = p.querySelector('.wp-cut'); if (c) p.style.setProperty('--cut-y', (c.getBoundingClientRect().top - p.getBoundingClientRect().top + 1) + 'px'); }); }
+  window.addEventListener('resize', passCuts);
   function openRequest(id) {
     const m = medEvents().find(x => x.id === id);
     if (m) { openMedicalPass(m); return; }
