@@ -402,14 +402,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793532899"></script>
+    <script src="config.js?v=1793709642"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793532899';
+      window.PAL_BUILD = '1793709642';
       (function () {
         function check(launch) {
           try {
@@ -8087,7 +8087,9 @@
     const rows = [], problems = [];
     list.forEach((o, i) => {
       o = o || {};
-      const last = pick(o, ['last', 'lastname']), full = pick(o, ['name']);
+      // "Last, First" in a Last or Name cell is turned around (the server does the same), so the last word is the last name.
+      const fixName = n => { n = String(n || '').trim().replace(/\s+/g, ' '); const c = n.indexOf(','); if (c >= 0) { const l = n.slice(0, c).trim(), rest = n.slice(c + 1).replace(/,/g, ' ').trim(); n = (rest ? rest + ' ' : '') + l; } return n.replace(/,/g, '').replace(/\s+/g, ' ').trim(); };
+      const last = fixName(pick(o, ['last', 'lastname'])), full = fixName(pick(o, ['name']));
       const name = last ? [pick(o, ['first', 'firstname']), pick(o, ['middle', 'middlename', 'mi']), last].filter(Boolean).join(' ') : full;
       const posIn = pick(o, ['position', 'role']), role = roleOf(posIn), unitIn = pick(o, ['unit']).toUpperCase(), unit = unitCodes.includes(unitIn) ? unitIn : '';
       const why = !name ? 'no last name' : !role ? (posIn ? 'unknown position “' + posIn + '”' : 'no position') : !unit ? (unitIn ? 'unknown unit “' + unitIn + '” (add it in Teams first)' : 'no unit') : '';
