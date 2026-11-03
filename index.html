@@ -478,14 +478,14 @@
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <script src="config.js?v=1793710674"></script>
+    <script src="config.js?v=1793710736"></script>
     <script>
       /* Always the newest page, even in a home-screen app (iOS keeps its own copy of the page and resumes it without
          reloading). This page knows its build; version.json (fetched past every cache) holds the latest one.
          - Opening / refreshing the app: a newer build loads straight away (once per build per session: no loop).
          - Coming back to the open app: never reload on its own — tell the app ('pal-update'), which asks "Update now?"
            so nothing half-typed is lost. */
-      window.PAL_BUILD = '1793710674';
+      window.PAL_BUILD = '1793710736';
       (function () {
         function check(launch) {
           try {
@@ -1500,7 +1500,7 @@
   .qd.av-full, .qd.av-full.wknd { background: var(--av-full); }
 
   /* Request and Stats tables: Last Name (.stk) stays pinned to the left edge while the rest scrolls sideways. */
-  .rtable .stk { position: sticky; left: 0; box-shadow: inset -1px 0 0 var(--line), 6px 0 8px -6px rgba(0, 0, 0, .35); }
+  .rtable .stk { position: sticky; left: 0; box-shadow: inset -1px 0 0 var(--line); } /* a thin divider only — no drop shadow off the pinned column */
   .rtable tbody td.stk { z-index: 1; background: var(--card); }
   .rtable tbody tr:nth-child(even) td.stk { background: color-mix(in srgb, var(--card-2) 55%, var(--card)); }
   .rtable tbody tr:hover td.stk { background: color-mix(in srgb, var(--gold) 10%, var(--card)); }
@@ -1557,8 +1557,8 @@
   @media (max-width: 420px) { .cfg-grid2 { grid-template-columns: 1fr; } }
   .cfg-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
   /* Pinned Last Name while scrolled sideways: a 4px Leave (blue) / Pass (gold) bar on its left edge shows the row's type. */
-  .tbl-wrap.scrolled tr.t-leave td.stk { box-shadow: inset 4px 0 0 var(--leave), inset -1px 0 0 var(--line), 6px 0 8px -6px rgba(0, 0, 0, .35); }
-  .tbl-wrap.scrolled tr.t-pass td.stk { box-shadow: inset 4px 0 0 var(--gold), inset -1px 0 0 var(--line), 6px 0 8px -6px rgba(0, 0, 0, .35); }
+  .tbl-wrap.scrolled tr.t-leave td.stk { box-shadow: inset 4px 0 0 var(--leave), inset -1px 0 0 var(--line); }
+  .tbl-wrap.scrolled tr.t-pass td.stk { box-shadow: inset 4px 0 0 var(--gold), inset -1px 0 0 var(--line); }
   .tbl-wrap.scrolled tr.t-leave td.stk, .tbl-wrap.scrolled tr.t-pass td.stk { padding-left: 16px; }
 
   /* ---------- All / Mine list bar: same controls and order as the calendar bar ----------
